@@ -1,4 +1,4 @@
-# IPConfigurable
+# Traitlets
 
 A strip down version of IPython Configuration system, 
 mostly taken from IPython as is, and not yet totally cleaned. 
@@ -8,7 +8,7 @@ IPython specific-ness that woudl need to be stripped.
 
 ## Base Idea
 
-Any object you want to be configurable should inherit from `IPConfigurable.Configurable`
+Any object you want to be configurable should inherit from `Traitlets.Configurable`
 and have class attributes that are instance `Trailets`.
 
 when creating your object, pass it either the `config=` keyword (that is a
