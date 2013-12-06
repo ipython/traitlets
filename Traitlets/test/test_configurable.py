@@ -23,14 +23,14 @@ from unittest import TestCase
 
 from Traitlets.configurable import (
     Configurable, 
-    SingletonConfigurable
+    SingletonConfigurable,
+    Config
 )
 
 from Traitlets.traitlets import (
     Integer, Float, Unicode, List, Dict, Set,
 )
 
-from Traitlets.loader import Config
 from Traitlets.py3compat import PY3
 
 #-----------------------------------------------------------------------------

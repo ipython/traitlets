@@ -1,6 +1,6 @@
 # encoding: utf-8
 """
-Tests for Traitlets.loader
+Tests for was before in  Traitlets.loader
 
 Authors:
 
@@ -27,7 +27,7 @@ from unittest import TestCase
 
 from nose import SkipTest
 
-from Traitlets.loader import (
+from Traitlets.configurable import (
     Config,
     LazyConfigValue,
     ConfigError,
@@ -37,15 +37,6 @@ from Traitlets.loader import (
 # Actual tests
 #-----------------------------------------------------------------------------
 
-
-pyfile = """
-c = get_config()
-c.a=10
-c.b=20
-c.Foo.Bar.value=10
-c.Foo.Bam.value=list(range(10))  # list() is just so it's the same on Python 3
-c.D.C.value='hi there'
-"""
 
 class TestConfig(TestCase):
 
