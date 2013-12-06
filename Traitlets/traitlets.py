@@ -106,7 +106,7 @@ def add_article ( name ):
     prefixed to the specified string.
     """
     if name[:1].lower() in 'aeiou':
-       return 'an ' + name
+        return 'an ' + name
 
     return 'a ' + name
 
@@ -138,7 +138,7 @@ def parse_notifier_name(name):
 
     >>> parse_notifier_name('a')
     ['a']
-    >>> parse_notifier_name(['a','b'])
+    >>> parse_notifier_name(['a', 'b'])
     ['a', 'b']
     >>> parse_notifier_name(None)
     ['anytrait']
@@ -374,7 +374,7 @@ class MetaHasTraits(type):
         # print "MetaHasTraitlets (mcls, name): ", mcls, name
         # print "MetaHasTraitlets (bases): ", bases
         # print "MetaHasTraitlets (classdict): ", classdict
-        for k,v in iteritems(classdict):
+        for k, v in iteritems(classdict):
             if isinstance(v, TraitType):
                 v.name = k
             elif inspect.isclass(v):
@@ -435,8 +435,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
 
         # First dynamic ones
         callables = []
-        callables.extend(self._trait_notifiers.get(name,[]))
-        callables.extend(self._trait_notifiers.get('anytrait',[]))
+        callables.extend(self._trait_notifiers.get(name, []))
+        callables.extend(self._trait_notifiers.get('anytrait', []))
 
         # Now static ones
         try:
@@ -1050,7 +1050,7 @@ class ObjectName(TraitType):
 
     if py3compat.PY3:
         # Python 3:
-        coerce_str = staticmethod(lambda _,s: s)
+        coerce_str = staticmethod(lambda _, s: s)
 
     else:
         # Python 2:
@@ -1116,7 +1116,7 @@ class Enum(TraitType):
                 return value
 
         if value in self.values:
-                return value
+            return value
         self.error(obj, value)
 
     def info(self):
@@ -1164,7 +1164,7 @@ class Container(Instance):
         If only one arg is given and it is not a Trait, it is taken as
         ``default_value``:
 
-        ``c = List([1,2,3])``
+        ``c = List([1, 2, 3])``
 
         Parameters
         ----------
@@ -1192,7 +1192,7 @@ class Container(Instance):
         if default_value is None:
             args = ()
         elif isinstance(default_value, self._valid_defaults):
-            args = (default_value,)
+            args = (default_value, )
         else:
             raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
 
@@ -1202,7 +1202,7 @@ class Container(Instance):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s"%repr_type(trait))
 
-        super(Container,self).__init__(klass=self.klass, args=args,
+        super(Container, self).__init__(klass=self.klass, args=args,
                                   allow_none=allow_none, **metadata)
 
     def element_error(self, obj, element, validator):
@@ -1250,7 +1250,7 @@ class List(Container):
         If only one arg is given and it is not a Trait, it is taken as
         ``default_value``:
 
-        ``c = List([1,2,3])``
+        ``c = List([1, 2, 3])``
 
         Parameters
         ----------
@@ -1311,12 +1311,12 @@ class Tuple(Container):
 
         ``t = Tuple(Int, Str, CStr)``
 
-        would be length 3, with Int,Str,CStr for each element.
+        would be length 3, with Int, Str, CStr for each element.
 
         If only one arg is given and it is not a Trait, it is taken as
         default_value:
 
-        ``t = Tuple((1,2,3))``
+        ``t = Tuple((1, 2, 3))``
 
         Otherwise, ``default_value`` *must* be specified by keyword.
 
@@ -1352,7 +1352,7 @@ class Tuple(Container):
         if default_value is None:
             args = ()
         elif isinstance(default_value, self._valid_defaults):
-            args = (default_value,)
+            args = (default_value, )
         else:
             raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
 
@@ -1365,7 +1365,7 @@ class Tuple(Container):
         if self._traits and default_value is None:
             # don't allow default to be an empty container if length is specified
             args = None
-        super(Container,self).__init__(klass=self.klass, args=args,
+        super(Container, self).__init__(klass=self.klass, args=args,
                                   allow_none=allow_none, **metadata)
 
     def validate_elements(self, obj, value):
@@ -1378,7 +1378,7 @@ class Tuple(Container):
             raise TraitError(e)
 
         validated = []
-        for t,v in zip(self._traits, value):
+        for t, v in zip(self._traits, value):
             try:
                 v = t.validate(obj, v)
             except TraitError:
@@ -1406,7 +1406,7 @@ class Dict(Instance):
         else:
             raise TypeError('default value of Dict was %s' % default_value)
 
-        super(Dict,self).__init__(klass=dict, args=args,
+        super(Dict, self).__init__(klass=dict, args=args,
                                   allow_none=allow_none, **metadata)
 
 class TCPAddress(TraitType):

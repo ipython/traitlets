@@ -23,11 +23,7 @@ Authors
 # Imports
 #-----------------------------------------------------------------------------
 
-import argparse
 import copy
-import os
-import re
-import sys
 
 from .py3compat import  iteritems
 from .traitlets import HasTraits, List, Any, TraitError
@@ -202,7 +198,6 @@ class Config(dict):
         return self.copy()
 
     def __deepcopy__(self, memo):
-        import copy
         return type(self)(copy.deepcopy(list(self.items())))
     
     def __getitem__(self, key):
