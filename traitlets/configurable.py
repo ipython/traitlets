@@ -261,11 +261,20 @@ class MultipleInstanceError(ConfigurableError):
 #-----------------------------------------------------------------------------
 # Configurable implementation
 #-----------------------------------------------------------------------------
+class _AbstactConfigurable(HasTraits):
+    """Dummy class to check that instance of parent
+    from configurable are of the correct class
+    """
+    pass
 
-class Configurable(HasTraits):
+class Configurable(_AbstactConfigurable):
 
     config = Instance(Config, (), {})
-    parent = Instance(HasTraits)
+
+    # Do not Check instance By string, as this
+    # module can be shipped with other names in
+    # projects.
+    parent = Instance(_AbstactConfigurable)
 
     def __init__(self, **kwargs):
         """Create a configurable given a config config.
