@@ -34,7 +34,6 @@ def import_item(name):
     mod : module object
        The module that was imported.
     """
-    
     parts = name.rsplit('.', 1)
     if len(parts) == 2:
         # called with 'foo.bar....'

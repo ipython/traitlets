@@ -265,7 +265,7 @@ class MultipleInstanceError(ConfigurableError):
 class Configurable(HasTraits):
 
     config = Instance(Config, (), {})
-    parent = Instance('traitlets.Configurable')
+    parent = Instance(HasTraits)
 
     def __init__(self, **kwargs):
         """Create a configurable given a config config.
