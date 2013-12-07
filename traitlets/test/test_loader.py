@@ -1,6 +1,6 @@
 # encoding: utf-8
 """
-Tests for was before in  Traitlets.loader
+Tests for was before in  traitlets.loader
 
 Authors:
 
@@ -27,7 +27,7 @@ from unittest import TestCase
 
 from nose import SkipTest
 
-from Traitlets.configurable import (
+from traitlets.configurable import (
     Config,
     LazyConfigValue,
     ConfigError,

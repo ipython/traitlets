@@ -1,6 +1,6 @@
 # encoding: utf-8
 """
-Tests for Traitlets.configurable
+Tests for traitlets.configurable
 
 Authors:
 
@@ -21,17 +21,17 @@ Authors:
 
 from unittest import TestCase
 
-from Traitlets.configurable import (
+from traitlets.configurable import (
     Configurable, 
     SingletonConfigurable,
     Config
 )
 
-from Traitlets.traitlets import (
+from traitlets.traitlets import (
     Integer, Float, Unicode, List, Dict, Set,
 )
 
-from Traitlets.py3compat import PY3
+from traitlets.py3compat import PY3
 
 #-----------------------------------------------------------------------------
 # Test cases

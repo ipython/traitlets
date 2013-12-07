@@ -265,7 +265,7 @@ class MultipleInstanceError(ConfigurableError):
 class Configurable(HasTraits):
 
     config = Instance(Config, (), {})
-    parent = Instance('Traitlets.Configurable')
+    parent = Instance('traitlets.Configurable')
 
     def __init__(self, **kwargs):
         """Create a configurable given a config config.
@@ -546,7 +546,7 @@ class SingletonConfigurable(Configurable):
 
         Create a singleton class using instance, and retrieve it::
 
-            >>> from Traitlets.configurable import SingletonConfigurable
+            >>> from traitlets.configurable import SingletonConfigurable
             >>> class Foo(SingletonConfigurable): pass
             >>> foo = Foo.instance()
             >>> foo == Foo.instance()

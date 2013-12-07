@@ -1,5 +1,5 @@
 # encoding: utf-8
-"""Tests for Traitlets.text"""
+"""Tests for traitlets.text"""
 from __future__ import print_function
 
 #-----------------------------------------------------------------------------
@@ -19,7 +19,7 @@ import random
 
 import nose.tools as nt
 
-from Traitlets import text
+from traitlets import text
 
 #-----------------------------------------------------------------------------
 # Globals
