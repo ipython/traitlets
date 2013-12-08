@@ -13,6 +13,12 @@ Contents:
 
     config/index
 
+.. automodule:: traitlets.traitlets
+   :members:
+
+.. automodule:: traitlets.configurable
+   :members:
+
 Indices and tables
 ==================
 

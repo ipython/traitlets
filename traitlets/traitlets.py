@@ -30,8 +30,9 @@ including Jython and IronPython.
 
 Inheritance diagram:
 
-.. inheritance-diagram:: IPython.utils.traitlets
+.. inheritance-diagram:: traitlets.traitlets
    :parts: 3
+
 
 Authors:
 
