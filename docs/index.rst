@@ -6,23 +6,24 @@
 Welcome to traitlets's documentation!
 =====================================
 
+Traitlets lightweight Traits like module and Configuration system
+that allow to apply configuration based on classes and attribute naming.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-    config/index
+   index
+   sources/config
+   sources/configurable
+   sources/traitlets
 
-.. automodule:: traitlets.traitlets
-   :members:
-
-.. automodule:: traitlets.configurable
-   :members:
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
+.. * :ref:`modindex`
 * :ref:`search`
 
