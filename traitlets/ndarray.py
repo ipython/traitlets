@@ -27,6 +27,10 @@ from traitlets.traitlets import Instance, TraitError, HasTraits
 from numpy import ndarray, can_cast, allclose, dtype, array, zeros
 
 class NDArray(Instance):
+    """
+    An N-dimensional array trait.
+
+    """
 
     def __init__(self, **metadata):
 
@@ -124,5 +128,3 @@ class NDArray(Instance):
         if not same:
             obj._trait_values[self.name] = new
             obj._notify_trait(self.name, old, new)
-
-
