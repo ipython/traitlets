@@ -2,6 +2,7 @@
 import unittest
 
 from traitlets.traitlets import Instance, TraitError, HasTraits
+from traitlets.ndarray import NDArray
 
 from numpy import ndarray, can_cast, allclose, dtype, array, zeros
 
