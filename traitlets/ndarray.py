@@ -22,7 +22,7 @@ Example
 """
 
 
-from traitlets.traitlets import Instance, TraitError, HasTraits
+from traitlets import Instance, TraitError, HasTraits
 
 from numpy import ndarray, can_cast, allclose, dtype, array, zeros
 
