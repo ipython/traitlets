@@ -1738,27 +1738,10 @@ Disallow = Disallow()
 #  'BaseStr' and 'Str' traits:
 #-------------------------------------------------------------------------------
 
-class BaseStr ( TraitType ):
+class BaseStr ( Unicode ):
     """ Defines a trait whose value must be a Python string.
     """
-
-    #: The default value for the trait:
-    default_value = ''
-
-    #: A description of the type of value this trait accepts:
-    info_text = 'a string'
-
-    def validate ( self, obj, value ):
-        """ Validates that a specified value is valid for this trait.
-
-            Note: The 'fast validator' version performs this check in C.
-        """
-        if isinstance(value, _Undefined):
-            return value
-        if isinstance( value, basestring ):
-            return value
-
-        self.error( obj, value )
+    pass
 
 
 class Str ( BaseStr ):
