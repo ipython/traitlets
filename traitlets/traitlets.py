@@ -18,7 +18,6 @@ We don't support:
 * A full set of trait types.  Most importantly, we don't provide container
   traits (list, dict, tuple) that can trigger notifications if their
   contents change.
-* API compatibility with enthought.traits
 
 There are also some important difference in our design:
 
@@ -33,7 +32,6 @@ Inheritance diagram:
 .. inheritance-diagram:: traitlets.traitlets
    :parts: 3
 
-
 Authors:
 
 * Brian Granger
@@ -43,7 +41,7 @@ Authors:
 """
 
 #-----------------------------------------------------------------------------
-#  Copyright (C) 2008-2011  The IPython Development Team
+#  Copyright (C) 2008-2014  The IPython Development Team
 #
 #  Distributed under the terms of the BSD License.  The full license is in
 #  the file COPYING, distributed as part of this software.
@@ -55,6 +53,7 @@ Authors:
 
 
 import inspect
+import os
 import re
 import sys
 import types
@@ -80,11 +79,66 @@ class NoDefaultSpecified ( object ): pass
 NoDefaultSpecified = NoDefaultSpecified()
 
 
-class Undefined ( object ): pass
-Undefined = Undefined()
+class _Undefined ( object ):
+    def __repr__(self):
+        return '<undefined>'
+
+Undefined = _Undefined()
 
 class TraitError(Exception):
-    pass
+
+    def __init__ ( self, args = None, name = None, info = None, value = None ):
+        if name is None:
+           # If the given args is not a tuple then assume that the user intended
+           # it to be the single item in a one-element tuple.
+           if not isinstance(args, tuple):
+               args = args,
+           self.args = args
+        else:
+           # Save the information, in case the 'args' object is not the correct
+           # one, and we need to regenerate the message later:
+           self.name   = name
+           self.info   = info
+           self.value  = value
+           self.desc   = None
+           self.prefix = 'The'
+           self.set_desc( None, args )
+
+    def set_desc ( self, desc, object = None ):
+        if hasattr( self, 'desc' ):
+           if desc is not None:
+              self.desc = desc
+           if object is not None:
+              self.object = object
+           self.set_args()
+
+    def set_prefix ( self, prefix ):
+        if hasattr( self, 'prefix' ):
+           self.prefix = prefix
+           self.set_args()
+
+    def set_args ( self ):
+        if self.desc is None:
+           extra = ''
+        else:
+           extra = ' specifies %s and' % self.desc
+        obj = getattr( self, 'object', None )
+
+        # Note: self.args must be a tuple so be sure to leave the trailing
+        # commas.
+        the_type = type(self.value)
+        if the_type is InstanceType:
+            the_type = self.value.__class__
+        if obj is not None:
+            self.args = ("%s '%s' trait of %s instance%s must be %s, "
+                         "but a value of %s was specified." % (
+                         self.prefix, self.name, class_of(obj), extra,
+                         self.info, repr_type(self.value))),
+        else:
+            self.args = ("%s '%s' trait%s must be %s, but a value of %s was "
+                         "specified." % (self.prefix, self.name, extra,
+                                         self.info, repr_type(self.value))),
+
 
 #-----------------------------------------------------------------------------
 # Utilities
@@ -353,6 +407,8 @@ class TraitType(object):
     def set_metadata(self, key, value):
         getattr(self, '_metadata', {})[key] = value
 
+    def is_trait_type(self, trait):
+        return isinstance(self, trait)
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
@@ -690,6 +746,8 @@ class Type(ClassBasedTraitType):
 
     def validate(self, obj, value):
         """Validates that the value is a valid object instance."""
+        if isinstance(value, _Undefined):
+            return value
         try:
             if issubclass(value, self.klass):
                 return value
@@ -798,6 +856,8 @@ class Instance(ClassBasedTraitType):
         super(Instance, self).__init__(default_value, **metadata)
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if value is None:
             if self._allow_none:
                 return value
@@ -858,6 +918,8 @@ class This(ClassBasedTraitType):
         # What if value is a superclass of obj.__class__?  This is
         # complicated if it was the superclass that defined the This
         # trait.
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, self.this_class) or (value is None):
             return value
         else:
@@ -881,6 +943,8 @@ class Int(TraitType):
     info_text = 'an int'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, int):
             return value
         self.error(obj, value)
@@ -889,6 +953,8 @@ class CInt(Int):
     """A casting version of the int trait."""
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return int(value)
         except:
@@ -905,6 +971,8 @@ else:
         info_text = 'a long'
 
         def validate(self, obj, value):
+            if isinstance(value, _Undefined):
+                return value
             if isinstance(value, long):
                 return value
             if isinstance(value, int):
@@ -916,6 +984,8 @@ else:
         """A casting version of the long integer trait."""
 
         def validate(self, obj, value):
+            if isinstance(value, _Undefined):
+                return value
             try:
                 return long(value)
             except:
@@ -930,6 +1000,8 @@ else:
         info_text = 'an integer'
 
         def validate(self, obj, value):
+            if isinstance(value, _Undefined):
+                return value
             if isinstance(value, int):
                 return value
             if isinstance(value, long):
@@ -951,6 +1023,8 @@ class Float(TraitType):
     info_text = 'a float'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, float):
             return value
         if isinstance(value, int):
@@ -962,6 +1036,8 @@ class CFloat(Float):
     """A casting version of the float trait."""
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return float(value)
         except:
@@ -974,6 +1050,8 @@ class Complex(TraitType):
     info_text = 'a complex number'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, complex):
             return value
         if isinstance(value, (float, int)):
@@ -985,6 +1063,8 @@ class CComplex(Complex):
     """A casting version of the complex number trait."""
 
     def validate (self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return complex(value)
         except:
@@ -1000,6 +1080,8 @@ class Bytes(TraitType):
     info_text = 'a bytes object'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, bytes):
             return value
         self.error(obj, value)
@@ -1009,6 +1091,8 @@ class CBytes(Bytes):
     """A casting version of the byte string trait."""
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return bytes(value)
         except:
@@ -1022,6 +1106,8 @@ class Unicode(TraitType):
     info_text = 'a unicode string'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, py3compat.unicode_type):
             return value
         if isinstance(value, bytes):
@@ -1037,6 +1123,8 @@ class CUnicode(Unicode):
     """A casting version of the unicode trait."""
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return py3compat.unicode_type(value)
         except:
@@ -1065,6 +1153,8 @@ class ObjectName(TraitType):
             return value
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         value = self.coerce_str(obj, value)
 
         if isinstance(value, str) and py3compat.isidentifier(value):
@@ -1074,6 +1164,8 @@ class ObjectName(TraitType):
 class DottedObjectName(ObjectName):
     """A string holding a valid dotted object name in Python, such as A.b3._c"""
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         value = self.coerce_str(obj, value)
 
         if isinstance(value, str) and py3compat.isidentifier(value, dotted=True):
@@ -1088,6 +1180,8 @@ class Bool(TraitType):
     info_text = 'a boolean'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, bool):
             return value
         self.error(obj, value)
@@ -1097,6 +1191,8 @@ class CBool(Bool):
     """A casting version of the boolean trait."""
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return bool(value)
         except:
@@ -1112,12 +1208,14 @@ class Enum(TraitType):
         super(Enum, self).__init__(default_value, **metadata)
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if value is None:
             if self._allow_none:
                 return value
 
         if value in self.values:
-            return value
+                return value
         self.error(obj, value)
 
     def info(self):
@@ -1131,6 +1229,8 @@ class CaselessStrEnum(Enum):
     """An enum of strings that are caseless in validate."""
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if value is None:
             if self._allow_none:
                 return value
@@ -1212,6 +1312,8 @@ class Container(Instance):
         raise TraitError(e)
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         value = super(Container, self).validate(obj, value)
         if value is None:
             return value
@@ -1388,27 +1490,193 @@ class Tuple(Container):
                 validated.append(v)
         return tuple(validated)
 
+#-------------------------------------------------------------------------------
+#  'Dict' trait:
+#-------------------------------------------------------------------------------
 
-class Dict(Instance):
-    """An instance of a Python dict."""
+class Dict ( Instance ):
+    """ Defines a trait whose value must be a dictionary, optionally with
+        specified types for keys and values.
+    """
 
-    def __init__(self, default_value=None, allow_none=True, **metadata):
-        """Create a dict trait type from a dict.
+    klass = dict
 
-        The default value is created by doing ``dict(default_value)``,
-        which creates a copy of the ``default_value``.
+    def __init__ ( self, key_trait = None, value_trait = None, value = None,
+                   **metadata ):
+        """ Returns a Dict trait.
+
+        Parameters
+        ----------
+        key_trait : a trait or value that can convert to a trait using Trait()
+            The trait type for keys in the dictionary; if not specified, any
+            values can be used as keys.
+        value_trait : a trait or value that can convert to a trait using Trait()
+            The trait type for values in the dictionary; if not specified, any
+            values can be used as dictionary values.
+        value : dict
+            The default value for the returned trait.
+        items : bool
+            Indicates whether the value contains items.
+
+        Default Value
+        -------------
+        *value* or {}
         """
+        if isinstance( key_trait, dict ):
+            key_trait, value_trait, value = value_trait, value, key_trait
+
+        if value is None:
+            value = {}
+
+        self.key_trait   = key_trait()
+        self.key_trait.name = 'key'
+        self.value_trait = value_trait()
+        self.value_trait.name = 'value'
+
+        if value is None:
+            args = ()
+        elif isinstance(value, self.klass):
+            args = (value,)
+        else:
+            raise TypeError('default value of %s was %s' %
+                            (self.__class__.__name__, value))
+
+        super( Dict, self ).__init__( klass=self.klass, args=args, **metadata )
+
+    def key_error(self, obj, element, validator):
+        e = ("Keys of the '%s' dictionary trait of %s instance must be %s, but "
+             "a value of %s was specified.") % (self.name, class_of(obj),
+                                                validator.info(),
+                                                repr_type(element))
+        raise TraitError(e)
+
+    def value_error(self, obj, element, validator):
+        e = ("Values of the '%s' dictionary trait of %s instance must be %s, "
+             "but a value of %s was specified.") % (self.name, class_of(obj),
+                                                    validator.info(),
+                                                    repr_type(element))
+        raise TraitError(e)
+
+    def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
+        value = super(Dict, self).validate(obj, value)
+        if value is None:
+            return value
+        return self.validate_elements(obj, value)
+
+    def validate_elements(self, obj, value):
+        validated = {}
+        key_check = True
+        value_check = True
+        if self.key_trait is None or isinstance(self.key_trait, Any):
+            key_check = False
+        if self.value_trait is None or isinstance(self.value_trait, Any):
+            value_check = False
+        for k, v in value.items():
+            if key_check:
+                try:
+                    k = self.key_trait.validate(obj, k)
+                except TraitError:
+                    self.key_error(obj, k, self.key_trait)
+            if value_check:
+                try:
+                    v = self.value_trait.validate(obj, v)
+                except TraitError:
+                    self.value_error(obj, v, self.value_trait)
+            validated[k] = v
+        return self.klass(validated)
+
+    def inner_traits ( self ):
+        """ Returns the *inner trait* (or traits) for this trait.
+        """
+        return ( self.key_trait, self.value_trait )
+
+
+class Either(TraitType):
+    """A trait that can validate against multiple traits"""
+
+    def __init__(self, *traits, **metadata):
+        """Either(*traits, default_value=None, allow_none=True, **medatata)
+
+        Create a tuple from a list, set, or tuple.
+
+        Create a fixed-type tuple with Traits:
+
+        ``t = Tuple(Int, Str, CStr)``
+
+        would be length 3, with Int,Str,CStr for each element.
+
+        If only one arg is given and it is not a Trait, it is taken as
+        default_value:
+
+        ``t = Tuple((1,2,3))``
+
+        Otherwise, ``default_value`` *must* be specified by keyword.
+
+        Parameters
+        ----------
+
+        *traits : TraitTypes [ optional ]
+            the tsype for restricting the contents of the Tuple.  If unspecified,
+            types are not checked. If specified, then each positional argument
+            corresponds to an element of the tuple.  Tuples defined with traits
+            are of fixed length.
+
+        default_value : TraitValueType [ optional ]
+            The default value for the Tuple.  Must be list/tuple/set, and
+            will be cast to a tuple. If `traits` are specified, the
+            `default_value` must conform to the shape and type they specify.
+
+        allow_none : Bool [ default True ]
+            Whether to allow the value to be None
+
+        **metadata : any
+            further keys for extensions to the Trait (e.g. config)
+
+        """
+        default_value = metadata.pop('default_value', None)
+        allow_none = metadata.pop('allow_none', True)
+
+        if len(traits) == 0:
+            raise ValueError('Must provide atleast one trait or trait instance')
+
+        # allow Tuple((values,)):
+        '''
+        if len(traits) == 1 and default_value is None and not is_trait(traits[0]):
+            default_value = traits[0]
+            traits = ()
+        '''
+
         if default_value is None:
-            args = ((),)
-        elif isinstance(default_value, dict):
-            args = (default_value,)
-        elif isinstance(default_value, SequenceTypes):
+            args = ()
+        elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
-            raise TypeError('default value of Dict was %s' % default_value)
+            raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
 
-        super(Dict, self).__init__(klass=dict, args=args,
-                                  allow_none=allow_none, **metadata)
+        self._traits = []
+        self._trait_list = []
+        for trait in traits:
+            t = trait() if isinstance(trait, type) else trait
+            t.name = 'element'
+            self._traits.append(t)
+            self._trait_list.append(t.info())
+
+        super(Either, self).__init__(args=args,
+                                     allow_none=allow_none, **metadata)
+
+    def _either_error(self, obj, value):
+        raise TraitError(('A instance of %s must be provided, but a value of '
+                          '%s was specified.') % (' or '.join(self._trait_list),
+                                                  repr_type(value)))
+    def validate(self, obj, value):
+        for trait in self._traits:
+            try:
+                return trait.validate(obj, value)
+            except TraitError:
+                pass
+        self._either_error(obj, value)
 
 class TCPAddress(TraitType):
     """A trait for an (ip, port) tuple.
@@ -1420,6 +1688,8 @@ class TCPAddress(TraitType):
     info_text = 'an (ip, port) tuple'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         if isinstance(value, tuple):
             if len(value) == 2:
                 if isinstance(value[0], py3compat.string_types) and isinstance(value[1], int):
@@ -1437,7 +1707,229 @@ class CRegExp(TraitType):
     info_text = 'a regular expression'
 
     def validate(self, obj, value):
+        if isinstance(value, _Undefined):
+            return value
         try:
             return re.compile(value)
         except:
             self.error(obj, value)
+
+
+#-------------------------------------------------------------------------------
+#  'Disallow' trait:
+#-------------------------------------------------------------------------------
+
+class Disallow ( TraitType ):
+    """ Defines a trait that prevents any value from being assigned or read.
+        That is, any attempt to get or set the value of the trait attribute
+        raises an exception. This trait is most often used in conjunction with
+        wildcard naming, for example, to catch spelling mistakes in attribute
+        names. See the *Traits User Manual* for details on wildcards.
+    """
+
+    #: Defines the CTrait type to use for this trait:
+    ctrait_type = 5
+
+# Create a singleton instance as the trait:
+Disallow = Disallow()
+
+
+#-------------------------------------------------------------------------------
+#  'BaseStr' and 'Str' traits:
+#-------------------------------------------------------------------------------
+
+class BaseStr ( Unicode ):
+    """ Defines a trait whose value must be a Python string.
+    """
+    pass
+
+
+class Str ( BaseStr ):
+    """ Defines a trait whose value must be a Python string using a C-level
+        fast validator.
+    """
+    pass
+
+#-------------------------------------------------------------------------------
+#  'BaseFile' and 'File' traits:
+#-------------------------------------------------------------------------------
+
+class BaseFile ( BaseStr ):
+    """ Defines a trait whose value must be the name of a file.
+    """
+
+    # A description of the type of value this trait accepts:
+    info_text = 'a file name'
+
+    def __init__ ( self, value = '', filter = None, auto_set = False,
+                         entries = 0, exists = False, **metadata ):
+        """ Creates a File trait.
+
+        Parameters
+        ----------
+        value : string
+            The default value for the trait
+        filter : string
+            A wildcard string to filter filenames in the file dialog box used by
+            the attribute trait editor.
+        auto_set : boolean
+            Indicates whether the file editor updates the trait value after
+            every key stroke.
+        exists : boolean
+            Indicates whether the trait value must be an existing file or
+            not.
+
+        Default Value
+        -------------
+        *value* or ''
+        """
+        self.filter = filter
+        self.auto_set = auto_set
+        self.entries = entries
+        self.exists = exists
+
+        if exists:
+            self.info_text = 'an existing file name'
+
+        super( BaseFile, self ).__init__( default_value=value, **metadata )
+
+    def validate ( self, obj, value ):
+        """ Validates that a specified value is valid for this trait.
+
+            Note: The 'fast validator' version performs this check in C.
+        """
+        if isinstance(value, _Undefined):
+            return value
+        validated_value = super( BaseFile, self ).validate( obj, value )
+        if not self.exists:
+            return validated_value
+        elif os.path.isfile( value ):
+            return validated_value
+
+        self.error( obj, value )
+
+
+class File ( BaseFile ):
+    """ Defines a trait whose value must be the name of a file using a C-level
+        fast validator.
+    """
+
+    def __init__ ( self, value = '', filter = None, auto_set = False,
+                         entries = 0, exists = False, **metadata ):
+        """ Creates a File trait.
+
+        Parameters
+        ----------
+        value : string
+            The default value for the trait
+        filter : string
+            A wildcard string to filter filenames in the file dialog box used by
+            the attribute trait editor.
+        auto_set : boolean
+            Indicates whether the file editor updates the trait value after
+            every key stroke.
+        exists : boolean
+            Indicates whether the trait value must be an existing file or
+            not.
+
+        Default Value
+        -------------
+        *value* or ''
+        """
+
+        super( File, self ).__init__( value, filter, auto_set, entries, exists,
+                                      **metadata )
+
+#-------------------------------------------------------------------------------
+#  'BaseDirectory' and 'Directory' traits:
+#-------------------------------------------------------------------------------
+
+class BaseDirectory ( BaseStr ):
+    """ Defines a trait whose value must be the name of a directory.
+    """
+
+    # A description of the type of value this trait accepts:
+    info_text = 'a directory name'
+
+    def __init__ ( self, value = '', auto_set = False, entries = 0,
+                         exists = False, **metadata ):
+        """ Creates a BaseDirectory trait.
+
+        Parameters
+        ----------
+        value : string
+            The default value for the trait
+        auto_set : boolean
+            Indicates whether the directory editor updates the trait value
+            after every key stroke.
+        exists : boolean
+            Indicates whether the trait value must be an existing directory or
+            not.
+
+        Default Value
+        -------------
+        *value* or ''
+        """
+        self.entries = entries
+        self.auto_set = auto_set
+        self.exists = exists
+
+        if exists:
+            self.info_text = 'an existing directory name'
+
+        super( BaseDirectory, self ).__init__( default_value=value, **metadata )
+
+    def validate ( self, obj, value ):
+        """ Validates that a specified value is valid for this trait.
+
+            Note: The 'fast validator' version performs this check in C.
+        """
+        if isinstance(value, _Undefined):
+            return value
+        validated_value = super( BaseDirectory, self ).validate( obj, value )
+        if not self.exists:
+            return validated_value
+
+        if os.path.isdir( value ):
+            return validated_value
+
+        self.error( obj, value )
+
+
+class Directory ( BaseDirectory ):
+    """ Defines a trait whose value must be the name of a directory using a
+        C-level fast validator.
+    """
+
+    def __init__ ( self, value = '', auto_set = False, entries = 0,
+                         exists = False, **metadata ):
+        """ Creates a Directory trait.
+
+        Parameters
+        ----------
+        value : string
+            The default value for the trait
+        auto_set : boolean
+            Indicates whether the directory editor updates the trait value
+            after every key stroke.
+        exists : boolean
+            Indicates whether the trait value must be an existing directory or
+            not.
+
+        Default Value
+        -------------
+        *value* or ''
+        """
+
+        super( Directory, self ).__init__( value, auto_set, entries, exists,
+                                           **metadata )
+
+
+#-- Dictionary Traits ----------------------------------------------------------
+
+#: Only a dictionary of string:string values can be assigned; only string keys
+#: with string values can be inserted. The default value is {}.
+class DictStrStr(Dict):
+    def __init__(self, *args, **kwargs):
+        super(DictStrStr, self).__init__(Str, Str, *args, **kwargs)
+
