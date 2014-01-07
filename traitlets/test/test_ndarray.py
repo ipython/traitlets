@@ -32,7 +32,7 @@ class TestInfo(unittest.TestCase):
     def test_bcast(self):
         self.assertEqual(NDArray(shape=(-1, 2), bcast=True).info(), 'a ndarray, broadcasting to (-1, 2)')
     def test_dtype(self):
-        self.assertEqual(NDArray(dtype='f32').info(), "a ndarray, of dtype('float32')")
+        self.assertEqual(NDArray(dtype='f').info(), "a ndarray, of dtype('float32')")
 
 class TestValidation(unittest.TestCase):
 
