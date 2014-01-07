@@ -1,4 +1,8 @@
 # http://travis-ci.org/#!/Carreau/IPConfig
+virtualenv: 
+    system_site_packages: true 
+before_install: 
+    - sudo apt-get install -qq python-numpy python3-numpy 
 language: python
 python:
     - 2.7
