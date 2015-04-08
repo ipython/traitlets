@@ -16,7 +16,7 @@ from traitlets.traitlets import (
 )
 
 from traitlets.config.loader import Config
-from IPython.utils.py3compat import PY3
+from ipython_genutils.py3compat import PY3
 
 
 class MyConfigurable(Configurable):

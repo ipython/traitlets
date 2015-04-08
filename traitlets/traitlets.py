@@ -30,7 +30,7 @@ including Jython and IronPython.
 
 Inheritance diagram:
 
-.. inheritance-diagram:: IPython.utils.traitlets
+.. inheritance-diagram:: traitlets.traitlets
    :parts: 3
 """
 
@@ -53,10 +53,10 @@ except:
     ClassTypes = (type,)
 from warnings import warn
 
-from IPython.utils import py3compat
+from ipython_genutils import py3compat
 from .getargspec import getargspec
-from IPython.utils.importstring import import_item
-from IPython.utils.py3compat import iteritems, string_types
+from ipython_genutils.importstring import import_item
+from ipython_genutils.py3compat import iteritems, string_types
 
 from .sentinel import Sentinel
 SequenceTypes = (list, tuple, set, frozenset)

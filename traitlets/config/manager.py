@@ -8,7 +8,7 @@ import json
 import os
 
 from traitlets.config import LoggingConfigurable
-from IPython.utils.py3compat import PY3
+from ipython_genutils.py3compat import PY3
 from traitlets.traitlets import Unicode
 
 

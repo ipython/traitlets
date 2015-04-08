@@ -1,5 +1,5 @@
 # encoding: utf-8
-"""Tests for IPython.utils.traitlets."""
+"""Tests for ipython_genutils.traitlets."""
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
@@ -15,15 +15,15 @@ from unittest import TestCase
 import nose.tools as nt
 from nose import SkipTest
 
-from IPython.utils.traitlets import (
+from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance,
 )
-from IPython.utils import py3compat
-from IPython.testing.decorators import skipif
+from ipython_genutils import py3compat
+from ipython_genutils.testing.decorators import skipif
 
 #-----------------------------------------------------------------------------
 # Helper classes for testing
@@ -508,9 +508,9 @@ class TestType(TestCase):
     def test_str_klass(self):
 
         class A(HasTraits):
-            klass = Type('IPython.utils.ipstruct.Struct')
+            klass = Type('ipython_genutils.ipstruct.Struct')
 
-        from IPython.utils.ipstruct import Struct
+        from ipython_genutils.ipstruct import Struct
         a = A()
         a.klass = Struct
         self.assertEqual(a.klass, Struct)
@@ -522,8 +522,8 @@ class TestType(TestCase):
         class A(HasTraits):
             klass = Type()
 
-        a = A(klass='IPython.utils.ipstruct.Struct')
-        from IPython.utils.ipstruct import Struct
+        a = A(klass='ipython_genutils.ipstruct.Struct')
+        from ipython_genutils.ipstruct import Struct
         self.assertEqual(a.klass, Struct)
 
 class TestInstance(TestCase):
@@ -744,7 +744,7 @@ class UnionTrait(HasTraits):
 
 class UnionTraitTest(TraitTestBase):
 
-    obj = UnionTrait(value='IPython.utils.ipstruct.Struct')
+    obj = UnionTrait(value='ipython_genutils.ipstruct.Struct')
     _good_values = [int, float, True]
     _bad_values = [[], (0,), 1j]
 

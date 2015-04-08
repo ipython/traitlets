@@ -24,10 +24,10 @@ from traitlets.config.loader import (
 from traitlets.traitlets import (
     Unicode, List, Enum, Dict, Instance, TraitError
 )
-from IPython.utils.importstring import import_item
-from IPython.utils.text import indent, wrap_paragraphs, dedent
-from IPython.utils import py3compat
-from IPython.utils.py3compat import string_types, iteritems
+from ipython_genutils.importstring import import_item
+from ipython_genutils.text import indent, wrap_paragraphs, dedent
+from ipython_genutils import py3compat
+from ipython_genutils.py3compat import string_types, iteritems
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections

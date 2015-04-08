@@ -11,8 +11,8 @@ from copy import deepcopy
 
 from .loader import Config, LazyConfigValue
 from traitlets.traitlets import HasTraits, Instance
-from IPython.utils.text import indent, wrap_paragraphs
-from IPython.utils.py3compat import iteritems
+from ipython_genutils.text import indent, wrap_paragraphs
+from ipython_genutils.py3compat import iteritems
 
 
 #-----------------------------------------------------------------------------
@@ -374,7 +374,7 @@ class LoggingConfigurable(Configurable):
 
     log = Instance('logging.Logger')
     def _log_default(self):
-        from IPython.utils import log
+        from traitlets import log
         return log.get_logger()
 
 

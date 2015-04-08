@@ -13,10 +13,10 @@ import sys
 import json
 from ast import literal_eval
 
-from IPython.utils.path import filefind, get_ipython_dir
-from IPython.utils import py3compat
-from IPython.utils.encoding import DEFAULT_ENCODING
-from IPython.utils.py3compat import unicode_type, iteritems
+from ipython_genutils.path import filefind
+from ipython_genutils import py3compat
+from ipython_genutils.encoding import DEFAULT_ENCODING
+from ipython_genutils.py3compat import unicode_type, iteritems
 from traitlets.traitlets import HasTraits, List, Any
 
 #-----------------------------------------------------------------------------
@@ -233,11 +233,6 @@ class Config(dict):
     
     def copy(self):
         return type(self)(dict.copy(self))
-        # copy nested config objects
-        for k, v in self.items():
-            if isinstance(v, Config):
-                new_config[k] = v.copy()
-        return new_config
 
     def __copy__(self):
         return self.copy()
