@@ -1,0 +1,13 @@
+language: python
+python:
+    - 3.4
+    - 3.3
+    - 2.7
+sudo: false
+env:
+install:
+    - pip install -e . coveralls -r requirements.txt
+script:
+    - nosetests --with-coverage traitlets
+after_success:
+    - coveralls
