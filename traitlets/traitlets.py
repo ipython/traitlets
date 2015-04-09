@@ -613,7 +613,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 self._notify_trait = hold
                 self._cross_validation_lock = True
                 yield
-                for name in cache.keys():
+                for name in list(cache.keys()):
                     if hasattr(self, '_%s_validate' % name):
                         cross_validate = getattr(self, '_%s_validate' % name)
                         setattr(self, name, cross_validate(getattr(self, name), self))

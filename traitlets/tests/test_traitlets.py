@@ -1394,6 +1394,24 @@ class TestRollback(TestCase):
         self.assertRaises(TraitError, assign_rollback)
 
 
+class CacheModification(HasTraits):
+    foo = Int()
+    bar = Int()
+
+    def _bar_validate(self, value, trait):
+        self.foo = value
+        return value
+
+    def _foo_validate(self, value, trait):
+        self.bar = value
+        return value
+
+
+def test_cache_modification():
+    CacheModification(foo=1)
+    CacheModification(bar=1)
+
+
 class OrderTraits(HasTraits):
     notified = Dict()
     
