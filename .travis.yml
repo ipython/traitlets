@@ -8,6 +8,6 @@ env:
 install:
     - pip install -e . coveralls -r requirements.txt
 script:
-    - nosetests --with-coverage traitlets
+    - nosetests --with-coverage --cover-package traitlets traitlets
 after_success:
     - coveralls
