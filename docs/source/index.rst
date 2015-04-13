@@ -1,10 +1,8 @@
-.. _config_overview:
+=====================
+Overview of traitlets
+=====================
 
-============================================
-Overview of the IPython configuration system
-============================================
-
-This section describes the IPython configuration system. 
+This document describes traitlets, the IPython configuration system.
 
 The main concepts
 =================
