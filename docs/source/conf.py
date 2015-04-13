@@ -51,7 +51,7 @@ extensions = [
 source_suffix = '.rst'
 
 # Add dev disclaimer.
-if iprelease['__version__'].split('.')[-1] == 'dev':
+if iprelease['version_info'][-1] == 'dev':
     rst_prolog = """
     .. note::
 
@@ -76,7 +76,7 @@ author = u'The IPython Development Team'
 # built documents.
 #
 # The short X.Y version.
-version = '.'.join(iprelease['__version__'].split('.')[:2])
+version = '.'.join(map(str, iprelease['version_info'][:2]))
 # The full version, including alpha/beta/rc tags.
 release = iprelease['__version__']
 
