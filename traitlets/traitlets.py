@@ -613,15 +613,15 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 self._notify_trait = hold
                 self._cross_validation_lock = True
                 yield
-                for name in cache:
+                for name in list(cache.keys()):
                     if hasattr(self, '_%s_validate' % name):
                         cross_validate = getattr(self, '_%s_validate' % name)
                         setattr(self, name, cross_validate(getattr(self, name), self))
             except TraitError as e:
                 self._notify_trait = lambda *x: None
-                for name in cache:
-                    if cache[name][1] is not Undefined:
-                        setattr(self, name, cache[name][1])
+                for name, value in cache.items():
+                    if value[1] is not Undefined:
+                        setattr(self, name, value[1])
                     else:
                         self._trait_values.pop(name)
                 cache = {}
