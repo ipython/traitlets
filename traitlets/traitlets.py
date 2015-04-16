@@ -943,8 +943,8 @@ class Type(ClassBasedTraitType):
         if isinstance(self.klass, py3compat.string_types):
             klass = self.klass
         else:
-            klass = self.klass.__name__
-        result = 'a subclass of ' + klass
+            klass = self.klass.__module__+'.'+self.klass.__name__
+        result = "a subclass of '%s'" % klass
         if self.allow_none:
             return result + ' or None'
         return result
