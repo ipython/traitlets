@@ -54,11 +54,11 @@ except:
 from warnings import warn
 
 from ipython_genutils import py3compat
-from .getargspec import getargspec
 from ipython_genutils.importstring import import_item
 from ipython_genutils.py3compat import iteritems, string_types
 
-from .sentinel import Sentinel
+from .utils.getargspec import getargspec
+from .utils.sentinel import Sentinel
 SequenceTypes = (list, tuple, set, frozenset)
 
 #-----------------------------------------------------------------------------
