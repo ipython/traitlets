@@ -1,10 +1,9 @@
-.. _config_overview:
+==========================================
+Configurable objects with traitlets.config
+==========================================
 
-============================================
-Overview of the IPython configuration system
-============================================
-
-This section describes the IPython configuration system. 
+This document describes :mod:`traitlets.config`,
+the traitlets-based configuration system used by IPython and Jupyter.
 
 The main concepts
 =================
@@ -12,7 +11,7 @@ The main concepts
 There are a number of abstractions that the IPython configuration system uses.
 Each of these abstractions is represented by a Python class.
 
-Configuration object: :class:`~IPython.config.loader.Config`
+Configuration object: :class:`~traitlets.config.loader.Config`
     A configuration object is a simple dictionary-like class that holds
     configuration attributes and sub-configuration objects. These classes
     support dotted attribute style access (``cfg.Foo.bar``) in addition to the
@@ -20,7 +19,7 @@ Configuration object: :class:`~IPython.config.loader.Config`
     The Config object is a wrapper around a simple dictionary with some convenience methods,
     such as merging and automatic section creation.
 
-Application: :class:`~IPython.config.application.Application`
+Application: :class:`~traitlets.config.application.Application`
     An application is a process that does a specific job. The most obvious
     application is the :command:`ipython` command line program. Each
     application reads *one or more* configuration files and a single set of
@@ -30,37 +29,37 @@ Application: :class:`~IPython.config.application.Application`
     application creates. These configurable objects implement the actual logic
     of the application and know how to configure themselves given the
     configuration object.
-    
+
     Applications always have a `log` attribute that is a configured Logger.
     This allows centralized logging configuration per-application.
 
-Configurable: :class:`~IPython.config.configurable.Configurable`
+Configurable: :class:`~traitlets.config.configurable.Configurable`
     A configurable is a regular Python class that serves as a base class for
     all main classes in an application. The
-    :class:`~IPython.config.configurable.Configurable` base class is
+    :class:`~traitlets.config.configurable.Configurable` base class is
     lightweight and only does one things.
 
-    This :class:`~IPython.config.configurable.Configurable` is a subclass
-    of :class:`~IPython.utils.traitlets.HasTraits` that knows how to configure
+    This :class:`~traitlets.config.configurable.Configurable` is a subclass
+    of :class:`~traitlets.HasTraits` that knows how to configure
     itself. Class level traits with the metadata ``config=True`` become
     values that can be configured from the command line and configuration
     files.
-    
-    Developers create :class:`~IPython.config.configurable.Configurable`
+
+    Developers create :class:`~traitlets.config.configurable.Configurable`
     subclasses that implement all of the logic in the application. Each of
     these subclasses has its own configuration information that controls how
     instances are created.
 
-Singletons: :class:`~IPython.config.configurable.SingletonConfigurable`
+Singletons: :class:`~traitlets.config.configurable.SingletonConfigurable`
     Any object for which there is a single canonical instance. These are
-    just like Configurables, except they have a class method 
-    :meth:`~IPython.config.configurable.SingletonConfigurable.instance`,
+    just like Configurables, except they have a class method
+    :meth:`~traitlets.config.configurable.SingletonConfigurable.instance`,
     that returns the current active instance (or creates one if it
     does not exist).  Examples of singletons include
-    :class:`~IPython.config.application.Application`s and
+    :class:`~traitlets.config.application.Application`s and
     :class:`~IPython.core.interactiveshell.InteractiveShell`.  This lets
     objects easily connect to the current running Application without passing
-    objects around everywhere.  For instance, to get the current running 
+    objects around everywhere.  For instance, to get the current running
     Application instance, simply do: ``app = Application.instance()``.
 
 
@@ -100,7 +99,7 @@ Python configuration Files
 --------------------------
 
 A Python configuration file is a pure Python file that populates a configuration object.
-This configuration object is a :class:`~IPython.config.loader.Config` instance.
+This configuration object is a :class:`~traitlets.config.loader.Config` instance.
 While in a configuration file, to get a reference to this object, simply call the :func:`get_config`
 function, which is available in the global namespace of the script.
 
@@ -116,14 +115,14 @@ attributes on it.  All you have to know is:
 * The type of each attribute.
 
 The answers to these questions are provided by the various
-:class:`~IPython.config.configurable.Configurable` subclasses that an
+:class:`~traitlets.config.configurable.Configurable` subclasses that an
 application uses. Let's look at how this would work for a simple configurable
 subclass::
 
     # Sample configurable:
-    from IPython.config.configurable import Configurable
-    from IPython.utils.traitlets import Int, Float, Unicode, Bool
-    
+    from traitlets.config.configurable import Configurable
+    from traitlets import Int, Float, Unicode, Bool
+
     class MyClass(Configurable):
         name = Unicode(u'defaultname', config=True)
         ranking = Int(0, config=True)
@@ -138,23 +137,23 @@ to configure this class in a configuration file::
 
     # Sample config file
     c = get_config()
-    
+
     c.MyClass.name = 'coolname'
     c.MyClass.ranking = 10
 
 After this configuration file is loaded, the values set in it will override
 the class defaults anytime a :class:`MyClass` is created.  Furthermore,
 these attributes will be type checked and validated anytime they are set.
-This type checking is handled by the :mod:`IPython.utils.traitlets` module,
+This type checking is handled by the :mod:`traitlets` module,
 which provides the :class:`Unicode`, :class:`Int` and :class:`Float` types.
-In addition to these traitlets, the :mod:`IPython.utils.traitlets` provides
+In addition to these traitlets, the :mod:`traitlets` provides
 traitlets for a number of other types.
 
 .. note::
 
     Underneath the hood, the :class:`Configurable` base class is a subclass of
-    :class:`IPython.utils.traitlets.HasTraits`. The
-    :mod:`IPython.utils.traitlets` module is a lightweight version of
+    :class:`traitlets.HasTraits`. The
+    :mod:`traitlets` module is a lightweight version of
     :mod:`enthought.traits`. Our implementation is a pure Python subset
     (mostly API compatible) of :mod:`enthought.traits` that does not have any
     of the automatic GUI generation capabilities. Our plan is to achieve 100%
@@ -163,7 +162,7 @@ traitlets for a number of other types.
     :mod:`enthought.traits` as we are committed to the core of IPython being
     pure Python.
 
-It should be very clear at this point what the naming convention is for 
+It should be very clear at this point what the naming convention is for
 configuration attributes::
 
     c.ClassName.attribute_name = attribute_value
@@ -172,17 +171,17 @@ Here, ``ClassName`` is the name of the class whose configuration attribute you
 want to set, ``attribute_name`` is the name of the attribute you want to set
 and ``attribute_value`` the the value you want it to have. The ``ClassName``
 attribute of ``c`` is not the actual class, but instead is another
-:class:`~IPython.config.loader.Config` instance.
+:class:`~traitlets.config.loader.Config` instance.
 
 .. note::
 
     The careful reader may wonder how the ``ClassName`` (``MyClass`` in
     the above example) attribute of the configuration object ``c`` gets
     created. These attributes are created on the fly by the
-    :class:`~IPython.config.loader.Config` instance, using a simple naming
-    convention. Any attribute of a :class:`~IPython.config.loader.Config`
+    :class:`~traitlets.config.loader.Config` instance, using a simple naming
+    convention. Any attribute of a :class:`~traitlets.config.loader.Config`
     instance whose name begins with an uppercase character is assumed to be a
-    sub-configuration and a new empty :class:`~IPython.config.loader.Config`
+    sub-configuration and a new empty :class:`~traitlets.config.loader.Config`
     instance is dynamically created for that attribute. This allows deeply
     hierarchical information created easily (``c.Foo.Bar.value``) on the fly.
 
@@ -190,7 +189,7 @@ JSON configuration Files
 ------------------------
 
 A JSON configuration file is simply a file that contains a
-:class:`~IPython.config.loader.Config` dictionary serialized to JSON.
+:class:`~traitlets.config.loader.Config` dictionary serialized to JSON.
 A JSON configuration file has the same base name as a Python configuration file,
 but with a .json extension.
 
@@ -233,10 +232,10 @@ into the configuration file :file:`main_config.py`::
 
     # main_config.py
     c = get_config()
-    
+
     # Load everything from base_config.py
     load_subconfig('base_config.py')
-    
+
     # Now override one of the values
     c.MyClass.name = 'bettername'
 
@@ -261,13 +260,13 @@ There is another aspect of configuration where inheritance comes into play.
 Sometimes, your classes will have an inheritance hierarchy that you want
 to be reflected in the configuration system.  Here is a simple example::
 
-    from IPython.config.configurable import Configurable
-    from IPython.utils.traitlets import Int, Float, Unicode, Bool
-    
+    from traitlets.config.configurable import Configurable
+    from traitlets import Int, Float, Unicode, Bool
+
     class Foo(Configurable):
         name = Unicode(u'fooname', config=True)
         value = Float(100.0, config=True)
-    
+
     class Bar(Foo):
         name = Unicode(u'barname', config=True)
         othervalue = Int(0, config=True)
@@ -277,7 +276,7 @@ and :class:`Bar`::
 
     # config file
     c = get_config()
-    
+
     c.Foo.name = u'bestname'
     c.Bar.othervalue = 10
 
@@ -321,7 +320,7 @@ location if there isn't already a directory there.
 
 Once the location of the IPython directory has been determined, you need to know
 which profile you are using. For users with a single configuration, this will
-simply be 'default', and will be located in 
+simply be 'default', and will be located in
 :file:`<IPYTHONDIR>/profile_default`.
 
 The next thing you need to know is what to call your configuration file. The
@@ -353,7 +352,7 @@ profile with:
 
     $ ipython locate
     /home/you/.ipython
-    
+
     $ ipython locate profile foo
     /home/you/.ipython/profile_foo
 
@@ -418,12 +417,12 @@ Startup Files
 -------------
 
 If you want some code to be run at the beginning of every IPython session with
-a particular profile, the easiest way is to add Python (``.py``) or 
+a particular profile, the easiest way is to add Python (``.py``) or
 IPython (``.ipy``) scripts to your :file:`<profile>/startup` directory. Files
-in this directory will always be executed as soon as the IPython shell is 
-constructed, and before any other code or scripts you have specified. If you 
-have multiple files in the startup directory, they will be run in 
-lexicographical order, so you can control the ordering by adding a '00-' 
+in this directory will always be executed as soon as the IPython shell is
+constructed, and before any other code or scripts you have specified. If you
+have multiple files in the startup directory, they will be run in
+lexicographical order, so you can control the ordering by adding a '00-'
 prefix.
 
 
@@ -438,7 +437,7 @@ with a given Application.  Configuring IPython from the command-line may look
 very similar to an IPython config file
 
 IPython applications use a parser called
-:class:`~IPython.config.loader.KeyValueLoader` to load values into a Config
+:class:`~traitlets.config.loader.KeyValueLoader` to load values into a Config
 object.  Values are assigned in much the same way as in a config file:
 
 .. code-block:: bash
@@ -539,7 +538,7 @@ Here are the main requirements we wanted our configuration system to have:
 * Full integration with command line option parsers.  Often, you want to read
   a configuration file, but then override some of the values with command line
   options.  Our configuration system automates this process and allows each
-  command line option to be linked to a particular attribute in the 
+  command line option to be linked to a particular attribute in the
   configuration hierarchy that it will override.
 
 * Configuration files that are themselves valid Python code. This accomplishes
