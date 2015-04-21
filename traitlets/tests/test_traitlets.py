@@ -1093,15 +1093,17 @@ def test_dict_assignment():
 
 class ValidatedDictTrait(HasTraits):
 
-    value = Dict(Unicode())
+    value = Dict(trait=Unicode(),
+                 traits={'foo': Int(required=True)},
+                 default_value={'foo': 1})
 
 class TestInstanceDict(TraitTestBase):
 
     obj = ValidatedDictTrait()
 
-    _default_value = {}
-    _good_values = [{'0': 'foo'}, {'1': 'bar'}]
-    _bad_values = [{'0': 0}, {'1': 1}]
+    _default_value = {'foo': 1}
+    _good_values = [{'0': 'foo', 'foo': 1}, {'1': 'bar', 'foo': 2}]
+    _bad_values = [{'0': 0, 'foo': 1}, {'1': 'bar', 'foo': 'bar'}]
 
 
 def test_dict_default_value():

@@ -1717,15 +1717,22 @@ class Dict(Instance):
     """An instance of a Python dict."""
     _trait = None
 
-    def __init__(self, trait=None, default_value=NoDefaultSpecified, **metadata):
+    def __init__(self, trait=None, traits=None, default_value=NoDefaultSpecified,
+                 **metadata):
         """Create a dict trait type from a dict.
 
         The default value is created by doing ``dict(default_value)``,
         which creates a copy of the ``default_value``.
 
         trait : TraitType [ optional ]
-            the type for restricting the contents of the Container.  If unspecified,
-            types are not checked.
+            The type for restricting the contents of the Container. If
+            unspecified, types are not checked.
+
+        traits : Dictionary of trait types [optional]
+            The type for restricting the content of the Dictionary for certain
+            keys.
+            If the trait types are marked as `required`, the validation stage
+            will check that a value is present for that key.
 
         default_value : SequenceType [ optional ]
             The default value for the Dict.  Must be dict, tuple, or None, and
@@ -1736,10 +1743,13 @@ class Dict(Instance):
             Whether to allow the value to be None
 
         """
+        # Handling positional arguments
         if default_value is NoDefaultSpecified and trait is not None:
             if not is_trait(trait):
                 default_value = trait
                 trait = None
+
+        # Handling default value
         if default_value is NoDefaultSpecified:
             default_value = {}
         if default_value is None:
@@ -1751,13 +1761,22 @@ class Dict(Instance):
         else:
             raise TypeError('default value of Dict was %s' % default_value)
 
+        # Case where a type of TraitType is provided eather than an instance
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
             self._trait.name = 'element'
         elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s"%repr_type(trait))
+            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
-        super(Dict,self).__init__(klass=dict, args=args, **metadata)
+        self._traits = traits
+        if traits is not None:
+            for t in traits.values():
+                t.name = 'element'
+            self._required = [key for key in traits if traits[key]._metadata.get('required')]
+        else:
+            self._required = None
+
+        super(Dict, self).__init__(klass=dict, args=args, **metadata)
 
     def element_error(self, obj, element, validator):
         e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
@@ -1772,13 +1791,22 @@ class Dict(Instance):
         return value
 
     def validate_elements(self, obj, value):
-        if self._trait is None or isinstance(self._trait, Any):
+        if self._required is not None:
+            for key in self._required:
+                if key not in value:
+                    raise TraitError("Missing required '%s' key for the '%s' trait of %s instance"
+                                     % (key, self.name, class_of(obj)))
+        if self._traits is None and (self._trait is None or
+                                     isinstance(self._trait, Any)):
             return value
         validated = {}
         for key in value:
             v = value[key]
             try:
-                v = self._trait._validate(obj, v)
+                if self._traits is not None and key in self._traits:
+                    v = self._traits[key]._validate(obj, v)
+                else:
+                    v = self._trait._validate(obj, v)
             except TraitError:
                 self.element_error(obj, v, self._trait)
             else:
@@ -1789,6 +1817,10 @@ class Dict(Instance):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
             self._trait.instance_init()
+        if self._traits is not None:
+            for trait in self._traits.values():
+                trait.this_class = self.this_class
+                trait.instance_init()
         super(Dict, self).instance_init()
 
 
