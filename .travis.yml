@@ -1,12 +1,11 @@
 language: python
 python:
     - 3.4
-    - 3.3
     - 2.7
+    - 3.3
 sudo: false
-env:
 install:
-    - pip install -e . coveralls -r requirements.txt
+    - pip install . coveralls
 script:
     - nosetests --with-coverage --cover-package traitlets traitlets
 after_success:
