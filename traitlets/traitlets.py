@@ -1419,9 +1419,15 @@ class CBool(Bool):
 class Enum(TraitType):
     """An enum that whose value must be in a given sequence."""
 
-    def __init__(self, values, default_value=None, **metadata):
+    def __init__(self, values, default_value=NoDefaultSpecified, allow_none=False,  **metadata):
         self.values = values
-        super(Enum, self).__init__(default_value, **metadata)
+        if default_value is NoDefaultSpecified:
+            if (not allow_none) and values:
+                # The first value in a list/tuple, or an arbitrary value from a set
+                default_value = next(iter(values))
+            else:
+                default_value = None
+        super(Enum, self).__init__(default_value, allow_none=allow_none, **metadata)
 
     def validate(self, obj, value):
         if value in self.values:
