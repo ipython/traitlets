@@ -382,6 +382,20 @@ class TraitType(object):
         obj._trait_values[self.name] = value
         return value
 
+    def _setup_dynamic_initializer(self, obj):
+        # Check for a deferred initializer defined in the same class as the
+        # trait declaration or above.
+        mro = type(obj).mro()
+        meth_name = '_%s_default' % self.name
+        for cls in mro[:mro.index(self.this_class)+1]:
+            if meth_name in cls.__dict__:
+                break
+        else:
+            return False
+        # Complete the dynamic initialization.
+        obj._trait_dyn_inits[self.name] = meth_name
+        return True
+
     def set_default_value(self, obj):
         """Set the default value on a per instance basis.
 
@@ -395,19 +409,17 @@ class TraitType(object):
             The parent :class:`HasTraits` instance that has just been
             created.
         """
-        # Check for a deferred initializer defined in the same class as the
-        # trait declaration or above.
-        mro = type(obj).mro()
-        meth_name = '_%s_default' % self.name
-        for cls in mro[:mro.index(self.this_class)+1]:
-            if meth_name in cls.__dict__:
-                break
-        else:
-            # We didn't find one. Do static initialization.
+        if not self._setup_dynamic_initializer(obj):
+            # We didn't find a dynamic initializer. Do static initialization.
             self.init_default_value(obj)
-            return
-        # Complete the dynamic initialization.
-        obj._trait_dyn_inits[self.name] = meth_name
+
+    def _set_default_value_at_instance_init(self, obj):
+        # As above, but if no default was specified, don't try to set it.
+        # If the trait is accessed before it is given a value, init_default_value
+        # will be called at that point.
+        if (not self._setup_dynamic_initializer(obj)) \
+                and (self.default_value is not Undefined):
+            self.init_default_value(obj)
 
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
@@ -571,7 +583,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 if isinstance(value, TraitType):
                     value.instance_init()
                     if key not in kw:
-                        value.set_default_value(inst)
+                        value._set_default_value_at_instance_init(inst)
         inst._cross_validation_lock = False
         return inst
 
@@ -1419,7 +1431,7 @@ class CBool(Bool):
 class Enum(TraitType):
     """An enum that whose value must be in a given sequence."""
 
-    def __init__(self, values, default_value=None, **metadata):
+    def __init__(self, values, default_value=NoDefaultSpecified, **metadata):
         self.values = values
         super(Enum, self).__init__(default_value, **metadata)
 
