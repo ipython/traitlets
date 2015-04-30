@@ -1433,6 +1433,8 @@ class Enum(TraitType):
 
     def __init__(self, values, default_value=NoDefaultSpecified, **metadata):
         self.values = values
+        if metadata.get('allow_none', False) and default_value is NoDefaultSpecified:
+            default_value = None
         super(Enum, self).__init__(default_value, **metadata)
 
     def validate(self, obj, value):
