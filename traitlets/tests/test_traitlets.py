@@ -1607,3 +1607,20 @@ class TestDynamicTraits(TestCase):
         a.x = 20
         a.y = 20.0
         self.assertEqual(len(self._notify1), 0)
+
+
+def test_enum_no_default():
+    class C(HasTraits):
+        t = Enum(['a', 'b'])
+
+    c = C()
+    c.t  = 'a'
+    assert c.t == 'a'
+
+    c = C()
+
+    with nt.assert_raises(TraitError):
+        t = c.t
+
+    c = C(t='b')
+    assert c.t == 'b'
