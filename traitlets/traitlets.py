@@ -1731,8 +1731,6 @@ class Dict(Instance):
         traits : Dictionary of trait types [optional]
             The type for restricting the content of the Dictionary for certain
             keys.
-            If the trait types are marked as `required`, the validation stage
-            will check that a value is present for that key.
 
         default_value : SequenceType [ optional ]
             The default value for the Dict.  Must be dict, tuple, or None, and
@@ -1761,7 +1759,7 @@ class Dict(Instance):
         else:
             raise TypeError('default value of Dict was %s' % default_value)
 
-        # Case where a type of TraitType is provided eather than an instance
+        # Case where a type of TraitType is provided rather than an instance
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
             self._trait.name = 'element'
@@ -1772,9 +1770,6 @@ class Dict(Instance):
         if traits is not None:
             for t in traits.values():
                 t.name = 'element'
-            self._required = [key for key in traits if traits[key]._metadata.get('required')]
-        else:
-            self._required = None
 
         super(Dict, self).__init__(klass=dict, args=args, **metadata)
 
@@ -1791,8 +1786,8 @@ class Dict(Instance):
         return value
 
     def validate_elements(self, obj, value):
-        if self._required is not None:
-            for key in self._required:
+        if self._traits is not None:
+            for key in self._traits:
                 if key not in value:
                     raise TraitError("Missing required '%s' key for the '%s' trait of %s instance"
                                      % (key, self.name, class_of(obj)))

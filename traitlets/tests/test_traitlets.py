@@ -1094,7 +1094,7 @@ def test_dict_assignment():
 class ValidatedDictTrait(HasTraits):
 
     value = Dict(trait=Unicode(),
-                 traits={'foo': Int(required=True)},
+                 traits={'foo': Int()},
                  default_value={'foo': 1})
 
 class TestInstanceDict(TraitTestBase):
