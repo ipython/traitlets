@@ -407,7 +407,7 @@ class JSONFileConfigLoader(FileConfigLoader):
             version = dictionary.pop('version')
         else:
             version = 1
-            self.log.warn("Unrecognized JSON config file version, assuming version {}".format(version))
+            self.log.warning("Unrecognized JSON config file version, assuming version {}".format(version))
 
         if version == 1:
             return Config(dictionary)
@@ -636,7 +636,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                     lhs = aliases[lhs]
                 if '.' not in lhs:
                     # probably a mistyped alias, but not technically illegal
-                    self.log.warn("Unrecognized alias: '%s', it will probably have no effect.", raw)
+                    self.log.warning("Unrecognized alias: '%s', it will probably have no effect.", raw)
                 try:
                     self._exec_config_str(lhs, rhs)
                 except Exception:

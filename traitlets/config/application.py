@@ -546,7 +546,7 @@ class Application(SingletonConfigurable):
         if len(loaded) > 1:
             collisions = loaded[0].collisions(loaded[1])
             if collisions:
-                self.log.warn("Collisions detected in {0}.py and {0}.json config files."
+                self.log.warning("Collisions detected in {0}.py and {0}.json config files."
                               " {0}.json has higher priority: {1}".format(
                               filename, json.dumps(collisions, indent=2),
                 ))
