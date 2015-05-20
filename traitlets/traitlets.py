@@ -66,7 +66,7 @@ SequenceTypes = (list, tuple, set, frozenset)
 #-----------------------------------------------------------------------------
 
 
-NoDefaultSpecified = Sentinel('NoDefaultSpecified', __name__, 
+NoDefaultSpecified = Sentinel('NoDefaultSpecified', 'traitlets',
 '''
 Used in Traitlets to specify that no defaults are set in kwargs
 '''
@@ -325,7 +325,15 @@ class TraitType(object):
     info_text = 'any value'
 
     def __init__(self, default_value=NoDefaultSpecified, allow_none=None, **metadata):
-        """Create a TraitType.
+        """Declare a traitlet.
+
+        If *allow_none* is True, None is a valid value in addition to any
+        values that are normally valid. The default is up to the subclass, but
+        most trait types have ``allow_none=False`` by default.
+
+        Extra information about the traitlet can be passed in as keyword
+        arguments (``**metadata``). For instance, the config system uses 'config'
+        and 'help' keywords.
         """
         if default_value is not NoDefaultSpecified:
             self.default_value = default_value
@@ -556,6 +564,8 @@ class MetaHasTraits(type):
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
+    """The base class for all classes that have traitlets.
+    """
 
     def __new__(cls, *args, **kw):
         # This is needed because object.__new__ only accepts
@@ -1195,6 +1205,7 @@ class Union(TraitType):
 
 
 class Any(TraitType):
+    """A trait which allows any value."""
     default_value = None
     info_text = 'any value'
 
@@ -1429,7 +1440,7 @@ class CBool(Bool):
 
 
 class Enum(TraitType):
-    """An enum that whose value must be in a given sequence."""
+    """An enum whose value must be in a given sequence."""
 
     def __init__(self, values, default_value=NoDefaultSpecified, **metadata):
         self.values = values
@@ -1450,7 +1461,7 @@ class Enum(TraitType):
         return result
 
 class CaselessStrEnum(Enum):
-    """An enum of strings that are caseless in validate."""
+    """An enum of strings where the case should be ignored."""
 
     def validate(self, obj, value):
         if not isinstance(value, py3compat.string_types):
@@ -1567,7 +1578,7 @@ class List(Container):
     def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize, **metadata):
         """Create a List trait type from a list, set, or tuple.
 
-        The default value is created by doing ``List(default_value)``,
+        The default value is created by doing ``list(default_value)``,
         which creates a copy of the ``default_value``.
 
         ``trait`` can be specified, which restricts the type of elements
@@ -1582,8 +1593,8 @@ class List(Container):
         ----------
 
         trait : TraitType [ optional ]
-            the type for restricting the contents of the Container.  If unspecified,
-            types are not checked.
+            the type for restricting the contents of the Container.
+            If unspecified, types are not checked.
 
         default_value : SequenceType [ optional ]
             The default value for the Trait.  Must be list/tuple/set, and
@@ -1594,13 +1605,6 @@ class List(Container):
 
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
-
-        allow_none : bool [ default False ]
-            Whether to allow the value to be None
-
-        **metadata : any
-            further keys for extensions to the Trait (e.g. config)
-
         """
         self._minlen = minlen
         self._maxlen = maxlen
@@ -1630,6 +1634,42 @@ class Set(List):
     klass = set
     _cast_types = (tuple, list)
 
+    # Redefine __init__ just to make the docstring more accurate.
+    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize,
+                 **metadata):
+        """Create a Set trait type from a list, set, or tuple.
+
+        The default value is created by doing ``set(default_value)``,
+        which creates a copy of the ``default_value``.
+
+        ``trait`` can be specified, which restricts the type of elements
+        in the container to that TraitType.
+
+        If only one arg is given and it is not a Trait, it is taken as
+        ``default_value``:
+
+        ``c = Set({1,2,3})``
+
+        Parameters
+        ----------
+
+        trait : TraitType [ optional ]
+            the type for restricting the contents of the Container.
+            If unspecified, types are not checked.
+
+        default_value : SequenceType [ optional ]
+            The default value for the Trait.  Must be list/tuple/set, and
+            will be cast to the container type.
+
+        minlen : Int [ default 0 ]
+            The minimum length of the input list
+
+        maxlen : Int [ default sys.maxsize ]
+            The maximum length of the input list
+        """
+        super(Set, self).__init__(self, trait, default_value, minlen, maxlen,
+                                  **metadata)
+
 
 class Tuple(Container):
     """An instance of a Python tuple."""
@@ -1637,9 +1677,7 @@ class Tuple(Container):
     _cast_types = (list,)
 
     def __init__(self, *traits, **metadata):
-        """Tuple(*traits, default_value=None, **medatata)
-
-        Create a tuple from a list, set, or tuple.
+        """Create a tuple from a list, set, or tuple.
 
         Create a fixed-type tuple with Traits:
 
@@ -1657,7 +1695,7 @@ class Tuple(Container):
         Parameters
         ----------
 
-        *traits : TraitTypes [ optional ]
+        `*traits` : TraitTypes [ optional ]
             the types for restricting the contents of the Tuple.  If unspecified,
             types are not checked. If specified, then each positional argument
             corresponds to an element of the tuple.  Tuples defined with traits
@@ -1667,13 +1705,6 @@ class Tuple(Container):
             The default value for the Tuple.  Must be list/tuple/set, and
             will be cast to a tuple. If `traits` are specified, the
             `default_value` must conform to the shape and type they specify.
-
-        allow_none : bool [ default False ]
-            Whether to allow the value to be None
-
-        **metadata : any
-            further keys for extensions to the Trait (e.g. config)
-
         """
         default_value = metadata.pop('default_value', None)
 
@@ -1745,10 +1776,6 @@ class Dict(Instance):
             The default value for the Dict.  Must be dict, tuple, or None, and
             will be cast to a dict if not None. If `trait` is specified, the
             `default_value` must conform to the constraints it specifies.
-
-        allow_none : bool [ default False ]
-            Whether to allow the value to be None
-
         """
         if default_value is NoDefaultSpecified and trait is not None:
             if not is_trait(trait):
