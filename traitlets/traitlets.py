@@ -1667,8 +1667,7 @@ class Set(List):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        super(Set, self).__init__(self, trait, default_value, minlen, maxlen,
-                                  **metadata)
+        super(Set, self).__init__(trait, default_value, minlen, maxlen, **metadata)
 
 
 class Tuple(Container):
