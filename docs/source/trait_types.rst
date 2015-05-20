@@ -11,16 +11,20 @@ Trait Types
 
 Numbers
 -------
-.. autoclass:: Int
-
-.. class:: Long
-
-   Integers ``> sys.maxsize`` on Python 2. Alias for :class:`Int` on Python 3.
 
 .. class:: Integer
 
-   Uses the int or long types as appropriate on Python 2. Alias for :class:`Int`
-   on Python 3.
+   An integer trait. On Python 2, this automatically uses the ``int`` or
+   ``long`` types as necessary.
+
+.. class:: Int
+.. class:: Long
+
+   On Python 2, these are traitlets for values where the ``int`` and ``long``
+   types are not interchangeable. On Python 3, they are both aliases for
+   :class:`Integer`.
+
+   In almost all situations, you should use :class:`Integer` instead of these.
 
 .. autoclass:: Float
 
