@@ -2,6 +2,8 @@
 Configurable objects with traitlets.config
 ==========================================
 
+.. module:: traitlets.config
+
 This document describes :mod:`traitlets.config`,
 the traitlets-based configuration system used by IPython and Jupyter.
 
