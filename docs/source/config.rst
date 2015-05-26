@@ -11,7 +11,7 @@ The main concepts
 There are a number of abstractions that the IPython configuration system uses.
 Each of these abstractions is represented by a Python class.
 
-Configuration object: :class:`~traitlets.config.loader.Config`
+Configuration object: :class:`~traitlets.config.Config`
     A configuration object is a simple dictionary-like class that holds
     configuration attributes and sub-configuration objects. These classes
     support dotted attribute style access (``cfg.Foo.bar``) in addition to the
@@ -19,7 +19,7 @@ Configuration object: :class:`~traitlets.config.loader.Config`
     The Config object is a wrapper around a simple dictionary with some convenience methods,
     such as merging and automatic section creation.
 
-Application: :class:`~traitlets.config.application.Application`
+Application: :class:`~traitlets.config.Application`
     An application is a process that does a specific job. The most obvious
     application is the :command:`ipython` command line program. Each
     application reads *one or more* configuration files and a single set of
@@ -33,31 +33,30 @@ Application: :class:`~traitlets.config.application.Application`
     Applications always have a `log` attribute that is a configured Logger.
     This allows centralized logging configuration per-application.
 
-Configurable: :class:`~traitlets.config.configurable.Configurable`
+Configurable: :class:`~traitlets.config.Configurable`
     A configurable is a regular Python class that serves as a base class for
     all main classes in an application. The
-    :class:`~traitlets.config.configurable.Configurable` base class is
+    :class:`~traitlets.config.Configurable` base class is
     lightweight and only does one things.
 
-    This :class:`~traitlets.config.configurable.Configurable` is a subclass
+    This :class:`~traitlets.config.Configurable` is a subclass
     of :class:`~traitlets.HasTraits` that knows how to configure
     itself. Class level traits with the metadata ``config=True`` become
     values that can be configured from the command line and configuration
     files.
 
-    Developers create :class:`~traitlets.config.configurable.Configurable`
+    Developers create :class:`~traitlets.config.Configurable`
     subclasses that implement all of the logic in the application. Each of
     these subclasses has its own configuration information that controls how
     instances are created.
 
-Singletons: :class:`~traitlets.config.configurable.SingletonConfigurable`
+Singletons: :class:`~traitlets.config.SingletonConfigurable`
     Any object for which there is a single canonical instance. These are
     just like Configurables, except they have a class method
-    :meth:`~traitlets.config.configurable.SingletonConfigurable.instance`,
+    :meth:`~traitlets.config.SingletonConfigurable.instance`,
     that returns the current active instance (or creates one if it
-    does not exist).  Examples of singletons include
-    :class:`~traitlets.config.application.Application`s and
-    :class:`~IPython.core.interactiveshell.InteractiveShell`.  This lets
+    does not exist). :class:`~traitlets.config.Application`s is a singleton.
+    This lets
     objects easily connect to the current running Application without passing
     objects around everywhere.  For instance, to get the current running
     Application instance, simply do: ``app = Application.instance()``.
@@ -99,23 +98,16 @@ Python configuration Files
 --------------------------
 
 A Python configuration file is a pure Python file that populates a configuration object.
-This configuration object is a :class:`~traitlets.config.loader.Config` instance.
-While in a configuration file, to get a reference to this object, simply call the :func:`get_config`
-function, which is available in the global namespace of the script.
-
-Here is an example of a super simple configuration file that does nothing::
-
-    c = get_config()
-
-Once you get a reference to the configuration object, you simply set
-attributes on it.  All you have to know is:
+This configuration object is a :class:`~traitlets.config.Config` instance.
+It is available inside the config file as ``c``, and you simply set
+attributes on this. All you have to know is:
 
 * The name of the class to configure.
 * The name of the attribute.
 * The type of each attribute.
 
 The answers to these questions are provided by the various
-:class:`~traitlets.config.configurable.Configurable` subclasses that an
+:class:`~traitlets.config.Configurable` subclasses that an
 application uses. Let's look at how this would work for a simple configurable
 subclass::
 
@@ -125,7 +117,7 @@ subclass::
 
     class MyClass(Configurable):
         name = Unicode(u'defaultname', config=True)
-        ranking = Int(0, config=True)
+        ranking = Integer(0, config=True)
         value = Float(99.0)
         # The rest of the class implementation would go here..
 
@@ -136,8 +128,6 @@ but not configured, these default values will be used.  But let's see how
 to configure this class in a configuration file::
 
     # Sample config file
-    c = get_config()
-
     c.MyClass.name = 'coolname'
     c.MyClass.ranking = 10
 
@@ -145,22 +135,8 @@ After this configuration file is loaded, the values set in it will override
 the class defaults anytime a :class:`MyClass` is created.  Furthermore,
 these attributes will be type checked and validated anytime they are set.
 This type checking is handled by the :mod:`traitlets` module,
-which provides the :class:`Unicode`, :class:`Int` and :class:`Float` types.
-In addition to these traitlets, the :mod:`traitlets` provides
-traitlets for a number of other types.
-
-.. note::
-
-    Underneath the hood, the :class:`Configurable` base class is a subclass of
-    :class:`traitlets.HasTraits`. The
-    :mod:`traitlets` module is a lightweight version of
-    :mod:`enthought.traits`. Our implementation is a pure Python subset
-    (mostly API compatible) of :mod:`enthought.traits` that does not have any
-    of the automatic GUI generation capabilities. Our plan is to achieve 100%
-    API compatibility to enable the actual :mod:`enthought.traits` to
-    eventually be used instead. Currently, we cannot use
-    :mod:`enthought.traits` as we are committed to the core of IPython being
-    pure Python.
+which provides the :class:`~traitlets.Unicode`, :class:`~traitlets.Integer` and
+:class:`~traitlets.Float` types; see :doc:`trait_types` for the full list.
 
 It should be very clear at this point what the naming convention is for
 configuration attributes::
@@ -171,17 +147,17 @@ Here, ``ClassName`` is the name of the class whose configuration attribute you
 want to set, ``attribute_name`` is the name of the attribute you want to set
 and ``attribute_value`` the the value you want it to have. The ``ClassName``
 attribute of ``c`` is not the actual class, but instead is another
-:class:`~traitlets.config.loader.Config` instance.
+:class:`~traitlets.config.Config` instance.
 
 .. note::
 
     The careful reader may wonder how the ``ClassName`` (``MyClass`` in
     the above example) attribute of the configuration object ``c`` gets
     created. These attributes are created on the fly by the
-    :class:`~traitlets.config.loader.Config` instance, using a simple naming
-    convention. Any attribute of a :class:`~traitlets.config.loader.Config`
+    :class:`~traitlets.config.Config` instance, using a simple naming
+    convention. Any attribute of a :class:`~traitlets.config.Config`
     instance whose name begins with an uppercase character is assumed to be a
-    sub-configuration and a new empty :class:`~traitlets.config.loader.Config`
+    sub-configuration and a new empty :class:`~traitlets.config.Config`
     instance is dynamically created for that attribute. This allows deeply
     hierarchical information created easily (``c.Foo.Bar.value``) on the fly.
 
@@ -189,7 +165,7 @@ JSON configuration Files
 ------------------------
 
 A JSON configuration file is simply a file that contains a
-:class:`~traitlets.config.loader.Config` dictionary serialized to JSON.
+:class:`~traitlets.config.Config` dictionary serialized to JSON.
 A JSON configuration file has the same base name as a Python configuration file,
 but with a .json extension.
 
@@ -215,7 +191,7 @@ Configuration files inheritance
 
 .. note::
 
-    This section only apply to Python configuration files.
+    This section only applies to Python configuration files.
 
 Let's say you want to have different configuration files for various purposes.
 Our configuration system makes it easy for one configuration file to inherit
@@ -243,14 +219,6 @@ In a situation like this the :func:`load_subconfig` makes sure that the
 search path for sub-configuration files is inherited from that of the parent.
 Thus, you can typically put the two in the same directory and everything will
 just work.
-
-You can also load configuration files by profile, for instance:
-
-.. sourcecode:: python
-
-    load_subconfig('ipython_config.py', profile='default')
-
-to inherit your default configuration as a starting point.
 
 
 Class based configuration inheritance
@@ -292,153 +260,17 @@ This class hierarchy and configuration file accomplishes the following:
   it doesn't know anything about the :attr:`othervalue` attribute.
 
 
-.. _ipython_dir:
-
-Configuration file location
-===========================
-
-So where should you put your configuration files? IPython uses "profiles" for
-configuration, and by default, all profiles will be stored in the so called
-"IPython directory". The location of this directory is determined by the
-following algorithm:
-
-* If the ``ipython-dir`` command line flag is given, its value is used.
-
-* If not, the value returned by :func:`IPython.utils.path.get_ipython_dir`
-  is used. This function will first look at the :envvar:`IPYTHONDIR`
-  environment variable and then default to :file:`~/.ipython`.
-  Historical support for the :envvar:`IPYTHON_DIR` environment variable will
-  be removed in a future release.
-
-For most users, the configuration directory will be :file:`~/.ipython`.
-
-Previous versions of IPython on Linux would use the XDG config directory,
-creating :file:`~/.config/ipython` by default. We have decided to go
-back to :file:`~/.ipython` for consistency among systems. IPython will
-issue a warning if it finds the XDG location, and will move it to the new
-location if there isn't already a directory there.
-
-Once the location of the IPython directory has been determined, you need to know
-which profile you are using. For users with a single configuration, this will
-simply be 'default', and will be located in
-:file:`<IPYTHONDIR>/profile_default`.
-
-The next thing you need to know is what to call your configuration file. The
-basic idea is that each application has its own default configuration filename.
-The default named used by the :command:`ipython` command line program is
-:file:`ipython_config.py`, and *all* IPython applications will use this file.
-Other applications, such as the parallel :command:`ipcluster` scripts or the
-QtConsole will load their own config files *after* :file:`ipython_config.py`. To
-load a particular configuration file instead of the default, the name can be
-overridden by the ``config_file`` command line flag.
-
-To generate the default configuration files, do::
-
-    $ ipython profile create
-
-and you will have a default :file:`ipython_config.py` in your IPython directory
-under :file:`profile_default`. If you want the default config files for the
-:mod:`IPython.parallel` applications, add ``--parallel`` to the end of the
-command-line args.
-
-
-Locating these files
---------------------
-
-From the command-line, you can quickly locate the IPYTHONDIR or a specific
-profile with:
-
-.. sourcecode:: bash
-
-    $ ipython locate
-    /home/you/.ipython
-
-    $ ipython locate profile foo
-    /home/you/.ipython/profile_foo
-
-These map to the utility functions: :func:`IPython.utils.path.get_ipython_dir`
-and :func:`IPython.utils.path.locate_profile` respectively.
-
-
-.. _profiles_dev:
-
-Profiles
-========
-
-A profile is a directory containing configuration and runtime files, such as
-logs, connection info for the parallel apps, and your IPython command history.
-
-The idea is that users often want to maintain a set of configuration files for
-different purposes: one for doing numerical computing with NumPy and SciPy and
-another for doing symbolic computing with SymPy. Profiles make it easy to keep a
-separate configuration files, logs, and histories for each of these purposes.
-
-Let's start by showing how a profile is used:
-
-.. code-block:: bash
-
-    $ ipython --profile=sympy
-
-This tells the :command:`ipython` command line program to get its configuration
-from the "sympy" profile. The file names for various profiles do not change. The
-only difference is that profiles are named in a special way. In the case above,
-the "sympy" profile means looking for :file:`ipython_config.py` in :file:`<IPYTHONDIR>/profile_sympy`.
-
-The general pattern is this: simply create a new profile with:
-
-.. code-block:: bash
-
-    $ ipython profile create <name>
-
-which adds a directory called ``profile_<name>`` to your IPython directory. Then
-you can load this profile by adding ``--profile=<name>`` to your command line
-options. Profiles are supported by all IPython applications.
-
-IPython ships with some sample profiles in :file:`IPython/config/profile`. If
-you create profiles with the name of one of our shipped profiles, these config
-files will be copied over instead of starting with the automatically generated
-config files.
-
-Security Files
---------------
-
-If you are using the notebook, qtconsole, or parallel code, IPython stores
-connection information in small JSON files in the active profile's security
-directory. This directory is made private, so only you can see the files inside. If
-you need to move connection files around to other computers, this is where they will
-be. If you want your code to be able to open security files by name, we have a
-convenience function :func:`IPython.utils.path.get_security_file`, which will return
-the absolute path to a security file from its filename and [optionally] profile
-name.
-
-.. _startup_files:
-
-Startup Files
--------------
-
-If you want some code to be run at the beginning of every IPython session with
-a particular profile, the easiest way is to add Python (``.py``) or
-IPython (``.ipy``) scripts to your :file:`<profile>/startup` directory. Files
-in this directory will always be executed as soon as the IPython shell is
-constructed, and before any other code or scripts you have specified. If you
-have multiple files in the startup directory, they will be run in
-lexicographical order, so you can control the ordering by adding a '00-'
-prefix.
-
-
 .. _commandline:
 
 Command-line arguments
 ======================
 
-IPython exposes *all* configurable options on the command-line. The command-line
-arguments are generated from the Configurable traits of the classes associated
-with a given Application.  Configuring IPython from the command-line may look
-very similar to an IPython config file
-
-IPython applications use a parser called
+All configurable options can also be supplied at the command line when launching
+the application. Applications use a parser called
 :class:`~traitlets.config.loader.KeyValueLoader` to load values into a Config
-object.  Values are assigned in much the same way as in a config file:
+object.
+
+By default, values are assigned in much the same way as in a config file:
 
 .. code-block:: bash
 
@@ -467,6 +299,9 @@ that are single characters, in which case they can be specified with a single ``
 .. code-block:: bash
 
     $ ipython -i -c "import numpy; x=numpy.linspace(0,1)" --profile testing --colors=lightbg
+
+Flags and aliases are declared by specifying ``flags`` and ``aliases``
+attributes as dictionaries on subclasses of :class:`~traitlets.config.Application`.
 
 Aliases
 *******
@@ -508,24 +343,24 @@ For instance:
 Subcommands
 -----------
 
-
-Some IPython applications have **subcommands**. Subcommands are modeled after
-:command:`git`, and are called with the form :command:`command subcommand
-[...args]`.  Currently, the QtConsole is a subcommand of terminal IPython:
+Configurable applications can also have **subcommands**. Subcommands are modeled
+after :command:`git`, and are called with the form :command:`command subcommand
+[...args]`. For instance, the QtConsole is a subcommand of terminal IPython:
 
 .. code-block:: bash
 
     $ ipython qtconsole --profile myprofile
 
-and :command:`ipcluster` is simply a wrapper for its various subcommands (start,
-stop, engines).
+Subcommands are specified as a dictionary on :class:`~traitlets.config.Application`
+instances, mapping subcommand names to 2-tuples containing:
 
-.. code-block:: bash
+1. The application class for the subcommand, or a string which can be imported
+   to give this.
+2. A short description of the subcommand for use in help output.
 
-    $ ipcluster start --profile=myprofile -n 4
-
-
-To see a list of the available aliases, flags, and subcommands for an IPython application, simply pass ``-h`` or ``--help``.  And to see the full list of configurable options (*very* long), pass ``--help-all``.
+To see a list of the available aliases, flags, and subcommands for a configurable
+application, simply pass ``-h`` or ``--help``. And to see the full list of
+configurable options (*very* long), pass ``--help-all``.
 
 
 Design requirements
