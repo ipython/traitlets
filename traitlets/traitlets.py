@@ -187,34 +187,34 @@ def _validate_link(*tuples):
         if not trait_name in obj.traits():
             raise TypeError("%r has no trait %r" % (obj, trait_name))
 
+
 class link(object):
     """Link traits from different objects together so they remain in sync.
 
     Parameters
     ----------
-    *args : pairs of objects/attributes
+    source : (object / attribute name) pair
+    target : (object / attribute name) pair
 
     Examples
     --------
 
-    >>> c = link((obj1, 'value'), (obj2, 'value'), (obj3, 'value'))
-    >>> obj1.value = 5 # updates other objects as well
+    >>> c = link((src, 'value'), (tgt, 'value'),
+    >>> src.value = 5  # updates other objects as well
     """
     updating = False
-    def __init__(self, *args):
-        if len(args) < 2:
-            raise TypeError('At least two traitlets must be provided.')
-        _validate_link(*args)
 
+    def __init__(self, source, target):
+        _validate_link(source, target)
         self.objects = {}
-
-        initial = getattr(args[0][0], args[0][1])
-        for obj, attr in args:
-            setattr(obj, attr, initial)
-
-            callback = self._make_closure(obj, attr)
-            obj.on_trait_change(callback, attr)
-            self.objects[(obj, attr)] = callback
+        
+        try:
+            setattr(target[0], target[1], getattr(source[0], source[1]))
+        finally:
+            for obj, attr in [source, target]:
+                callback = self._make_closure(obj, attr)
+                obj.on_trait_change(callback, attr)
+                self.objects[(obj, attr)] = callback
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -246,32 +246,25 @@ class directional_link(object):
 
     Parameters
     ----------
-    source : pair of object, name
-    targets : pairs of objects/attributes
+    source : (object, attribute name) pair
+    target : (object, attribute name) pair
 
     Examples
     --------
 
-    >>> c = directional_link((src, 'value'), (tgt1, 'value'), (tgt2, 'value'))
+    >>> c = directional_link((src, 'value'), (tgt, 'value'))
     >>> src.value = 5  # updates target objects
-    >>> tgt1.value = 6 # does not update other objects
+    >>> tgt.value = 6  # does not update source object
     """
     updating = False
 
-    def __init__(self, source, *targets):
-        if len(targets) < 1:
-            raise TypeError('At least two traitlets must be provided.')
-        _validate_link(source, *targets)
-        self.source = source
-        self.targets = targets
-
-        # Update current value
-        src_attr_value = getattr(source[0], source[1])
-        for obj, attr in targets:
-            setattr(obj, attr, src_attr_value)
-
-        # Wire
-        self.source[0].on_trait_change(self._update, self.source[1])
+    def __init__(self, source, target):
+        _validate_link(source, target)
+        self.source, self.target = source, target
+        try:
+            setattr(target[0], target[1], getattr(source[0], source[1]))
+        finally:
+            self.source[0].on_trait_change(self._update, self.source[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -285,13 +278,12 @@ class directional_link(object):
         if self.updating:
             return
         with self._busy_updating():
-            for obj, attr in self.targets:
-                setattr(obj, attr, new)
+            setattr(self.target[0], self.target[1], new)
 
     def unlink(self):
         self.source[0].on_trait_change(self._update, self.source[1], remove=True)
         self.source = None
-        self.targets = []
+        self.target = None
 
 dlink = directional_link
 
