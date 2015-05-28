@@ -814,16 +814,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
 
         Works like `class_traits`, except for excluding traits from parents.
         """
-        class_traits = cls.class_traits(**metadata)
-
-        result = {}
         sup = super(cls, cls)
-        for name, trait in class_traits.items():
-            if getattr(sup, name, None) is not trait:
-                # Trait is missing or different in hierarchy above this class
-                result[name] = trait
-
-        return result
+        return {n: t for (n, t) in cls.class_traits(**metadata).items()
+                if getattr(sup, n, None) is not t}
 
     def trait_names(self, **metadata):
         """Get a list of all the names of this class' traits."""

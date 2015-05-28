@@ -372,11 +372,8 @@ class Application(SingletonConfigurable):
 
         Returns a multiline string.
         """
-        chunks = []
-        for cls in self._classes_inc_parents():
-            chunks.append(cls.class_config_rst_doc())
-
-        return '\n'.join(chunks)
+        return '\n'.join(c.class_config_rst_doc()
+                         for c in self._classes_inc_parents())
 
 
     def print_description(self):
