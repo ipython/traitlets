@@ -572,7 +572,7 @@ class Application(SingletonConfigurable):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self.classes:
+        for cls in self._classes_inc_parents():
             lines.append(cls.class_config_section())
         return '\n'.join(lines)
 
