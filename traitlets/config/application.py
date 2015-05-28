@@ -16,7 +16,7 @@ from collections import defaultdict
 
 from decorator import decorator
 
-from traitlets.config.configurable import SingletonConfigurable
+from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
     KVArgParseConfigLoader, PyFileConfigLoader, Config, ArgumentError, ConfigFileNotFound, JSONFileConfigLoader
 )
@@ -137,6 +137,20 @@ class Application(SingletonConfigurable):
     def _config_classes(self):
         """Define `App.config_classes` if config file classes should differ from CLI classes."""
         return getattr(self, 'config_classes', self.classes)
+
+    def _classes_inc_parents(self):
+        """Iterate through configurable classes, including configurable parents
+
+        Children should always be after parents, and each class should only be
+        yielded once.
+        """
+        seen = set()
+        for c in self.classes:
+            # We want to sort parents before children, so we reverse the MRO
+            for parent in reversed(c.mro()):
+                if issubclass(parent, Configurable) and (parent not in seen):
+                    seen.add(parent)
+                    yield parent
 
     # The version string of this application.
     version = Unicode(u'0.0')
