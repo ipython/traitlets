@@ -372,44 +372,11 @@ class Application(SingletonConfigurable):
 
         Returns a multiline string.
         """
-        lines = []
-        for cls in self.classes:
-            classname = cls.__name__
-            for k, trait in sorted(cls.class_traits(config=True).items()):
-                ttype = trait.__class__.__name__
+        chunks = []
+        for cls in self._classes_inc_parents():
+            chunks.append(cls.class_config_rst_doc())
 
-                termline = classname + '.' + trait.name
-
-                # Choices or type
-                if 'Enum' in ttype:
-                    # include Enum choices
-                    termline += ' : ' + '|'.join(repr(x) for x in trait.values)
-                else:
-                    termline += ' : ' + ttype
-                lines.append(termline)
-
-                # Default value
-                try:
-                    dv = trait.get_default_value()
-                    dvr = repr(dv)
-                except Exception:
-                    dvr = dv = None # ignore defaults we can't construct
-                if (dv is not None) and (dvr is not None):
-                    if len(dvr) > 64:
-                        dvr = dvr[:61]+'...'
-                    # Double up backslashes, so they get to the rendered docs
-                    dvr = dvr.replace('\\n', '\\\\n')
-                    lines.append('    Default: `%s`' % dvr)
-                    lines.append('')
-
-                help = trait.get_metadata('help')
-                if help is not None:
-                    lines.append(indent(dedent(help), 4))
-                else:
-                    lines.append('    No description')
-
-                lines.append('')
-        return '\n'.join(lines)
+        return '\n'.join(chunks)
 
 
     def print_description(self):

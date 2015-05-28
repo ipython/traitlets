@@ -11,7 +11,7 @@ from copy import deepcopy
 
 from .loader import Config, LazyConfigValue
 from traitlets.traitlets import HasTraits, Instance
-from ipython_genutils.text import indent, wrap_paragraphs
+from ipython_genutils.text import indent, dedent, wrap_paragraphs
 from ipython_genutils.py3compat import iteritems
 
 
@@ -275,6 +275,52 @@ class Configurable(HasTraits):
             lines.append(c(help))
             lines.append('# c.%s.%s = %r'%(cls.__name__, name, trait.get_default_value()))
             lines.append('')
+        return '\n'.join(lines)
+
+    @classmethod
+    def class_config_rst_doc(cls):
+        """Generate rST documentation for this class' config options.
+
+        Excludes traits defined on parent classes.
+        """
+        lines = []
+        classname = cls.__name__
+        for k, trait in sorted(cls.class_own_traits(config=True).items()):
+            ttype = trait.__class__.__name__
+
+            termline = classname + '.' + trait.name
+
+            # Choices or type
+            if 'Enum' in ttype:
+                # include Enum choices
+                termline += ' : ' + '|'.join(repr(x) for x in trait.values)
+            else:
+                termline += ' : ' + ttype
+            lines.append(termline)
+
+            # Default value
+            try:
+                dv = trait.get_default_value()
+                dvr = repr(dv)
+            except Exception:
+                dvr = dv = None # ignore defaults we can't construct
+            if (dv is not None) and (dvr is not None):
+                if len(dvr) > 64:
+                    dvr = dvr[:61]+'...'
+                # Double up backslashes, so they get to the rendered docs
+                dvr = dvr.replace('\\n', '\\\\n')
+                lines.append('    Default: ``%s``' % dvr)
+                lines.append('')
+
+            help = trait.get_metadata('help')
+            if help is not None:
+                lines.append(indent(dedent(help), 4))
+            else:
+                lines.append('    No description')
+
+            # Blank line
+            lines.append('')
+
         return '\n'.join(lines)
 
 
