@@ -128,15 +128,6 @@ class Application(SingletonConfigurable):
     # A sequence of Configurable subclasses whose config=True attributes will
     # be exposed at the command line.
     classes = []
-    @property
-    def _help_classes(self):
-        """Define `App.help_classes` if CLI classes should differ from config file classes"""
-        return getattr(self, 'help_classes', self.classes)
-    
-    @property
-    def _config_classes(self):
-        """Define `App.config_classes` if config file classes should differ from CLI classes."""
-        return getattr(self, 'config_classes', self.classes)
 
     def _classes_inc_parents(self):
         """Iterate through configurable classes, including configurable parents
@@ -283,7 +274,7 @@ class Application(SingletonConfigurable):
 
         lines = []
         classdict = {}
-        for cls in self._help_classes:
+        for cls in self.classes:
             # include all parents (up to, but excluding Configurable) in available names
             for c in cls.mro()[:-3]:
                 classdict[c.__name__] = c
@@ -358,7 +349,7 @@ class Application(SingletonConfigurable):
         self.print_options()
 
         if classes:
-            help_classes = self._help_classes
+            help_classes = self.classes
             if help_classes:
                 print("Class parameters")
                 print("----------------")
@@ -382,7 +373,7 @@ class Application(SingletonConfigurable):
         Returns a multiline string.
         """
         lines = []
-        for cls in self._config_classes:
+        for cls in self.classes:
             classname = cls.__name__
             for k, trait in sorted(cls.class_traits(config=True).items()):
                 ttype = trait.__class__.__name__
@@ -484,7 +475,7 @@ class Application(SingletonConfigurable):
         # it will be a dict by parent classname of classes in our list
         # that are descendents
         mro_tree = defaultdict(list)
-        for cls in self._help_classes:
+        for cls in self.classes:
             clsname = cls.__name__
             for parent in cls.mro()[1:-3]:
                 # exclude cls itself and Configurable,HasTraits,object
@@ -614,7 +605,7 @@ class Application(SingletonConfigurable):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self._config_classes:
+        for cls in self.classes:
             lines.append(cls.class_config_section())
         return '\n'.join(lines)
 
