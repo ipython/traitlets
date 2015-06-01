@@ -303,17 +303,12 @@ dlink = directional_link
 class BaseTraitType(object):
     """Base class for TraitType
 
-    This allows other classes than TraitType to hook into the MetaHasTraits
-    metaclass machinery.
-    """
-
-class TraitType(BaseTraitType):
-    """A base class for all trait descriptors.
-
     Notes
     -----
     Our implementation of traits is based on Python's descriptor
-    prototol.  This class is the base class for all such descriptors.  The
+    prototol.  
+
+    This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
     class that does the following:
 
@@ -323,6 +318,23 @@ class TraitType(BaseTraitType):
        instance in the class dict to the *class* that declared the trait.
        This is used by the :class:`This` trait to allow subclasses to
        accept superclasses for :class:`This` values.
+    """
+
+    def instance_init(self, obj):
+        """Part of the initialization which may depend on the underlying
+        HasTraits instance.
+
+        It is typically overloaded for specific types.
+
+        This method is called by :meth:`HasTraits.__new__` and in the
+        :meth:`TraitType.instance_init` method of trait types holding
+        other trait types.
+        """
+        pass
+
+
+class TraitType(BaseTraitType):
+    """A base class for all trait types.
     """
 
     metadata = {}
@@ -370,18 +382,6 @@ class TraitType(BaseTraitType):
     def get_default_value(self):
         """Create a new instance of the default value."""
         return self.default_value
-
-    def instance_init(self, obj):
-        """Part of the initialization which may depend on the underlying
-        HasTraits instance.
-
-        It is typically overloaded for specific trait types.
-
-        This method is called by :meth:`HasTraits.__new__` and in the
-        :meth:`TraitType.instance_init` method of trait types holding
-        other trait types.
-        """
-        pass
 
     def init_default_value(self, obj):
         """Instantiate the default value for the trait type.
