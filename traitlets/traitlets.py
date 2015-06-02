@@ -286,26 +286,46 @@ dlink = directional_link
 
 
 #-----------------------------------------------------------------------------
-# Base TraitType for all traits
+# Base Descriptor Class 
 #-----------------------------------------------------------------------------
 
-
-class TraitType(object):
-    """A base class for all trait descriptors.
+class BaseDescriptor(object):
+    """Base descriptor class
 
     Notes
     -----
-    Our implementation of traits is based on Python's descriptor
-    prototol.  This class is the base class for all such descriptors.  The
+    This implements Python's descriptor prototol.  
+
+    This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
     class that does the following:
 
-    1. Sets the :attr:`name` attribute of every :class:`TraitType`
+    1. Sets the :attr:`name` attribute of every :class:`BaseDescriptor`
        instance in the class dict to the name of the attribute.
-    2. Sets the :attr:`this_class` attribute of every :class:`TraitType`
+    2. Sets the :attr:`this_class` attribute of every :class:`BaseDescriptor`
        instance in the class dict to the *class* that declared the trait.
        This is used by the :class:`This` trait to allow subclasses to
        accept superclasses for :class:`This` values.
+    """
+
+    name = None
+    this_class = None
+
+    def instance_init(self, obj):
+        """Part of the initialization which may depend on the underlying
+        HasTraits instance.
+
+        It is typically overloaded for specific types.
+
+        This method is called by :meth:`HasTraits.__new__` and in the
+        :meth:`BaseDescriptor.instance_init` method of descriptors holding
+        other descriptors.
+        """
+        pass
+
+
+class TraitType(BaseDescriptor):
+    """A base class for all trait types.
     """
 
     metadata = {}
@@ -353,18 +373,6 @@ class TraitType(object):
     def get_default_value(self):
         """Create a new instance of the default value."""
         return self.default_value
-
-    def instance_init(self):
-        """Part of the initialization which may depends on the underlying
-        HasTraits instance.
-
-        It is typically overloaded for specific trait types.
-
-        This method is called by :meth:`HasTraits.__new__` and in the
-        :meth:`TraitType.instance_init` method of trait types holding
-        other trait types.
-        """
-        pass
 
     def init_default_value(self, obj):
         """Instantiate the default value for the trait type.
@@ -531,7 +539,7 @@ class MetaHasTraits(type):
         # print "MetaHasTraitlets (bases): ", bases
         # print "MetaHasTraitlets (classdict): ", classdict
         for k,v in iteritems(classdict):
-            if isinstance(v, TraitType):
+            if isinstance(v, BaseDescriptor):
                 v.name = k
             elif inspect.isclass(v):
                 if issubclass(v, TraitType):
@@ -579,9 +587,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             except AttributeError:
                 pass
             else:
-                if isinstance(value, TraitType):
-                    value.instance_init()
-                    if key not in kw:
+                if isinstance(value, BaseDescriptor):
+                    value.instance_init(inst)
+                    if isinstance(value, TraitType) and key not in kw:
                         value._set_default_value_at_instance_init(inst)
         inst._cross_validation_lock = False
         return inst
@@ -970,9 +978,9 @@ class Type(ClassBasedTraitType):
             return result + ' or None'
         return result
 
-    def instance_init(self):
+    def instance_init(self, obj):
         self._resolve_classes()
-        super(Type, self).instance_init()
+        super(Type, self).instance_init(obj)
 
     def _resolve_classes(self):
         if isinstance(self.klass, py3compat.string_types):
@@ -1078,9 +1086,9 @@ class Instance(ClassBasedTraitType):
 
         return result
 
-    def instance_init(self):
+    def instance_init(self, obj):
         self._resolve_classes()
-        super(Instance, self).instance_init()
+        super(Instance, self).instance_init(obj)
 
     def _resolve_classes(self):
         if isinstance(self.klass, py3compat.string_types):
@@ -1175,12 +1183,12 @@ class Union(TraitType):
         self.default_value = self.trait_types[0].get_default_value()
         super(Union, self).__init__(**metadata)
 
-    def instance_init(self):
+    def instance_init(self, obj):
         for trait_type in self.trait_types:
             trait_type.name = self.name
             trait_type.this_class = self.this_class
-            trait_type.instance_init()
-        super(Union, self).instance_init()
+            trait_type.instance_init(obj)
+        super(Union, self).instance_init(obj)
 
     def validate(self, obj, value):
         for trait_type in self.trait_types:
@@ -1562,11 +1570,11 @@ class Container(Instance):
                 validated.append(v)
         return self.klass(validated)
 
-    def instance_init(self):
+    def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
-            self._trait.instance_init()
-        super(Container, self).instance_init()
+            self._trait.instance_init(obj)
+        super(Container, self).instance_init(obj)
 
 
 class List(Container):
@@ -1748,12 +1756,12 @@ class Tuple(Container):
                 validated.append(v)
         return tuple(validated)
 
-    def instance_init(self):
+    def instance_init(self, obj):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.this_class = self.this_class
-                trait.instance_init()
-        super(Container, self).instance_init()
+                trait.instance_init(obj)
+        super(Container, self).instance_init(obj)
 
 
 class Dict(Instance):
@@ -1847,15 +1855,15 @@ class Dict(Instance):
                 validated[key] = v
         return self.klass(validated)
 
-    def instance_init(self):
+    def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
-            self._trait.instance_init()
+            self._trait.instance_init(obj)
         if self._traits is not None:
             for trait in self._traits.values():
                 trait.this_class = self.this_class
-                trait.instance_init()
-        super(Dict, self).instance_init()
+                trait.instance_init(obj)
+        super(Dict, self).instance_init(obj)
 
 
 class TCPAddress(TraitType):
