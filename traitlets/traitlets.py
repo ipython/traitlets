@@ -379,8 +379,6 @@ class TraitType(BaseDescriptor):
         """Specialization of top_instance_init for TraitType."""
         super(TraitType, self).top_instance_init(obj)
         self._setup_dynamic_initializer(obj)
-        if self.name not in kw:
-            self._set_default_value_at_instance_init(obj)
 
     def get_default_value(self):
         """Create a new instance of the default value."""
@@ -408,14 +406,6 @@ class TraitType(BaseDescriptor):
         else:
             return
         obj._trait_dyn_inits[self.name] = meth_name
-
-    def _set_default_value_at_instance_init(self, obj):
-        # As above, but if no default was specified, don't try to set it.
-        # If the trait is accessed before it is given a value, init_default_value
-        # will be called at that point.
-        if (self.name not in obj._trait_dyn_inits) \
-                and (self.default_value is not Undefined):
-            self.init_default_value(obj)
 
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.

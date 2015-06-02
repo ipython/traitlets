@@ -84,11 +84,6 @@ class TestTraitType(TestCase):
         a = A()
         self.assertEqual(a.tt, 10)
 
-        # Defaults are validated when the HasTraits is instantiated
-        class B(HasTraits):
-            tt = MyIntTT('bad default')
-        self.assertRaises(TraitError, B)
-
     def test_info(self):
         class A(HasTraits):
             tt = TraitType
@@ -118,7 +113,6 @@ class TestTraitType(TestCase):
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
         b = B()
-        self.assertEqual(b._trait_values, {'x': 20})
         self.assertEqual(list(a._trait_dyn_inits.keys()), ['x'])
         self.assertEqual(b.x, 20)
         c = C()
@@ -200,9 +194,9 @@ class TestHasTraitsNotify(TestCase):
         a = A()
         a.on_trait_change(self.notify1)
         a.a = 0
-        self.assertEqual(len(self._notify1),0)
+        self.assertEqual(len(self._notify1), 1)
         a.b = 0.0
-        self.assertEqual(len(self._notify1),0)
+        self.assertEqual(len(self._notify1), 2)
         a.a = 10
         self.assertTrue(('a',0,10) in self._notify1)
         a.b = 10.0
@@ -213,7 +207,7 @@ class TestHasTraitsNotify(TestCase):
         a.on_trait_change(self.notify1,remove=True)
         a.a = 20
         a.b = 20.0
-        self.assertEqual(len(self._notify1),0)
+        self.assertEqual(len(self._notify1), 0)
 
     def test_notify_one(self):
 
@@ -224,7 +218,7 @@ class TestHasTraitsNotify(TestCase):
         a = A()
         a.on_trait_change(self.notify1, 'a')
         a.a = 0
-        self.assertEqual(len(self._notify1),0)
+        self.assertEqual(len(self._notify1), 1)
         a.a = 10
         self.assertTrue(('a',0,10) in self._notify1)
         self.assertRaises(TraitError,setattr,a,'a','bad string')
@@ -258,8 +252,8 @@ class TestHasTraitsNotify(TestCase):
         b.on_trait_change(self.notify2, 'b')
         b.a = 0
         b.b = 0.0
-        self.assertEqual(len(self._notify1),0)
-        self.assertEqual(len(self._notify2),0)
+        self.assertEqual(len(self._notify1), 1)
+        self.assertEqual(len(self._notify2), 1)
         b.a = 10
         b.b = 10.0
         self.assertTrue(('a',0,10) in self._notify1)
@@ -276,7 +270,7 @@ class TestHasTraitsNotify(TestCase):
         a = A()
         a.a = 0
         # This is broken!!!
-        self.assertEqual(len(a._notify1),0)
+        self.assertEqual(len(a._notify1), 1)
         a.a = 10
         self.assertTrue(('a',0,10) in a._notify1)
 
@@ -290,7 +284,7 @@ class TestHasTraitsNotify(TestCase):
         b.a = 10
         b.b = 10.0
         self.assertTrue(('a',0,10) in b._notify1)
-        self.assertTrue(('b',0.0,10.0) in b._notify2)
+        self.assertTrue(('b',Undefined,10.0) in b._notify2)
 
     def test_notify_args(self):
 
@@ -500,11 +494,6 @@ class TestType(TestCase):
 
         self.assertRaises(ImportError, A)
 
-        class C(HasTraits):
-            klass = Type(None, B)
-
-        self.assertRaises(TraitError, C)
-
     def test_str_klass(self):
 
         class A(HasTraits):
@@ -599,23 +588,6 @@ class TestInstance(TestCase):
             inst = Instance(Foo, allow_none=True)
         c = C()
         self.assertTrue(c.inst is None)
-
-    def test_bad_default(self):
-        class Foo(object): pass
-
-        class A(HasTraits):
-            inst = Instance(Foo)
-
-        self.assertRaises(TraitError, A)
-
-    def test_instance(self):
-        class Foo(object): pass
-
-        def inner():
-            class A(HasTraits):
-                inst = Instance(Foo())
-
-        self.assertRaises(TraitError, inner)
 
 
 class TestThis(TestCase):
@@ -1368,7 +1340,7 @@ def test_hold_trait_notifications():
         nt.assert_equal(t.a, 4)
         nt.assert_equal(changes, [])
 
-    nt.assert_equal(changes, [(0, 4)])
+    nt.assert_equal(changes, [(Undefined, 4)])
     # Test roll-back
     try:
          with t.hold_trait_notifications():
