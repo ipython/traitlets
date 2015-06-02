@@ -297,28 +297,30 @@ dlink = directional_link
 
 
 #-----------------------------------------------------------------------------
-# Base TraitType for all traits
+# Base Descriptor Class 
 #-----------------------------------------------------------------------------
 
-class BaseTraitType(object):
-    """Base class for TraitType
+class BaseDescriptor(object):
+    """Base descriptor class
 
     Notes
     -----
-    Our implementation of traits is based on Python's descriptor
-    prototol.  
+    This implements Python's descriptor prototol.  
 
     This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
     class that does the following:
 
-    1. Sets the :attr:`name` attribute of every :class:`TraitType`
+    1. Sets the :attr:`name` attribute of every :class:`BaseDescriptor`
        instance in the class dict to the name of the attribute.
-    2. Sets the :attr:`this_class` attribute of every :class:`TraitType`
+    2. Sets the :attr:`this_class` attribute of every :class:`BaseDescriptor`
        instance in the class dict to the *class* that declared the trait.
        This is used by the :class:`This` trait to allow subclasses to
        accept superclasses for :class:`This` values.
     """
+
+    name = None
+    this_class = None
 
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
@@ -327,13 +329,13 @@ class BaseTraitType(object):
         It is typically overloaded for specific types.
 
         This method is called by :meth:`HasTraits.__new__` and in the
-        :meth:`TraitType.instance_init` method of trait types holding
-        other trait types.
+        :meth:`BaseDescriptor.instance_init` method of descriptors holding
+        other descriptors.
         """
         pass
 
 
-class TraitType(BaseTraitType):
+class TraitType(BaseDescriptor):
     """A base class for all trait types.
     """
 
@@ -548,7 +550,7 @@ class MetaHasTraits(type):
         # print "MetaHasTraitlets (bases): ", bases
         # print "MetaHasTraitlets (classdict): ", classdict
         for k,v in iteritems(classdict):
-            if isinstance(v, BaseTraitType):
+            if isinstance(v, BaseDescriptor):
                 v.name = k
             elif inspect.isclass(v):
                 if issubclass(v, TraitType):
@@ -596,7 +598,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             except AttributeError:
                 pass
             else:
-                if isinstance(value, BaseTraitType):
+                if isinstance(value, BaseDescriptor):
                     value.instance_init(inst)
                     if isinstance(value, TraitType) and key not in kw:
                         value._set_default_value_at_instance_init(inst)
