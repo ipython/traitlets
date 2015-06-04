@@ -551,11 +551,11 @@ class MetaHasTraits(type):
     def __init__(cls, name, bases, classdict):
         """Finish initializing the HasTraits class.
 
-        This sets the :attr:`this_class` attribute of each TraitType in the
+        This sets the :attr:`this_class` attribute of each BaseDescriptor in the
         class dict to the newly created class ``cls``.
         """
         for k, v in iteritems(classdict):
-            if isinstance(v, TraitType):
+            if isinstance(v, BaseDescriptor):
                 v.this_class = cls
         super(MetaHasTraits, cls).__init__(name, bases, classdict)
 
