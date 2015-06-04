@@ -377,10 +377,8 @@ class TraitType(BaseDescriptor):
     def init_default_value(self, obj):
         """Instantiate the default value for the trait type.
 
-        This method is called by :meth:`TraitType.set_default_value` in the
-        case a default value is provided at construction time or later when
-        accessing the trait value for the first time in
-        :meth:`HasTraits.__get__`.
+        This method is called when accessing the trait value for the first
+        time in :meth:`HasTraits.__get__`.
         """
         value = self.get_default_value()
         value = self._validate(obj, value)
@@ -400,23 +398,6 @@ class TraitType(BaseDescriptor):
         # Complete the dynamic initialization.
         obj._trait_dyn_inits[self.name] = meth_name
         return True
-
-    def set_default_value(self, obj):
-        """Set the default value on a per instance basis.
-
-        This method is called by :meth:`HasTraits.__new__` to instantiate and
-        validate the default value. The creation and validation of
-        default values must be delayed until the parent :class:`HasTraits`
-        class has been instantiated.
-        Parameters
-        ----------
-        obj : :class:`HasTraits` instance
-            The parent :class:`HasTraits` instance that has just been
-            created.
-        """
-        if not self._setup_dynamic_initializer(obj):
-            # We didn't find a dynamic initializer. Do static initialization.
-            self.init_default_value(obj)
 
     def _set_default_value_at_instance_init(self, obj):
         # As above, but if no default was specified, don't try to set it.
@@ -451,8 +432,7 @@ class TraitType(BaseDescriptor):
                 else:
                     return self.init_default_value(obj)
             except Exception:
-                # HasTraits should call set_default_value to populate
-                # this.  So this should never be reached.
+                # This should never be reached.
                 raise TraitError('Unexpected error in TraitType: '
                                  'default value not set properly')
             else:
@@ -551,11 +531,11 @@ class MetaHasTraits(type):
     def __init__(cls, name, bases, classdict):
         """Finish initializing the HasTraits class.
 
-        This sets the :attr:`this_class` attribute of each TraitType in the
+        This sets the :attr:`this_class` attribute of each BaseDescriptor in the
         class dict to the newly created class ``cls``.
         """
         for k, v in iteritems(classdict):
-            if isinstance(v, TraitType):
+            if isinstance(v, BaseDescriptor):
                 v.this_class = cls
         super(MetaHasTraits, cls).__init__(name, bases, classdict)
 
@@ -865,11 +845,11 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         else:
             return trait.get_metadata(key, default)
 
-    def add_trait(self, traitname, trait):
+    def add_trait(self, name, trait):
         """Dynamically add a trait attribute to the HasTraits instance."""
         self.__class__ = type(self.__class__.__name__, (self.__class__,),
-                              {traitname: trait})
-        trait.set_default_value(self)
+                              {name: trait})
+        trait.instance_init(self)
 
 #-----------------------------------------------------------------------------
 # Actual TraitTypes implementations/subclasses
