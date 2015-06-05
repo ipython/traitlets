@@ -1576,12 +1576,12 @@ class TestDynamicTraits(TestCase):
         self.assertTrue(not hasattr(a, 'y'))
 
         # Dynamically add trait x.
-        a.add_trait('x', Int())
+        a.add_traits(x=Int())
         self.assertTrue(hasattr(a, 'x'))
         self.assertTrue(isinstance(a, (A, )))
 
         # Dynamically add trait y.
-        a.add_trait('y', Float())
+        a.add_traits(y=Float())
         self.assertTrue(hasattr(a, 'y'))
         self.assertTrue(isinstance(a, (A, )))
         self.assertEqual(a.__class__.__name__, A.__name__)
