@@ -365,11 +365,6 @@ class TraitType(BaseDescriptor):
         else:
             self._metadata = self.metadata
 
-        self.init()
-
-    def init(self):
-        pass
-
     def get_default_value(self):
         """Create a new instance of the default value."""
         return self.default_value
@@ -390,20 +385,18 @@ class TraitType(BaseDescriptor):
         # trait declaration or above.
         mro = type(obj).mro()
         meth_name = '_%s_default' % self.name
-        for cls in mro[:mro.index(self.this_class)+1]:
+        for cls in mro[:mro.index(self.this_class) + 1]:
             if meth_name in cls.__dict__:
                 break
         else:
-            return False
-        # Complete the dynamic initialization.
+            return
         obj._trait_dyn_inits[self.name] = meth_name
-        return True
 
     def _set_default_value_at_instance_init(self, obj):
         # As above, but if no default was specified, don't try to set it.
         # If the trait is accessed before it is given a value, init_default_value
         # will be called at that point.
-        if (not self._setup_dynamic_initializer(obj)) \
+        if (self.name not in obj._trait_dyn_inits) \
                 and (self.default_value is not Undefined):
             self.init_default_value(obj)
 
@@ -569,8 +562,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             else:
                 if isinstance(value, BaseDescriptor):
                     value.instance_init(inst)
-                    if isinstance(value, TraitType) and key not in kw:
-                        value._set_default_value_at_instance_init(inst)
+                    if isinstance(value, TraitType):
+                        value._setup_dynamic_initializer(inst)
+                        if key not in kw:
+                            value._set_default_value_at_instance_init(inst)
         inst._cross_validation_lock = False
         return inst
 
@@ -1143,7 +1138,7 @@ class Union(TraitType):
     """A trait type representing a Union type."""
 
     def __init__(self, trait_types, **metadata):
-        """Construct a Union  trait.
+        """Construct a Union trait.
 
         This trait allows values that are allowed by at least one of the
         specified trait types. A Union traitlet cannot have metadata on
