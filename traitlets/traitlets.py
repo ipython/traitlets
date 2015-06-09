@@ -311,15 +311,25 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
+    def top_instance_init(self, obj, **kwargs):
+        """Part of the initialization which may depend on the underlying
+        HasTraits instance.
+
+        It is typically overloaded for specific descriptor types.
+
+        This method is called by :meth:`HasTraits.__new__`.
+        """
+        self.instance_init(obj)
+
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
         HasTraits instance.
 
         It is typically overloaded for specific types.
 
-        This method is called by :meth:`HasTraits.__new__` and in the
-        :meth:`BaseDescriptor.instance_init` method of descriptors holding
-        other descriptors.
+        This method is called by :meth:`BaseDescriptor.top_instance_init` and
+        in the :meth:`BaseDescriptor.instance_init` method of descriptors
+        holding other descriptors.
         """
         pass
 
@@ -364,6 +374,13 @@ class TraitType(BaseDescriptor):
                 self._metadata = metadata
         else:
             self._metadata = self.metadata
+
+    def top_instance_init(self, obj, **kw):
+        """Specialization of top_instance_init for TraitType."""
+        super(TraitType, self).top_instance_init(obj)
+        self._setup_dynamic_initializer(obj)
+        if self.name not in kw:
+            self._set_default_value_at_instance_init(obj)
 
     def get_default_value(self):
         """Create a new instance of the default value."""
@@ -561,11 +578,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 pass
             else:
                 if isinstance(value, BaseDescriptor):
-                    value.instance_init(inst)
-                    if isinstance(value, TraitType):
-                        value._setup_dynamic_initializer(inst)
-                        if key not in kw:
-                            value._set_default_value_at_instance_init(inst)
+                    value.top_instance_init(inst, **kw)
         inst._cross_validation_lock = False
         return inst
 
