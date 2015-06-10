@@ -435,7 +435,6 @@ class TraitType(BaseDescriptor):
                 if self.name in obj._trait_dyn_inits:
                     method = getattr(obj, obj._trait_dyn_inits[self.name])
                     value = method()
-                    # FIXME: Do we really validate here?
                     value = self._validate(obj, value)
                     obj._trait_values[self.name] = value
                     return value
