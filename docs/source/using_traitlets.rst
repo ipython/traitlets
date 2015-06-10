@@ -17,7 +17,7 @@ Any class with traitlet attributes must inherit from :class:`HasTraits`.
 
    .. automethod:: trait_metadata
 
-   .. automethod:: add_trait
+   .. automethod:: add_traits
 
 You then declare the traitlets on the class like this::
 
