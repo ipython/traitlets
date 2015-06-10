@@ -311,15 +311,25 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
+    def top_instance_init(self, obj, **kwargs):
+        """Part of the initialization which may depend on the underlying
+        HasTraits instance.
+
+        It is typically overloaded for specific descriptor types.
+
+        This method is called by :meth:`HasTraits.__new__`.
+        """
+        self.instance_init(obj)
+
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
         HasTraits instance.
 
         It is typically overloaded for specific types.
 
-        This method is called by :meth:`HasTraits.__new__` and in the
-        :meth:`BaseDescriptor.instance_init` method of descriptors holding
-        other descriptors.
+        This method is called by :meth:`BaseDescriptor.top_instance_init` and
+        in the :meth:`BaseDescriptor.instance_init` method of descriptors
+        holding other descriptors.
         """
         pass
 
@@ -365,10 +375,12 @@ class TraitType(BaseDescriptor):
         else:
             self._metadata = self.metadata
 
-        self.init()
-
-    def init(self):
-        pass
+    def top_instance_init(self, obj, **kw):
+        """Specialization of top_instance_init for TraitType."""
+        super(TraitType, self).top_instance_init(obj)
+        self._setup_dynamic_initializer(obj)
+        if self.name not in kw:
+            self._set_default_value_at_instance_init(obj)
 
     def get_default_value(self):
         """Create a new instance of the default value."""
@@ -390,20 +402,18 @@ class TraitType(BaseDescriptor):
         # trait declaration or above.
         mro = type(obj).mro()
         meth_name = '_%s_default' % self.name
-        for cls in mro[:mro.index(self.this_class)+1]:
+        for cls in mro[:mro.index(self.this_class) + 1]:
             if meth_name in cls.__dict__:
                 break
         else:
-            return False
-        # Complete the dynamic initialization.
+            return
         obj._trait_dyn_inits[self.name] = meth_name
-        return True
 
     def _set_default_value_at_instance_init(self, obj):
         # As above, but if no default was specified, don't try to set it.
         # If the trait is accessed before it is given a value, init_default_value
         # will be called at that point.
-        if (not self._setup_dynamic_initializer(obj)) \
+        if (self.name not in obj._trait_dyn_inits) \
                 and (self.default_value is not Undefined):
             self.init_default_value(obj)
 
@@ -425,7 +435,6 @@ class TraitType(BaseDescriptor):
                 if self.name in obj._trait_dyn_inits:
                     method = getattr(obj, obj._trait_dyn_inits[self.name])
                     value = method()
-                    # FIXME: Do we really validate here?
                     value = self._validate(obj, value)
                     obj._trait_values[self.name] = value
                     return value
@@ -568,9 +577,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 pass
             else:
                 if isinstance(value, BaseDescriptor):
-                    value.instance_init(inst)
-                    if isinstance(value, TraitType) and key not in kw:
-                        value._set_default_value_at_instance_init(inst)
+                    value.top_instance_init(inst, **kw)
         inst._cross_validation_lock = False
         return inst
 
@@ -1143,7 +1150,7 @@ class Union(TraitType):
     """A trait type representing a Union type."""
 
     def __init__(self, trait_types, **metadata):
-        """Construct a Union  trait.
+        """Construct a Union trait.
 
         This trait allows values that are allowed by at least one of the
         specified trait types. A Union traitlet cannot have metadata on
