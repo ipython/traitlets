@@ -371,17 +371,18 @@ class TraitType(BaseDescriptor):
         pass
 
     def get_default_value(self):
-        """Create a new instance of the default value."""
+        """Retrieve the static default value for this trait"""
         return self.default_value
 
-    def init_default_value(self, obj):
-        """Set the static default value for the trait type.
+    def validate_default_value(self, obj):
+        """Retrieve and validate the static default value"""
+        v = self.get_default_value()
+        return self._validate(obj, v)
 
-        This method is called when accessing the trait value for the first
-        time in :meth:`HasTraits.__get__`.
+    def init_default_value(self, obj):
+        """DEPRECATED: Set the static default value for the trait type.
         """
-        value = self.get_default_value()
-        value = self._validate(obj, value)
+        value = self.validate_default_value()
         obj._trait_values[self.name] = value
         return value
 
@@ -393,25 +394,25 @@ class TraitType(BaseDescriptor):
         - obj._{name}_default() on the class with the traitlet, or a subclass
           that obj belongs to.
         - trait.make_dynamic_default, which is defined by Instance
+
+        If neither exist, it returns None
         """
-        mro = type(obj).mro()
-        meth_name = '_%s_default' % self.name
-        for cls in mro[:mro.index(self.this_class)+1]:
-            if meth_name in cls.__dict__:
-                return getattr(obj, meth_name)
+        # Traitlets without a name are not on the instance, e.g. in List or Union
+        if self.name:
+            mro = type(obj).mro()
+            meth_name = '_%s_default' % self.name
+            for cls in mro[:mro.index(self.this_class)+1]:
+                if meth_name in cls.__dict__:
+                    return getattr(obj, meth_name)
 
         return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
-        # Traitlets without a name are for validation only, e.g. in List or Union
-        if self.name is None:
-            return
-
         # If no dynamic initialiser is present, and the trait implementation or
         # use provides a static default, transfer that to obj._trait_values.
         if (self._dynamic_default_callable(obj) is None) \
                 and (self.default_value is not Undefined):
-            self.init_default_value(obj)
+            self.validate_default_value(obj)
 
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
@@ -431,10 +432,10 @@ class TraitType(BaseDescriptor):
                 dynamic_default = self._dynamic_default_callable(obj)
                 if dynamic_default is not None:
                     value = self._validate(obj, dynamic_default())
-                    obj._trait_values[self.name] = value
-                    return value
                 else:
-                    return self.init_default_value(obj)
+                    value = self.validate_default_value(obj)
+                obj._trait_values[self.name] = value
+                return value
             except Exception:
                 # This should never be reached.
                 raise TraitError('Unexpected error in TraitType: '
