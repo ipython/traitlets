@@ -448,7 +448,7 @@ class TestType(TestCase):
             klass = Type(allow_none=True)
 
         a = A()
-        self.assertEqual(a.klass, None)
+        self.assertEqual(a.klass, object)
 
         a.klass = B
         self.assertEqual(a.klass, B)
@@ -606,7 +606,9 @@ class TestInstance(TestCase):
         class A(HasTraits):
             inst = Instance(Foo)
 
-        self.assertRaises(TraitError, A)
+        a = A()
+        with self.assertRaises(TraitError):
+            a.inst
 
     def test_instance(self):
         class Foo(object): pass
@@ -1110,8 +1112,14 @@ def test_dict_default_value():
     """Check that the `{}` default value of the Dict traitlet constructor is
     actually copied."""
 
-    d1, d2 = Dict(), Dict()
-    nt.assert_false(d1.get_default_value() is d2.get_default_value())
+    class Foo(HasTraits):
+        d1 = Dict()
+        d2 = Dict()
+
+    foo = Foo()
+    nt.assert_equal(foo.d1, {})
+    nt.assert_equal(foo.d2, {})
+    nt.assert_is_not(foo.d1, foo.d2)
 
 
 class TestValidationHook(TestCase):
