@@ -385,33 +385,31 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = value
         return value
 
-    def _setup_dynamic_initializer(self, obj):
-        """Check for a method to create the default value, add it to obj._trait_dyn_inits
+    def _dynamic_default_callable(self, obj):
+        """Retrieve a callable to calculate the default for this traitlet.
 
-        Returns True if a dynamic default method was found, False otherwise.
+        This looks for:
+
+        - obj._{name}_default() on the class with the traitlet, or a subclass
+          that obj belongs to.
+        - trait.make_dynamic_default, which is defined by Instance
         """
-        # Check for a deferred initializer defined in the same class as the
-        # trait declaration or above.
         mro = type(obj).mro()
         meth_name = '_%s_default' % self.name
         for cls in mro[:mro.index(self.this_class)+1]:
             if meth_name in cls.__dict__:
-                break
-        else:
-            return False
-        # Complete the dynamic initialization.
-        obj._trait_dyn_inits[self.name] = meth_name
-        return True
+                return getattr(obj, meth_name)
+
+        return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
         # Traitlets without a name are for validation only, e.g. in List or Union
         if self.name is None:
             return
-        # Set up default values:
-        # - if a dynamic initialiser is present, put it in obj._trait_dyn_inits
-        # - if the trait implementation or use provides a static default,
-        #   put this in obj._trait_values
-        if (not self._setup_dynamic_initializer(obj)) \
+
+        # If no dynamic initialiser is present, and the trait implementation or
+        # use provides a static default, transfer that to obj._trait_values.
+        if (self._dynamic_default_callable(obj) is None) \
                 and (self.default_value is not Undefined):
             self.init_default_value(obj)
 
@@ -430,13 +428,9 @@ class TraitType(BaseDescriptor):
                 value = obj._trait_values[self.name]
             except KeyError:
                 # Check for a dynamic initializer.
-                if self.name in obj._trait_dyn_inits:
-                    method = obj._trait_dyn_inits[self.name]
-                    if isinstance(method, str):
-                        method = getattr(obj, method)
-                    value = method()
-                    # FIXME: Do we really validate here?
-                    value = self._validate(obj, value)
+                dynamic_default = self._dynamic_default_callable(obj)
+                if dynamic_default is not None:
+                    value = self._validate(obj, dynamic_default())
                     obj._trait_values[self.name] = value
                     return value
                 else:
@@ -453,7 +447,7 @@ class TraitType(BaseDescriptor):
         try:
             old_value = obj._trait_values[self.name]
         except KeyError:
-            old_value = Undefined
+            old_value = self.get_default_value()
 
         obj._trait_values[self.name] = new_value
         try:
@@ -564,7 +558,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls, **kw)
         inst._trait_values = {}
         inst._trait_notifiers = {}
-        inst._trait_dyn_inits = {}
         inst._cross_validation_lock = True
         # Here we tell all the TraitType instances to set their default
         # values on the instance.
@@ -1058,16 +1051,11 @@ class Instance(ClassBasedTraitType):
         if isinstance(self.klass, py3compat.string_types):
             self.klass = self._resolve_string(self.klass)
 
-    def _make_default_value(self):
+    def make_dynamic_default(self):
         if (self.default_args is None) and (self.default_kwargs is None):
             return None
         return self.klass(*(self.default_args or ()),
                           **(self.default_kwargs or {}))
-
-    def _setup_dynamic_initializer(self, obj):
-        if not super(Instance, self)._setup_dynamic_initializer(obj):
-            obj._trait_dyn_inits[self.name] = self._make_default_value
-        return True
 
 
 class ForwardDeclaredMixin(object):
