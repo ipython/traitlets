@@ -199,7 +199,7 @@ class link(object):
     Examples
     --------
 
-    >>> c = link((src, 'value'), (tgt, 'value'),
+    >>> c = link((src, 'value'), (tgt, 'value'))
     >>> src.value = 5  # updates other objects as well
     """
     updating = False
@@ -404,6 +404,9 @@ class TraitType(BaseDescriptor):
         return True
 
     def instance_init(self, obj):
+        # Traitlets without a name are for validation only, e.g. in List or Union
+        if self.name is None:
+            return
         # Set up default values:
         # - if a dynamic initialiser is present, put it in obj._trait_dyn_inits
         # - if the trait implementation or use provides a static default,
@@ -1144,7 +1147,6 @@ class Union(TraitType):
 
     def instance_init(self, obj):
         for trait_type in self.trait_types:
-            trait_type.name = self.name
             trait_type.this_class = self.this_class
             trait_type.instance_init(obj)
         super(Union, self).instance_init(obj)
@@ -1494,7 +1496,6 @@ class Container(Instance):
 
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
-            self._trait.name = 'element'
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s"%repr_type(trait))
 
@@ -1688,7 +1689,6 @@ class Tuple(Container):
         self._traits = []
         for trait in traits:
             t = trait() if isinstance(trait, type) else trait
-            t.name = 'element'
             self._traits.append(t)
 
         if self._traits and default_value is None:
@@ -1768,14 +1768,10 @@ class Dict(Instance):
         # Case where a type of TraitType is provided rather than an instance
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
-            self._trait.name = 'element'
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
         self._traits = traits
-        if traits is not None:
-            for t in traits.values():
-                t.name = 'element'
 
         super(Dict, self).__init__(klass=dict, args=args, **metadata)
 
