@@ -382,6 +382,8 @@ class TraitType(BaseDescriptor):
     def init_default_value(self, obj):
         """DEPRECATED: Set the static default value for the trait type.
         """
+        warn("init_default_value is deprecated, and may be removed in the future",
+             stacklevel=2)
         value = self.validate_default_value()
         obj._trait_values[self.name] = value
         return value
