@@ -1215,11 +1215,15 @@ class Int(TraitType):
         if not isinstance(value, int):
             self.error(obj, value)
         if self.max is not None and value > self.max:        
-            raise TraitError("The value of the '%s' trait of %s instance should not be greater than %s"\
-                % (self.name, class_of(obj), self.max))
+            raise TraitError("The value of the '%s' trait of %s instance should "
+                             "not be greater than %s, but a value of %s was "
+                             "specified" % (self.name, class_of(obj),
+                                            self.max, repr_type(value)))
         if self.min is not None and value < self.min:
-            raise TraitError("The value of the '%s' trait of %s instance should not be lesser than %s"\
-                % (self.name, class_of(obj), self.min))
+            raise TraitError("The value of the '%s' trait of %s instance should "
+                             "not be less than %s, but a value of %s was "
+                             "specified" % (self.name, class_of(obj), 
+                                            self.min, repr_type(value)))
         return value
 
 
@@ -1301,8 +1305,10 @@ class Float(TraitType):
         if not isinstance(value, float):
             self.error(obj, value)
         if value > self.max or value < self.min:
-           raise TraitError("The value of the '%s' trait of %s instance should be between %s and %s"\
-               % (self.name, class_of(obj), self.min, self.max))
+            raise TraitError("The value of the '%s' trait of %s instance should "
+                             "be between %s and %s, but a value of %s was "
+                             "specified" % (self.name, class_of(obj),
+                                            self.min, self.max, repr_type(value)))
         return value
 
 
@@ -1542,7 +1548,7 @@ class Container(Instance):
             self._trait = trait() if isinstance(trait, type) else trait
             self._trait.name = 'element'
         elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s"%repr_type(trait))
+            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
         super(Container,self).__init__(klass=self.klass, args=args, **metadata)
 
