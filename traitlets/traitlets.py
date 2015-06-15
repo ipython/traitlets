@@ -1204,10 +1204,24 @@ class Int(TraitType):
     default_value = 0
     info_text = 'an int'
 
+    def __init__(self, default_value=NoDefaultSpecified,
+                 allow_none=None, **kwargs):
+        self.min = kwargs.pop('min', None)
+        self.max = kwargs.pop('max', None)
+        super(Int, self).__init__(default_value=default_value,
+                                  allow_none=allow_none, **kwargs)
+
     def validate(self, obj, value):
-        if isinstance(value, int):
-            return value
-        self.error(obj, value)
+        if not isinstance(value, int):
+            self.error(obj, value)
+        if self.max is not None and value > self.max:        
+            raise TraitError("The value of the '%s' trait of %s instance should not be greater than %s"\
+                % (self.name, class_of(obj), self.max))
+        if self.min is not None and value < self.min:
+            raise TraitError("The value of the '%s' trait of %s instance should not be lesser than %s"\
+                % (self.name, class_of(obj), self.min))
+        return value
+
 
 class CInt(Int):
     """A casting version of the int trait."""
