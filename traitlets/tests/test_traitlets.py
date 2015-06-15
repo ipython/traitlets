@@ -760,16 +760,16 @@ class OrTraitTest(TraitTestBase):
 
 class IntTrait(HasTraits):
 
-    value = Int(99)
+    value = Int(99, min=-100)
 
 class TestInt(TraitTestBase):
 
     obj = IntTrait()
     _default_value = 99
     _good_values   = [10, -10]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,), None, 1j,
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
                       10.1, -10.1, '10L', '-10L', '10.1', '-10.1', u'10L',
-                      u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', u'-10']
+                      u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', -200]
     if not py3compat.PY3:
         _bad_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
 
@@ -822,7 +822,7 @@ class TestInteger(TestLong):
 
 class FloatTrait(HasTraits):
 
-    value = Float(99.0)
+    value = Float(99.0, max=200.0)
 
 class TestFloat(TraitTestBase):
 
@@ -830,9 +830,9 @@ class TestFloat(TraitTestBase):
 
     _default_value = 99.0
     _good_values   = [10, -10, 10.1, -10.1]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,), None,
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None,
                       1j, '10', '-10', '10L', '-10L', '10.1', '-10.1', u'10',
-                      u'-10', u'10L', u'-10L', u'10.1', u'-10.1']
+                      u'-10', u'10L', u'-10L', u'10.1', u'-10.1', 201.0]
     if not py3compat.PY3:
         _bad_values.extend([long(10), long(-10)])
 
