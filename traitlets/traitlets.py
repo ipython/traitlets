@@ -1274,12 +1274,22 @@ class Float(TraitType):
     default_value = 0.0
     info_text = 'a float'
 
+    def __init__(self, default_value=NoDefaultSpecified,
+                 allow_none=None, **kwargs):
+        self.min = kwargs.pop('min', -float('inf'))
+        self.max = kwargs.pop('max', float('inf'))
+        super(Float, self).__init__(default_value=default_value, 
+                                    allow_none=allow_none, **kwargs)
+
     def validate(self, obj, value):
-        if isinstance(value, float):
-            return value
         if isinstance(value, int):
-            return float(value)
-        self.error(obj, value)
+            value = float(value)
+        if not isinstance(value, float):
+            self.error(obj, value)
+        if value > self.max or value < self.min:
+           raise TraitError("The value of the '%s' trait of %s instance should be between %s and %s"\
+               % (self.name, class_of(obj), self.min, self.max))
+        return value
 
 
 class CFloat(Float):
