@@ -1177,10 +1177,28 @@ class Int(TraitType):
     default_value = 0
     info_text = 'an int'
 
+    def __init__(self, default_value=NoDefaultSpecified,
+                 allow_none=None, **kwargs):
+        self.min = kwargs.pop('min', None)
+        self.max = kwargs.pop('max', None)
+        super(Int, self).__init__(default_value=default_value,
+                                  allow_none=allow_none, **kwargs)
+
     def validate(self, obj, value):
-        if isinstance(value, int):
-            return value
-        self.error(obj, value)
+        if not isinstance(value, int):
+            self.error(obj, value)
+        if self.max is not None and value > self.max:        
+            raise TraitError("The value of the '%s' trait of %s instance should "
+                             "not be greater than %s, but a value of %s was "
+                             "specified" % (self.name, class_of(obj),
+                                            self.max, value))
+        if self.min is not None and value < self.min:
+            raise TraitError("The value of the '%s' trait of %s instance should "
+                             "not be less than %s, but a value of %s was "
+                             "specified" % (self.name, class_of(obj), 
+                                            self.min, value))
+        return value
+
 
 class CInt(Int):
     """A casting version of the int trait."""
@@ -1247,12 +1265,24 @@ class Float(TraitType):
     default_value = 0.0
     info_text = 'a float'
 
+    def __init__(self, default_value=NoDefaultSpecified,
+                 allow_none=None, **kwargs):
+        self.min = kwargs.pop('min', -float('inf'))
+        self.max = kwargs.pop('max', float('inf'))
+        super(Float, self).__init__(default_value=default_value, 
+                                    allow_none=allow_none, **kwargs)
+
     def validate(self, obj, value):
-        if isinstance(value, float):
-            return value
         if isinstance(value, int):
-            return float(value)
-        self.error(obj, value)
+            value = float(value)
+        if not isinstance(value, float):
+            self.error(obj, value)
+        if value > self.max or value < self.min:
+            raise TraitError("The value of the '%s' trait of %s instance should "
+                             "be between %s and %s, but a value of %s was "
+                             "specified" % (self.name, class_of(obj),
+                                            self.min, self.max, value))
+        return value
 
 
 class CFloat(Float):
@@ -1490,7 +1520,7 @@ class Container(Instance):
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s"%repr_type(trait))
+            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
         super(Container,self).__init__(klass=self.klass, args=args, **metadata)
 
