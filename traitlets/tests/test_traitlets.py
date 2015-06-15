@@ -49,7 +49,8 @@ class TestTraitType(TestCase):
         class A(HasTraits):
             a = TraitType
         a = A()
-        self.assertEqual(a.a, Undefined)
+        with self.assertRaises(TraitError):
+            a.a
 
     def test_set(self):
         class A(HasTraitsStub):

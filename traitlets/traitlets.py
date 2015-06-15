@@ -414,7 +414,9 @@ class TraitType(BaseDescriptor):
         # use provides a static default, transfer that to obj._trait_values.
         if (self._dynamic_default_callable(obj) is None) \
                 and (self.default_value is not Undefined):
-            self.validate_default_value(obj)
+            v = self.validate_default_value(obj)
+            if self.name is not None:
+                obj._trait_values[self.name] = v
 
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
@@ -432,10 +434,10 @@ class TraitType(BaseDescriptor):
             except KeyError:
                 # Check for a dynamic initializer.
                 dynamic_default = self._dynamic_default_callable(obj)
-                if dynamic_default is not None:
-                    value = self._validate(obj, dynamic_default())
-                else:
-                    value = self.validate_default_value(obj)
+                if dynamic_default is None:
+                    raise TraitError("No default value found for %s trait of %r"
+                                     % (self.name, obj))
+                value = self._validate(obj, dynamic_default())
                 obj._trait_values[self.name] = value
                 return value
             except Exception:
