@@ -114,16 +114,13 @@ class TestTraitType(TestCase):
 
         a = A()
         self.assertEqual(a._trait_values, {})
-        self.assertEqual(list(a._trait_dyn_inits.keys()), ['x'])
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
         b = B()
-        self.assertEqual(b._trait_values, {'x': 20})
-        self.assertEqual(list(a._trait_dyn_inits.keys()), ['x'])
         self.assertEqual(b.x, 20)
+        self.assertEqual(b._trait_values, {'x': 20})
         c = C()
         self.assertEqual(c._trait_values, {})
-        self.assertEqual(list(a._trait_dyn_inits.keys()), ['x'])
         self.assertEqual(c.x, 21)
         self.assertEqual(c._trait_values, {'x': 21})
         # Ensure that the base class remains unmolested when the _default
@@ -131,7 +128,6 @@ class TestTraitType(TestCase):
         a = A()
         c = C()
         self.assertEqual(a._trait_values, {})
-        self.assertEqual(list(a._trait_dyn_inits.keys()), ['x'])
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
 
@@ -448,7 +444,7 @@ class TestType(TestCase):
             klass = Type(allow_none=True)
 
         a = A()
-        self.assertEqual(a.klass, None)
+        self.assertEqual(a.klass, object)
 
         a.klass = B
         self.assertEqual(a.klass, B)
@@ -606,7 +602,9 @@ class TestInstance(TestCase):
         class A(HasTraits):
             inst = Instance(Foo)
 
-        self.assertRaises(TraitError, A)
+        a = A()
+        with self.assertRaises(TraitError):
+            a.inst
 
     def test_instance(self):
         class Foo(object): pass
@@ -1110,8 +1108,14 @@ def test_dict_default_value():
     """Check that the `{}` default value of the Dict traitlet constructor is
     actually copied."""
 
-    d1, d2 = Dict(), Dict()
-    nt.assert_false(d1.get_default_value() is d2.get_default_value())
+    class Foo(HasTraits):
+        d1 = Dict()
+        d2 = Dict()
+
+    foo = Foo()
+    nt.assert_equal(foo.d1, {})
+    nt.assert_equal(foo.d2, {})
+    nt.assert_is_not(foo.d1, foo.d2)
 
 
 class TestValidationHook(TestCase):

@@ -199,7 +199,7 @@ class link(object):
     Examples
     --------
 
-    >>> c = link((src, 'value'), (tgt, 'value'),
+    >>> c = link((src, 'value'), (tgt, 'value'))
     >>> src.value = 5  # updates other objects as well
     """
     updating = False
@@ -371,41 +371,50 @@ class TraitType(BaseDescriptor):
         pass
 
     def get_default_value(self):
-        """Create a new instance of the default value."""
+        """Retrieve the static default value for this trait"""
         return self.default_value
 
-    def init_default_value(self, obj):
-        """Instantiate the default value for the trait type.
+    def validate_default_value(self, obj):
+        """Retrieve and validate the static default value"""
+        v = self.get_default_value()
+        return self._validate(obj, v)
 
-        This method is called when accessing the trait value for the first
-        time in :meth:`HasTraits.__get__`.
+    def init_default_value(self, obj):
+        """DEPRECATED: Set the static default value for the trait type.
         """
-        value = self.get_default_value()
-        value = self._validate(obj, value)
+        warn("init_default_value is deprecated, and may be removed in the future",
+             stacklevel=2)
+        value = self.validate_default_value()
         obj._trait_values[self.name] = value
         return value
 
-    def _setup_dynamic_initializer(self, obj):
-        # Check for a deferred initializer defined in the same class as the
-        # trait declaration or above.
-        mro = type(obj).mro()
-        meth_name = '_%s_default' % self.name
-        for cls in mro[:mro.index(self.this_class)+1]:
-            if meth_name in cls.__dict__:
-                break
-        else:
-            return False
-        # Complete the dynamic initialization.
-        obj._trait_dyn_inits[self.name] = meth_name
-        return True
+    def _dynamic_default_callable(self, obj):
+        """Retrieve a callable to calculate the default for this traitlet.
 
-    def _set_default_value_at_instance_init(self, obj):
-        # As above, but if no default was specified, don't try to set it.
-        # If the trait is accessed before it is given a value, init_default_value
-        # will be called at that point.
-        if (not self._setup_dynamic_initializer(obj)) \
+        This looks for:
+
+        - obj._{name}_default() on the class with the traitlet, or a subclass
+          that obj belongs to.
+        - trait.make_dynamic_default, which is defined by Instance
+
+        If neither exist, it returns None
+        """
+        # Traitlets without a name are not on the instance, e.g. in List or Union
+        if self.name:
+            mro = type(obj).mro()
+            meth_name = '_%s_default' % self.name
+            for cls in mro[:mro.index(self.this_class)+1]:
+                if meth_name in cls.__dict__:
+                    return getattr(obj, meth_name)
+
+        return getattr(self, 'make_dynamic_default', None)
+
+    def instance_init(self, obj):
+        # If no dynamic initialiser is present, and the trait implementation or
+        # use provides a static default, transfer that to obj._trait_values.
+        if (self._dynamic_default_callable(obj) is None) \
                 and (self.default_value is not Undefined):
-            self.init_default_value(obj)
+            self.validate_default_value(obj)
 
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
@@ -422,15 +431,13 @@ class TraitType(BaseDescriptor):
                 value = obj._trait_values[self.name]
             except KeyError:
                 # Check for a dynamic initializer.
-                if self.name in obj._trait_dyn_inits:
-                    method = getattr(obj, obj._trait_dyn_inits[self.name])
-                    value = method()
-                    # FIXME: Do we really validate here?
-                    value = self._validate(obj, value)
-                    obj._trait_values[self.name] = value
-                    return value
+                dynamic_default = self._dynamic_default_callable(obj)
+                if dynamic_default is not None:
+                    value = self._validate(obj, dynamic_default())
                 else:
-                    return self.init_default_value(obj)
+                    value = self.validate_default_value(obj)
+                obj._trait_values[self.name] = value
+                return value
             except Exception:
                 # This should never be reached.
                 raise TraitError('Unexpected error in TraitType: '
@@ -443,7 +450,7 @@ class TraitType(BaseDescriptor):
         try:
             old_value = obj._trait_values[self.name]
         except KeyError:
-            old_value = Undefined
+            old_value = self.get_default_value()
 
         obj._trait_values[self.name] = new_value
         try:
@@ -554,7 +561,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls, **kw)
         inst._trait_values = {}
         inst._trait_notifiers = {}
-        inst._trait_dyn_inits = {}
         inst._cross_validation_lock = True
         # Here we tell all the TraitType instances to set their default
         # values on the instance.
@@ -569,8 +575,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             else:
                 if isinstance(value, BaseDescriptor):
                     value.instance_init(inst)
-                    if isinstance(value, TraitType) and key not in kw:
-                        value._set_default_value_at_instance_init(inst)
         inst._cross_validation_lock = False
         return inst
 
@@ -901,7 +905,7 @@ class Type(ClassBasedTraitType):
         a particular class.
 
         If only ``default_value`` is given, it is used for the ``klass`` as
-        well.
+        well. If neither are given, both default to ``object``.
 
         Parameters
         ----------
@@ -915,13 +919,12 @@ class Type(ClassBasedTraitType):
             may be specified in a string like: 'foo.bar.MyClass'.
             The string is resolved into real class, when the parent
             :class:`HasTraits` class is instantiated.
-        allow_none : bool [ default True ]
-            Indicates whether None is allowed as an assignable value. Even if
-            ``False``, the default value may be ``None``.
+        allow_none : bool [ default False ]
+            Indicates whether None is allowed as an assignable value.
         """
         if default_value is None:
             if klass is None:
-                klass = object
+                default_value = klass = object
         elif klass is None:
             klass = default_value
 
@@ -968,20 +971,6 @@ class Type(ClassBasedTraitType):
             self.klass = self._resolve_string(self.klass)
         if isinstance(self.default_value, py3compat.string_types):
             self.default_value = self._resolve_string(self.default_value)
-
-    def get_default_value(self):
-        return self.default_value
-
-
-class DefaultValueGenerator(object):
-    """A class for generating new default value instances."""
-
-    def __init__(self, *args, **kw):
-        self.args = args
-        self.kw = kw
-
-    def generate(self, klass):
-        return klass(*self.args, **self.kw)
 
 
 class Instance(ClassBasedTraitType):
@@ -1030,25 +1019,15 @@ class Instance(ClassBasedTraitType):
             raise TraitError('The klass attribute must be a class'
                                 ' not: %r' % klass)
 
-        # self.klass is a class, so handle default_value
-        if args is None and kw is None:
-            default_value = None
-        else:
-            if args is None:
-                # kw is not None
-                args = ()
-            elif kw is None:
-                # args is not None
-                kw = {}
+        if (kw is not None) and not isinstance(kw, dict):
+            raise TraitError("The 'kw' argument must be a dict or None.")
+        if (args is not None) and not isinstance(args, tuple):
+            raise TraitError("The 'args' argument must be a tuple or None.")
 
-            if not isinstance(kw, dict):
-                raise TraitError("The 'kw' argument must be a dict or None.")
-            if not isinstance(args, tuple):
-                raise TraitError("The 'args' argument must be a tuple or None.")
+        self.default_args = args
+        self.default_kwargs = kw
 
-            default_value = DefaultValueGenerator(*args, **kw)
-
-        super(Instance, self).__init__(default_value, **metadata)
+        super(Instance, self).__init__(**metadata)
 
     def validate(self, obj, value):
         if isinstance(value, self.klass):
@@ -1075,18 +1054,11 @@ class Instance(ClassBasedTraitType):
         if isinstance(self.klass, py3compat.string_types):
             self.klass = self._resolve_string(self.klass)
 
-    def get_default_value(self):
-        """Instantiate a default value instance.
-
-        This is called when the containing HasTraits classes'
-        :meth:`__new__` method is called to ensure that a unique instance
-        is created for each HasTraits instance.
-        """
-        dv  = self.default_value
-        if isinstance(dv, DefaultValueGenerator):
-            return dv.generate(self.klass)
-        else:
-            return dv
+    def make_dynamic_default(self):
+        if (self.default_args is None) and (self.default_kwargs is None):
+            return None
+        return self.klass(*(self.default_args or ()),
+                          **(self.default_kwargs or {}))
 
 
 class ForwardDeclaredMixin(object):
@@ -1166,7 +1138,6 @@ class Union(TraitType):
 
     def instance_init(self, obj):
         for trait_type in self.trait_types:
-            trait_type.name = self.name
             trait_type.this_class = self.this_class
             trait_type.instance_init(obj)
         super(Union, self).instance_init(obj)
@@ -1516,7 +1487,6 @@ class Container(Instance):
 
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
-            self._trait.name = 'element'
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s"%repr_type(trait))
 
@@ -1710,7 +1680,6 @@ class Tuple(Container):
         self._traits = []
         for trait in traits:
             t = trait() if isinstance(trait, type) else trait
-            t.name = 'element'
             self._traits.append(t)
 
         if self._traits and default_value is None:
@@ -1790,14 +1759,10 @@ class Dict(Instance):
         # Case where a type of TraitType is provided rather than an instance
         if is_trait(trait):
             self._trait = trait() if isinstance(trait, type) else trait
-            self._trait.name = 'element'
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
         self._traits = traits
-        if traits is not None:
-            for t in traits.values():
-                t.name = 'element'
 
         super(Dict, self).__init__(klass=dict, args=args, **metadata)
 
