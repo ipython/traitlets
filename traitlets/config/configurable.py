@@ -210,7 +210,7 @@ class Configurable(HasTraits):
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
             try:
-                dvr = repr(trait.get_default_value())
+                dvr = repr(trait.default_value)
             except Exception:
                 dvr = None # ignore defaults we can't construct
             if dvr is not None:
@@ -259,7 +259,7 @@ class Configurable(HasTraits):
         for name, trait in iteritems(cls.class_own_traits(config=True)):
             help = trait.get_metadata('help') or ''
             lines.append(c(help))
-            lines.append('# c.%s.%s = %r'%(cls.__name__, name, trait.get_default_value()))
+            lines.append('# c.%s.%s = %r'%(cls.__name__, name, trait.default_value))
             lines.append('')
         return '\n'.join(lines)
 
@@ -286,7 +286,7 @@ class Configurable(HasTraits):
 
             # Default value
             try:
-                dv = trait.get_default_value()
+                dv = trait.default_value
                 dvr = repr(dv)
             except Exception:
                 dvr = dv = None # ignore defaults we can't construct

@@ -371,20 +371,20 @@ class TraitType(BaseDescriptor):
         pass
 
     def get_default_value(self):
-        """Retrieve the static default value for this trait"""
-        return self.default_value
+        """DEPRECATED: Retrieve the static default value for this trait.
 
-    def validate_default_value(self, obj):
-        """Retrieve and validate the static default value"""
-        v = self.get_default_value()
-        return self._validate(obj, v)
+        Use self.default_value instead
+        """
+        warn("get_default_value is deprecated: use the .default_value attribute",
+             stacklevel=2)
+        return self.default_value
 
     def init_default_value(self, obj):
         """DEPRECATED: Set the static default value for the trait type.
         """
         warn("init_default_value is deprecated, and may be removed in the future",
              stacklevel=2)
-        value = self.validate_default_value()
+        value = self._validate(obj, self.default_value)
         obj._trait_values[self.name] = value
         return value
 
@@ -414,7 +414,7 @@ class TraitType(BaseDescriptor):
         # use provides a static default, transfer that to obj._trait_values.
         if (self._dynamic_default_callable(obj) is None) \
                 and (self.default_value is not Undefined):
-            v = self.validate_default_value(obj)
+            v = self._validate(obj, self.default_value)
             if self.name is not None:
                 obj._trait_values[self.name] = v
 
@@ -452,7 +452,7 @@ class TraitType(BaseDescriptor):
         try:
             old_value = obj._trait_values[self.name]
         except KeyError:
-            old_value = self.get_default_value()
+            old_value = self.default_value
 
         obj._trait_values[self.name] = new_value
         try:
@@ -1135,7 +1135,7 @@ class Union(TraitType):
         """
         self.trait_types = trait_types
         self.info_text = " or ".join([tt.info_text for tt in self.trait_types])
-        self.default_value = self.trait_types[0].get_default_value()
+        self.default_value = self.trait_types[0].default_value
         super(Union, self).__init__(**metadata)
 
     def instance_init(self, obj):
