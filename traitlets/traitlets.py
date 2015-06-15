@@ -1218,12 +1218,12 @@ class Int(TraitType):
             raise TraitError("The value of the '%s' trait of %s instance should "
                              "not be greater than %s, but a value of %s was "
                              "specified" % (self.name, class_of(obj),
-                                            self.max, repr_type(value)))
+                                            self.max, value))
         if self.min is not None and value < self.min:
             raise TraitError("The value of the '%s' trait of %s instance should "
                              "not be less than %s, but a value of %s was "
                              "specified" % (self.name, class_of(obj), 
-                                            self.min, repr_type(value)))
+                                            self.min, value))
         return value
 
 
@@ -1308,7 +1308,7 @@ class Float(TraitType):
             raise TraitError("The value of the '%s' trait of %s instance should "
                              "be between %s and %s, but a value of %s was "
                              "specified" % (self.name, class_of(obj),
-                                            self.min, self.max, repr_type(value)))
+                                            self.min, self.max, value))
         return value
 
 
