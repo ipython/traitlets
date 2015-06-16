@@ -841,13 +841,16 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
 
         return result
 
-    def trait_metadata(self, traitname, key, default=None):
+    def trait_metadata(self, traitname, key, default=None, allow_raise=True):
         """Get metadata values for trait by key."""
         try:
             trait = getattr(self.__class__, traitname)
         except AttributeError:
-            raise TraitError("Class %s does not have a trait named %s" %
-                                (self.__class__.__name__, traitname))
+            if allow_raise:
+                raise TraitError("Class %s does not have a trait named %s" %
+                                    (self.__class__.__name__, traitname))
+            else:
+                return default
         else:
             return trait.get_metadata(key, default)
 
