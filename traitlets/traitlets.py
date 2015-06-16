@@ -689,7 +689,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 raise TraitError('a trait changed callback '
                                     'must be callable.')
 
-
     def _add_notifiers(self, handler, name):
         if name not in self._trait_notifiers:
             nlist = []
@@ -801,6 +800,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         return {n: t for (n, t) in cls.class_traits(**metadata).items()
                 if getattr(sup, n, None) is not t}
 
+    def has_trait(self, name):
+        """Returns True if the object has a trait with the specified name."""
+        return isinstance(getattr(self.__class__, name, None), TraitType)
+        
     def trait_names(self, **metadata):
         """Get a list of all the names of this class' traits."""
         return self.traits(**metadata).keys()
