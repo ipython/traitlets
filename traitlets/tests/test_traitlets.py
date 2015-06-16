@@ -374,6 +374,8 @@ class TestHasTraits(TestCase):
         a = A()
         self.assertEqual(sorted(a.trait_names()),['f','i'])
         self.assertEqual(sorted(A.class_trait_names()),['f','i'])
+        self.assertTrue(a.has_trait('f'))
+        self.assertFalse(a.has_trait('g'))
 
     def test_trait_metadata(self):
         class A(HasTraits):
