@@ -7,6 +7,8 @@ Any class with traitlet attributes must inherit from :class:`HasTraits`.
 
 .. autoclass:: HasTraits
 
+   .. automethod:: has_trait
+
    .. automethod:: trait_names
 
    .. automethod:: class_trait_names
