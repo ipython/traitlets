@@ -919,7 +919,7 @@ class Type(ClassBasedTraitType):
             the str must be a fully specified class name, like 'foo.bar.Bah'.
             The string is resolved into real class, when the parent
             :class:`HasTraits` class is instantiated.
-        klass : class, str, None
+        klass : class, str [ default object ]
             Values of this trait must be a subclass of klass.  The klass
             may be specified in a string like: 'foo.bar.MyClass'.
             The string is resolved into real class, when the parent
@@ -928,17 +928,22 @@ class Type(ClassBasedTraitType):
             Indicates whether None is allowed as an assignable value.
         """
         if default_value is NoDefaultSpecified:
-            if klass is None:
-                default_value = klass = object
-        elif klass is None:
-            klass = default_value
+            new_default_value = object if (klass is None) else klass
+        else:
+            new_default_value = default_value
+
+        if klass is None:
+            if (default_value is None) or (default_value is NoDefaultSpecified):
+                klass = object
+            else:
+                klass = default_value
 
         if not (inspect.isclass(klass) or isinstance(klass, py3compat.string_types)):
             raise TraitError("A Type trait must specify a class.")
 
         self.klass       = klass
 
-        super(Type, self).__init__(default_value, **metadata)
+        super(Type, self).__init__(new_default_value, **metadata)
 
     def validate(self, obj, value):
         """Validates that the value is a valid object instance."""
