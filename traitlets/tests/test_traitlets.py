@@ -453,6 +453,41 @@ class TestType(TestCase):
         self.assertEqual(a.klass, B)
         self.assertRaises(TraitError, setattr, a, 'klass', 10)
 
+    def test_default_options(self):
+
+        class B(object): pass
+        class C(B): pass
+        class A(HasTraits):
+            # Different possible combinations of options for default_value
+            # and klass. default_value=None is only valid with allow_none=True.
+            k1 = Type()
+            k2 = Type(None, allow_none=True)
+            k3 = Type(B)
+            k4 = Type(klass=B)
+            k5 = Type(default_value=None, klass=B, allow_none=True)
+            k6 = Type(default_value=C, klass=B)
+
+        self.assertIs(A.k1.default_value, object)
+        self.assertIs(A.k1.klass, object)
+        self.assertIs(A.k2.default_value, None)
+        self.assertIs(A.k2.klass, object)
+        self.assertIs(A.k3.default_value, B)
+        self.assertIs(A.k3.klass, B)
+        self.assertIs(A.k4.default_value, B)
+        self.assertIs(A.k4.klass, B)
+        self.assertIs(A.k5.default_value, None)
+        self.assertIs(A.k5.klass, B)
+        self.assertIs(A.k6.default_value, C)
+        self.assertIs(A.k6.klass, B)
+
+        a = A()
+        self.assertIs(a.k1, object)
+        self.assertIs(a.k2, None)
+        self.assertIs(a.k3, B)
+        self.assertIs(a.k4, B)
+        self.assertIs(a.k5, None)
+        self.assertIs(a.k6, C)
+
     def test_value(self):
 
         class B(object): pass
