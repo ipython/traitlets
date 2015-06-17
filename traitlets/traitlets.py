@@ -903,7 +903,7 @@ class ClassBasedTraitType(TraitType):
 class Type(ClassBasedTraitType):
     """A trait whose value must be a subclass of a specified class."""
 
-    def __init__ (self, default_value=None, klass=None, **metadata):
+    def __init__ (self, default_value=NoDefaultSpecified, klass=None, **metadata):
         """Construct a Type trait
 
         A Type trait specifies that its values must be subclasses of
@@ -927,7 +927,7 @@ class Type(ClassBasedTraitType):
         allow_none : bool [ default False ]
             Indicates whether None is allowed as an assignable value.
         """
-        if default_value is None:
+        if default_value is NoDefaultSpecified:
             if klass is None:
                 default_value = klass = object
         elif klass is None:
