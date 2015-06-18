@@ -66,15 +66,14 @@ SequenceTypes = (list, tuple, set, frozenset)
 #-----------------------------------------------------------------------------
 
 
-NoDefaultSpecified = Sentinel('NoDefaultSpecified', 'traitlets',
+Undefined = Sentinel('Undefined', 'traitlets',
 '''
 Used in Traitlets to specify that no defaults are set in kwargs
 '''
 )
 
-
-class Undefined ( object ): pass
-Undefined = Undefined()
+# Deprecated alias
+NoDefaultSpecified = Undefined
 
 class TraitError(Exception):
     pass
@@ -333,7 +332,7 @@ class TraitType(BaseDescriptor):
     allow_none = False
     info_text = 'any value'
 
-    def __init__(self, default_value=NoDefaultSpecified, allow_none=None, **metadata):
+    def __init__(self, default_value=Undefined, allow_none=None, **metadata):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -344,7 +343,7 @@ class TraitType(BaseDescriptor):
         arguments (``**metadata``). For instance, the config system uses 'config'
         and 'help' keywords.
         """
-        if default_value is not NoDefaultSpecified:
+        if default_value is not Undefined:
             self.default_value = default_value
         if allow_none is not None:
             self.allow_none = allow_none
@@ -903,7 +902,7 @@ class ClassBasedTraitType(TraitType):
 class Type(ClassBasedTraitType):
     """A trait whose value must be a subclass of a specified class."""
 
-    def __init__ (self, default_value=NoDefaultSpecified, klass=None, **metadata):
+    def __init__ (self, default_value=Undefined, klass=None, **metadata):
         """Construct a Type trait
 
         A Type trait specifies that its values must be subclasses of
@@ -927,13 +926,13 @@ class Type(ClassBasedTraitType):
         allow_none : bool [ default False ]
             Indicates whether None is allowed as an assignable value.
         """
-        if default_value is NoDefaultSpecified:
+        if default_value is Undefined:
             new_default_value = object if (klass is None) else klass
         else:
             new_default_value = default_value
 
         if klass is None:
-            if (default_value is None) or (default_value is NoDefaultSpecified):
+            if (default_value is None) or (default_value is Undefined):
                 klass = object
             else:
                 klass = default_value
@@ -1185,7 +1184,7 @@ class Int(TraitType):
     default_value = 0
     info_text = 'an int'
 
-    def __init__(self, default_value=NoDefaultSpecified,
+    def __init__(self, default_value=Undefined,
                  allow_none=None, **kwargs):
         self.min = kwargs.pop('min', None)
         self.max = kwargs.pop('max', None)
@@ -1273,7 +1272,7 @@ class Float(TraitType):
     default_value = 0.0
     info_text = 'a float'
 
-    def __init__(self, default_value=NoDefaultSpecified,
+    def __init__(self, default_value=Undefined,
                  allow_none=None, **kwargs):
         self.min = kwargs.pop('min', -float('inf'))
         self.max = kwargs.pop('max', float('inf'))
@@ -1441,9 +1440,9 @@ class CBool(Bool):
 class Enum(TraitType):
     """An enum whose value must be in a given sequence."""
 
-    def __init__(self, values, default_value=NoDefaultSpecified, **metadata):
+    def __init__(self, values, default_value=Undefined, **metadata):
         self.values = values
-        if metadata.get('allow_none', False) and default_value is NoDefaultSpecified:
+        if metadata.get('allow_none', False) and default_value is Undefined:
             default_value = None
         super(Enum, self).__init__(default_value, **metadata)
 
@@ -1758,7 +1757,7 @@ class Dict(Instance):
     """An instance of a Python dict."""
     _trait = None
 
-    def __init__(self, trait=None, traits=None, default_value=NoDefaultSpecified,
+    def __init__(self, trait=None, traits=None, default_value=Undefined,
                  **metadata):
         """Create a dict trait type from a dict.
 
@@ -1779,13 +1778,13 @@ class Dict(Instance):
             `default_value` must conform to the constraints it specifies.
         """
         # Handling positional arguments
-        if default_value is NoDefaultSpecified and trait is not None:
+        if default_value is Undefined and trait is not None:
             if not is_trait(trait):
                 default_value = trait
                 trait = None
 
         # Handling default value
-        if default_value is NoDefaultSpecified:
+        if default_value is Undefined:
             default_value = {}
         if default_value is None:
             args = None
