@@ -399,16 +399,6 @@ class Application(SingletonConfigurable):
         """Print the version string."""
         print(self.version)
 
-    def update_config(self, config):
-        """Fire the traits events when the config is updated."""
-        # Save a copy of the current config.
-        newconfig = deepcopy(self.config)
-        # Merge the new config into the current one.
-        newconfig.merge(config)
-        # Save the combined config as self.config, which triggers the traits
-        # events.
-        self.config = newconfig
-
     @catch_config_error
     def initialize_subcommand(self, subc, argv=None):
         """Initialize a subcommand with argv."""
