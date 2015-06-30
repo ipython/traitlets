@@ -353,6 +353,16 @@ class TestConfigContainers(TestCase):
         m.update_config(c2)
         self.assertEqual(m.a, 15)
     
+    def test_update_self(self):
+        """update_config with same config object still triggers config_changed"""
+        c = Config()
+        c.MyConfigurable.a = 5
+        m = MyConfigurable(config=c)
+        self.assertEqual(m.a, 5)
+        c.MyConfigurable.a = 10
+        m.update_config(c)
+        self.assertEqual(m.a, 10)
+    
     def test_config_default(self):
         class SomeSingleton(SingletonConfigurable):
             pass
