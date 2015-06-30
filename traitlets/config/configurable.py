@@ -170,14 +170,13 @@ class Configurable(HasTraits):
         self._load_config(new, traits=traits, section_names=section_names)
 
     def update_config(self, config):
-        """Fire the traits events when the config is updated."""
-        # Save a copy of the current config.
-        newconfig = deepcopy(self.config)
-        # Merge the new config into the current one.
-        newconfig.merge(config)
-        # Save the combined config as self.config, which triggers the traits
-        # events.
-        self.config = newconfig
+        """Update config and trigger reload of config via trait events"""
+        # Save a copy of the old config
+        oldconfig = deepcopy(self.config)
+        # merge new config
+        self.config.merge(config)
+        # unconditionally notify trait change, which triggers load of new config
+        self._notify_trait('config', oldconfig, self.config)
 
     @classmethod
     def class_get_help(cls, inst=None):
