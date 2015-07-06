@@ -682,7 +682,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 elif nargs + offset == 3:
                     c(name, old_value, new_value)
                 elif nargs + offset == 4:
-                    c(self, name, old_value, new_value)
+                    c(name, old_value, new_value, self)
                 else:
                     raise TraitError('a trait changed callback '
                                         'must have 0-4 arguments.')
@@ -725,7 +725,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         handler : callable
             A callable that is called when a trait changes.  Its
             signature can be handler(), handler(name), handler(name, new),
-            handler(name, old, new), or handler(self, name, old, new).
+            handler(name, old, new), or handler(name, old, new, self).
         name : list, str, None
             If None, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
