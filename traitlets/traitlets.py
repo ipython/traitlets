@@ -707,6 +707,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             except ValueError:
                 pass
 
+    def remove_all_notifiers(self):
+        """Remove all trait change handlers."""
+        self._trait_notifiers = {}
+
     def on_trait_change(self, handler=None, name=None, remove=False):
         """Setup a handler to be called when a trait changes.
 
