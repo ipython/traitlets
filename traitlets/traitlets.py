@@ -700,11 +700,14 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
     def _remove_notifiers(self, handler, name):
         if name in self._trait_notifiers:
             try:
-                self._trait_notifiers[name].remove(handler)
+                if handler is None:
+                    del self._trait_notifiers[name]
+                else:
+                    self._trait_notifiers[name].remove(handler)
             except ValueError:
                 pass
 
-    def on_trait_change(self, handler, name=None, remove=False):
+    def on_trait_change(self, handler=None, name=None, remove=False):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -715,9 +718,12 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         _a_changed(self, name, old, new) (fewer arguments can be used, see
         below).
 
+        If `remove` is True and `handler` is None, all handlers for the
+        specified name are uninstalled.
+
         Parameters
         ----------
-        handler : callable
+        handler : callable, None
             A callable that is called when a trait changes.  Its
             signature can be handler(), handler(name), handler(name, new)
             or handler(name, old, new).
