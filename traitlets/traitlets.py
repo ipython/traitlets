@@ -1009,7 +1009,7 @@ class Instance(ClassBasedTraitType):
             Positional arguments for generating the default value.
         kw : dict
             Keyword arguments for generating the default value.
-        allow_none : bool [default True]
+        allow_none : bool [ default False ]
             Indicates whether None is allowed as a value.
 
         Notes
