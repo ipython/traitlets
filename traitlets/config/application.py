@@ -235,7 +235,7 @@ class Application(SingletonConfigurable):
     subapp = Instance('traitlets.config.application.Application', allow_none=True)
 
     # extra command-line arguments that don't set config values
-    extra_args = List(Unicode)
+    extra_args = List(Unicode())
 
 
     def __init__(self, **kwargs):

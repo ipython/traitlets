@@ -11,6 +11,7 @@ import pickle
 import re
 import sys
 from unittest import TestCase
+import warnings
 
 import nose.tools as nt
 from nose import SkipTest
@@ -140,7 +141,7 @@ class TestHasTraitsMeta(TestCase):
         self.assertEqual(type(HasTraits), MetaHasTraits)
 
         class A(HasTraits):
-            a = Int
+            a = Int()
 
         a = A()
         self.assertEqual(type(a.__class__), MetaHasTraits)
@@ -191,8 +192,8 @@ class TestHasTraitsNotify(TestCase):
     def test_notify_all(self):
 
         class A(HasTraits):
-            a = Int
-            b = Float
+            a = Int()
+            b = Float()
 
         a = A()
         a.on_trait_change(self.notify1)
@@ -215,8 +216,8 @@ class TestHasTraitsNotify(TestCase):
     def test_notify_one(self):
 
         class A(HasTraits):
-            a = Int
-            b = Float
+            a = Int()
+            b = Float()
 
         a = A()
         a.on_trait_change(self.notify1, 'a')
@@ -229,10 +230,10 @@ class TestHasTraitsNotify(TestCase):
     def test_subclass(self):
 
         class A(HasTraits):
-            a = Int
+            a = Int()
 
         class B(A):
-            b = Float
+            b = Float()
 
         b = B()
         self.assertEqual(b.a,0)
@@ -245,10 +246,10 @@ class TestHasTraitsNotify(TestCase):
     def test_notify_subclass(self):
 
         class A(HasTraits):
-            a = Int
+            a = Int()
 
         class B(A):
-            b = Float
+            b = Float()
 
         b = B()
         b.on_trait_change(self.notify1, 'a')
@@ -265,7 +266,7 @@ class TestHasTraitsNotify(TestCase):
     def test_static_notify(self):
 
         class A(HasTraits):
-            a = Int
+            a = Int()
             _notify1 = []
             def _a_changed(self, name, old, new):
                 self._notify1.append((name, old, new))
@@ -278,7 +279,7 @@ class TestHasTraitsNotify(TestCase):
         self.assertTrue(('a',0,10) in a._notify1)
 
         class B(A):
-            b = Float
+            b = Float()
             _notify2 = []
             def _b_changed(self, name, old, new):
                 self._notify2.append((name, old, new))
@@ -301,7 +302,7 @@ class TestHasTraitsNotify(TestCase):
             self.cb = (name, old, new)
 
         class A(HasTraits):
-            a = Int
+            a = Int()
 
         a = A()
         a.on_trait_change(callback0, 'a')
@@ -369,8 +370,8 @@ class TestHasTraits(TestCase):
 
     def test_trait_names(self):
         class A(HasTraits):
-            i = Int
-            f = Float
+            i = Int()
+            f = Float()
         a = A()
         self.assertEqual(sorted(a.trait_names()),['f','i'])
         self.assertEqual(sorted(A.class_trait_names()),['f','i'])
@@ -392,8 +393,8 @@ class TestHasTraits(TestCase):
 
     def test_traits(self):
         class A(HasTraits):
-            i = Int
-            f = Float
+            i = Int()
+            f = Float()
         a = A()
         self.assertEqual(a.traits(), dict(i=A.i, f=A.f))
         self.assertEqual(A.class_traits(), dict(i=A.i, f=A.f))
@@ -658,7 +659,7 @@ class TestThis(TestCase):
 
     def test_this_class(self):
         class Foo(HasTraits):
-            this = This
+            this = This()
 
         f = Foo()
         self.assertEqual(f.this, None)
@@ -764,7 +765,7 @@ class TraitTestBase(TestCase):
 
 class AnyTrait(HasTraits):
 
-    value = Any
+    value = Any()
 
 class AnyTraitTest(TraitTestBase):
 
@@ -967,7 +968,7 @@ class TestTCPAddress(TraitTestBase):
 
 class ListTrait(HasTraits):
 
-    value = List(Int)
+    value = List(Int())
 
 class TestList(TraitTestBase):
 
@@ -1029,7 +1030,7 @@ class TestUnionListTrait(HasTraits):
 
 class LenListTrait(HasTraits):
 
-    value = List(Int, [0], minlen=1, maxlen=2)
+    value = List(Int(), [0], minlen=1, maxlen=2)
 
 class TestLenList(TraitTestBase):
 
@@ -1064,7 +1065,7 @@ class TestTupleTrait(TraitTestBase):
     def test_invalid_args(self):
         self.assertRaises(TypeError, Tuple, 5)
         self.assertRaises(TypeError, Tuple, default_value='hello')
-        t = Tuple(Int, CBytes, default_value=(1,5))
+        t = Tuple(Int(), CBytes(), default_value=(1,5))
 
 class LooseTupleTrait(HasTraits):
 
@@ -1086,12 +1087,12 @@ class TestLooseTupleTrait(TraitTestBase):
     def test_invalid_args(self):
         self.assertRaises(TypeError, Tuple, 5)
         self.assertRaises(TypeError, Tuple, default_value='hello')
-        t = Tuple(Int, CBytes, default_value=(1,5))
+        t = Tuple(Int(), CBytes(), default_value=(1,5))
 
 
 class MultiTupleTrait(HasTraits):
 
-    value = Tuple(Int, Bytes, default_value=[99,b'bottles'])
+    value = Tuple(Int(), Bytes(), default_value=[99,b'bottles'])
 
 class TestMultiTuple(TraitTestBase):
 
@@ -1668,3 +1669,34 @@ def test_enum_no_default():
 
     c = C(t='b')
     assert c.t == 'b'
+
+
+class TestTraitType(TestCase):
+
+    def test_trait_types_deprecated(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            with self.assertRaises(DeprecationWarning):
+                class C(HasTraits):
+                    t = Int
+
+    def test_trait_types_list_deprecated(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            with self.assertRaises(DeprecationWarning):
+                class C(HasTraits):
+                    t = List(Int)
+
+    def test_trait_types_tuple_deprecated(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            with self.assertRaises(DeprecationWarning):
+                class C(HasTraits):
+                    t = Tuple(Int)
+
+    def test_trait_types_dict_deprecated(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            with self.assertRaises(DeprecationWarning):
+                class C(HasTraits):
+                    t = Dict(Int)
