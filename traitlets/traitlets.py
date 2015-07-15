@@ -699,13 +699,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
 
     def _remove_notifiers(self, handler, name):
         if name in self._trait_notifiers:
-            nlist = self._trait_notifiers[name]
             try:
-                index = nlist.index(handler)
+                self._trait_notifiers[name].remove(handler)
             except ValueError:
                 pass
-            else:
-                del nlist[index]
 
     def on_trait_change(self, handler, name=None, remove=False):
         """Setup a handler to be called when a trait changes.
