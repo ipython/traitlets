@@ -1728,14 +1728,13 @@ class Tuple(Container):
             will be cast to a tuple. If `traits` are specified, the
             `default_value` must conform to the shape and type they specify.
         """
-        default_value = metadata.pop('default_value', None)
-
+        default_value = metadata.pop('default_value', Undefined)
         # allow Tuple((values,)):
-        if len(traits) == 1 and default_value is None and not is_trait(traits[0]):
+        if len(traits) == 1 and default_value is Undefined and not is_trait(traits[0]):
             default_value = traits[0]
             traits = ()
 
-        if default_value is None:
+        if default_value is Undefined:
             args = ()
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
