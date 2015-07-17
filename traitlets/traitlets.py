@@ -360,12 +360,12 @@ class TraitType(BaseDescriptor):
 
         if len(metadata) > 0:
             if len(self.metadata) > 0:
-                self._metadata = self.metadata.copy()
-                self._metadata.update(metadata)
+                self.metadata = self.metadata.copy()
+                self.metadata.update(metadata)
             else:
-                self._metadata = metadata
+                self.metadata = metadata
         else:
-            self._metadata = self.metadata
+            self.metadata = self.metadata.copy()
 
         self.init()
 
@@ -508,10 +508,22 @@ class TraitType(BaseDescriptor):
         raise TraitError(e)
 
     def get_metadata(self, key, default=None):
-        return getattr(self, '_metadata', {}).get(key, default)
+        """DEPRECATED: Get a metadata value.
+
+        Use .metadata[key] or .metadata.get(key, default) instead.
+        """
+        warn("use the instance .metadata dictionary directly, like `x.metadata[key]` or `x.metadata.get(key, default)`",
+             DeprecationWarning, stacklevel=2)
+        return self.metadata.get(key, default)
 
     def set_metadata(self, key, value):
-        getattr(self, '_metadata', {})[key] = value
+        """DEPRECATED: Set a metadata key/value.
+
+        Use .metadata[key] = value instead.
+        """
+        warn("use the instance .metadata dictionary directly, like `x.metadata[key] = value`",
+             DeprecationWarning, stacklevel=2)
+        self.metadata[key] = value
 
 
 #-----------------------------------------------------------------------------
@@ -773,10 +785,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         filter traits based on metadata values.  The functions should
         take a single value as an argument and return a boolean.  If
         any function returns False, then the trait is not included in
-        the output.  This does not allow for any simple way of
-        testing that a metadata name exists and has any
-        value because get_metadata returns None if a metadata key
-        doesn't exist.
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
         """
         traits = dict([memb for memb in getmembers(cls) if
                      isinstance(memb[1], TraitType)])
@@ -791,7 +801,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if not meta_eval(trait.get_metadata(meta_name)):
+                if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
                 result[name] = trait
@@ -827,10 +837,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         filter traits based on metadata values.  The functions should
         take a single value as an argument and return a boolean.  If
         any function returns False, then the trait is not included in
-        the output.  This does not allow for any simple way of
-        testing that a metadata name exists and has any
-        value because get_metadata returns None if a metadata key
-        doesn't exist.
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
         """
         traits = dict([memb for memb in getmembers(self.__class__) if
                      isinstance(memb[1], TraitType)])
@@ -845,7 +853,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if not meta_eval(trait.get_metadata(meta_name)):
+                if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
                 result[name] = trait
@@ -860,7 +868,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             raise TraitError("Class %s does not have a trait named %s" %
                                 (self.__class__.__name__, traitname))
         else:
-            return trait.get_metadata(key, default)
+            return trait.metadata.get(key, default)
 
     def add_traits(self, **traits):
         """Dynamically add trait attributes to the HasTraits instance."""
@@ -1171,7 +1179,7 @@ class Union(TraitType):
         for trait_type in self.trait_types:
             try:
                 v = trait_type._validate(obj, value)
-                self._metadata = trait_type._metadata
+                self.metadata = trait_type.metadata
                 return v
             except TraitError:
                 continue
