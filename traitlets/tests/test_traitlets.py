@@ -299,6 +299,8 @@ class TestHasTraitsNotify(TestCase):
             self.cb = (name, new)
         def callback3(name, old, new):
             self.cb = (name, old, new)
+        def callback4(name, old, new, obj):
+            self.cb = (name, old, new, obj)
 
         class A(HasTraits):
             a = Int
@@ -323,6 +325,11 @@ class TestHasTraitsNotify(TestCase):
         a.a = 10000
         self.assertEqual(self.cb,('a',1000,10000))
         a.on_trait_change(callback3, 'a', remove=True)
+
+        a.on_trait_change(callback4, 'a')
+        a.a = 100000
+        self.assertEqual(self.cb,('a',10000,100000,a))
+        a.on_trait_change(callback4, 'a', remove=True)
 
         self.assertEqual(len(a._trait_notifiers['a']),0)
 
