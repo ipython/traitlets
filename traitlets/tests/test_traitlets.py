@@ -11,7 +11,7 @@ import pickle
 import re
 import sys
 from unittest import TestCase
-import warnings
+from ._warnings import expected_warnings
 
 import nose.tools as nt
 from nose import SkipTest
@@ -133,6 +133,29 @@ class TestTraitType(TestCase):
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
 
+    def test_tag_metadata(self):
+        class MyIntTT(TraitType):
+            metadata = {'a': 1, 'b': 2}
+        a = MyIntTT(10).tag(b=3, c=4)
+        self.assertEqual(a.metadata, {'a': 1, 'b': 3, 'c': 4})
+
+    def test_metadata_localized_instance(self):
+        class MyIntTT(TraitType):
+            metadata = {'a': 1, 'b': 2}
+        a = MyIntTT(10)
+        b = MyIntTT(10)
+        a.metadata['c'] = 3
+        # make sure that changing a's metadata didn't change b's metadata
+        self.assertNotIn('c', b.metadata)
+
+    def test_deprecated_metadata_access(self):
+        class MyIntTT(TraitType):
+            metadata = {'a': 1, 'b': 2}
+        a = MyIntTT(10)
+        with expected_warnings(["use the instance .metadata dictionary directly"]*2):
+            a.set_metadata('key', 'value')
+            v = a.get_metadata('key')
+        self.assertEqual(v, 'value')
 
 
 class TestHasTraitsMeta(TestCase):
@@ -385,9 +408,16 @@ class TestHasTraits(TestCase):
         self.assertTrue(a.has_trait('f'))
         self.assertFalse(a.has_trait('g'))
 
+    def test_trait_metadata_deprecated(self):
+        with expected_warnings(['metadata should be set using the \.tag\(\) method']):
+            class A(HasTraits):
+                i = Int(config_key='MY_VALUE')
+        a = A()
+        self.assertEqual(a.trait_metadata('i','config_key'), 'MY_VALUE')
+
     def test_trait_metadata(self):
         class A(HasTraits):
-            i = Int(config_key='MY_VALUE')
+            i = Int().tag(config_key='MY_VALUE')
         a = A()
         self.assertEqual(a.trait_metadata('i','config_key'), 'MY_VALUE')
 
@@ -408,8 +438,8 @@ class TestHasTraits(TestCase):
 
     def test_traits_metadata(self):
         class A(HasTraits):
-            i = Int(config_key='VALUE1', other_thing='VALUE2')
-            f = Float(config_key='VALUE3', other_thing='VALUE2')
+            i = Int().tag(config_key='VALUE1', other_thing='VALUE2')
+            f = Float().tag(config_key='VALUE3', other_thing='VALUE2')
             j = Int(0)
         a = A()
         self.assertEqual(a.traits(), dict(i=A.i, f=A.f, j=A.j))
@@ -420,6 +450,23 @@ class TestHasTraits(TestCase):
         # traits.
         traits = a.traits(config_key=lambda v: True)
         self.assertEqual(traits, dict(i=A.i, f=A.f, j=A.j))
+
+    def test_traits_metadata_deprecated(self):
+        with expected_warnings(['metadata should be set using the \.tag\(\) method']*2):
+            class A(HasTraits):
+                i = Int(config_key='VALUE1', other_thing='VALUE2')
+                f = Float(config_key='VALUE3', other_thing='VALUE2')
+                j = Int(0)
+        a = A()
+        self.assertEqual(a.traits(), dict(i=A.i, f=A.f, j=A.j))
+        traits = a.traits(config_key='VALUE1', other_thing='VALUE2')
+        self.assertEqual(traits, dict(i=A.i))
+
+        # This passes, but it shouldn't because I am replicating a bug in
+        # traits.
+        traits = a.traits(config_key=lambda v: True)
+        self.assertEqual(traits, dict(i=A.i, f=A.f, j=A.j))
+
 
     def test_init(self):
         class A(HasTraits):
@@ -1681,29 +1728,21 @@ def test_enum_no_default():
 class TestTraitType(TestCase):
 
     def test_trait_types_deprecated(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            with self.assertRaises(DeprecationWarning):
-                class C(HasTraits):
-                    t = Int
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = Int
 
     def test_trait_types_list_deprecated(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            with self.assertRaises(DeprecationWarning):
-                class C(HasTraits):
-                    t = List(Int)
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = List(Int)
 
     def test_trait_types_tuple_deprecated(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            with self.assertRaises(DeprecationWarning):
-                class C(HasTraits):
-                    t = Tuple(Int)
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = Tuple(Int)
 
     def test_trait_types_dict_deprecated(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            with self.assertRaises(DeprecationWarning):
-                class C(HasTraits):
-                    t = Dict(Int)
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = Dict(Int)
