@@ -359,6 +359,7 @@ class TraitType(BaseDescriptor):
             )
 
         if len(metadata) > 0:
+            warn("metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')", DeprecationWarning, stacklevel=2)
             if len(self.metadata) > 0:
                 self.metadata = self.metadata.copy()
                 self.metadata.update(metadata)
@@ -525,6 +526,15 @@ class TraitType(BaseDescriptor):
              DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
+    def tag(self, **metadata):
+        """Sets metadata and returns self.
+
+        This allows convenient metadata tagging when initializing the trait, such as:
+
+        >>> Int(0).tag(config=True, sync=True)
+        """
+        self.metadata.update(metadata)
+        return self
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
