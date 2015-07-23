@@ -18,6 +18,7 @@ from traitlets.traitlets import (
 from traitlets.config.loader import Config
 from ipython_genutils.py3compat import PY3
 
+from ...tests._warnings import expected_warnings
 
 class MyConfigurable(Configurable):
     a = Integer(1, help="The integer a.").tag(config=True)
@@ -386,3 +387,28 @@ class TestConfigContainers(TestCase):
         self.assertIs(d2.config, single.config)
         self.assertEqual(d2.a, 5)
 
+    def test_config_default_deprecated(self):
+        """Make sure configurables work even with the deprecations in traitlets"""
+        class SomeSingleton(SingletonConfigurable):
+            pass
+
+        with expected_warnings(['Metadata should be set using the \.tag\(\) method']):
+            class DefaultConfigurable(Configurable):
+                a = Integer(config=True)
+                def _config_default(self):
+                    if SomeSingleton.initialized():
+                        return SomeSingleton.instance().config
+                    return Config()
+
+        c = Config()
+        c.DefaultConfigurable.a = 5
+
+        d1 = DefaultConfigurable()
+        self.assertEqual(d1.a, 0)
+        
+        single = SomeSingleton.instance(config=c)
+        
+        d2 = DefaultConfigurable()
+        self.assertIs(d2.config, single.config)
+        self.assertEqual(d2.a, 5)
+        
