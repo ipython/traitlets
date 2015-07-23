@@ -358,7 +358,8 @@ class TraitType(BaseDescriptor):
             )
 
         if len(metadata) > 0:
-            warn("metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')", DeprecationWarning, stacklevel=2)
+            warn("metadata %s was set from the constructor.  Metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')"%(metadata,),
+                 DeprecationWarning, stacklevel=2)
             if len(self.metadata) > 0:
                 self.metadata = self.metadata.copy()
                 self.metadata.update(metadata)
