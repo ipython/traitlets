@@ -1,5 +1,5 @@
 # encoding: utf-8
-"""Tests for ipython_genutils.traitlets."""
+"""Tests for traitlets.traitlets."""
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
