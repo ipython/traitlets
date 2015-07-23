@@ -333,7 +333,7 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, **metadata):
+    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, help=None, **metadata):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -366,6 +366,13 @@ class TraitType(BaseDescriptor):
                 self.metadata = metadata
         else:
             self.metadata = self.metadata.copy()
+
+        # we plan to promote help to be a top-level traitlet thing, so we add it
+        # to the constructor signature above so that the metadata deprecation doesn't
+        # trigger when just setting the help.  However, tools still expect help to
+        # be in the metadata, so we add it here.
+        if help is not None:
+            self.metadata['help'] = help
 
         self.init()
 
