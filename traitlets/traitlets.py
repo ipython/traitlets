@@ -340,9 +340,8 @@ class TraitType(BaseDescriptor):
         values that are normally valid. The default is up to the subclass, but
         most trait types have ``allow_none=False`` by default.
 
-        Extra information about the traitlet can be passed in as keyword
-        arguments (``**metadata``). For instance, the config system uses 'config'
-        and 'help' keywords.
+        Extra metadata can be associated with the traitlet using the .tag() convenience method
+        or by using the traitlet instance's .metadata dictionary.
         """
         if default_value is not Undefined:
             self.default_value = default_value
