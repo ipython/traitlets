@@ -330,9 +330,10 @@ class TraitType(BaseDescriptor):
     metadata = {}
     default_value = Undefined
     allow_none = False
+    read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=None, **metadata):
+    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, **metadata):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -347,6 +348,8 @@ class TraitType(BaseDescriptor):
             self.default_value = default_value
         if allow_none is not None:
             self.allow_none = allow_none
+        if read_only is not None:
+            self.read_only = read_only
 
         if 'default' in metadata:
             # Warn the user that they probably meant default_value.
@@ -446,7 +449,7 @@ class TraitType(BaseDescriptor):
             else:
                 return value
 
-    def __set__(self, obj, value):
+    def set(self, obj, value):
         new_value = self._validate(obj, value)
         try:
             old_value = obj._trait_values[self.name]
@@ -463,6 +466,12 @@ class TraitType(BaseDescriptor):
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
+
+    def __set__(self, obj, value):
+        if self.read_only:
+            raise TraitError('The "%s" trait is read-only.' % self.name)
+        else:
+            self.set(obj, value)
 
     def _validate(self, obj, value):
         if value is None and self.allow_none:
@@ -859,6 +868,13 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                               traits)
         for trait in traits.values():
             trait.instance_init(self)
+
+    def set_trait(self, name, value):
+        if not self.has_trait(name):
+            raise TraitError("Class %s does not have a trait named %s" %
+                                (self.__class__.__name__, name))
+        else:
+            self.traits()[name].set(self, value)
 
 #-----------------------------------------------------------------------------
 # Actual TraitTypes implementations/subclasses
