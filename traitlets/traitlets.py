@@ -520,7 +520,7 @@ class TraitType(BaseDescriptor):
 
         Use .metadata[key] or .metadata.get(key, default) instead.
         """
-        warn("use the instance .metadata dictionary directly, like `x.metadata[key]` or `x.metadata.get(key, default)`",
+        warn("use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)",
              DeprecationWarning, stacklevel=2)
         return self.metadata.get(key, default)
 
@@ -529,7 +529,7 @@ class TraitType(BaseDescriptor):
 
         Use .metadata[key] = value instead.
         """
-        warn("use the instance .metadata dictionary directly, like `x.metadata[key] = value`",
+        warn("use the instance .metadata dictionary directly, like x.metadata[key] = value",
              DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
