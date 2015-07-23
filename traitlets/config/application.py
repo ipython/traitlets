@@ -152,8 +152,7 @@ class Application(SingletonConfigurable):
     # The log level for the application
     log_level = Enum((0,10,20,30,40,50,'DEBUG','INFO','WARN','ERROR','CRITICAL'),
                     default_value=logging.WARN,
-                    config=True,
-                    help="Set the log level by value or name.")
+                    help="Set the log level by value or name.").tag(config=True)
     def _log_level_changed(self, name, old, new):
         """Adjust the log level when log_level is set."""
         if isinstance(new, string_types):
@@ -163,15 +162,15 @@ class Application(SingletonConfigurable):
     
     _log_formatter_cls = LevelFormatter
     
-    log_datefmt = Unicode("%Y-%m-%d %H:%M:%S", config=True,
+    log_datefmt = Unicode("%Y-%m-%d %H:%M:%S", 
         help="The date format used by logging formatters for %(asctime)s"
-    )
+    ).tag(config=True)
     def _log_datefmt_changed(self, name, old, new):
         self._log_format_changed('log_format', self.log_format, self.log_format)
     
-    log_format = Unicode("[%(name)s]%(highlevel)s %(message)s", config=True,
+    log_format = Unicode("[%(name)s]%(highlevel)s %(message)s",
         help="The Logging format template",
-    )
+    ).tag(config=True)
     def _log_format_changed(self, name, old, new):
         """Change the log formatter when log_format is set."""
         _log_handler = self.log.handlers[0]

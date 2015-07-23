@@ -154,7 +154,7 @@ class Configurable(HasTraits):
                     setattr(self, name, deepcopy(config_value))
 
     def _config_changed(self, name, old, new):
-        """Update all the class traits having ``config=True`` as metadata.
+        """Update all the class traits having ``config=True`` in metadata.
 
         For any class trait with a ``config`` metadata attribute that is
         ``True``, we update the trait with the value of the corresponding

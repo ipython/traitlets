@@ -20,8 +20,8 @@ from ipython_genutils.py3compat import PY3
 
 
 class MyConfigurable(Configurable):
-    a = Integer(1, config=True, help="The integer a.")
-    b = Float(1.0, config=True, help="The integer b.")
+    a = Integer(1, help="The integer a.").tag(config=True)
+    b = Float(1.0, help="The integer b.").tag(config=True)
     c = Unicode('no config')
 
 
@@ -49,13 +49,13 @@ if PY3:
     mc_help_inst = mc_help_inst.replace(u"<Integer>", u"<Int>")
 
 class Foo(Configurable):
-    a = Integer(0, config=True, help="The integer a.")
-    b = Unicode('nope', config=True)
+    a = Integer(0, help="The integer a.").tag(config=True)
+    b = Unicode('nope').tag(config=True)
 
 
 class Bar(Foo):
-    b = Unicode('gotit', config=False, help="The string b.")
-    c = Float(config=True, help="The string c.")
+    b = Unicode('gotit', help="The string b.").tag(config=False)
+    c = Float(help="The string c.").tag(config=True)
 
 
 class TestConfigurable(TestCase):
@@ -263,15 +263,15 @@ class TestParentConfigurable(TestCase):
         self.assertEqual(myc.b, parent.config.MyParent2.MyParent.MyConfigurable.b)
 
 class Containers(Configurable):
-    lis = List(config=True)
+    lis = List().tag(config=True)
     def _lis_default(self):
         return [-1]
     
-    s = Set(config=True)
+    s = Set().tag(config=True)
     def _s_default(self):
         return {'a'}
     
-    d = Dict(config=True)
+    d = Dict().tag(config=True)
     def _d_default(self):
         return {'a' : 'b'}
 
@@ -368,7 +368,7 @@ class TestConfigContainers(TestCase):
             pass
 
         class DefaultConfigurable(Configurable):
-            a = Integer(config=True)
+            a = Integer().tag(config=True)
             def _config_default(self):
                 if SomeSingleton.initialized():
                     return SomeSingleton.instance().config

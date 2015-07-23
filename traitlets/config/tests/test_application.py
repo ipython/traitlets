@@ -30,25 +30,23 @@ from traitlets.traitlets import (
 
 class Foo(Configurable):
 
-    i = Integer(0, config=True, help="The integer i.")
-    j = Integer(1, config=True, help="The integer j.")
-    name = Unicode(u'Brian', config=True, help="First name.")
+    i = Integer(0, help="The integer i.").tag(config=True)
+    j = Integer(1, help="The integer j.").tag(config=True)
+    name = Unicode(u'Brian', help="First name.").tag(config=True)
 
 
 class Bar(Configurable):
 
-    b = Integer(0, config=True, help="The integer b.")
-    enabled = Bool(True, config=True, help="Enable bar.")
+    b = Integer(0, help="The integer b.").tag(config=True)
+    enabled = Bool(True, help="Enable bar.").tag(config=True)
 
 
 class MyApp(Application):
 
     name = Unicode(u'myapp')
-    running = Bool(False, config=True,
-                   help="Is the app running?")
+    running = Bool(False, help="Is the app running?").tag(config=True)
     classes = List([Bar, Foo])
-    config_file = Unicode(u'', config=True,
-                   help="Load this config file")
+    config_file = Unicode(u'', help="Load this config file").tag(config=True)
 
     aliases = Dict({
                     'i' : 'Foo.i',
