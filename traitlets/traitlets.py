@@ -349,6 +349,7 @@ class TraitType(BaseDescriptor):
             self.allow_none = allow_none
         if read_only is not None:
             self.read_only = read_only
+        self.help = help if help is not None else ''
 
         if 'default' in metadata:
             # Warn the user that they probably meant default_value.
@@ -368,10 +369,8 @@ class TraitType(BaseDescriptor):
         else:
             self.metadata = self.metadata.copy()
 
-        # we plan to promote help to be a top-level traitlet thing, so we add it
-        # to the constructor signature above so that the metadata deprecation doesn't
-        # trigger when just setting the help.  However, tools still expect help to
-        # be in the metadata, so we add it here.
+        # We add help to the metadata during a deprecation period so that
+        # code that looks for the help string there can find it.
         if help is not None:
             self.metadata['help'] = help
 
