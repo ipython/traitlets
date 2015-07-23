@@ -157,6 +157,25 @@ class TestTraitType(TestCase):
             v = a.get_metadata('key')
         self.assertEqual(v, 'value')
 
+    def test_trait_types_deprecated(self):
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = Int
+
+    def test_trait_types_list_deprecated(self):
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = List(Int)
+
+    def test_trait_types_tuple_deprecated(self):
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = Tuple(Int)
+
+    def test_trait_types_dict_deprecated(self):
+        with expected_warnings(["Traits should be given as instances"]):
+            class C(HasTraits):
+                t = Dict(Int)
 
 class TestHasTraitsMeta(TestCase):
 
@@ -1723,26 +1742,3 @@ def test_enum_no_default():
 
     c = C(t='b')
     assert c.t == 'b'
-
-
-class TestTraitType(TestCase):
-
-    def test_trait_types_deprecated(self):
-        with expected_warnings(["Traits should be given as instances"]):
-            class C(HasTraits):
-                t = Int
-
-    def test_trait_types_list_deprecated(self):
-        with expected_warnings(["Traits should be given as instances"]):
-            class C(HasTraits):
-                t = List(Int)
-
-    def test_trait_types_tuple_deprecated(self):
-        with expected_warnings(["Traits should be given as instances"]):
-            class C(HasTraits):
-                t = Tuple(Int)
-
-    def test_trait_types_dict_deprecated(self):
-        with expected_warnings(["Traits should be given as instances"]):
-            class C(HasTraits):
-                t = Dict(Int)
