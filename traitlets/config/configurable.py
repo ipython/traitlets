@@ -220,7 +220,7 @@ class Configurable(HasTraits):
             # include Enum choices
             lines.append(indent('Choices: %r' % (trait.values,)))
 
-        help = trait.get_metadata('help')
+        help = trait.metadata['help']
         if help is not None:
             help = '\n'.join(wrap_paragraphs(help, 76))
             lines.append(indent(help, 4))
@@ -256,7 +256,7 @@ class Configurable(HasTraits):
             lines.append('')
 
         for name, trait in iteritems(cls.class_own_traits(config=True)):
-            help = trait.get_metadata('help') or ''
+            help = trait.metadata['help'] or ''
             lines.append(c(help))
             lines.append('# c.%s.%s = %r'%(cls.__name__, name, trait.default_value))
             lines.append('')
@@ -297,7 +297,7 @@ class Configurable(HasTraits):
                 lines.append('    Default: ``%s``' % dvr)
                 lines.append('')
 
-            help = trait.get_metadata('help')
+            help = trait.metadata['help']
             if help is not None:
                 lines.append(indent(dedent(help), 4))
             else:
