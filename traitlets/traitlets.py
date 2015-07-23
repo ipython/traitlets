@@ -519,8 +519,11 @@ class TraitType(BaseDescriptor):
 
         Use .metadata[key] or .metadata.get(key, default) instead.
         """
-        warn("use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)",
-             DeprecationWarning, stacklevel=2)
+        if key == 'help':
+            msg = "use the instance .help string directly, like x.help"
+        else:
+            msg = "use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)"
+        warn(msg, DeprecationWarning, stacklevel=2)
         return self.metadata.get(key, default)
 
     def set_metadata(self, key, value):
@@ -528,8 +531,11 @@ class TraitType(BaseDescriptor):
 
         Use .metadata[key] = value instead.
         """
-        warn("use the instance .metadata dictionary directly, like x.metadata[key] = value",
-             DeprecationWarning, stacklevel=2)
+        if key == 'help':
+            msg = "use the instance .help string directly, like x.help = value"
+        else:
+            msg = "use the instance .metadata dictionary directly, like x.metadata[key] = value"
+        warn(msg, DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
     def tag(self, **metadata):

@@ -156,6 +156,10 @@ class TestTraitType(TestCase):
             a.set_metadata('key', 'value')
             v = a.get_metadata('key')
         self.assertEqual(v, 'value')
+        with expected_warnings(["use the instance .help string directly"]*2):
+            a.set_metadata('help', 'some help')
+            v = a.get_metadata('help')
+        self.assertEqual(v, 'some help')
 
     def test_trait_types_deprecated(self):
         with expected_warnings(["Traits should be given as instances"]):
