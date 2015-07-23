@@ -540,7 +540,8 @@ class MetaHasTraits(type):
                 v.name = k
             elif inspect.isclass(v):
                 if issubclass(v, TraitType):
-                    warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)", DeprecationWarning, stacklevel=2)
+                    warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                         DeprecationWarning, stacklevel=2)
                     vinst = v()
                     vinst.name = k
                     classdict[k] = vinst
@@ -1542,7 +1543,8 @@ class Container(Instance):
 
         if is_trait(trait):
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)", DeprecationWarning)
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                     DeprecationWarning, stacklevel=3)
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
@@ -1737,7 +1739,8 @@ class Tuple(Container):
         self._traits = []
         for trait in traits:
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)", DeprecationWarning, stacklevel=2)
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                     DeprecationWarning, stacklevel=2)
             t = trait() if isinstance(trait, type) else trait
             self._traits.append(t)
 
@@ -1818,7 +1821,8 @@ class Dict(Instance):
         # Case where a type of TraitType is provided rather than an instance
         if is_trait(trait):
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)", DeprecationWarning, stacklevel=2)
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                     DeprecationWarning, stacklevel=2)
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
