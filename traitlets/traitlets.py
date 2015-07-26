@@ -333,16 +333,15 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, **metadata):
+    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, help=None, **metadata):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
         values that are normally valid. The default is up to the subclass, but
         most trait types have ``allow_none=False`` by default.
 
-        Extra information about the traitlet can be passed in as keyword
-        arguments (``**metadata``). For instance, the config system uses 'config'
-        and 'help' keywords.
+        Extra metadata can be associated with the traitlet using the .tag() convenience method
+        or by using the traitlet instance's .metadata dictionary.
         """
         if default_value is not Undefined:
             self.default_value = default_value
@@ -359,13 +358,22 @@ class TraitType(BaseDescriptor):
             )
 
         if len(metadata) > 0:
+            warn("metadata %s was set from the constructor.  Metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')"%(metadata,),
+                 DeprecationWarning, stacklevel=2)
             if len(self.metadata) > 0:
-                self._metadata = self.metadata.copy()
-                self._metadata.update(metadata)
+                self.metadata = self.metadata.copy()
+                self.metadata.update(metadata)
             else:
-                self._metadata = metadata
+                self.metadata = metadata
         else:
-            self._metadata = self.metadata
+            self.metadata = self.metadata.copy()
+
+        # we plan to promote help to be a top-level traitlet thing, so we add it
+        # to the constructor signature above so that the metadata deprecation doesn't
+        # trigger when just setting the help.  However, tools still expect help to
+        # be in the metadata, so we add it here.
+        if help is not None:
+            self.metadata['help'] = help
 
         self.init()
 
@@ -377,14 +385,14 @@ class TraitType(BaseDescriptor):
 
         Use self.default_value instead
         """
-        warn("get_default_value is deprecated: use the .default_value attribute",
+        warn("get_default_value is deprecated: use the .default_value attribute", DeprecationWarning,
              stacklevel=2)
         return self.default_value
 
     def init_default_value(self, obj):
         """DEPRECATED: Set the static default value for the trait type.
         """
-        warn("init_default_value is deprecated, and may be removed in the future",
+        warn("init_default_value is deprecated, and may be removed in the future", DeprecationWarning,
              stacklevel=2)
         value = self._validate(obj, self.default_value)
         obj._trait_values[self.name] = value
@@ -508,11 +516,32 @@ class TraitType(BaseDescriptor):
         raise TraitError(e)
 
     def get_metadata(self, key, default=None):
-        return getattr(self, '_metadata', {}).get(key, default)
+        """DEPRECATED: Get a metadata value.
+
+        Use .metadata[key] or .metadata.get(key, default) instead.
+        """
+        warn("use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)",
+             DeprecationWarning, stacklevel=2)
+        return self.metadata.get(key, default)
 
     def set_metadata(self, key, value):
-        getattr(self, '_metadata', {})[key] = value
+        """DEPRECATED: Set a metadata key/value.
 
+        Use .metadata[key] = value instead.
+        """
+        warn("use the instance .metadata dictionary directly, like x.metadata[key] = value",
+             DeprecationWarning, stacklevel=2)
+        self.metadata[key] = value
+
+    def tag(self, **metadata):
+        """Sets metadata and returns self.
+
+        This allows convenient metadata tagging when initializing the trait, such as:
+
+        >>> Int(0).tag(config=True, sync=True)
+        """
+        self.metadata.update(metadata)
+        return self
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
@@ -774,10 +803,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         filter traits based on metadata values.  The functions should
         take a single value as an argument and return a boolean.  If
         any function returns False, then the trait is not included in
-        the output.  This does not allow for any simple way of
-        testing that a metadata name exists and has any
-        value because get_metadata returns None if a metadata key
-        doesn't exist.
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
         """
         traits = dict([memb for memb in getmembers(cls) if
                      isinstance(memb[1], TraitType)])
@@ -792,7 +819,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if not meta_eval(trait.get_metadata(meta_name)):
+                if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
                 result[name] = trait
@@ -828,10 +855,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         filter traits based on metadata values.  The functions should
         take a single value as an argument and return a boolean.  If
         any function returns False, then the trait is not included in
-        the output.  This does not allow for any simple way of
-        testing that a metadata name exists and has any
-        value because get_metadata returns None if a metadata key
-        doesn't exist.
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
         """
         traits = dict([memb for memb in getmembers(self.__class__) if
                      isinstance(memb[1], TraitType)])
@@ -846,7 +871,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if not meta_eval(trait.get_metadata(meta_name)):
+                if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
                 result[name] = trait
@@ -861,7 +886,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             raise TraitError("Class %s does not have a trait named %s" %
                                 (self.__class__.__name__, traitname))
         else:
-            return trait.get_metadata(key, default)
+            return trait.metadata.get(key, default)
 
     def add_traits(self, **traits):
         """Dynamically add trait attributes to the HasTraits instance."""
@@ -1172,7 +1197,7 @@ class Union(TraitType):
         for trait_type in self.trait_types:
             try:
                 v = trait_type._validate(obj, value)
-                self._metadata = trait_type._metadata
+                self.metadata = trait_type.metadata
                 return v
             except TraitError:
                 continue
@@ -1722,14 +1747,13 @@ class Tuple(Container):
             will be cast to a tuple. If `traits` are specified, the
             `default_value` must conform to the shape and type they specify.
         """
-        default_value = metadata.pop('default_value', None)
-
+        default_value = metadata.pop('default_value', Undefined)
         # allow Tuple((values,)):
-        if len(traits) == 1 and default_value is None and not is_trait(traits[0]):
+        if len(traits) == 1 and default_value is Undefined and not is_trait(traits[0]):
             default_value = traits[0]
             traits = ()
 
-        if default_value is None:
+        if default_value is Undefined:
             args = ()
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
