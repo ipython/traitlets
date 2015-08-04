@@ -552,6 +552,47 @@ class TraitType(BaseDescriptor):
 # The HasTraits implementation
 #-----------------------------------------------------------------------------
 
+class _CbWrapper(object):
+    
+
+    def __init__(self, cb):
+        if callable(cb):
+            self.cb = cb
+            # Bound methods have an additional 'self' argument.
+            offset = -1 if isinstance(self.cb, types.MethodType) else 0
+            self.nargs = len(getargspec(cb)[0]) + offset
+            if (self.nargs > 4):
+                raise TraitError('a trait changed callback must have 0-4 arguments.')
+        else:
+            raise TraitError('a trait changed callback must be callable.')
+
+    def __eq__(self, other):
+        # The wrapper is equal to the wrapped element
+        if isinstance(other, _CbWrapper):
+            return self.cb == other.cb
+        else:
+            return self.cb == other
+
+    def __call__(self, change):
+        # The wrapper is callabled
+        if self.nargs == 0:
+            self.cb()
+        elif self.nargs == 1:
+            self.cb(change['name'])
+        elif self.nargs == 2:
+            self.cb(change['name'], change['new'])
+        elif self.nargs == 3:
+            self.cb(change['name'], change['old'], change['new'])
+        elif self.nargs == 4:
+            self.cb(change['name'], change['old'], change['new'], change['object'])
+
+def _cb_wrapper(cb):
+    if isinstance(cb, _CbWrapper):
+        return cb
+    else:
+        return _CbWrapper(cb)
+
+
 
 class MetaHasTraits(type):
     """A metaclass for HasTraits.
@@ -693,8 +734,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
 
         # First dynamic ones
         callables = []
-        callables.extend(self._trait_notifiers.get(name,[]))
-        callables.extend(self._trait_notifiers.get('anytrait',[]))
+        callables.extend(self._trait_notifiers.get(name, []))
+        callables.extend(self._trait_notifiers.get('anytrait', []))
 
         # Now static ones
         try:
@@ -702,37 +743,32 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         except:
             pass
         else:
-            callables.append(cb)
+            warn("_[traitname]_changed change handlers are deprecated: use observe instead", 
+                 DeprecationWarning, stacklevel=2)
+            callables.append(_cb_wrapper(cb))
 
         # Call them all now
         for c in callables:
             # Traits catches and logs errors here.  I allow them to raise
             if callable(c):
-                argspec = getargspec(c)
+                # Bound methods have an additional 'self' argument.
+                offset = -1 if isinstance(c, types.MethodType) else 0
 
-                nargs = len(argspec[0])
-                # Bound methods have an additional 'self' argument
-                # I don't know how to treat unbound methods, but they
-                # can't really be used for callbacks.
-                if isinstance(c, types.MethodType):
-                    offset = -1
+                if isinstance(c, _CbWrapper):
+                    # _CbWrappers are not compatible with getargspec and have one argument
+                    nargs = 1
                 else:
-                    offset = 0
-                if nargs + offset == 0:
+                    nargs = len(getargspec(c)[0]) + offset
+
+                if nargs == 0:
                     c()
-                elif nargs + offset == 1:
-                    c(name)
-                elif nargs + offset == 2:
-                    c(name, new_value)
-                elif nargs + offset == 3:
-                    c(name, old_value, new_value)
-                elif nargs + offset == 4:
-                    c(name, old_value, new_value, self)
+                elif nargs == 1:
+                    c({'name': name, 'old': old_value, 'new': new_value, 'object': self})
                 else:
-                    raise TraitError('a trait changed callback '
-                                        'must have 0-4 arguments.')
+                    raise TraitError('an observe change callback '
+                                        'must have 0-1 arguments.')
             else:
-                raise TraitError('a trait changed callback '
+                raise TraitError('an observe change callback '
                                     'must be callable.')
 
     def _add_notifiers(self, handler, name):
@@ -759,7 +795,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         self._trait_notifiers = {}
 
     def on_trait_change(self, handler=None, name=None, remove=False):
-        """Setup a handler to be called when a trait changes.
+        """DEPRECATED: Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
 
@@ -769,8 +805,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         _a_changed(self, name, old, new) (fewer arguments can be used, see
         below).
 
-        If `remove` is True and `handler` is None, all handlers for the
-        specified name are uninstalled.
+        If `remove` is True and `handler` is not specified, all change
+        handlers for the specified name are uninstalled.
 
         Parameters
         ----------
@@ -785,6 +821,35 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         remove : bool
             If False (the default), then install the handler.  If True
             then unintall it.
+        """
+        warn("on_trait_change is deprecated: use observe instead",
+             DeprecationWarning, stacklevel=2)
+        self.observe(_cb_wrapper(handler), name=name, remove=remove)
+
+    def observe(self, handler, name=None, remove=False):
+        """Setup a handler to be called when a trait changes.
+
+        This is used to setup dynamic notifications of trait changes.
+
+        Parameters
+        ----------
+        handler : callable, None
+            A callable that is called when a trait changes.  Its
+            signature can be handler() or handler(change), where change is a
+            dictionary with the following optional keys:
+                - object : the HasTraits instance
+                - old : the old value of the modified trait attribute
+                - new : the new value of the modified trait attribute
+                - name : the name ofthe modified trait attribute.
+        name : list, str, None
+            If None, the handler will apply to all traits.  If a list
+            of str, handler will apply to all names in the list.  If a
+            str, the handler will apply just to that name.
+        remove : bool
+            If False (the default), then install the handler.  If True
+            then unintall it. If `remove` is True and `handler` is not
+            specified, all change handlers for the specified name are
+            uninstalled.
         """
         if remove:
             names = parse_notifier_name(name)
