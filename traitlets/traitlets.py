@@ -691,7 +691,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             with self.mute_trait_notifications() as cache:
                 yield
         finally:
-            self._cross_validation_lock = False
             for v in cache.values():
                 self._notify_trait(*v)
 
