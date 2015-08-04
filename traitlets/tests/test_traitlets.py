@@ -1375,61 +1375,63 @@ def test_pickle_hastraits():
         nt.assert_equal(c2.j, c.j)
 
 
-def base_mute_and_hold_test(meth_name):
-    changes = []
+def TestMutingAndHolding(TestCase):
 
-    class Test(HasTraits):
-        a = Integer(0)
-        b = Integer(0)
+    def base_test(self, method_name):
+        changes = []
 
-        def _a_changed(self, name, old, new):
-            changes.append((old, new))
+        class Test(HasTraits):
+            a = Integer(0)
+            b = Integer(0)
 
-        def _b_validate(self, value, trait):
-            if value != 0:
-                raise TraitError('Only 0 is a valid value')
-            return value
+            def _a_changed(self, name, old, new):
+                changes.append((old, new))
 
-    # Test context manager and nesting
-    t = Test()
-    suspend_method = getattr(t,meth_name)
+            def _b_validate(self, value, trait):
+                if value != 0:
+                    raise TraitError('Only 0 is a valid value')
+                return value
 
-    with suspend_method():
+        # Test context manager and nesting
+        t = Test()
+        suspend_method = getattr(t,method_name)
+
         with suspend_method():
-            t.a = 1
-            nt.assert_equal(t.a, 1)
-            nt.assert_equal(changes, [])
-        t.a = 2
-        nt.assert_equal(t.a, 2)
-        with suspend_method():
-            t.a = 3
-            nt.assert_equal(t.a, 3)
-            nt.assert_equal(changes, [])
+            with suspend_method():
+                t.a = 1
+                nt.assert_equal(t.a, 1)
+                nt.assert_equal(changes, [])
+            t.a = 2
+            nt.assert_equal(t.a, 2)
+            with suspend_method():
+                t.a = 3
+                nt.assert_equal(t.a, 3)
+                nt.assert_equal(changes, [])
+                t.a = 4
+                nt.assert_equal(t.a, 4)
+                nt.assert_equal(changes, [])
             t.a = 4
             nt.assert_equal(t.a, 4)
             nt.assert_equal(changes, [])
-        t.a = 4
-        nt.assert_equal(t.a, 4)
+
+        # Test roll-back
+        try:
+             with suspend_method():
+                 t.b = 1  # raises a Trait error
+        except:
+            pass
+
+        return changes
+
+    def test_mute_trait_notifications(self):
+        method_name = 'mute_trait_notifications'
+        changes = base_test(method_name)
         nt.assert_equal(changes, [])
 
-    # Test roll-back
-    try:
-         with suspend_method():
-             t.b = 1  # raises a Trait error
-    except:
-        pass
-
-    return changes
-
-def test_mute_trait_notifications():
-    method_name = 'mute_trait_notifications'
-    changes = base_mute_and_hold_test(method_name)
-    nt.assert_equal(changes, [])
-
-def test_hold_trait_notifications():
-    method_name = 'hold_trait_notifications'
-    changes = base_mute_and_hold_test(method_name)
-    nt.assert_equal(changes, [(0, 4)])
+    def test_hold_trait_notifications(self):
+        method_name = 'hold_trait_notifications'
+        changes = self.base_test(method_name)
+        nt.assert_equal(changes, [(0, 4)])
 
 
 class RollBack(HasTraits):
