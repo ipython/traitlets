@@ -634,6 +634,28 @@ class MetaHasTraits(type):
         super(MetaHasTraits, cls).__init__(name, bases, classdict)
 
 
+def observe(*names):
+    return ObserveHandler(names)
+
+
+class ObserveHandler(BaseDescriptor):
+
+    def __init__(self, names=None):
+        if names is None:
+            self.names=[None]
+        else:
+            self.names = names
+
+    def __call__(self, func):
+        self.func = func
+        return self
+
+    def instance_init(self, inst):
+        setattr(inst, self.name, self.func)
+        for name in self.names:
+            inst.observe(self.func, name=name)
+
+
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
     """The base class for all classes that have traitlets.
     """
