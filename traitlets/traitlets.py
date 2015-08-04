@@ -552,8 +552,12 @@ class TraitType(BaseDescriptor):
 # The HasTraits implementation
 #-----------------------------------------------------------------------------
 
-class _CbWrapper(object):
+class _CallbackWrapper(object):
+    """An object adapting a on_trait_change callback into an observe callback.
     
+    The comparison operator __eq__ is implemented to enable removal of wrapped
+    callbacks.
+    """ 
 
     def __init__(self, cb):
         if callable(cb):
@@ -568,13 +572,13 @@ class _CbWrapper(object):
 
     def __eq__(self, other):
         # The wrapper is equal to the wrapped element
-        if isinstance(other, _CbWrapper):
+        if isinstance(other, _CallbackWrapper):
             return self.cb == other.cb
         else:
             return self.cb == other
 
     def __call__(self, change):
-        # The wrapper is callabled
+        # The wrapper is callable
         if self.nargs == 0:
             self.cb()
         elif self.nargs == 1:
@@ -586,11 +590,11 @@ class _CbWrapper(object):
         elif self.nargs == 4:
             self.cb(change['name'], change['old'], change['new'], change['object'])
 
-def _cb_wrapper(cb):
-    if isinstance(cb, _CbWrapper):
+def _callback_wrapper(cb):
+    if isinstance(cb, _CallbackWrapper):
         return cb
     else:
-        return _CbWrapper(cb)
+        return _CallbackWrapper(cb)
 
 
 
@@ -635,6 +639,13 @@ class MetaHasTraits(type):
 
 
 def observe(*names):
+    """ A decorator which can be used to observe members on a class.
+
+    Parameters
+    ----------
+    *names
+        The str names of the attributes to observe on the object.
+    """
     return ObserveHandler(names)
 
 
@@ -767,7 +778,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         else:
             warn("_[traitname]_changed change handlers are deprecated: use observe instead", 
                  DeprecationWarning, stacklevel=2)
-            callables.append(_cb_wrapper(cb))
+            callables.append(_callback_wrapper(cb))
 
         # Call them all now
         for c in callables:
@@ -776,8 +787,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 # Bound methods have an additional 'self' argument.
                 offset = -1 if isinstance(c, types.MethodType) else 0
 
-                if isinstance(c, _CbWrapper):
-                    # _CbWrappers are not compatible with getargspec and have one argument
+                if isinstance(c, _CallbackWrapper):
+                    # _CallbackWrappers are not compatible with getargspec and have one argument
                     nargs = 1
                 else:
                     nargs = len(getargspec(c)[0]) + offset
@@ -846,7 +857,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         """
         warn("on_trait_change is deprecated: use observe instead",
              DeprecationWarning, stacklevel=2)
-        self.observe(_cb_wrapper(handler), name=name, remove=remove)
+        self.observe(_callback_wrapper(handler), name=name, remove=remove)
 
     def observe(self, handler, name=None, remove=False):
         """Setup a handler to be called when a trait changes.
@@ -858,18 +869,18 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         handler : callable, None
             A callable that is called when a trait changes.  Its
             signature can be handler() or handler(change), where change is a
-            dictionary with the following optional keys:
+            dictionary with the following keys:
                 - object : the HasTraits instance
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
-                - name : the name ofthe modified trait attribute.
+                - name : the name of the modified trait attribute.
         name : list, str, None
             If None, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
         remove : bool
             If False (the default), then install the handler.  If True
-            then unintall it. If `remove` is True and `handler` is not
+            then uninstall it. If `remove` is True and `handler` is not
             specified, all change handlers for the specified name are
             uninstalled.
         """
