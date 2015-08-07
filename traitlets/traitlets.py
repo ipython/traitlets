@@ -209,8 +209,8 @@ class link(object):
         try:
             setattr(target[0], target[1], getattr(source[0], source[1]))
         finally:
-            source[0].on_trait_change(self._update_target, source[1])
-            target[0].on_trait_change(self._update_source, target[1])
+            source[0].observe(self._update_target, name=source[1])
+            target[0].observe(self._update_source, name=target[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -220,21 +220,21 @@ class link(object):
         finally:
             self.updating = False
 
-    def _update_target(self, name, old, new):
+    def _update_target(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.target[0], self.target[1], new)
+            setattr(self.target[0], self.target[1], change['new'])
 
-    def _update_source(self, name, old, new):
+    def _update_source(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.source[0], self.source[1], new)
+            setattr(self.source[0], self.source[1], change['new'])
 
     def unlink(self):
-        self.source[0].on_trait_change(self._update_target, self.source[1], remove=True)
-        self.target[0].on_trait_change(self._update_source, self.target[1], remove=True)
+        self.source[0].observe(self._update_target, name=self.source[1], remove=True)
+        self.target[0].observe(self._update_source, name=self.target[1], remove=True)
         self.source, self.target = None, None
 
 
@@ -261,7 +261,7 @@ class directional_link(object):
         try:
             setattr(target[0], target[1], getattr(source[0], source[1]))
         finally:
-            self.source[0].on_trait_change(self._update, self.source[1])
+            self.source[0].observe(self._update, name=self.source[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -271,14 +271,14 @@ class directional_link(object):
         finally:
             self.updating = False
 
-    def _update(self, name, old, new):
+    def _update(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.target[0], self.target[1], new)
+            setattr(self.target[0], self.target[1], change['new'])
 
     def unlink(self):
-        self.source[0].on_trait_change(self._update, self.source[1], remove=True)
+        self.source[0].observe(self._update, name=self.source[1], remove=True)
         self.source, self.target = None, None
 
 dlink = directional_link
