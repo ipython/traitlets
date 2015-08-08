@@ -349,6 +349,7 @@ class TraitType(BaseDescriptor):
             self.allow_none = allow_none
         if read_only is not None:
             self.read_only = read_only
+        self.help = help if help is not None else ''
 
         if 'default' in metadata:
             # Warn the user that they probably meant default_value.
@@ -368,10 +369,8 @@ class TraitType(BaseDescriptor):
         else:
             self.metadata = self.metadata.copy()
 
-        # we plan to promote help to be a top-level traitlet thing, so we add it
-        # to the constructor signature above so that the metadata deprecation doesn't
-        # trigger when just setting the help.  However, tools still expect help to
-        # be in the metadata, so we add it here.
+        # We add help to the metadata during a deprecation period so that
+        # code that looks for the help string there can find it.
         if help is not None:
             self.metadata['help'] = help
 
@@ -520,8 +519,11 @@ class TraitType(BaseDescriptor):
 
         Use .metadata[key] or .metadata.get(key, default) instead.
         """
-        warn("use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)",
-             DeprecationWarning, stacklevel=2)
+        if key == 'help':
+            msg = "use the instance .help string directly, like x.help"
+        else:
+            msg = "use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)"
+        warn(msg, DeprecationWarning, stacklevel=2)
         return self.metadata.get(key, default)
 
     def set_metadata(self, key, value):
@@ -529,8 +531,11 @@ class TraitType(BaseDescriptor):
 
         Use .metadata[key] = value instead.
         """
-        warn("use the instance .metadata dictionary directly, like x.metadata[key] = value",
-             DeprecationWarning, stacklevel=2)
+        if key == 'help':
+            msg = "use the instance .help string directly, like x.help = value"
+        else:
+            msg = "use the instance .metadata dictionary directly, like x.metadata[key] = value"
+        warn(msg, DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
     def tag(self, **metadata):
