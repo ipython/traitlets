@@ -511,6 +511,61 @@ class TestHasTraits(TestCase):
         # should raise TypeError if no positional arg given
         self.assertRaises(TypeError, A)
 
+    def test_getset_modifiers(self):
+
+        def setUp(self):
+            self.setter_trigger = False
+            self.getter_trigger = False
+
+        class A(HasTraits):
+
+            a = Int(0)
+            b = Int(0)
+            c = Int(1)
+
+            def _setter(self, value, trait):
+                self.setter_trigger = True
+                return int(value)
+            def _getter(self, value, trait):
+                self.getter_trigger = True
+                return value+self.c
+
+            def _a_setter(self, value, trait):
+                return self._setter(value, trait)
+            def _a_getter(self, value, trait):
+                return self._getter(value, trait)
+            def _c_setter(self, value, trait):
+                return float(value)
+        
+        a = A()
+        a.a = '1'
+
+        self.assertEqual(a._trait_values['a'], 1)
+        self.assertEqual(a.a, 2)
+        self.assertEqual(a.setter_trigger, True)
+        self.assertEqual(a.getter_trigger, True)
+        self.assertRaises(TraitError, a.on_trait_set, a._setter, 'a')
+        self.assertRaises(TraitError, a.on_trait_get, a._getter, 'a')
+
+        a.setter_trigger = False
+        a.setter_trigger = False
+        a.on_trait_set(a._setter, 'b')
+        a.on_trait_get(a._getter, 'b')
+        a.b = '1'
+
+        self.assertEqual(a._trait_values['a'], 1)
+        self.assertEqual(a.a, 2)
+        self.assertEqual(a.setter_trigger, True)
+        self.assertEqual(a.getter_trigger, True)
+
+        a.on_trait_set(a._setter, 'b', True)
+        a.on_trait_get(a._getter, 'b', True)
+
+        self.assertEqual(a._trait_setters.get('b',None),None)
+        self.assertEqual(a._trait_getters.get('b',None),None)
+
+        self.assertRaises(TraitError, setattr, a, 'c', 1)
+
 #-----------------------------------------------------------------------------
 # Tests for specific trait types
 #-----------------------------------------------------------------------------
