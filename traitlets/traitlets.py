@@ -428,7 +428,44 @@ class TraitType(BaseDescriptor):
             if self.name is not None:
                 obj._trait_values[self.name] = v
 
+    def _trigger_modifier(self, meth, obj, value):
+        if not callable(meth):
+            raise TraitError(("""a trait getter method
+                               must be callable"""))
+        argspec = len(getargspec(meth)[0])
+        if isinstance(meth, types.MethodType):
+            argspec -= 1
+        if argspec==0:
+            args = ()
+        elif argspec==1:
+            args = (value,)
+        elif argspec==2:
+            args = (value, self)
+        elif argspec==3:
+            args = (value, self, obj)
+        else:
+            raise TraitError(("""a trait getter method must
+                               have 3 or fewer arguments"""))
+        return meth(*args)
+
     def __get__(self, obj, cls=None):
+        if obj is None:
+            return self
+
+        meth = None
+        value = self.get(obj, cls)
+
+        if hasattr(obj, '_'+self.name+'_getter'):
+            meth = getattr(obj, '_'+self.name+'_getter')
+        elif self.name in obj._trait_getters:
+            meth = obj._trait_getters[self.name]
+
+        if meth:
+            value = self._trigger_modifier(meth, obj, value)
+
+        return value
+
+    def get(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
 
         Default values are instantiated when :meth:`HasTraits.__new__`
@@ -436,26 +473,39 @@ class TraitType(BaseDescriptor):
         default value or a user defined value (they called :meth:`__set__`)
         is in the :class:`HasTraits` instance.
         """
-        if obj is None:
-            return self
+        try:
+            value = obj._trait_values[self.name]
+        except KeyError:
+            # Check for a dynamic initializer.
+            dynamic_default = self._dynamic_default_callable(obj)
+            if dynamic_default is None:
+                raise TraitError("No default value found for %s trait of %r"
+                                 % (self.name, obj))
+            value = self._validate(obj, dynamic_default())
+            obj._trait_values[self.name] = value
+            return value
+        except Exception:
+            # This should never be reached.
+            raise TraitError('Unexpected error in TraitType: '
+                             'default value not set properly')
         else:
-            try:
-                value = obj._trait_values[self.name]
-            except KeyError:
-                # Check for a dynamic initializer.
-                dynamic_default = self._dynamic_default_callable(obj)
-                if dynamic_default is None:
-                    raise TraitError("No default value found for %s trait of %r"
-                                     % (self.name, obj))
-                value = self._validate(obj, dynamic_default())
-                obj._trait_values[self.name] = value
-                return value
-            except Exception:
-                # This should never be reached.
-                raise TraitError('Unexpected error in TraitType: '
-                                 'default value not set properly')
-            else:
-                return value
+            return value
+
+    def __set__(self, obj, value):
+        if self.read_only:
+            raise TraitError('The "%s" trait is read-only.' % self.name)
+
+        meth = None
+
+        if hasattr(obj, '_'+self.name+'_setter'):
+            meth = getattr(obj, '_'+self.name+'_setter')
+        elif self.name in obj._trait_setters:
+            meth = obj._trait_setters[self.name]
+
+        if meth:
+            value = self._trigger_modifier(meth, obj, value)
+
+        self.set(obj, value)
 
     def set(self, obj, value):
         new_value = self._validate(obj, value)
@@ -474,12 +524,6 @@ class TraitType(BaseDescriptor):
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
-
-    def __set__(self, obj, value):
-        if self.read_only:
-            raise TraitError('The "%s" trait is read-only.' % self.name)
-        else:
-            self.set(obj, value)
 
     def _validate(self, obj, value):
         if value is None and self.allow_none:
@@ -602,6 +646,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls, **kw)
         inst._trait_values = {}
         inst._trait_notifiers = {}
+        inst._trait_setters = {}
+        inst._trait_getters = {}
         inst._cross_validation_lock = True
         # Here we tell all the TraitType instances to set their default
         # values on the instance.
@@ -772,13 +818,49 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             then unintall it.
         """
         if remove:
-            names = parse_notifier_name(name)
-            for n in names:
-                self._remove_notifiers(handler, n)
+            meth = self._remove_notifiers
         else:
-            names = parse_notifier_name(name)
-            for n in names:
-                self._add_notifiers(handler, n)
+            meth = self._add_notifiers
+
+        self._handler_change(meth, handler, name)
+
+    def _remove_modifier(self, handler, name, source, kind):
+        if name in source:
+            try:
+                source.pop(name,None)
+            except ValueError:
+                pass
+
+    def _add_modifier(self, handler, name, source, kind):
+        methodtype = getattr(self, '_'+name+'_'+kind, None)
+        if methodtype or name in source:
+            klass = self.__class__.__name__
+            s_name = (source.get(name,None) or methodtype).__name__
+            msg = ("The '%s' trait of %s instance already has a %s: '%s'")
+            raise TraitError(msg % (name, klass, kind, s_name))
+        source[name] = handler
+
+    def on_trait_set(self, handler, name, remove=False):
+        if remove:
+            meth = self._remove_modifier
+        else:
+            meth = self._add_modifier
+
+        args = (meth, handler, name, self._trait_setters, 'setter')
+        self._handler_change(*args)
+
+    def on_trait_get(self, handler, name, remove=False):
+        if remove:
+            meth = self._remove_modifier
+        else:
+            meth = self._add_modifier
+
+        args = (meth, handler, name, self._trait_getters, 'getter')
+        self._handler_change(*args)
+
+    def _handler_change(self, meth, handler, name, *args):
+        for n in parse_notifier_name(name):
+            meth(handler, n, *args)
 
     @classmethod
     def class_trait_names(cls, **metadata):
