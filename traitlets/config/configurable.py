@@ -209,7 +209,7 @@ class Configurable(HasTraits):
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
             try:
-                dvr = repr(trait.default_value)
+                dvr = trait.default_value_repr()
             except Exception:
                 dvr = None # ignore defaults we can't construct
             if dvr is not None:
@@ -257,7 +257,7 @@ class Configurable(HasTraits):
 
         for name, trait in sorted(cls.class_own_traits(config=True).items()):
             lines.append(c(trait.help))
-            lines.append('# c.%s.%s = %r'%(cls.__name__, name, trait.default_value))
+            lines.append('# c.%s.%s = %s' % (cls.__name__, name, trait.default_value_repr()))
             lines.append('')
         return '\n'.join(lines)
 
@@ -284,11 +284,10 @@ class Configurable(HasTraits):
 
             # Default value
             try:
-                dv = trait.default_value
-                dvr = repr(dv)
+                dvr = trait.default_value_repr()
             except Exception:
-                dvr = dv = None # ignore defaults we can't construct
-            if (dv is not None) and (dvr is not None):
+                dvr = None # ignore defaults we can't construct
+            if dvr is not None:
                 if len(dvr) > 64:
                     dvr = dvr[:61]+'...'
                 # Double up backslashes, so they get to the rendered docs
