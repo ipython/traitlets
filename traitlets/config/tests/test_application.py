@@ -177,6 +177,14 @@ class TestApplication(TestCase):
     def test_unicode_argv(self):
         app = MyApp()
         app.parse_command_line(['ünîcødé'])
+
+    def test_document_config_option(self):
+        app = MyApp()
+        app.document_config_options()
+
+    def test_generate_config_file(self):
+        app = MyApp()
+        assert 'The integer b.' in app.generate_config_file()
     
     def test_multi_file(self):
         app = MyApp()
