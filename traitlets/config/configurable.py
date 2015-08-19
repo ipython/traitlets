@@ -254,9 +254,8 @@ class Configurable(HasTraits):
         if desc:
             lines.append(c(desc))
             lines.append('')
-
         for name, trait in sorted(cls.class_own_traits(config=True).items()):
-            lines.append(c.help)
+            lines.append(c(trait.help))
             lines.append('# c.%s.%s = %r'%(cls.__name__, name, trait.default_value))
             lines.append('')
         return '\n'.join(lines)
