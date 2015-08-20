@@ -548,6 +548,9 @@ class TraitType(BaseDescriptor):
         self.metadata.update(metadata)
         return self
 
+    def default_value_repr(self):
+        return repr(self.default_value)
+
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
 #-----------------------------------------------------------------------------
@@ -1037,6 +1040,9 @@ class Type(ClassBasedTraitType):
             self.klass = self._resolve_string(self.klass)
         if isinstance(self.default_value, py3compat.string_types):
             self.default_value = self._resolve_string(self.default_value)
+
+    def default_value_repr(self):
+        return repr('{}.{}'.format(self.default_value.__module__, self.default_value.__name__))
 
 
 class Instance(ClassBasedTraitType):
@@ -1625,6 +1631,9 @@ class Container(Instance):
             self._trait.this_class = self.this_class
             self._trait.instance_init(obj)
         super(Container, self).instance_init(obj)
+
+    def default_value_repr(self):
+        return repr(self.make_dynamic_default())
 
 
 class List(Container):
