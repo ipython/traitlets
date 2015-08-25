@@ -597,7 +597,6 @@ def _callback_wrapper(cb):
         return _CallbackWrapper(cb)
 
 
-
 class MetaHasTraits(type):
     """A metaclass for HasTraits.
 
@@ -823,10 +822,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             except ValueError:
                 pass
 
-    def remove_all_notifiers(self):
-        """Remove all trait change handlers."""
-        self._trait_notifiers = {}
-
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
 
@@ -908,6 +903,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         names = parse_notifier_name(name)
         for n in names:
             self._remove_notifiers(handler, n)
+
+    def unobserve_all(self):
+        """Remove all trait change handlers."""
+        self._trait_notifiers = {}
 
     @classmethod
     def class_trait_names(cls, **metadata):
