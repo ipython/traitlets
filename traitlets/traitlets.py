@@ -775,7 +775,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         except:
             pass
         else:
-            warn("_[traitname]_changed change handlers are deprecated: use observe instead", 
+            warn("_[traitname]_changed change handlers are deprecated: use observe and unobserve instead", 
                  DeprecationWarning, stacklevel=2)
             callables.append(_callback_wrapper(cb))
 
