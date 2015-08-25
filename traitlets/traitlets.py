@@ -233,8 +233,8 @@ class link(object):
             setattr(self.source[0], self.source[1], change['new'])
 
     def unlink(self):
-        self.source[0].observe(self._update_target, name=self.source[1], remove=True)
-        self.target[0].observe(self._update_source, name=self.target[1], remove=True)
+        self.source[0].unobserve(self._update_target, name=self.source[1])
+        self.target[0].unobserve(self._update_source, name=self.target[1])
         self.source, self.target = None, None
 
 
@@ -278,7 +278,7 @@ class directional_link(object):
             setattr(self.target[0], self.target[1], change['new'])
 
     def unlink(self):
-        self.source[0].observe(self._update, name=self.source[1], remove=True)
+        self.source[0].unobserve(self._update, name=self.source[1])
         self.source, self.target = None, None
 
 dlink = directional_link
@@ -857,16 +857,19 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         """
         warn("on_trait_change is deprecated: use observe instead",
              DeprecationWarning, stacklevel=2)
-        self.observe(_callback_wrapper(handler), name=name, remove=remove)
+        if remove:
+            self.unobserve(_callback_wrapper(handler), name=name)
+        else:
+            self.observe(_callback_wrapper(handler), name=name)
 
-    def observe(self, handler, name=None, remove=False):
+    def observe(self, handler, name=None):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
 
         Parameters
         ----------
-        handler : callable, None
+        handler : callable
             A callable that is called when a trait changes.  Its
             signature can be handler() or handler(change), where change is a
             dictionary with the following keys:
@@ -878,20 +881,33 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             If None, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
-        remove : bool
-            If False (the default), then install the handler.  If True
-            then uninstall it. If `remove` is True and `handler` is not
-            specified, all change handlers for the specified name are
+        """
+        names = parse_notifier_name(name)
+        for n in names:
+            self._add_notifiers(handler, n)
+
+    def unobserve(self, handler, name=None):
+        """Remove a trait change handler.
+
+        This is used to unregister handlers to trait change notificiations.
+
+        Parameters
+        ----------
+        handler : callable
+            A callable that is called when a trait changes.  Its
+            signature can be handler() or handler(change), where change is a
+            dictionary with the following keys:
+                - object : the HasTraits instance
+                - old : the old value of the modified trait attribute
+                - new : the new value of the modified trait attribute
+                - name : the name of the modified trait attribute.
+        name : list, str, None
+            If None, all change handlers for the specified name are
             uninstalled.
         """
-        if remove:
-            names = parse_notifier_name(name)
-            for n in names:
-                self._remove_notifiers(handler, n)
-        else:
-            names = parse_notifier_name(name)
-            for n in names:
-                self._add_notifiers(handler, n)
+        names = parse_notifier_name(name)
+        for n in names:
+            self._remove_notifiers(handler, n)
 
     @classmethod
     def class_trait_names(cls, **metadata):
