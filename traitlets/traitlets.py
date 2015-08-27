@@ -604,14 +604,14 @@ def _callback_wrapper(cb):
 
 
 class MetaHasDescriptors(type):
-    """A metaclass for HasTraits.
+    """A metaclass for HasDescriptors.
 
     This metaclass makes sure that any TraitType class attributes are
     instantiated and sets their name attribute.
     """
 
     def __new__(mcls, name, bases, classdict):
-        """Create the HasTraits class.
+        """Create the HasDescriptors class.
 
         This sets :attr:`name` attribute of each descriptor in the class dict.
         """
@@ -630,7 +630,7 @@ class MetaHasDescriptors(type):
         return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
-        """Finish initializing the HasTraits class.
+        """Finish initializing the HasDescriptors class.
 
         This sets the :attr:`this_class` attribute of each BaseDescriptor in the
         class dict to the newly created class ``cls``.
@@ -705,14 +705,14 @@ class ValidateHandler(EventHandler):
         inst._register_validator(meth, self.names)
 
 
-class HasTraits(py3compat.with_metaclass(MetaHasDescriptors, object)):
-    """The base class for all classes that have traitlets.
+class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
+    """The base class for all classes that have descriptors.
     """
 
     def __new__(cls, *args, **kw):
         # This is needed because object.__new__ only accepts
         # the cls argument.
-        new_meth = super(HasTraits, cls).__new__
+        new_meth = super(HasDescriptors, cls).__new__
         if new_meth is object.__new__:
             inst = new_meth(cls)
         else:
@@ -734,6 +734,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasDescriptors, object)):
                     value.instance_init(inst)
         inst._cross_validation_lock = False
         return inst
+
+
+class HasTraits(HasDescriptors):
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
