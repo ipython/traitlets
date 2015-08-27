@@ -209,8 +209,8 @@ class link(object):
         try:
             setattr(target[0], target[1], getattr(source[0], source[1]))
         finally:
-            source[0].on_trait_change(self._update_target, source[1])
-            target[0].on_trait_change(self._update_source, target[1])
+            source[0].observe(self._update_target, name=source[1])
+            target[0].observe(self._update_source, name=target[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -220,21 +220,21 @@ class link(object):
         finally:
             self.updating = False
 
-    def _update_target(self, name, old, new):
+    def _update_target(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.target[0], self.target[1], new)
+            setattr(self.target[0], self.target[1], change['new'])
 
-    def _update_source(self, name, old, new):
+    def _update_source(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.source[0], self.source[1], new)
+            setattr(self.source[0], self.source[1], change['new'])
 
     def unlink(self):
-        self.source[0].on_trait_change(self._update_target, self.source[1], remove=True)
-        self.target[0].on_trait_change(self._update_source, self.target[1], remove=True)
+        self.source[0].unobserve(self._update_target, name=self.source[1])
+        self.target[0].unobserve(self._update_source, name=self.target[1])
         self.source, self.target = None, None
 
 
@@ -261,7 +261,7 @@ class directional_link(object):
         try:
             setattr(target[0], target[1], getattr(source[0], source[1]))
         finally:
-            self.source[0].on_trait_change(self._update, self.source[1])
+            self.source[0].observe(self._update, name=self.source[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -271,14 +271,14 @@ class directional_link(object):
         finally:
             self.updating = False
 
-    def _update(self, name, old, new):
+    def _update(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.target[0], self.target[1], new)
+            setattr(self.target[0], self.target[1], change['new'])
 
     def unlink(self):
-        self.source[0].on_trait_change(self._update, self.source[1], remove=True)
+        self.source[0].unobserve(self._update, name=self.source[1])
         self.source, self.target = None, None
 
 dlink = directional_link
@@ -555,6 +555,50 @@ class TraitType(BaseDescriptor):
 # The HasTraits implementation
 #-----------------------------------------------------------------------------
 
+class _CallbackWrapper(object):
+    """An object adapting a on_trait_change callback into an observe callback.
+    
+    The comparison operator __eq__ is implemented to enable removal of wrapped
+    callbacks.
+    """ 
+
+    def __init__(self, cb):
+        if callable(cb):
+            self.cb = cb
+            # Bound methods have an additional 'self' argument.
+            offset = -1 if isinstance(self.cb, types.MethodType) else 0
+            self.nargs = len(getargspec(cb)[0]) + offset
+            if (self.nargs > 4):
+                raise TraitError('a trait changed callback must have 0-4 arguments.')
+        else:
+            raise TraitError('a trait changed callback must be callable.')
+
+    def __eq__(self, other):
+        # The wrapper is equal to the wrapped element
+        if isinstance(other, _CallbackWrapper):
+            return self.cb == other.cb
+        else:
+            return self.cb == other
+
+    def __call__(self, change):
+        # The wrapper is callable
+        if self.nargs == 0:
+            self.cb()
+        elif self.nargs == 1:
+            self.cb(change['name'])
+        elif self.nargs == 2:
+            self.cb(change['name'], change['new'])
+        elif self.nargs == 3:
+            self.cb(change['name'], change['old'], change['new'])
+        elif self.nargs == 4:
+            self.cb(change['name'], change['old'], change['new'], change['owner'])
+
+def _callback_wrapper(cb):
+    if isinstance(cb, _CallbackWrapper):
+        return cb
+    else:
+        return _CallbackWrapper(cb)
+
 
 class MetaHasTraits(type):
     """A metaclass for HasTraits.
@@ -594,6 +638,35 @@ class MetaHasTraits(type):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
         super(MetaHasTraits, cls).__init__(name, bases, classdict)
+
+
+def observe(*names):
+    """ A decorator which can be used to observe members on a class.
+
+    Parameters
+    ----------
+    *names
+        The str names of the attributes to observe on the object.
+    """
+    return ObserveHandler(names)
+
+
+class ObserveHandler(BaseDescriptor):
+
+    def __init__(self, names=None):
+        if names is None:
+            self.names=[None]
+        else:
+            self.names = names
+
+    def __call__(self, func):
+        self.func = func
+        return self
+
+    def instance_init(self, inst):
+        setattr(inst, self.name, self.func)
+        for name in self.names:
+            inst.observe(self.func, name=name)
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
@@ -696,8 +769,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
 
         # First dynamic ones
         callables = []
-        callables.extend(self._trait_notifiers.get(name,[]))
-        callables.extend(self._trait_notifiers.get('anytrait',[]))
+        callables.extend(self._trait_notifiers.get(name, []))
+        callables.extend(self._trait_notifiers.get('anytrait', []))
 
         # Now static ones
         try:
@@ -705,37 +778,32 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         except:
             pass
         else:
-            callables.append(cb)
+            warn("_[traitname]_changed change handlers are deprecated: use observe and unobserve instead", 
+                 DeprecationWarning, stacklevel=2)
+            callables.append(_callback_wrapper(cb))
 
         # Call them all now
         for c in callables:
             # Traits catches and logs errors here.  I allow them to raise
             if callable(c):
-                argspec = getargspec(c)
+                # Bound methods have an additional 'self' argument.
+                offset = -1 if isinstance(c, types.MethodType) else 0
 
-                nargs = len(argspec[0])
-                # Bound methods have an additional 'self' argument
-                # I don't know how to treat unbound methods, but they
-                # can't really be used for callbacks.
-                if isinstance(c, types.MethodType):
-                    offset = -1
+                if isinstance(c, _CallbackWrapper):
+                    # _CallbackWrappers are not compatible with getargspec and have one argument
+                    nargs = 1
                 else:
-                    offset = 0
-                if nargs + offset == 0:
+                    nargs = len(getargspec(c)[0]) + offset
+
+                if nargs == 0:
                     c()
-                elif nargs + offset == 1:
-                    c(name)
-                elif nargs + offset == 2:
-                    c(name, new_value)
-                elif nargs + offset == 3:
-                    c(name, old_value, new_value)
-                elif nargs + offset == 4:
-                    c(name, old_value, new_value, self)
+                elif nargs == 1:
+                    c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
                 else:
-                    raise TraitError('a trait changed callback '
-                                        'must have 0-4 arguments.')
+                    raise TraitError('an observe change callback '
+                                        'must have 0-1 arguments.')
             else:
-                raise TraitError('a trait changed callback '
+                raise TraitError('an observe change callback '
                                     'must be callable.')
 
     def _add_notifiers(self, handler, name):
@@ -757,12 +825,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             except ValueError:
                 pass
 
-    def remove_all_notifiers(self):
-        """Remove all trait change handlers."""
-        self._trait_notifiers = {}
-
     def on_trait_change(self, handler=None, name=None, remove=False):
-        """Setup a handler to be called when a trait changes.
+        """DEPRECATED: Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
 
@@ -772,8 +836,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         _a_changed(self, name, old, new) (fewer arguments can be used, see
         below).
 
-        If `remove` is True and `handler` is None, all handlers for the
-        specified name are uninstalled.
+        If `remove` is True and `handler` is not specified, all change
+        handlers for the specified name are uninstalled.
 
         Parameters
         ----------
@@ -789,14 +853,57 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             If False (the default), then install the handler.  If True
             then unintall it.
         """
+        warn("on_trait_change is deprecated: use observe instead",
+             DeprecationWarning, stacklevel=2)
         if remove:
-            names = parse_notifier_name(name)
-            for n in names:
-                self._remove_notifiers(handler, n)
+            self.unobserve(_callback_wrapper(handler), name=name)
         else:
-            names = parse_notifier_name(name)
-            for n in names:
-                self._add_notifiers(handler, n)
+            self.observe(_callback_wrapper(handler), name=name)
+
+    def observe(self, handler, name=None):
+        """Setup a handler to be called when a trait changes.
+
+        This is used to setup dynamic notifications of trait changes.
+
+        Parameters
+        ----------
+        handler : callable
+            A callable that is called when a trait changes.  Its
+            signature can be handler() or handler(change), where change is a
+            dictionary with the following keys:
+                - owner : the HasTraits instance
+                - old : the old value of the modified trait attribute
+                - new : the new value of the modified trait attribute
+                - name : the name of the modified trait attribute.
+        name : list, str, None
+            If None, the handler will apply to all traits.  If a list
+            of str, handler will apply to all names in the list.  If a
+            str, the handler will apply just to that name.
+        """
+        names = parse_notifier_name(name)
+        for n in names:
+            self._add_notifiers(handler, n)
+
+    def unobserve(self, handler, name=None):
+        """Remove a trait change handler.
+
+        This is used to unregister handlers to trait change notificiations.
+
+        Parameters
+        ----------
+        handler : callable
+            The callable called when a trait attribute changes.
+        name : list, str, None
+            If None, all change handlers for the specified name are
+            uninstalled.
+        """
+        names = parse_notifier_name(name)
+        for n in names:
+            self._remove_notifiers(handler, n)
+
+    def unobserve_all(self):
+        """Remove all trait change handlers."""
+        self._trait_notifiers = {}
 
     @classmethod
     def class_trait_names(cls, **metadata):
