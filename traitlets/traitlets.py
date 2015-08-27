@@ -588,7 +588,7 @@ class _CallbackWrapper(object):
         elif self.nargs == 3:
             self.cb(change['name'], change['old'], change['new'])
         elif self.nargs == 4:
-            self.cb(change['name'], change['old'], change['new'], change['object'])
+            self.cb(change['name'], change['old'], change['new'], change['owner'])
 
 def _callback_wrapper(cb):
     if isinstance(cb, _CallbackWrapper):
@@ -795,7 +795,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 if nargs == 0:
                     c()
                 elif nargs == 1:
-                    c({'name': name, 'old': old_value, 'new': new_value, 'object': self})
+                    c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
                 else:
                     raise TraitError('an observe change callback '
                                         'must have 0-1 arguments.')
@@ -868,7 +868,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             A callable that is called when a trait changes.  Its
             signature can be handler() or handler(change), where change is a
             dictionary with the following keys:
-                - object : the HasTraits instance
+                - owner : the HasTraits instance
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
                 - name : the name of the modified trait attribute.
@@ -889,13 +889,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         Parameters
         ----------
         handler : callable
-            A callable that is called when a trait changes.  Its
-            signature can be handler() or handler(change), where change is a
-            dictionary with the following keys:
-                - object : the HasTraits instance
-                - old : the old value of the modified trait attribute
-                - new : the new value of the modified trait attribute
-                - name : the name of the modified trait attribute.
+            The callable called when a trait attribute changes.
         name : list, str, None
             If None, all change handlers for the specified name are
             uninstalled.
