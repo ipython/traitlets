@@ -664,6 +664,7 @@ class ObserveHandler(BaseDescriptor):
         return self
 
     def instance_init(self, inst):
+        self.func = types.MethodType(self.func, inst)
         setattr(inst, self.name, self.func)
         for name in self.names:
             inst.observe(self.func, name=name)
