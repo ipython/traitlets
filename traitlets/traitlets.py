@@ -422,7 +422,10 @@ class TraitType(BaseDescriptor):
         # use provides a static default, transfer that to obj._trait_values.
         if (self._dynamic_default_callable(obj) is None) \
                 and (self.default_value is not Undefined):
+            # prevent cross validation when instance is not complete
+            self._cross_validation_lock = True
             v = self._validate(obj, self.default_value)
+            self._cross_validation_lock = False
             if self.name is not None:
                 obj._trait_values[self.name] = v
 
@@ -686,7 +689,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls, **kw)
         inst._trait_values = {}
         inst._trait_notifiers = {}
-        inst._cross_validation_lock = True
         # Here we tell all the TraitType instances to set their default
         # values on the instance.
         for key in dir(cls):
@@ -700,7 +702,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             else:
                 if isinstance(value, BaseDescriptor):
                     value.instance_init(inst)
-        inst._cross_validation_lock = False
         return inst
 
     def __init__(self, *args, **kw):
