@@ -712,16 +712,15 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 setattr(self, key, value)
 
     @contextlib.contextmanager
-    def hold_trait_notifications(self):
+    def mute_trait_notifications(self):
         """Context manager for bundling trait change notifications and cross
         validation.
-
         Use this when doing multiple trait assignments (init, config), to avoid
         race conditions in trait notifiers requesting other trait values.
         All trait notifications will fire after all values have been assigned.
         """
         if self._cross_validation_lock is True:
-            yield
+            yield {}
             return
         else:
             cache = {}
@@ -740,7 +739,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             try:
                 self._notify_trait = hold
                 self._cross_validation_lock = True
-                yield
+                yield cache
                 for name in list(cache.keys()):
                     if hasattr(self, '_%s_validate' % name):
                         cross_validate = getattr(self, '_%s_validate' % name)
@@ -752,7 +751,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                         setattr(self, name, value[1])
                     else:
                         self._trait_values.pop(name)
-                cache = {}
+                cache.clear()
                 raise e
             finally:
                 self._notify_trait = _notify_trait
@@ -764,9 +763,20 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                     # (only used to preserve pickleability on Python < 3.4)
                     self.__dict__.pop('_notify_trait', None)
 
-                # trigger delayed notifications
-                for v in cache.values():
-                    self._notify_trait(*v)
+    @contextlib.contextmanager
+    def hold_trait_notifications(self):
+        """Context manager for bundling trait change notifications and cross
+        validation.
+        Use this when doing multiple trait assignments (init, config), to avoid
+        race conditions in trait notifiers requesting other trait values.
+        All trait notifications will fire after all values have been assigned.
+        """
+        try:
+            with self.mute_trait_notifications() as cache:
+                yield
+        finally:
+            for v in cache.values():
+                self._notify_trait(*v)
 
     def _notify_trait(self, name, old_value, new_value):
 
