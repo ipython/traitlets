@@ -45,7 +45,6 @@ import inspect
 import re
 import sys
 import types
-from types import FunctionType
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -663,10 +662,14 @@ class ObserveHandler(BaseDescriptor):
         self.func = func
         return self
 
+    def __get__(self, inst, cls):
+        if inst is None:
+            return self
+        return types.MethodType(self.func, inst)
+
     def instance_init(self, inst):
-        setattr(inst, self.name, self.func)
         for name in self.names:
-            inst.observe(self.func, name=name)
+            inst.observe(types.MethodType(self.func, inst), name=name)
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
@@ -938,7 +941,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             return traits
 
         for meta_name, meta_eval in metadata.items():
-            if type(meta_eval) is not FunctionType:
+            if type(meta_eval) is not types.FunctionType:
                 metadata[meta_name] = _SimpleTest(meta_eval)
 
         result = {}
@@ -990,7 +993,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             return traits
 
         for meta_name, meta_eval in metadata.items():
-            if type(meta_eval) is not FunctionType:
+            if type(meta_eval) is not types.FunctionType:
                 metadata[meta_name] = _SimpleTest(meta_eval)
 
         result = {}
