@@ -144,6 +144,24 @@ def parse_notifier_name(name):
             assert isinstance(n, string_types), "names must be strings"
         return name
 
+def _register_callback(log, handler, name):
+    if name not in log:
+        nlist = []
+        log[name] = nlist
+    else:
+        nlist = log[name]
+    if handler not in nlist:
+        nlist.append(handler)
+
+def _unregister_callback(log, handler, name):
+    if name in log:
+        try:
+            if handler is None:
+                del log[name]
+            else:
+                log[name].remove(handler)
+        except ValueError:
+            pass
 
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
@@ -489,9 +507,46 @@ class TraitType(BaseDescriptor):
         return value
 
     def _cross_validate(self, obj, value):
-        if hasattr(obj, '_%s_validate' % self.name):
-            cross_validate = getattr(obj, '_%s_validate' % self.name)
-            value = cross_validate(value, self)
+
+        try:
+            cb = getattr(obj, '_%s_validate' % self.name)
+            if not callable(cb):
+                raise TraitError('A trait validator must be callable')
+        except AttributeError:
+            cb = None
+        else:
+            warn("_[traitname]_validate handlers are deprecated: use validate and unvalidate instead", 
+                 DeprecationWarning, stacklevel=2)
+
+        if cb:
+            value = cb(value, self)
+        
+        for c in obj._trait_validators.get(self.name,[]):
+            if callable(c):
+                # Bound methods have an additional 'self' argument.
+                offset = -1 if isinstance(c, types.MethodType) else 0
+
+                if isinstance(c, _CallbackWrapper):
+                    # _CallbackWrappers are not compatible with getargspec and have one argument
+                    nargs = 1
+                else:
+                    nargs = len(getargspec(c)[0]) + offset
+
+                if nargs == 0:
+                    value = c()
+                elif nargs == 1:
+                    try:
+                        old = obj._trait_values[self.name]
+                    except KeyError:
+                        old = self.default_value
+                    value = c({'name': self.name, 'new': value, 'old': old, 'owner': obj})
+                else:
+                    raise TraitError('an observe change callback '
+                                        'must have 0-1 arguments.')
+            else:
+                raise TraitError('an observe change callback '
+                                    'must be callable.')
+        
         return value
 
     def __or__(self, other):
@@ -649,8 +704,20 @@ def observe(*names):
     """
     return ObserveHandler(names)
 
+def validate(*names):
+    """ A decorator which can be used to cross validate members on a class.
 
-class ObserveHandler(BaseDescriptor):
+    Parameters
+    ----------
+    *names
+        The str names of the attributes to observe on the object.
+    """
+    return ValidateHandler(names)
+
+
+class EventHandler(BaseDescriptor):
+
+    event = None
 
     def __init__(self, names=None):
         if names is None:
@@ -669,7 +736,19 @@ class ObserveHandler(BaseDescriptor):
 
     def instance_init(self, inst):
         for name in self.names:
-            inst.observe(types.MethodType(self.func, inst), name=name)
+            try:
+                register_event = getattr(inst, self.event)
+            except AttributeError:
+                klass = inst.__class__.__name__
+                raise TraitError(("Event type '%s' is not recognized"
+                                  " by %s instance."%(self.event, klass)))
+            register_event(types.MethodType(self.func, inst), name=name)
+
+class ObserveHandler(EventHandler):
+    event = 'observe'
+
+class ValidateHandler(EventHandler):
+    event = 'validate'
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
@@ -686,6 +765,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls, **kw)
         inst._trait_values = {}
         inst._trait_notifiers = {}
+        inst._trait_validators = {}
         inst._cross_validation_lock = True
         # Here we tell all the TraitType instances to set their default
         # values on the instance.
@@ -810,23 +890,16 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                                     'must be callable.')
 
     def _add_notifiers(self, handler, name):
-        if name not in self._trait_notifiers:
-            nlist = []
-            self._trait_notifiers[name] = nlist
-        else:
-            nlist = self._trait_notifiers[name]
-        if handler not in nlist:
-            nlist.append(handler)
+        _register_callback(self._trait_notifiers, handler, name)
 
     def _remove_notifiers(self, handler, name):
-        if name in self._trait_notifiers:
-            try:
-                if handler is None:
-                    del self._trait_notifiers[name]
-                else:
-                    self._trait_notifiers[name].remove(handler)
-            except ValueError:
-                pass
+        _unregister_callback(self._trait_notifiers, handler, name)
+
+    def _add_validators(self, handler, name):
+        _register_callback(self._trait_validators, handler, name)
+
+    def _remove_validators(self, handler, name):
+        _unregister_callback(self._trait_validators, handler, name)
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
@@ -907,6 +980,53 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
     def unobserve_all(self):
         """Remove all trait change handlers."""
         self._trait_notifiers = {}
+
+    def validate(self, handler, name=None):
+        """Setup a handler to be called when a trait should be cross valdiated.
+
+        This is used to setup dynamic notifications for cross validation.
+        Cross validation handlers chain, meaning that the output of a prior
+        validator will be passed to the next until the list is exhausted. The
+        final value is then assigned to the trait.
+
+        Parameters
+        ----------
+        handler : callable
+            A callable that is called when a is cross validated.  Its
+            signature can be handler() or handler(change), where change is a
+            dictionary with the following keys:
+                - owner : the HasTraits instance
+                - value : the new value to be passed to the trait attribute
+                - name : the name of the trait attribute being validated.
+        name : list, str, None
+            If None, the handler will apply to all traits.  If a list
+            of str, handler will apply to all names in the list.  If a
+            str, the handler will apply just to that name.
+        """
+        names = parse_notifier_name(name)
+        for n in names:
+            self._add_validators(handler, n)
+
+    def unvalidate(self, handler, name=None):
+        """Remove a trait change handler.
+
+        This is used to unregister handlers for cross validation.
+
+        Parameters
+        ----------
+        handler : callable
+            The callable called when a trait attribute changes.
+        name : list, str, None
+            If None, all change handlers for the specified name are
+            uninstalled.
+        """
+        names = parse_notifier_name(name)
+        for n in names:
+            self._remove_validators(handler, n)
+
+    def unvalidate_all(self):
+        """Remove all cross validation handlers."""
+        self._trait_validators = {}
 
     @classmethod
     def class_trait_names(cls, **metadata):
