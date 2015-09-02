@@ -940,25 +940,21 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
     def register_validator(self, handler, name):
         """Setup a handler to be called when a trait should be cross valdiated.
 
-        This is used to setup dynamic notifications for cross validation.
-        Cross validation handlers chain, meaning that the output of a prior
-        validator will be passed to the next until the list is exhausted. The
-        final value is then assigned to the trait.
+        This is used to setup dynamic notifications for cross-validation.
 
         Parameters
         ----------
         handler : callable
             A callable that is called when the given trait is cross-validated.
-            Its signature can be handler() or handler(change), where change is
-            a dictionary with the following keys:
+            Its signature is handler(proposal), where proposal is a dictionary
+            with the following keys:
                 - owner : the HasTraits instance
-                - old : the old value of the modified trait attribute
-                - new : the new value of the modified trait attribute
+                - value : the proposed value for the modified trait attribute
                 - name : the name of the modified trait attribute.
         name : str
             The name of the trait that should be cross-validated
         """
-        if self._trait_validators.get(name, None):
+        if name in self._trait_validators:
             raise TraitError("A cross-validator for the trait"
                              " '%s' already exists" % name)
         self._trait_validators[name] = handler
