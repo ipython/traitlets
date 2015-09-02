@@ -679,7 +679,7 @@ def observe(*names):
     return ObserveHandler(names)
 
 def validate(name):
-    """ A decorator which can be used to cross validate a member on a class.
+    """ A decorator which validates a HasTraits object's state when a member is set.
 
     Parameters
     ----------
