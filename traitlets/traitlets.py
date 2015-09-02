@@ -490,38 +490,25 @@ class TraitType(BaseDescriptor):
     def _cross_validate(self, obj, value):
         try:
             cb = getattr(obj, '_%s_validate' % self.name)
-            if not callable(cb):
-                raise TraitError('A trait validator must be callable')
         except AttributeError:
             cb = obj._trait_validators.get(self.name,None)
         else:
             warn("_[traitname]_validate handlers are deprecated: use register_validator instead",
                  DeprecationWarning, stacklevel=2)
+            if not callable(cb):
+                raise TraitError('A trait validator must be callable')
             if obj._trait_validators.get(self.name,None):
                 raise TraitError('Only one cross-validator is allowed: two were found')
             return cb(value, self)
 
         if cb:
             if callable(cb):
-                old = getattr(obj, self.name)
-                change = {'name': self.name,
-                          'new': value,
-                          'old': old,
-                          'owner': obj}
-                nargs = len(getargspec(cb)[0])
-                if isinstance(cb, types.MethodType):
-                    nargs -= 1
-                if nargs == 0:
-                    value = cb()
-                elif nargs == 1:
-                    value = cb(change)
-                else:
-                    raise TraitError('a cross-validator must'
-                                     ' take 0-1 arguments.')
+                value = cb({'name':self.name, 'value':value, 'owner':obj})
             else:
-                TraitError('a cross-validator must be callable')
+                raise TraitError('a cross-validator must be callable')
 
         return value
+
 
     def __or__(self, other):
         if isinstance(other, Union):
@@ -669,27 +656,23 @@ class MetaHasTraits(type):
 
 
 def observe(*names):
-    """ A decorator which can be used to observe members on a class.
+    """ A decorator which can be used to observe Traits on a class.
 
     Parameters
     ----------
     *names
-        The str names of the attributes to observe on the object.
+        The str names of the Traits to observe on the object.
     """
     return ObserveHandler(names)
 
 def validate(name):
-    """ A decorator which validates a HasTraits object's state when a member is set.
+    """ A decorator which validates a HasTraits object's state when a Trait is set.
 
     Parameters
     ----------
     name
-        The str name of the attribute to observe on the object.
+        The str name of the Trait to observe on the object.
     """
-    try:
-        len(name)
-    except:
-        raise TraitError("Only one cross-validator is allowed per trait")
     return ValidateHandler(name)
     
 
