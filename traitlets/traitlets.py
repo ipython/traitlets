@@ -491,22 +491,18 @@ class TraitType(BaseDescriptor):
         try:
             cb = getattr(obj, '_%s_validate' % self.name)
         except AttributeError:
-            cb = obj._trait_validators.get(self.name,None)
+            if self.name in obj._trait_validators:
+                proposal = {'name':self.name, 'value':value, 'owner':obj}
+                value = obj._trait_validators[self.name](proposal)
         else:
             warn("_[traitname]_validate handlers are deprecated: use register_validator instead",
                  DeprecationWarning, stacklevel=2)
             if not callable(cb):
                 raise TraitError('A trait validator must be callable')
-            if obj._trait_validators.get(self.name,None):
+            if self.name in obj._trait_validators:
                 raise TraitError('Only one cross-validator is allowed: two were found')
-            return cb(value, self)
-
-        if cb:
-            if callable(cb):
-                value = cb({'name':self.name, 'value':value, 'owner':obj})
-            else:
-                raise TraitError('a cross-validator must be callable')
-
+            value = cb(value, self)
+            
         return value
 
 
@@ -578,15 +574,12 @@ class _CallbackWrapper(object):
     """ 
 
     def __init__(self, cb):
-        if callable(cb):
-            self.cb = cb
-            # Bound methods have an additional 'self' argument.
-            offset = -1 if isinstance(self.cb, types.MethodType) else 0
-            self.nargs = len(getargspec(cb)[0]) + offset
-            if (self.nargs > 4):
-                raise TraitError('a trait changed callback must have 0-4 arguments.')
-        else:
-            raise TraitError('a trait changed callback must be callable.')
+        self.cb = cb
+        # Bound methods have an additional 'self' argument.
+        offset = -1 if isinstance(self.cb, types.MethodType) else 0
+        self.nargs = len(getargspec(cb)[0]) + offset
+        if (self.nargs > 4):
+            raise TraitError('a trait changed callback must have 0-4 arguments.')
 
     def __eq__(self, other):
         # The wrapper is equal to the wrapped element
@@ -826,28 +819,24 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             callables.append(_callback_wrapper(cb))
 
         # Call them all now
+        # Traits catches and logs errors here.  I allow them to raise
         for c in callables:
-            # Traits catches and logs errors here.  I allow them to raise
-            if callable(c):
-                # Bound methods have an additional 'self' argument.
-                offset = -1 if isinstance(c, types.MethodType) else 0
+            # Bound methods have an additional 'self' argument.
+            offset = -1 if isinstance(c, types.MethodType) else 0
 
-                if isinstance(c, _CallbackWrapper):
-                    # _CallbackWrappers are not compatible with getargspec and have one argument
-                    nargs = 1
-                else:
-                    nargs = len(getargspec(c)[0]) + offset
+            if isinstance(c, _CallbackWrapper):
+                # _CallbackWrappers are not compatible with getargspec and have one argument
+                nargs = 1
+            else:
+                nargs = len(getargspec(c)[0]) + offset
 
-                if nargs == 0:
-                    c()
-                elif nargs == 1:
-                    c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
-                else:
-                    raise TraitError('an observe change callback '
-                                        'must have 0-1 arguments.')
+            if nargs == 0:
+                c()
+            elif nargs == 1:
+                c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
             else:
                 raise TraitError('an observe change callback '
-                                    'must be callable.')
+                                    'must have 0-1 arguments.')
 
     def _add_notifiers(self, handler, name):
         if name not in self._trait_notifiers:
