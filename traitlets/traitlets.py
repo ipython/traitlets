@@ -144,25 +144,6 @@ def parse_notifier_name(name):
             assert isinstance(n, string_types), "names must be strings"
         return name
 
-def _register_callback(log, handler, name):
-    if name not in log:
-        nlist = []
-        log[name] = nlist
-    else:
-        nlist = log[name]
-    if handler not in nlist:
-        nlist.append(handler)
-
-def _unregister_callback(log, handler, name):
-    if name in log:
-        try:
-            if handler is None:
-                del log[name]
-            else:
-                log[name].remove(handler)
-        except ValueError:
-            pass
-
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
     def __call__ ( self, test  ):
@@ -707,9 +688,9 @@ def validate(name):
     """
     try:
         len(name)
-        raise TraitError("Only one cross-validator is allowed per trait")
     except:
-        return ValidateHandler(name)
+        raise TraitError("Only one cross-validator is allowed per trait")
+    return ValidateHandler(name)
     
 
 
@@ -886,10 +867,23 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                                     'must be callable.')
 
     def _add_notifiers(self, handler, name):
-        _register_callback(self._trait_notifiers, handler, name)
-
+        if name not in self._trait_notifiers:
+            nlist = []
+            self._trait_notifiers[name] = nlist
+        else:
+            nlist = self._trait_notifiers[name]
+        if handler not in nlist:
+            nlist.append(handler)
+    
     def _remove_notifiers(self, handler, name):
-        _unregister_callback(self._trait_notifiers, handler, name)
+        if name in self._trait_notifiers:
+            try:
+                if handler is None:
+                    del self._trait_notifiers[name]
+                else:
+                    self._trait_notifiers[name].remove(handler)
+            except ValueError:
+                pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
