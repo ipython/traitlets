@@ -497,8 +497,6 @@ class TraitType(BaseDescriptor):
         else:
             warn("_[traitname]_validate handlers are deprecated: use register_validator instead",
                  DeprecationWarning, stacklevel=2)
-            if not callable(cb):
-                raise TraitError('A trait validator must be callable')
             if self.name in obj._trait_validators:
                 raise TraitError('Only one cross-validator is allowed: two were found')
             value = cb(value, self)
