@@ -490,7 +490,9 @@ class TraitType(BaseDescriptor):
     def _cross_validate(self, obj, value):
         try:
             cb = getattr(obj, '_%s_validate' % self.name)
-        except AttributeError:
+            if cb in obj._trait_validators.get(self.name,[]):
+                raise
+        except:
             if self.name in obj._trait_validators:
                 proposal = {'name':self.name, 'value':value, 'owner':obj}
                 value = obj._trait_validators[self.name](proposal)
@@ -809,6 +811,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         # Now static ones
         try:
             cb = getattr(self, '_%s_changed' % name)
+            if cb in self._trait_notifiers.get(name,[]):
+                raise
         except:
             pass
         else:
