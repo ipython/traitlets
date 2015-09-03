@@ -488,23 +488,15 @@ class TraitType(BaseDescriptor):
         return value
 
     def _cross_validate(self, obj, value):
-        try:
-            cb = getattr(obj, '_%s_validate' % self.name)
-            if cb in obj._trait_validators.get(self.name,[]):
-                raise
-        except:
-            if self.name in obj._trait_validators:
-                proposal = {'name':self.name, 'value':value, 'owner':obj}
-                value = obj._trait_validators[self.name](proposal)
-        else:
+        if self.name in obj._trait_validators:
+            proposal = {'name': self.name, 'value': value, 'owner': obj}
+            value = obj._trait_validators[self.name](proposal)
+        elif hasattr(obj, '_%s_validate' % self.name):
             warn("_[traitname]_validate handlers are deprecated: use register_validator instead",
                  DeprecationWarning, stacklevel=2)
-            if self.name in obj._trait_validators:
-                raise TraitError('Only one cross-validator is allowed: two were found')
-            value = cb(value, self)
-            
+            cross_validate = getattr(obj, '_%s_validate' % self.name)
+            value = cross_validate(value, self)
         return value
-
 
     def __or__(self, other):
         if isinstance(other, Union):
@@ -685,7 +677,7 @@ class ObserveHandler(EventHandler):
 
     def __init__(self, names=None):
         if names is None:
-            self.names=[None]
+            self.names = [None]
         else:
             self.names = names
 
@@ -809,16 +801,13 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         callables.extend(self._trait_notifiers.get('anytrait', []))
 
         # Now static ones
-        try:
-            cb = getattr(self, '_%s_changed' % name)
-            if cb in self._trait_notifiers.get(name,[]):
-                raise
-        except:
-            pass
-        else:
+        if hasattr(self, '_%s_changed' % name):
             warn("_[traitname]_changed change handlers are deprecated: use observe and unobserve instead", 
                  DeprecationWarning, stacklevel=2)
-            callables.append(_callback_wrapper(cb))
+            cb = getattr(self, '_%s_changed' % name)
+            # Only append the magic method if it was not manually registered
+            if cb not in callables:
+                callables.append(_callback_wrapper(cb))
 
         # Call them all now
         # Traits catches and logs errors here.  I allow them to raise
@@ -959,6 +948,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         if name in self._trait_validators:
             raise TraitError("A cross-validator for the trait"
                              " '%s' already exists" % name)
+        if hasattr(self, '_%s_validate' % name):
+            warn("_[traitname]_validate handlers are deprecated. use register_validator instead",
+                 DeprecationWarning, stacklevel=2)
+
         self._trait_validators[name] = handler
 
     @classmethod

@@ -1436,7 +1436,7 @@ class TestValidationHook(TestCase):
 
             @validate('value')
             def _value_validate(self, proposal):
-                name,value = proposal['name'],proposal['value']
+                name, value = proposal['name'], proposal['value']
                 if self.parity == 'even' and value % 2:
                     raise TraitError('Expected an even number')
                 if self.parity == 'odd' and (value % 2 == 0):
