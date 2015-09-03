@@ -498,7 +498,6 @@ class TraitType(BaseDescriptor):
             value = cross_validate(value, self)
         return value
 
-
     def __or__(self, other):
         if isinstance(other, Union):
             return Union([self] + other.trait_types)
@@ -949,6 +948,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         if name in self._trait_validators:
             raise TraitError("A cross-validator for the trait"
                              " '%s' already exists" % name)
+        if hasattr(self, '_%s_validate' % name):
+            warn("_[traitname]_validate handlers are deprecated. use register_validator instead",
+                 DeprecationWarning, stacklevel=2)
+
         self._trait_validators[name] = handler
 
     @classmethod
