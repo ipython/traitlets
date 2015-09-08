@@ -948,9 +948,13 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         if name in self._trait_validators:
             raise TraitError("A cross-validator for the trait"
                              " '%s' already exists" % name)
-        if hasattr(self, '_%s_validate' % name):
-            warn("_[traitname]_validate handlers are deprecated: use validate"
-                " decorator instead", DeprecationWarning, stacklevel=2)
+
+        magic_name = '_%s_validate' % name
+        if hasattr(self, magic_name):
+            class_value = getattr(self.__class__, magic_name)
+            if not isinstance(class_value, ValidateHandler):
+                warn("_[traitname]_validate handlers are deprecated: use validate"
+                    " decorator instead", DeprecationWarning, stacklevel=2)
         self._trait_validators[name] = handler
 
     @classmethod
