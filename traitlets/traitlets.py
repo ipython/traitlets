@@ -801,13 +801,16 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         callables.extend(self._trait_notifiers.get('anytrait', []))
 
         # Now static ones
-        if hasattr(self, '_%s_changed' % name):
-            warn("_[traitname]_changed change handlers are deprecated: use observe and unobserve instead", 
-                 DeprecationWarning, stacklevel=2)
-            cb = getattr(self, '_%s_changed' % name)
-            # Only append the magic method if it was not manually registered
-            if cb not in callables:
-                callables.append(_callback_wrapper(cb))
+        magic_name = '_%s_changed' % name
+        if hasattr(self, magic_name):
+            class_value = getattr(self.__class__, magic_name)
+            if not isinstance(class_value, ValidateHandler):
+                warn("_[traitname]_changed handlers are deprecated: use observe"
+                    " and unobserve instead", DeprecationWarning, stacklevel=2)
+                cb = getattr(self, '_%s_changed' % name)
+                # Only append the magic method if it was not manually registered
+                if cb not in callables:
+                    callables.append(_callback_wrapper(cb))
 
         # Call them all now
         # Traits catches and logs errors here.  I allow them to raise
