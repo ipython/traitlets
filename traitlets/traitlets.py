@@ -492,8 +492,8 @@ class TraitType(BaseDescriptor):
             proposal = {'name': self.name, 'value': value, 'owner': obj}
             value = obj._trait_validators[self.name](proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
-            warn("_[traitname]_validate handlers are deprecated: use register_validator instead",
-                 DeprecationWarning, stacklevel=2)
+            warn("_[traitname]_validate handlers are deprecated: use validate"
+                " decorator instead", DeprecationWarning, stacklevel=2)
             cross_validate = getattr(obj, '_%s_validate' % self.name)
             value = cross_validate(value, self)
         return value
@@ -949,9 +949,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             raise TraitError("A cross-validator for the trait"
                              " '%s' already exists" % name)
         if hasattr(self, '_%s_validate' % name):
-            warn("_[traitname]_validate handlers are deprecated. use register_validator instead",
-                 DeprecationWarning, stacklevel=2)
-
+            warn("_[traitname]_validate handlers are deprecated: use validate"
+                " decorator instead", DeprecationWarning, stacklevel=2)
         self._trait_validators[name] = handler
 
     @classmethod
