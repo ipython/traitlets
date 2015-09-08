@@ -693,7 +693,7 @@ class ValidateHandler(EventHandler):
     
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst.register_validator(meth, self._name)
+        inst._register_validator(meth, self._name)
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
@@ -928,7 +928,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         """Remove all trait change handlers."""
         self._trait_notifiers = {}
 
-    def register_validator(self, handler, name):
+    def _register_validator(self, handler, name):
         """Setup a handler to be called when a trait should be cross valdiated.
 
         This is used to setup dynamic notifications for cross-validation.
