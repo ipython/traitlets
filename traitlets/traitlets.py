@@ -684,23 +684,18 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
-        inst._trait_values = {}
-        inst._trait_notifiers = {}
+
+        # Some descriptors raise AttributeError like zope.interface's
+        # __provides__ attributes even though they exist.  This causes
+        # AttributeErrors even though they are listed in dir(cls) so
+        # they are ignored and Undefined is given instead.
+        from_dir = (getattr(cls, k, Undefined) for k in dir(cls))
+        descriptors = (v for v in from_dir if isinstance(v, BaseDescriptor))
+
         inst._cross_validation_lock = True
-        # Here we tell all the TraitType instances to set their default
-        # values on the instance.
-        for key in dir(cls):
-            # Some descriptors raise AttributeError like zope.interface's
-            # __provides__ attributes even though they exist.  This causes
-            # AttributeErrors even though they are listed in dir(cls).
-            try:
-                value = getattr(cls, key)
-            except AttributeError:
-                pass
-            else:
-                if isinstance(value, BaseDescriptor):
-                    value.instance_init(inst)
+        inst._install_descriptors(descriptors)
         inst._cross_validation_lock = False
+
         return inst
 
     def __init__(self, *args, **kw):
@@ -710,6 +705,14 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         with self.hold_trait_notifications():
             for key, value in iteritems(kw):
                 setattr(self, key, value)
+
+    def _install_descriptors(self, descriptors):
+        self._trait_values = {}
+        self._trait_notifiers = {}
+        # Here we tell all the TraitType instances to 
+        # set their default values on the instance.
+        for d in descriptors:
+            d.instance_init(self)
 
     @contextlib.contextmanager
     def hold_trait_notifications(self):
