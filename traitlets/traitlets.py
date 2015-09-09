@@ -144,6 +144,7 @@ def parse_notifier_name(name):
             assert isinstance(n, string_types), "names must be strings"
         return name
 
+
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
     def __call__ ( self, test  ):
@@ -417,6 +418,7 @@ class TraitType(BaseDescriptor):
         return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
+        obj._cross_validation_lock = True
         # If no dynamic initialiser is present, and the trait implementation or
         # use provides a static default, transfer that to obj._trait_values.
         if (self._dynamic_default_callable(obj) is None) \
@@ -424,6 +426,7 @@ class TraitType(BaseDescriptor):
             v = self._validate(obj, self.default_value)
             if self.name is not None:
                 obj._trait_values[self.name] = v
+        obj._cross_validation_lock = False
 
     def get(self, obj, cls):
         try:
@@ -720,7 +723,6 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
         inst._trait_values = {}
         inst._trait_notifiers = {}
         inst._trait_validators = {}
-        inst._cross_validation_lock = True
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -732,7 +734,6 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             else:
                 if isinstance(value, BaseDescriptor):
                     value.instance_init(inst)
-        inst._cross_validation_lock = False
         return inst
 
 
@@ -742,6 +743,7 @@ class HasTraits(HasDescriptors):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
+        self._cross_validation_lock = False
         with self.hold_trait_notifications():
             for key, value in iteritems(kw):
                 setattr(self, key, value)
@@ -876,7 +878,7 @@ class HasTraits(HasDescriptors):
             nlist = self._trait_notifiers[name]
         if handler not in nlist:
             nlist.append(handler)
-    
+
     def _remove_notifiers(self, handler, name):
         if name in self._trait_notifiers:
             try:
