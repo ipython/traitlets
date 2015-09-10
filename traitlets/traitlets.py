@@ -664,11 +664,21 @@ def validate(name):
 
 class EventHandler(BaseDescriptor):
 
-    def __call__(self, func):
+    def _init_call(self, func):
         self.func = func
         return self
 
-    def __get__(self, inst, cls):
+    def _func_call(self, inst, *args, **kwargs):
+        method = types.MethodType(self.func, inst)
+        return method(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        if hasattr(self, 'func'):
+            return self._func_call(*args, **kwargs)
+        else:
+            return self._init_call(*args, **kwargs)
+        
+    def __get__(self, inst, cls=None):
         if inst is None:
             return self
         return types.MethodType(self.func, inst)
