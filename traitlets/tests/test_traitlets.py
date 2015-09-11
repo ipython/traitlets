@@ -1620,14 +1620,19 @@ class TestDirectionalLink(TestCase):
         self.assertNotEqual(a.value, b.value)
 
 class Pickleable(HasTraits):
+
     i = Int()
+    @observe('i')
+    def _i_changed(self, change): pass
+    @validate('i')
+    def _i_validate(self, commit):
+        return commit['value']
+
     j = Int()
     
-    def _i_default(self):
-        return 1
-    
-    def _i_changed(self, name, old, new):
-        self.j = new
+    def __init__(self):
+        with self.hold_trait_notifications():
+            self.i = 1
 
 def test_pickle_hastraits():
     c = Pickleable()
