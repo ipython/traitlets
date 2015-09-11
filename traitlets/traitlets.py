@@ -668,13 +668,9 @@ class EventHandler(BaseDescriptor):
         self.func = func
         return self
 
-    def _func_call(self, inst, *args, **kwargs):
-        method = types.MethodType(self.func, inst)
-        return method(*args, **kwargs)
-
     def __call__(self, *args, **kwargs):
         if hasattr(self, 'func'):
-            return self._func_call(*args, **kwargs)
+            return self.func(*args, **kwargs)
         else:
             return self._init_call(*args, **kwargs)
         
