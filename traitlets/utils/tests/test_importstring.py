@@ -19,17 +19,12 @@ class TestImportItem(TestCase):
         self.assertIs(os.path, import_item(u'os.path'))
         self.assertIs(os.path.join, import_item(u'os.path.join'))
 
-    def test_import_bytes(self):
-        self.assertIs(os, import_item(b'os'))
-        self.assertIs(os.path, import_item(b'os.path'))
-        self.assertIs(os.path.join, import_item(b'os.path.join'))
-
     def test_bad_input(self):
         class NotAString(object):
             pass
         msg = (
-            "import_item expected input of type .*, "
-            "but got '%s' instead" % NotAString
+            "import_item accepts strings, "
+            "not '%s'." % NotAString
         )
         with self.assertRaisesRegexp(TypeError, msg):
             import_item(NotAString())
