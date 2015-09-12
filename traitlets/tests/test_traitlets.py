@@ -21,10 +21,14 @@ from traitlets import (
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance,
+    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe
 )
 from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
+
+def change_dict(*ordered_values):
+    change_names = ('name','old','new','owner')
+    return dict(zip(change_names, ordered_values))
 
 #-----------------------------------------------------------------------------
 # Helper classes for testing
@@ -408,6 +412,192 @@ class TestHasTraitsNotify(TestCase):
                 self.c += 1
             
             def _a_changed(self, name, old, new):
+                self.d += 1
+
+        b = B()
+        b.a += 1
+        self.assertEqual(b.b, b.c)
+        self.assertEqual(b.b, b.d)
+        b.a += 1
+        self.assertEqual(b.b, b.c)
+        self.assertEqual(b.b, b.d)
+
+class TestObserveDecorator(TestCase):
+
+    def setUp(self):
+        self._notify1 = []
+        self._notify2 = []
+
+    def notify1(self, change):
+        self._notify1.append(change)
+
+    def notify2(self, change):
+        self._notify2.append(change)
+
+    def test_notify_all(self):
+
+        class A(HasTraits):
+            a = Int()
+            b = Float()
+
+        a = A()
+        a.observe(self.notify1)
+        a.a = 0
+        self.assertEqual(len(self._notify1),0)
+        a.b = 0.0
+        self.assertEqual(len(self._notify1),0)
+        a.a = 10
+        change = change_dict('a',0,10,a)
+        self.assertTrue(change in self._notify1)
+        a.b = 10.0
+        change = change_dict('b',0.0,10.0,a)
+        self.assertTrue(change in self._notify1)
+        self.assertRaises(TraitError,setattr,a,'a','bad string')
+        self.assertRaises(TraitError,setattr,a,'b','bad string')
+        self._notify1 = []
+        a.unobserve(self.notify1)
+        a.a = 20
+        a.b = 20.0
+        self.assertEqual(len(self._notify1),0)
+
+    def test_notify_one(self):
+
+        class A(HasTraits):
+            a = Int()
+            b = Float()
+
+        a = A()
+        a.observe(self.notify1, 'a')
+        a.a = 0
+        self.assertEqual(len(self._notify1),0)
+        a.a = 10
+        change = change_dict('a',0,10,a)
+        self.assertTrue(change in self._notify1)
+        self.assertRaises(TraitError,setattr,a,'a','bad string')
+
+    def test_subclass(self):
+
+        class A(HasTraits):
+            a = Int()
+
+        class B(A):
+            b = Float()
+
+        b = B()
+        self.assertEqual(b.a,0)
+        self.assertEqual(b.b,0.0)
+        b.a = 100
+        b.b = 100.0
+        self.assertEqual(b.a,100)
+        self.assertEqual(b.b,100.0)
+
+    def test_notify_subclass(self):
+
+        class A(HasTraits):
+            a = Int()
+
+        class B(A):
+            b = Float()
+
+        b = B()
+        b.observe(self.notify1, 'a')
+        b.observe(self.notify2, 'b')
+        b.a = 0
+        b.b = 0.0
+        self.assertEqual(len(self._notify1),0)
+        self.assertEqual(len(self._notify2),0)
+        b.a = 10
+        b.b = 10.0
+        change = change_dict('a',0,10,b)
+        self.assertTrue(change in self._notify1)
+        change = change_dict('b',0.0,10.0,b)
+        self.assertTrue(change in self._notify2)
+
+    def test_static_notify(self):
+
+        class A(HasTraits):
+            a = Int()
+            _notify1 = []
+            @observe('a')
+            def _a_changed(self, change):
+                self._notify1.append(change)
+
+        a = A()
+        a.a = 0
+        # This is broken!!!
+        self.assertEqual(len(a._notify1),0)
+        a.a = 10
+        change = change_dict('a',0,10,a)
+        self.assertTrue(change in a._notify1)
+
+        class B(A):
+            b = Float()
+            _notify2 = []
+            @observe('b')
+            def _b_changed(self, change):
+                self._notify2.append(change)
+
+        b = B()
+        b.a = 10
+        b.b = 10.0
+        change = change_dict('a',0,10,b)
+        self.assertTrue(change in b._notify1)
+        change = change_dict('b',0.0,10.0,b)
+        self.assertTrue(change in b._notify2)
+
+    def test_notify_args(self):
+
+        def callback0():
+            self.cb = ()
+        def callback1(change):
+            self.cb = change
+
+        class A(HasTraits):
+            a = Int()
+
+        a = A()
+        a.on_trait_change(callback0, 'a')
+        a.a = 10
+        self.assertEqual(self.cb,())
+        a.unobserve(callback0, 'a')
+
+        a.observe(callback1, 'a')
+        a.a = 100
+        change = change_dict('a',10,100,a)
+        self.assertEqual(self.cb,change)
+        a.unobserve(callback1, 'a')
+
+        self.assertEqual(len(a._trait_notifiers['a']),0)
+
+    def test_notify_only_once(self):
+
+        class A(HasTraits):
+            listen_to = ['a']
+            
+            a = Int(0)
+            b = 0
+            
+            def __init__(self, **kwargs):
+                super(A, self).__init__(**kwargs)
+                self.observe(self.listener1, ['a'])
+            
+            def listener1(self):
+                self.b += 1
+
+        class B(A):
+                    
+            c = 0
+            d = 0
+            
+            def __init__(self, **kwargs):
+                super(B, self).__init__(**kwargs)
+                self.observe(self.listener2)
+            
+            def listener2(self):
+                self.c += 1
+            
+            @observe('a')
+            def _a_changed(self):
                 self.d += 1
 
         b = B()
@@ -1244,7 +1434,9 @@ class TestValidationHook(TestCase):
             value = Int(0)
             parity = Enum(['odd', 'even'], default_value='even')
 
-            def _value_validate(self, value, trait):
+            @validate('value')
+            def _value_validate(self, proposal):
+                name, value = proposal['name'], proposal['value']
                 if self.parity == 'even' and value % 2:
                     raise TraitError('Expected an even number')
                 if self.parity == 'odd' and (value % 2 == 0):

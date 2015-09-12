@@ -144,7 +144,6 @@ def parse_notifier_name(name):
             assert isinstance(n, string_types), "names must be strings"
         return name
 
-
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
     def __call__ ( self, test  ):
@@ -489,7 +488,12 @@ class TraitType(BaseDescriptor):
         return value
 
     def _cross_validate(self, obj, value):
-        if hasattr(obj, '_%s_validate' % self.name):
+        if self.name in obj._trait_validators:
+            proposal = {'name': self.name, 'value': value, 'owner': obj}
+            value = obj._trait_validators[self.name](proposal)
+        elif hasattr(obj, '_%s_validate' % self.name):
+            warn("_[traitname]_validate handlers are deprecated: use validate"
+                " decorator instead", DeprecationWarning, stacklevel=2)
             cross_validate = getattr(obj, '_%s_validate' % self.name)
             value = cross_validate(value, self)
         return value
@@ -562,15 +566,12 @@ class _CallbackWrapper(object):
     """ 
 
     def __init__(self, cb):
-        if callable(cb):
-            self.cb = cb
-            # Bound methods have an additional 'self' argument.
-            offset = -1 if isinstance(self.cb, types.MethodType) else 0
-            self.nargs = len(getargspec(cb)[0]) + offset
-            if (self.nargs > 4):
-                raise TraitError('a trait changed callback must have 0-4 arguments.')
-        else:
-            raise TraitError('a trait changed callback must be callable.')
+        self.cb = cb
+        # Bound methods have an additional 'self' argument.
+        offset = -1 if isinstance(self.cb, types.MethodType) else 0
+        self.nargs = len(getargspec(cb)[0]) + offset
+        if (self.nargs > 4):
+            raise TraitError('a trait changed callback must have 0-4 arguments.')
 
     def __eq__(self, other):
         # The wrapper is equal to the wrapped element
@@ -640,36 +641,65 @@ class MetaHasTraits(type):
 
 
 def observe(*names):
-    """ A decorator which can be used to observe members on a class.
+    """ A decorator which can be used to observe Traits on a class.
 
     Parameters
     ----------
     *names
-        The str names of the attributes to observe on the object.
+        The str names of the Traits to observe on the object.
     """
     return ObserveHandler(names)
 
+def validate(name):
+    """ A decorator which validates a HasTraits object's state when a Trait is set.
 
-class ObserveHandler(BaseDescriptor):
+    Parameters
+    ----------
+    name
+        The str name of the Trait to observe on the object.
+    """
+    return ValidateHandler(name)
+    
 
-    def __init__(self, names=None):
-        if names is None:
-            self.names=[None]
-        else:
-            self.names = names
 
-    def __call__(self, func):
+class EventHandler(BaseDescriptor):
+
+    def _init_call(self, func):
         self.func = func
         return self
 
-    def __get__(self, inst, cls):
+    def __call__(self, *args, **kwargs):
+        if hasattr(self, 'func'):
+            return self.func(*args, **kwargs)
+        else:
+            return self._init_call(*args, **kwargs)
+        
+    def __get__(self, inst, cls=None):
         if inst is None:
             return self
         return types.MethodType(self.func, inst)
 
+class ObserveHandler(EventHandler):
+
+    def __init__(self, names=None):
+        if names is None:
+            self.names = [None]
+        else:
+            self.names = names
+
     def instance_init(self, inst):
+        meth = types.MethodType(self.func, inst)
         for name in self.names:
-            inst.observe(types.MethodType(self.func, inst), name=name)
+            inst.observe(meth, name)
+
+class ValidateHandler(EventHandler):
+
+    def __init__(self, name):
+        self._name = name
+    
+    def instance_init(self, inst):
+        meth = types.MethodType(self.func, inst)
+        inst._register_validator(meth, self._name)
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
@@ -686,6 +716,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             inst = new_meth(cls, **kw)
         inst._trait_values = {}
         inst._trait_notifiers = {}
+        inst._trait_validators = {}
         inst._cross_validation_lock = True
         # Here we tell all the TraitType instances to set their default
         # values on the instance.
@@ -776,38 +807,36 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         callables.extend(self._trait_notifiers.get('anytrait', []))
 
         # Now static ones
-        try:
-            cb = getattr(self, '_%s_changed' % name)
-        except:
-            pass
-        else:
-            warn("_[traitname]_changed change handlers are deprecated: use observe and unobserve instead", 
-                 DeprecationWarning, stacklevel=2)
-            callables.append(_callback_wrapper(cb))
+        magic_name = '_%s_changed' % name
+        if hasattr(self, magic_name):
+            class_value = getattr(self.__class__, magic_name)
+            if not isinstance(class_value, ValidateHandler):
+                warn("_[traitname]_changed handlers are deprecated: use observe"
+                    " and unobserve instead", DeprecationWarning, stacklevel=2)
+                cb = getattr(self, '_%s_changed' % name)
+                # Only append the magic method if it was not manually registered
+                if cb not in callables:
+                    callables.append(_callback_wrapper(cb))
 
         # Call them all now
+        # Traits catches and logs errors here.  I allow them to raise
         for c in callables:
-            # Traits catches and logs errors here.  I allow them to raise
-            if callable(c):
-                # Bound methods have an additional 'self' argument.
-                offset = -1 if isinstance(c, types.MethodType) else 0
+            # Bound methods have an additional 'self' argument.
+            offset = -1 if isinstance(c, types.MethodType) else 0
 
-                if isinstance(c, _CallbackWrapper):
-                    # _CallbackWrappers are not compatible with getargspec and have one argument
-                    nargs = 1
-                else:
-                    nargs = len(getargspec(c)[0]) + offset
+            if isinstance(c, _CallbackWrapper):
+                # _CallbackWrappers are not compatible with getargspec and have one argument
+                nargs = 1
+            else:
+                nargs = len(getargspec(c)[0]) + offset
 
-                if nargs == 0:
-                    c()
-                elif nargs == 1:
-                    c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
-                else:
-                    raise TraitError('an observe change callback '
-                                        'must have 0-1 arguments.')
+            if nargs == 0:
+                c()
+            elif nargs == 1:
+                c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
             else:
                 raise TraitError('an observe change callback '
-                                    'must be callable.')
+                                    'must have 0-1 arguments.')
 
     def _add_notifiers(self, handler, name):
         if name not in self._trait_notifiers:
@@ -817,7 +846,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             nlist = self._trait_notifiers[name]
         if handler not in nlist:
             nlist.append(handler)
-
+    
     def _remove_notifiers(self, handler, name):
         if name in self._trait_notifiers:
             try:
@@ -871,7 +900,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         Parameters
         ----------
         handler : callable
-            A callable that is called when a trait changes.  Its
+            A callable that is called when a trait changes. Its
             signature can be handler() or handler(change), where change is a
             dictionary with the following keys:
                 - owner : the HasTraits instance
@@ -907,6 +936,35 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
     def unobserve_all(self):
         """Remove all trait change handlers."""
         self._trait_notifiers = {}
+
+    def _register_validator(self, handler, name):
+        """Setup a handler to be called when a trait should be cross valdiated.
+
+        This is used to setup dynamic notifications for cross-validation.
+
+        Parameters
+        ----------
+        handler : callable
+            A callable that is called when the given trait is cross-validated.
+            Its signature is handler(proposal), where proposal is a dictionary
+            with the following keys:
+                - owner : the HasTraits instance
+                - value : the proposed value for the modified trait attribute
+                - name : the name of the modified trait attribute.
+        name : str
+            The name of the trait that should be cross-validated
+        """
+        if name in self._trait_validators:
+            raise TraitError("A cross-validator for the trait"
+                             " '%s' already exists" % name)
+
+        magic_name = '_%s_validate' % name
+        if hasattr(self, magic_name):
+            class_value = getattr(self.__class__, magic_name)
+            if not isinstance(class_value, ValidateHandler):
+                warn("_[traitname]_validate handlers are deprecated: use validate"
+                    " decorator instead", DeprecationWarning, stacklevel=2)
+        self._trait_validators[name] = handler
 
     @classmethod
     def class_trait_names(cls, **metadata):
