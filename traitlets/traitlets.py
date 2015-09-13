@@ -418,6 +418,10 @@ class TraitType(BaseDescriptor):
         return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
+        if not hasattr(obj, '_trait_values'):
+            obj._trait_values = {}
+            obj._trait_notifiers = {}
+            obj._trait_validators = {}
         obj._cross_validation_lock = True
         # If no dynamic initialiser is present, and the trait implementation or
         # use provides a static default, transfer that to obj._trait_values.
@@ -694,6 +698,10 @@ class ObserveHandler(EventHandler):
             self.names = names
 
     def instance_init(self, inst):
+        if not hasattr(inst, '_trait_values'):
+            inst._trait_values = {}
+            inst._trait_notifiers = {}
+            inst._trait_validators = {}
         meth = types.MethodType(self.func, inst)
         for name in self.names:
             inst.observe(meth, name)
@@ -704,6 +712,10 @@ class ValidateHandler(EventHandler):
         self.names = names
     
     def instance_init(self, inst):
+        if not hasattr(inst, '_trait_values'):
+            inst._trait_values = {}
+            inst._trait_notifiers = {}
+            inst._trait_validators = {}
         meth = types.MethodType(self.func, inst)
         inst._register_validator(meth, self.names)
 
@@ -720,9 +732,6 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
-        inst._trait_values = {}
-        inst._trait_notifiers = {}
-        inst._trait_validators = {}
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
