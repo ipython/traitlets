@@ -514,10 +514,8 @@ class Application(SingletonConfigurable):
             # path list is in descending priority order, so load files backwards:
             pyloader = cls.python_config_loader_class(basefilename+'.py', path=path, log=log)
             if log:
-                log.debug("Attempting to load config file %s.py in path %s", basefilename, path)
+                log.debug("Looking for %s in %s", basefilename, path)
             jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
-            if log:
-                log.debug("Attempting to load config file %s.json in path %s", basefilename, path)
             config = None
             for loader in [pyloader, jsonloader]:
                 try:
