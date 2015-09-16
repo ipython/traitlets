@@ -1633,6 +1633,7 @@ class Pickleable(HasTraits):
     def __init__(self):
         with self.hold_trait_notifications():
             self.i = 1
+        self.on_trait_change(self._i_changed, 'i')
 
 def test_pickle_hastraits():
     c = Pickleable()
