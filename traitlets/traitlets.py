@@ -489,7 +489,7 @@ class TraitType(BaseDescriptor):
 
     def _cross_validate(self, obj, value):
         if self.name in obj._trait_validators:
-            proposal = {'name': self.name, 'value': value, 'owner': obj}
+            proposal = {'trait': self, 'value': value, 'owner': obj}
             value = obj._trait_validators[self.name](proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
             warn("_[traitname]_validate handlers are deprecated: use validate"
