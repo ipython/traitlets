@@ -418,10 +418,6 @@ class TraitType(BaseDescriptor):
         return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
-        if not hasattr(obj, '_trait_values'):
-            obj._trait_values = {}
-            obj._trait_notifiers = {}
-            obj._trait_validators = {}
         obj._cross_validation_lock = True
         # If no dynamic initialiser is present, and the trait implementation or
         # use provides a static default, transfer that to obj._trait_values.
@@ -698,10 +694,6 @@ class ObserveHandler(EventHandler):
             self.names = names
 
     def instance_init(self, inst):
-        if not hasattr(inst, '_trait_values'):
-            inst._trait_values = {}
-            inst._trait_notifiers = {}
-            inst._trait_validators = {}
         meth = types.MethodType(self.func, inst)
         for name in self.names:
             inst.observe(meth, name)
@@ -712,10 +704,6 @@ class ValidateHandler(EventHandler):
         self.names = names
     
     def instance_init(self, inst):
-        if not hasattr(inst, '_trait_values'):
-            inst._trait_values = {}
-            inst._trait_notifiers = {}
-            inst._trait_validators = {}
         meth = types.MethodType(self.func, inst)
         inst._register_validator(meth, self.names)
 
@@ -732,6 +720,10 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
+        inst.install_descriptors(cls)
+        return inst
+
+    def install_descriptors(self, cls):
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -742,11 +734,16 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
                 pass
             else:
                 if isinstance(value, BaseDescriptor):
-                    value.instance_init(inst)
-        return inst
+                    value.instance_init(self)
 
 
 class HasTraits(HasDescriptors):
+
+    def install_descriptors(self, cls):
+        self._trait_values = {}
+        self._trait_notifiers = {}
+        self._trait_validators = {}
+        super(HasTraits, self).install_descriptors(cls)
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
