@@ -425,6 +425,25 @@ class TraitType(BaseDescriptor):
             if self.name is not None:
                 obj._trait_values[self.name] = v
 
+    def get(self, obj, cls):
+        try:
+            value = obj._trait_values[self.name]
+        except KeyError:
+            # Check for a dynamic initializer.
+            dynamic_default = self._dynamic_default_callable(obj)
+            if dynamic_default is None:
+                raise TraitError("No default value found for %s trait of %r"
+                                 % (self.name, obj))
+            value = self._validate(obj, dynamic_default())
+            obj._trait_values[self.name] = value
+            return value
+        except Exception:
+            # This should never be reached.
+            raise TraitError('Unexpected error in TraitType: '
+                             'default value not set properly')
+        else:
+            return value
+
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
 
@@ -436,23 +455,7 @@ class TraitType(BaseDescriptor):
         if obj is None:
             return self
         else:
-            try:
-                value = obj._trait_values[self.name]
-            except KeyError:
-                # Check for a dynamic initializer.
-                dynamic_default = self._dynamic_default_callable(obj)
-                if dynamic_default is None:
-                    raise TraitError("No default value found for %s trait of %r"
-                                     % (self.name, obj))
-                value = self._validate(obj, dynamic_default())
-                obj._trait_values[self.name] = value
-                return value
-            except Exception:
-                # This should never be reached.
-                raise TraitError('Unexpected error in TraitType: '
-                                 'default value not set properly')
-            else:
-                return value
+            return self.get(obj, cls)
 
     def set(self, obj, value):
         new_value = self._validate(obj, value)
