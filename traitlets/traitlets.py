@@ -750,8 +750,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         # load will reinstantiate the method
         # (only used to preserve pickleability on Python < 3.4)
         d.pop('_notify_trait', None)
-        # event handlers stored on an instance must
-        # are expected to be reinstantiated during a
+        # event handlers stored on an instance are
+        # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
         d['_trait_notifiers'] = {}
         d['_trait_validators'] = {}
