@@ -27,7 +27,7 @@ from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
 
 def change_dict(*ordered_values):
-    change_names = ('name','old','new','owner')
+    change_names = ('name', 'old', 'new', 'owner', 'type')
     return dict(zip(change_names, ordered_values))
 
 #-----------------------------------------------------------------------------
@@ -447,10 +447,10 @@ class TestObserveDecorator(TestCase):
         a.b = 0.0
         self.assertEqual(len(self._notify1),0)
         a.a = 10
-        change = change_dict('a',0,10,a)
+        change = change_dict('a', 0, 10, a, 'trait_change')
         self.assertTrue(change in self._notify1)
         a.b = 10.0
-        change = change_dict('b',0.0,10.0,a)
+        change = change_dict('b', 0.0, 10.0, a, 'trait_change')
         self.assertTrue(change in self._notify1)
         self.assertRaises(TraitError,setattr,a,'a','bad string')
         self.assertRaises(TraitError,setattr,a,'b','bad string')
@@ -471,7 +471,7 @@ class TestObserveDecorator(TestCase):
         a.a = 0
         self.assertEqual(len(self._notify1),0)
         a.a = 10
-        change = change_dict('a',0,10,a)
+        change = change_dict('a', 0, 10, a, 'trait_change')
         self.assertTrue(change in self._notify1)
         self.assertRaises(TraitError,setattr,a,'a','bad string')
 
@@ -508,9 +508,9 @@ class TestObserveDecorator(TestCase):
         self.assertEqual(len(self._notify2),0)
         b.a = 10
         b.b = 10.0
-        change = change_dict('a',0,10,b)
+        change = change_dict('a', 0, 10, b, 'trait_change')
         self.assertTrue(change in self._notify1)
-        change = change_dict('b',0.0,10.0,b)
+        change = change_dict('b', 0.0, 10.0, b, 'trait_change')
         self.assertTrue(change in self._notify2)
 
     def test_static_notify(self):
@@ -527,7 +527,7 @@ class TestObserveDecorator(TestCase):
         # This is broken!!!
         self.assertEqual(len(a._notify1),0)
         a.a = 10
-        change = change_dict('a',0,10,a)
+        change = change_dict('a', 0, 10, a, 'trait_change')
         self.assertTrue(change in a._notify1)
 
         class B(A):
@@ -540,9 +540,9 @@ class TestObserveDecorator(TestCase):
         b = B()
         b.a = 10
         b.b = 10.0
-        change = change_dict('a',0,10,b)
+        change = change_dict('a', 0, 10, b, 'trait_change')
         self.assertTrue(change in b._notify1)
-        change = change_dict('b',0.0,10.0,b)
+        change = change_dict('b', 0.0, 10.0, b, 'trait_change')
         self.assertTrue(change in b._notify2)
 
     def test_notify_args(self):
@@ -563,8 +563,8 @@ class TestObserveDecorator(TestCase):
 
         a.observe(callback1, 'a')
         a.a = 100
-        change = change_dict('a',10,100,a)
-        self.assertEqual(self.cb,change)
+        change = change_dict('a', 10, 100, a, 'trait_change')
+        self.assertEqual(self.cb, change)
         a.unobserve(callback1, 'a')
 
         self.assertEqual(len(a._trait_notifiers['a']),0)
