@@ -664,7 +664,6 @@ def validate(name):
     return ValidateHandler(name)
     
 
-
 class EventHandler(BaseDescriptor):
 
     def _init_call(self, func):
@@ -745,6 +744,39 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             for key, value in iteritems(kw):
                 setattr(self, key, value)
 
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        # FIXME: remove when support is bumped to 3.4.
+        # hold_trait_notifications sets and resets
+        # _notify_trait forcing it onto __dict__
+        # the reference to the class made during
+        # load will reinstantiate the method
+        # (only used to preserve pickleability on Python < 3.4)
+        d.pop('_notify_trait', None)
+        # event handlers stored on an instance are
+        # expected to be reinstantiated during a
+        # recall of instance_init during __setstate__
+        d['_trait_notifiers'] = {}
+        d['_trait_validators'] = {}
+        return d
+
+    def __setstate__(self, state):
+        self.__dict__ = state.copy()
+
+        # event handlers are reassigned to self
+        cls = self.__class__
+        for key in dir(cls):
+            # Some descriptors raise AttributeError like zope.interface's
+            # __provides__ attributes even though they exist.  This causes
+            # AttributeErrors even though they are listed in dir(cls).
+            try:
+                value = getattr(cls, key)
+            except AttributeError:
+                pass
+            else:
+                if isinstance(value, EventHandler):
+                    value.instance_init(self)
+
     @contextlib.contextmanager
     def hold_trait_notifications(self):
         """Context manager for bundling trait change notifications and cross
@@ -776,9 +808,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 self._cross_validation_lock = True
                 yield
                 for name in list(cache.keys()):
-                    if hasattr(self, '_%s_validate' % name):
-                        cross_validate = getattr(self, '_%s_validate' % name)
-                        setattr(self, name, cross_validate(getattr(self, name), self))
+                    trait = getattr(self.__class__, name)
+                    value = trait._cross_validate(self, getattr(self, name))
+                    setattr(self, name, value)
             except TraitError as e:
                 self._notify_trait = lambda *x: None
                 for name, value in cache.items():
@@ -791,13 +823,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             finally:
                 self._notify_trait = _notify_trait
                 self._cross_validation_lock = False
-                if isinstance(_notify_trait, types.MethodType):
-                    # FIXME: remove when support is bumped to 3.4.
-                    # when original method is restored,
-                    # remove the redundant value from __dict__
-                    # (only used to preserve pickleability on Python < 3.4)
-                    self.__dict__.pop('_notify_trait', None)
-
                 # trigger delayed notifications
                 for v in cache.values():
                     self._notify_trait(*v)
