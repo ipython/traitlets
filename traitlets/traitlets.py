@@ -133,12 +133,10 @@ def parse_notifier_name(name):
     >>> parse_notifier_name(['a','b'])
     ['a', 'b']
     >>> parse_notifier_name(None)
-    ['anytrait']
+    [None]
     """
-    if isinstance(name, string_types):
+    if name is None or isinstance(name, string_types):
         return [name]
-    elif name is None:
-        return ['anytrait']
     elif isinstance(name, (list, tuple)):
         for n in name:
             assert isinstance(n, string_types), "names must be strings"
@@ -832,7 +830,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         # First dynamic ones
         callables = []
         callables.extend(self._trait_notifiers.get(name, []))
-        callables.extend(self._trait_notifiers.get('anytrait', []))
+        callables.extend(self._trait_notifiers.get(None, []))
 
         # Now static ones
         magic_name = '_%s_changed' % name
