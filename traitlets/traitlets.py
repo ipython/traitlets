@@ -476,7 +476,7 @@ class TraitType(BaseDescriptor):
         if silent is not True:
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
-            obj._notify_trait(self.name, old_value, new_value)
+            obj._notify_trait(self.name, old_value, new_value, 'trait_change')
 
     def __set__(self, obj, value):
         if self.read_only:
@@ -655,7 +655,7 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', 'trait_change'))
+    return ObserveHandler(names, type=kwargs.get('type', None))
 
 def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
@@ -687,7 +687,7 @@ class EventHandler(BaseDescriptor):
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names=None, type='trait_change'):
+    def __init__(self, names=None, type=None):
         if names is None:
             self.names = [None]
         else:
@@ -808,7 +808,7 @@ class HasTraits(HasDescriptors):
                 if previous is None:
                     return current
                 else:
-                    return (current[0], previous[1], current[2])
+                    return (current[0], previous[1], current[2], current[3])
 
             def hold(*a):
                 cache[a[0]] = merge(cache.get(a[0]), a)
@@ -837,7 +837,7 @@ class HasTraits(HasDescriptors):
                 for v in cache.values():
                     self._notify_trait(*v)
 
-    def _notify_trait(self, name, old_value, new_value, type='trait_change'):
+    def _notify_trait(self, name, old_value, new_value, type):
 
         # First dynamic ones
         callables = []
@@ -878,7 +878,7 @@ class HasTraits(HasDescriptors):
                     'old': old_value,
                     'new': new_value,
                     'owner': self,
-                    'type': 'trait_change'
+                    'type': type, 
                 })
             else:
                 raise TraitError('an observe change callback '
@@ -941,7 +941,7 @@ class HasTraits(HasDescriptors):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=None, type='trait_change'):
+    def observe(self, handler, names=None, type=None):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -971,7 +971,7 @@ class HasTraits(HasDescriptors):
         for n in names:
             self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=None, type='trait_change'):
+    def unobserve(self, handler, names=None, type=None):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
