@@ -380,9 +380,10 @@ class TestHasTraitsNotify(TestCase):
         a.on_trait_change(callback4, 'a')
         a.a = 100000
         self.assertEqual(self.cb,('a',10000,100000,a))
+        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 1)
         a.on_trait_change(callback4, 'a', remove=True)
 
-        self.assertEqual(len(a._trait_notifiers['a']),0)
+        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 0)
 
     def test_notify_only_once(self):
 
@@ -565,9 +566,10 @@ class TestObserveDecorator(TestCase):
         a.a = 100
         change = change_dict('a', 10, 100, a, 'trait_change')
         self.assertEqual(self.cb, change)
+        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 1)
         a.unobserve(callback1, 'a')
 
-        self.assertEqual(len(a._trait_notifiers['a']),0)
+        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 0)
 
     def test_notify_only_once(self):
 

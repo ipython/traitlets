@@ -837,12 +837,14 @@ class HasTraits(HasDescriptors):
                 for v in cache.values():
                     self._notify_trait(*v)
 
-    def _notify_trait(self, name, old_value, new_value):
+    def _notify_trait(self, name, old_value, new_value, type='trait_change'):
 
         # First dynamic ones
         callables = []
-        callables.extend(self._trait_notifiers.get(name, []))
-        callables.extend(self._trait_notifiers.get(None, []))
+        callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
+        callables.extend(self._trait_notifiers.get(name, {}).get(None, []))
+        callables.extend(self._trait_notifiers.get(None, {}).get(type, []))
+        callables.extend(self._trait_notifiers.get(None, {}).get(None, []))
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -882,24 +884,27 @@ class HasTraits(HasDescriptors):
                 raise TraitError('an observe change callback '
                                     'must have 0-1 arguments.')
 
-    def _add_notifiers(self, handler, name):
+    def _add_notifiers(self, handler, name, type):
         if name not in self._trait_notifiers:
             nlist = []
-            self._trait_notifiers[name] = nlist
+            self._trait_notifiers[name] = {type: nlist}
         else:
-            nlist = self._trait_notifiers[name]
+            if type not in self._trait_notifiers[name]:
+                nlist = []
+                self._trait_notifiers[name][type] = nlist
+            else:
+                nlist = self._trait_notifiers[name][type]
         if handler not in nlist:
             nlist.append(handler)
 
-    def _remove_notifiers(self, handler, name):
-        if name in self._trait_notifiers:
-            try:
-                if handler is None:
-                    del self._trait_notifiers[name]
-                else:
-                    self._trait_notifiers[name].remove(handler)
-            except ValueError:
-                pass
+    def _remove_notifiers(self, handler, name, type):
+        try:
+            if handler is None:
+                del self._trait_notifiers[name][type]
+            else:
+                self._trait_notifiers[name][type].remove(handler)
+        except KeyError:
+            pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
@@ -946,22 +951,27 @@ class HasTraits(HasDescriptors):
         handler : callable
             A callable that is called when a trait changes. Its
             signature can be handler() or handler(change), where change is a
-            dictionary with the following keys:
+            dictionary. The change dictionary at least holds a 'type' key
+                - type : the type of notification.
+            Other keys may be passed depending on the value of 'type'. In the
+            case where type is 'trait_change', we also have the following keys:
                 - owner : the HasTraits instance
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
                 - name : the name of the modified trait attribute.
-                - type : the type of notification.
         names : list, str, None
             If None, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
+        type : str, None
+            The type of notification to filter by. If equal to None, then all
+            notifications are passed to the observe handler.
         """
         names = parse_notifier_name(names)
         for n in names:
-            self._add_notifiers(handler, n)
+            self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=None):
+    def unobserve(self, handler, names=None, type='trait_change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -971,16 +981,27 @@ class HasTraits(HasDescriptors):
         handler : callable
             The callable called when a trait attribute changes.
         names : list, str, None
-            If None, all change handlers for the specified name are
-            uninstalled.
+            The names of the traits for which the specified handler should be
+            uninstalled. If names is None, the specified handler is uninstalled
+            from the list of notifiers corresponding to all changes.
+        type : str or None
+            The type of notification to filter by. If None, the specified handler
+            is uninstalled from the list of notifiers corresponding to all types.
         """
         names = parse_notifier_name(names)
         for n in names:
-            self._remove_notifiers(handler, n)
+            self._remove_notifiers(handler, n, type)
 
-    def unobserve_all(self):
-        """Remove all trait change handlers."""
-        self._trait_notifiers = {}
+    def unobserve_all(self, name=None):
+        """Remove trait change handlers of any type for the specified name.
+        If name is not specified, removes all trait notifiers."""
+        if name is None:
+            self._trait_notifiers = {}
+        else:
+            try:
+                del self._trait_notifiers[name]
+            except KeyError:
+                pass
 
     def _register_validator(self, handler, names):
         """Setup a handler to be called when a trait should be cross valdiated.
