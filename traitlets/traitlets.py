@@ -838,7 +838,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         magic_name = '_%s_changed' % name
         if hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
-            if not isinstance(class_value, ValidateHandler):
+            if not isinstance(class_value, ObserveHandler):
                 warn("_[traitname]_changed handlers are deprecated: use observe"
                     " and unobserve instead", DeprecationWarning, stacklevel=2)
                 cb = getattr(self, '_%s_changed' % name)
