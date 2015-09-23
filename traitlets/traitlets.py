@@ -651,15 +651,15 @@ def observe(*names):
     """
     return ObserveHandler(names)
 
-def validate(name):
+def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
 
     Parameters
     ----------
-    name
-        The str name of the Trait to observe on the object.
+    names
+        The str names of the Traits to validate.
     """
-    return ValidateHandler(name)
+    return ValidateHandler(names)
     
 
 class EventHandler(BaseDescriptor):
@@ -694,12 +694,12 @@ class ObserveHandler(EventHandler):
 
 class ValidateHandler(EventHandler):
 
-    def __init__(self, name):
-        self._name = name
+    def __init__(self, names):
+        self.names = names
     
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst._register_validator(meth, self._name)
+        inst._register_validator(meth, self.names)
 
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
@@ -963,10 +963,13 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
         """Remove all trait change handlers."""
         self._trait_notifiers = {}
 
-    def _register_validator(self, handler, name):
+    def _register_validator(self, handler, names):
         """Setup a handler to be called when a trait should be cross valdiated.
 
         This is used to setup dynamic notifications for cross-validation.
+
+        If a validator is already registered for any of the provided names, a
+        TraitError is raised and no new validator is registerd.
 
         Parameters
         ----------
@@ -977,20 +980,22 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 - owner : the HasTraits instance
                 - value : the proposed value for the modified trait attribute
                 - name : the name of the modified trait attribute.
-        name : str
-            The name of the trait that should be cross-validated
+        names : List of strings
+            The names of the traits that should be cross-validated
         """
-        if name in self._trait_validators:
-            raise TraitError("A cross-validator for the trait"
-                             " '%s' already exists" % name)
+        for name in names:
+            if name in self._trait_validators:
+                raise TraitError("A cross-validator for the trait"
+                                 " '%s' already exists" % name)
 
-        magic_name = '_%s_validate' % name
-        if hasattr(self, magic_name):
-            class_value = getattr(self.__class__, magic_name)
-            if not isinstance(class_value, ValidateHandler):
-                warn("_[traitname]_validate handlers are deprecated: use validate"
-                    " decorator instead", DeprecationWarning, stacklevel=2)
-        self._trait_validators[name] = handler
+            magic_name = '_%s_validate' % name
+            if hasattr(self, magic_name):
+                class_value = getattr(self.__class__, magic_name)
+                if not isinstance(class_value, ValidateHandler):
+                    warn("_[traitname]_validate handlers are deprecated: use validate"
+                         " decorator instead", DeprecationWarning, stacklevel=2)
+        for name in names:
+            self._trait_validators[name] = handler
 
     @classmethod
     def class_trait_names(cls, **metadata):
