@@ -476,7 +476,13 @@ class TraitType(BaseDescriptor):
         if silent is not True:
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
-            obj._notify_trait(self.name, old_value, new_value, 'trait_change')
+            obj._notify_change(self.name, 'trait_change', {
+                'name': self.name,
+                'old': old_value,
+                'new': new_value,
+                'owner': obj,
+                'type': 'trait_change',
+            })
 
     def __set__(self, obj, value):
         if self.read_only:
@@ -758,11 +764,11 @@ class HasTraits(HasDescriptors):
         d = self.__dict__.copy()
         # FIXME: remove when support is bumped to 3.4.
         # hold_trait_notifications sets and resets
-        # _notify_trait forcing it onto __dict__
+        # _notify_change forcing it onto __dict__
         # the reference to the class made during
         # load will reinstantiate the method
         # (only used to preserve pickleability on Python < 3.4)
-        d.pop('_notify_trait', None)
+        d.pop('_notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
@@ -801,20 +807,20 @@ class HasTraits(HasDescriptors):
             return
         else:
             cache = {}
-            _notify_trait = self._notify_trait
+            _notify_change = self._notify_change
 
             def merge(previous, current):
-                """merges notifications of the form (name, old, value)"""
+                """merges notifications of the form (name, type, change)"""
                 if previous is None:
                     return current
                 else:
-                    return (current[0], previous[1], current[2], current[3])
+                    return (current[0], current[1], dict(previous[2], new=current[2]['new']))
 
             def hold(*a):
                 cache[a[0]] = merge(cache.get(a[0]), a)
 
             try:
-                self._notify_trait = hold
+                self._notify_change = hold
                 self._cross_validation_lock = True
                 yield
                 for name in list(cache.keys()):
@@ -822,24 +828,22 @@ class HasTraits(HasDescriptors):
                     value = trait._cross_validate(self, getattr(self, name))
                     setattr(self, name, value)
             except TraitError as e:
-                self._notify_trait = lambda *x: None
+                self._notify_change = lambda *x: None
                 for name, value in cache.items():
-                    if value[1] is not Undefined:
-                        setattr(self, name, value[1])
+                    if value[2]['old'] is not Undefined:
+                        setattr(self, name, value[2]['old'])
                     else:
                         self._trait_values.pop(name)
                 cache = {}
                 raise e
             finally:
-                self._notify_trait = _notify_trait
+                self._notify_change = _notify_change
                 self._cross_validation_lock = False
                 # trigger delayed notifications
                 for v in cache.values():
-                    self._notify_trait(*v)
+                    self._notify_change(*v)
 
-    def _notify_trait(self, name, old_value, new_value, type):
-
-        # First dynamic ones
+    def _notify_change(self, name, type, change):
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
         callables.extend(self._trait_notifiers.get(name, {}).get(None, []))
@@ -873,13 +877,7 @@ class HasTraits(HasDescriptors):
             if nargs == 0:
                 c()
             elif nargs == 1:
-                c({
-                    'name': name,
-                    'old': old_value,
-                    'new': new_value,
-                    'owner': self,
-                    'type': type, 
-                })
+                c(change)
             else:
                 raise TraitError('an observe change callback '
                                     'must have 0-1 arguments.')

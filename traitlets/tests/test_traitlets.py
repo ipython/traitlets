@@ -37,11 +37,11 @@ def change_dict(*ordered_values):
 
 class HasTraitsStub(HasTraits):
 
-    def _notify_trait(self, name, old, new, type):
-        self._notify_name = name
-        self._notify_old = old
-        self._notify_new = new
-        self._notify_type = type
+    def _notify_change(self, name, type, change):
+        self._notify_name = change['name']
+        self._notify_old = change['old']
+        self._notify_new = change['new']
+        self._notify_type = change['type']
 
 
 #-----------------------------------------------------------------------------
