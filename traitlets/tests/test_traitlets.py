@@ -1452,6 +1452,31 @@ class TestValidationHook(TestCase):
         u.parity = 'even'
         u.value = 2  # OK
 
+    def test_multiple_validate(self):
+        """Verify that we can register the same validator to multiple names"""
+
+        class OddEven(HasTraits):
+
+            odd = Int(1)
+            even = Int(0)
+
+            @validate('odd', 'even')
+            def check_valid(self, proposal):
+                if proposal['trait'].name == 'odd' and not proposal['value'] % 2:
+                    raise TraitError('odd should be odd')
+                if proposal['trait'].name == 'even' and proposal['value'] % 2:
+                    raise TraitError('even should be even')
+
+        u = OddEven()
+        u.odd = 3  # OK
+        with self.assertRaises(TraitError):
+            u.odd = 2  # Trait Error
+
+        u.even = 2  # OK
+        with self.assertRaises(TraitError):
+            u.even = 3  # Trait Error
+
+
 
 class TestLink(TestCase):
 
