@@ -809,39 +809,54 @@ class HasTraits(HasDescriptors):
             cache = {}
             _notify_change = self._notify_change
 
-            def merge(previous, current):
-                """merges notifications of the form (name, type, change)"""
-                if previous is None:
-                    return current
+            def compress(past_changes, change):
+                """Merges the provided change with the last if possible."""
+                if past_changes is None:
+                    return [change]
                 else:
-                    return (current[0], current[1], dict(previous[2], new=current[2]['new']))
+                    if past_changes[-1]['type'] == 'trait_change' and change['type'] == 'trait_change':
+                        past_changes[-1]['new'] = change['new']
+                    else:
+                        # In case of changes other than 'trait_change', append the notification.
+                        past_changes.append(change)
+                    return past_changes
 
             def hold(*a):
-                cache[a[0]] = merge(cache.get(a[0]), a)
+                cache[a[0]] = compress(cache.get(a[0]), a[2])
 
             try:
+                # Replace _notify_change with `hold`, caching and compressing
+                # notifications, disable cross validation and yield.
                 self._notify_change = hold
                 self._cross_validation_lock = True
                 yield
+                # Cross validate final values when context is released.
                 for name in list(cache.keys()):
                     trait = getattr(self.__class__, name)
                     value = trait._cross_validate(self, getattr(self, name))
                     setattr(self, name, value)
             except TraitError as e:
+                # Roll back in case of TraitError during final cross validation.
                 self._notify_change = lambda *x: None
-                for name, value in cache.items():
-                    if value[2]['old'] is not Undefined:
-                        setattr(self, name, value[2]['old'])
-                    else:
-                        self._trait_values.pop(name)
+                for name, changes in cache.items():
+                    for change in changes[::-1]:
+                        # TODO: Separate in a rollback function per notification type.
+                        if change['type'] == 'trait_change':
+                            if change['old'] is not Undefined:
+                                setattr(self, name, change['old'])
+                            else:
+                                self._trait_values.pop(name)
                 cache = {}
                 raise e
             finally:
+                # Reset the _notify_change to original value, enable cross-validation
+                # and fire resulting change notifications.
                 self._notify_change = _notify_change
                 self._cross_validation_lock = False
                 # trigger delayed notifications
-                for v in cache.values():
-                    self._notify_change(*v)
+                for changes in cache.values():
+                    for change in changes:
+                        self._notify_change(change['name'], change['type'], change)
 
     def _notify_change(self, name, type, change):
         callables = []
