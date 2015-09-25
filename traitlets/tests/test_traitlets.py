@@ -1944,3 +1944,20 @@ def test_enum_no_default():
 
     c = C(t='b')
     assert c.t == 'b'
+
+
+def test_default_value_repr():
+    class C(HasTraits):
+        t = Type('traitlets.HasTraits')
+        t2 = Type(HasTraits)
+        n = Integer(0)
+        lis = List()
+        d = Dict()
+    
+    nt.assert_equal(C.t.default_value_repr(), "'traitlets.HasTraits'")
+    nt.assert_equal(C.t2.default_value_repr(), "'traitlets.traitlets.HasTraits'")
+    nt.assert_equal(C.n.default_value_repr(), '0')
+    nt.assert_equal(C.lis.default_value_repr(), '[]')
+    nt.assert_equal(C.d.default_value_repr(), '{}')
+
+        
