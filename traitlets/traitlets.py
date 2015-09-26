@@ -58,7 +58,6 @@ from ipython_genutils.py3compat import iteritems, string_types
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
-from .deprecated import DeprecatedClass
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -651,7 +650,12 @@ class MetaHasDescriptors(type):
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
 
 
-MetaHasTraits = DeprecatedClass(MetaHasDescriptors, 'MetaHasTraits')
+class MetaHasTraits(MetaHasDescriptors):
+    """Deprecated, use MetaHasDescriptors"""
+    def __init__(self, *args, **kwargs):
+        warn("MetaHasTraits is deprecated, use MetaHasDescriptors",
+            DeprecationWarning, stacklevel=2)
+        super(MetaHasTraits, self).__init__(*args, **kwargs)
 
 
 def observe(*names, **kwargs):
