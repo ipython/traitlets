@@ -43,7 +43,7 @@ class BaseJSONConfigManager(LoggingConfigurable):
 
     def ensure_config_dir_exists(self):
         try:
-            os.mkdir(self.config_dir, 0o755)
+            os.makedirs(self.config_dir, 0o755)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
