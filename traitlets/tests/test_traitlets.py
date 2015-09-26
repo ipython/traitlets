@@ -17,7 +17,7 @@ import nose.tools as nt
 from nose import SkipTest
 
 from traitlets import (
-    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
+    HasTraits, MetaHasDescriptors, TraitType, Any, Bool, CBytes, Dict, Enum,
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
@@ -185,16 +185,16 @@ class TestTraitType(TestCase):
             class C(HasTraits):
                 t = Dict(Int)
 
-class TestHasTraitsMeta(TestCase):
+class TestHasDescriptorsMeta(TestCase):
 
     def test_metaclass(self):
-        self.assertEqual(type(HasTraits), MetaHasTraits)
+        self.assertEqual(type(HasTraits), MetaHasDescriptors)
 
         class A(HasTraits):
             a = Int()
 
         a = A()
-        self.assertEqual(type(a.__class__), MetaHasTraits)
+        self.assertEqual(type(a.__class__), MetaHasDescriptors)
         self.assertEqual(a.a,0)
         a.a = 10
         self.assertEqual(a.a,10)

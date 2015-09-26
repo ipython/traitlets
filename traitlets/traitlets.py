@@ -58,6 +58,8 @@ from ipython_genutils.py3compat import iteritems, string_types
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .deprecated import DeprecatedClass
+
 SequenceTypes = (list, tuple, set, frozenset)
 
 #-----------------------------------------------------------------------------
@@ -141,6 +143,7 @@ def parse_notifier_name(name):
         for n in name:
             assert isinstance(n, string_types), "names must be strings"
         return name
+
 
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
@@ -415,6 +418,7 @@ class TraitType(BaseDescriptor):
         return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
+        obj._cross_validation_lock = True
         # If no dynamic initialiser is present, and the trait implementation or
         # use provides a static default, transfer that to obj._trait_values.
         if (self._dynamic_default_callable(obj) is None) \
@@ -422,6 +426,7 @@ class TraitType(BaseDescriptor):
             v = self._validate(obj, self.default_value)
             if self.name is not None:
                 obj._trait_values[self.name] = v
+        obj._cross_validation_lock = False
 
     def get(self, obj, cls):
         try:
@@ -601,25 +606,23 @@ def _callback_wrapper(cb):
         return _CallbackWrapper(cb)
 
 
-class MetaHasTraits(type):
-    """A metaclass for HasTraits.
+class MetaHasDescriptors(type):
+    """A metaclass for HasDescriptors.
 
     This metaclass makes sure that any TraitType class attributes are
     instantiated and sets their name attribute.
     """
 
     def __new__(mcls, name, bases, classdict):
-        """Create the HasTraits class.
+        """Create the HasDescriptors class.
 
-        This instantiates all TraitTypes in the class dict and sets their
-        :attr:`name` attribute.
+        This sets :attr:`name` attribute of each descriptor in the class dict.
         """
-        # print "MetaHasTraitlets (mcls, name): ", mcls, name
-        # print "MetaHasTraitlets (bases): ", bases
-        # print "MetaHasTraitlets (classdict): ", classdict
         for k,v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.name = k
+            # Support of deprecated behavior allowing for TraitType types
+            # to be used instead of TraitType instances.
             elif inspect.isclass(v):
                 if issubclass(v, TraitType):
                     warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
@@ -627,10 +630,10 @@ class MetaHasTraits(type):
                     vinst = v()
                     vinst.name = k
                     classdict[k] = vinst
-        return super(MetaHasTraits, mcls).__new__(mcls, name, bases, classdict)
+        return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
-        """Finish initializing the HasTraits class.
+        """Finish initializing the HasDescriptors class.
 
         This sets the :attr:`this_class` attribute of each BaseDescriptor in the
         class dict to the newly created class ``cls``.
@@ -638,7 +641,10 @@ class MetaHasTraits(type):
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
-        super(MetaHasTraits, cls).__init__(name, bases, classdict)
+        super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
+
+
+MetaHasTraits = DeprecatedClass(MetaHasDescriptors, 'MetaHasTraits')
 
 
 def observe(*names):
@@ -702,24 +708,22 @@ class ValidateHandler(EventHandler):
         inst._register_validator(meth, self.names)
 
 
-class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
-    """The base class for all classes that have traitlets.
+class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
+    """The base class for all classes that have descriptors.
     """
 
     def __new__(cls, *args, **kw):
         # This is needed because object.__new__ only accepts
         # the cls argument.
-        new_meth = super(HasTraits, cls).__new__
+        new_meth = super(HasDescriptors, cls).__new__
         if new_meth is object.__new__:
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
-        inst._trait_values = {}
-        inst._trait_notifiers = {}
-        inst._trait_validators = {}
-        inst._cross_validation_lock = True
-        # Here we tell all the TraitType instances to set their default
-        # values on the instance.
+        inst.install_descriptors(cls)
+        return inst
+
+    def install_descriptors(self, cls):
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -730,14 +734,22 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
                 pass
             else:
                 if isinstance(value, BaseDescriptor):
-                    value.instance_init(inst)
-        inst._cross_validation_lock = False
-        return inst
+                    value.instance_init(self)
+
+
+class HasTraits(HasDescriptors):
+
+    def install_descriptors(self, cls):
+        self._trait_values = {}
+        self._trait_notifiers = {}
+        self._trait_validators = {}
+        super(HasTraits, self).install_descriptors(cls)
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
+        self._cross_validation_lock = False
         with self.hold_trait_notifications():
             for key, value in iteritems(kw):
                 setattr(self, key, value)
@@ -872,7 +884,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
             nlist = self._trait_notifiers[name]
         if handler not in nlist:
             nlist.append(handler)
-    
+
     def _remove_notifiers(self, handler, name):
         if name in self._trait_notifiers:
             try:
