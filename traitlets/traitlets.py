@@ -503,7 +503,7 @@ class TraitType(BaseDescriptor):
     def _cross_validate(self, obj, value):
         if self.name in obj._trait_validators:
             proposal = {'trait': self, 'value': value, 'owner': obj}
-            value = obj._trait_validators[self.name](proposal)
+            value = obj._trait_validators[self.name](obj, proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
             warn("_[traitname]_validate handlers are deprecated: use validate"
                 " decorator instead", DeprecationWarning, stacklevel=2)
@@ -703,7 +703,7 @@ class ObserveHandler(EventHandler):
 
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst.observe(meth, self.names, type=self.type)
+        inst.observe(self, self.names, type=self.type)
 
 class ValidateHandler(EventHandler):
 
@@ -712,7 +712,7 @@ class ValidateHandler(EventHandler):
     
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst._register_validator(meth, self.names)
+        inst._register_validator(self, self.names)
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
@@ -895,9 +895,12 @@ class HasTraits(HasDescriptors):
 
             if isinstance(c, _CallbackWrapper):
                 # _CallbackWrappers are not compatible with getargspec and have one argument
-                nargs = 1
-            else:
-                nargs = len(getargspec(c)[0]) + offset
+                c = c.__call__
+            elif isinstance(c, EventHandler):
+                c = getattr(self, c.name)
+
+            offset = 1 if isinstance(c, types.MethodType) else 0
+            nargs = len(getargspec(c)[0]) - offset
 
             if nargs == 0:
                 c()
