@@ -763,13 +763,6 @@ class HasTraits(HasDescriptors):
 
     def __getstate__(self):
         d = self.__dict__.copy()
-        # FIXME: remove when support is bumped to 3.4.
-        # hold_trait_notifications sets and resets
-        # _notify_change forcing it onto __dict__
-        # the reference to the class made during
-        # load will reinstantiate the method
-        # (only used to preserve pickleability on Python < 3.4)
-        d.pop('_notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
