@@ -231,7 +231,7 @@ Sometimes, your classes will have an inheritance hierarchy that you want
 to be reflected in the configuration system.  Here is a simple example::
 
     from traitlets.config.configurable import Configurable
-    from traitlets import Int, Float, Unicode, Bool
+    from traitlets import Integer, Float, Unicode, Bool
 
     class Foo(Configurable):
         name = Unicode(u'fooname', config=True)
