@@ -700,7 +700,7 @@ class EventHandler(BaseDescriptor):
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names=All, type=All):
+    def __init__(self, names, type):
         if names is All:
             self.names = [All]
         else:
