@@ -73,6 +73,13 @@ Used in Traitlets to specify that no defaults are set in kwargs
 '''
 )
 
+All = Sentinel('All', 'traitlets',
+'''
+Used in Traitlets to listen to all types of notification or to notifications
+from all trait attributes.
+'''
+)
+
 # Deprecated alias
 NoDefaultSpecified = Undefined
 
@@ -134,10 +141,10 @@ def parse_notifier_name(names):
     ['a']
     >>> parse_notifier_name(['a', 'b'])
     ['a', 'b']
-    >>> parse_notifier_name(None)
-    [None]
+    >>> parse_notifier_name(All)
+    [All]
     """
-    if names is None or isinstance(names, string_types):
+    if names is All or isinstance(names, string_types):
         return [names]
     elif isinstance(names, (list, tuple)):
         for n in names:
@@ -661,7 +668,7 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', None))
+    return ObserveHandler(names, type=kwargs.get('type', All))
 
 def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
@@ -693,9 +700,9 @@ class EventHandler(BaseDescriptor):
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names=None, type=None):
-        if names is None:
-            self.names = [None]
+    def __init__(self, names=All, type=All):
+        if names is All:
+            self.names = [All]
         else:
             self.names = names
         self.type = type
@@ -861,9 +868,9 @@ class HasTraits(HasDescriptors):
     def _notify_change(self, name, type, change):
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(name, {}).get(None, []))
-        callables.extend(self._trait_notifiers.get(None, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(None, {}).get(None, []))
+        callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
+        callables.extend(self._trait_notifiers.get(All, {}).get(type, []))
+        callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -949,12 +956,14 @@ class HasTraits(HasDescriptors):
         """
         warn("on_trait_change is deprecated: use observe instead",
              DeprecationWarning, stacklevel=2)
+        if name is None:
+            name = All
         if remove:
             self.unobserve(_callback_wrapper(handler), names=name)
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=None, type=None):
+    def observe(self, handler, names=All, type=All):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -972,19 +981,19 @@ class HasTraits(HasDescriptors):
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
                 - name : the name of the modified trait attribute.
-        names : list, str, None
-            If None, the handler will apply to all traits.  If a list
+        names : list, str, All
+            If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
-        type : str, None
-            The type of notification to filter by. If equal to None, then all
+        type : str, All
+            The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
         names = parse_notifier_name(names)
         for n in names:
             self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=None, type=None):
+    def unobserve(self, handler, names=All, type=All):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -993,22 +1002,22 @@ class HasTraits(HasDescriptors):
         ----------
         handler : callable
             The callable called when a trait attribute changes.
-        names : list, str, None
+        names : list, str, All (default: All) 
             The names of the traits for which the specified handler should be
-            uninstalled. If names is None, the specified handler is uninstalled
+            uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
-        type : str or None
-            The type of notification to filter by. If None, the specified handler
+        type : str or All (default: All)
+            The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
         names = parse_notifier_name(names)
         for n in names:
             self._remove_notifiers(handler, n, type)
 
-    def unobserve_all(self, name=None):
+    def unobserve_all(self, name=All):
         """Remove trait change handlers of any type for the specified name.
         If name is not specified, removes all trait notifiers."""
-        if name is None:
+        if name is All:
             self._trait_notifiers = {}
         else:
             try:
