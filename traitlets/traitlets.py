@@ -668,7 +668,7 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', All))
+    return ObserveHandler(names, type=kwargs.get('type', 'trait_change'))
 
 def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
@@ -963,7 +963,7 @@ class HasTraits(HasDescriptors):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type=All):
+    def observe(self, handler, names=All, type='trait_change'):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -985,7 +985,7 @@ class HasTraits(HasDescriptors):
             If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
-        type : str, All
+        type : str, All (default: 'trait_change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
@@ -993,7 +993,7 @@ class HasTraits(HasDescriptors):
         for n in names:
             self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=All, type=All):
+    def unobserve(self, handler, names=All, type='trait_change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -1006,7 +1006,7 @@ class HasTraits(HasDescriptors):
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
-        type : str or All (default: All)
+        type : str or All (default: 'trait_change')
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
