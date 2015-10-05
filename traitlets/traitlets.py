@@ -73,6 +73,13 @@ Used in Traitlets to specify that no defaults are set in kwargs
 '''
 )
 
+All = Sentinel('All', 'traitlets',
+'''
+Used in Traitlets to listen to all types of notification or to notifications
+from all trait attributes.
+'''
+)
+
 # Deprecated alias
 NoDefaultSpecified = Undefined
 
@@ -124,7 +131,7 @@ def is_trait(t):
             (isinstance(t, type) and issubclass(t, TraitType)))
 
 
-def parse_notifier_name(name):
+def parse_notifier_name(names):
     """Convert the name argument to a list of names.
 
     Examples
@@ -132,17 +139,17 @@ def parse_notifier_name(name):
 
     >>> parse_notifier_name('a')
     ['a']
-    >>> parse_notifier_name(['a','b'])
+    >>> parse_notifier_name(['a', 'b'])
     ['a', 'b']
-    >>> parse_notifier_name(None)
-    [None]
+    >>> parse_notifier_name(All)
+    [All]
     """
-    if name is None or isinstance(name, string_types):
-        return [name]
-    elif isinstance(name, (list, tuple)):
-        for n in name:
+    if names is All or isinstance(names, string_types):
+        return [names]
+    elif isinstance(names, (list, tuple)):
+        for n in names:
             assert isinstance(n, string_types), "names must be strings"
-        return name
+        return names
 
 
 class _SimpleTest:
@@ -208,8 +215,8 @@ class link(object):
         try:
             setattr(target[0], target[1], getattr(source[0], source[1]))
         finally:
-            source[0].observe(self._update_target, name=source[1])
-            target[0].observe(self._update_source, name=target[1])
+            source[0].observe(self._update_target, names=source[1])
+            target[0].observe(self._update_source, names=target[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -232,8 +239,8 @@ class link(object):
             setattr(self.source[0], self.source[1], change['new'])
 
     def unlink(self):
-        self.source[0].unobserve(self._update_target, name=self.source[1])
-        self.target[0].unobserve(self._update_source, name=self.target[1])
+        self.source[0].unobserve(self._update_target, names=self.source[1])
+        self.target[0].unobserve(self._update_source, names=self.target[1])
         self.source, self.target = None, None
 
 
@@ -260,7 +267,7 @@ class directional_link(object):
         try:
             setattr(target[0], target[1], getattr(source[0], source[1]))
         finally:
-            self.source[0].observe(self._update, name=self.source[1])
+            self.source[0].observe(self._update, names=self.source[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -277,7 +284,7 @@ class directional_link(object):
             setattr(self.target[0], self.target[1], change['new'])
 
     def unlink(self):
-        self.source[0].unobserve(self._update, name=self.source[1])
+        self.source[0].unobserve(self._update, names=self.source[1])
         self.source, self.target = None, None
 
 dlink = directional_link
@@ -476,7 +483,13 @@ class TraitType(BaseDescriptor):
         if silent is not True:
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
-            obj._notify_trait(self.name, old_value, new_value)
+            obj._notify_change(self.name, 'trait_change', {
+                'name': self.name,
+                'old': old_value,
+                'new': new_value,
+                'owner': obj,
+                'type': 'trait_change',
+            })
 
     def __set__(self, obj, value):
         if self.read_only:
@@ -647,7 +660,7 @@ class MetaHasDescriptors(type):
 MetaHasTraits = DeprecatedClass(MetaHasDescriptors, 'MetaHasTraits')
 
 
-def observe(*names):
+def observe(*names, **kwargs):
     """ A decorator which can be used to observe Traits on a class.
 
     Parameters
@@ -655,7 +668,7 @@ def observe(*names):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names)
+    return ObserveHandler(names, type=kwargs.get('type', 'trait_change'))
 
 def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
@@ -687,16 +700,16 @@ class EventHandler(BaseDescriptor):
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names=None):
-        if names is None:
-            self.names = [None]
+    def __init__(self, names, type):
+        if names is All:
+            self.names = [All]
         else:
             self.names = names
+        self.type = type
 
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        for name in self.names:
-            inst.observe(meth, name)
+        inst.observe(meth, self.names, type=self.type)
 
 class ValidateHandler(EventHandler):
 
@@ -758,11 +771,11 @@ class HasTraits(HasDescriptors):
         d = self.__dict__.copy()
         # FIXME: remove when support is bumped to 3.4.
         # hold_trait_notifications sets and resets
-        # _notify_trait forcing it onto __dict__
+        # _notify_change forcing it onto __dict__
         # the reference to the class made during
         # load will reinstantiate the method
         # (only used to preserve pickleability on Python < 3.4)
-        d.pop('_notify_trait', None)
+        d.pop('_notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
@@ -801,48 +814,63 @@ class HasTraits(HasDescriptors):
             return
         else:
             cache = {}
-            _notify_trait = self._notify_trait
+            _notify_change = self._notify_change
 
-            def merge(previous, current):
-                """merges notifications of the form (name, old, value)"""
-                if previous is None:
-                    return current
+            def compress(past_changes, change):
+                """Merges the provided change with the last if possible."""
+                if past_changes is None:
+                    return [change]
                 else:
-                    return (current[0], previous[1], current[2])
+                    if past_changes[-1]['type'] == 'trait_change' and change['type'] == 'trait_change':
+                        past_changes[-1]['new'] = change['new']
+                    else:
+                        # In case of changes other than 'trait_change', append the notification.
+                        past_changes.append(change)
+                    return past_changes
 
             def hold(*a):
-                cache[a[0]] = merge(cache.get(a[0]), a)
+                cache[a[0]] = compress(cache.get(a[0]), a[2])
 
             try:
-                self._notify_trait = hold
+                # Replace _notify_change with `hold`, caching and compressing
+                # notifications, disable cross validation and yield.
+                self._notify_change = hold
                 self._cross_validation_lock = True
                 yield
+                # Cross validate final values when context is released.
                 for name in list(cache.keys()):
                     trait = getattr(self.__class__, name)
                     value = trait._cross_validate(self, getattr(self, name))
                     setattr(self, name, value)
             except TraitError as e:
-                self._notify_trait = lambda *x: None
-                for name, value in cache.items():
-                    if value[1] is not Undefined:
-                        setattr(self, name, value[1])
-                    else:
-                        self._trait_values.pop(name)
+                # Roll back in case of TraitError during final cross validation.
+                self._notify_change = lambda *x: None
+                for name, changes in cache.items():
+                    for change in changes[::-1]:
+                        # TODO: Separate in a rollback function per notification type.
+                        if change['type'] == 'trait_change':
+                            if change['old'] is not Undefined:
+                                setattr(self, name, change['old'])
+                            else:
+                                self._trait_values.pop(name)
                 cache = {}
                 raise e
             finally:
-                self._notify_trait = _notify_trait
+                # Reset the _notify_change to original value, enable cross-validation
+                # and fire resulting change notifications.
+                self._notify_change = _notify_change
                 self._cross_validation_lock = False
                 # trigger delayed notifications
-                for v in cache.values():
-                    self._notify_trait(*v)
+                for changes in cache.values():
+                    for change in changes:
+                        self._notify_change(change['name'], change['type'], change)
 
-    def _notify_trait(self, name, old_value, new_value):
-
-        # First dynamic ones
+    def _notify_change(self, name, type, change):
         callables = []
-        callables.extend(self._trait_notifiers.get(name, []))
-        callables.extend(self._trait_notifiers.get(None, []))
+        callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
+        callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
+        callables.extend(self._trait_notifiers.get(All, {}).get(type, []))
+        callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -871,29 +899,32 @@ class HasTraits(HasDescriptors):
             if nargs == 0:
                 c()
             elif nargs == 1:
-                c({'name': name, 'old': old_value, 'new': new_value, 'owner': self})
+                c(change)
             else:
                 raise TraitError('an observe change callback '
                                     'must have 0-1 arguments.')
 
-    def _add_notifiers(self, handler, name):
+    def _add_notifiers(self, handler, name, type):
         if name not in self._trait_notifiers:
             nlist = []
-            self._trait_notifiers[name] = nlist
+            self._trait_notifiers[name] = {type: nlist}
         else:
-            nlist = self._trait_notifiers[name]
+            if type not in self._trait_notifiers[name]:
+                nlist = []
+                self._trait_notifiers[name][type] = nlist
+            else:
+                nlist = self._trait_notifiers[name][type]
         if handler not in nlist:
             nlist.append(handler)
 
-    def _remove_notifiers(self, handler, name):
-        if name in self._trait_notifiers:
-            try:
-                if handler is None:
-                    del self._trait_notifiers[name]
-                else:
-                    self._trait_notifiers[name].remove(handler)
-            except ValueError:
-                pass
+    def _remove_notifiers(self, handler, name, type):
+        try:
+            if handler is None:
+                del self._trait_notifiers[name][type]
+            else:
+                self._trait_notifiers[name][type].remove(handler)
+        except KeyError:
+            pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
@@ -925,12 +956,14 @@ class HasTraits(HasDescriptors):
         """
         warn("on_trait_change is deprecated: use observe instead",
              DeprecationWarning, stacklevel=2)
+        if name is None:
+            name = All
         if remove:
-            self.unobserve(_callback_wrapper(handler), name=name)
+            self.unobserve(_callback_wrapper(handler), names=name)
         else:
-            self.observe(_callback_wrapper(handler), name=name)
+            self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, name=None):
+    def observe(self, handler, names=All, type='trait_change'):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -940,21 +973,27 @@ class HasTraits(HasDescriptors):
         handler : callable
             A callable that is called when a trait changes. Its
             signature can be handler() or handler(change), where change is a
-            dictionary with the following keys:
+            dictionary. The change dictionary at least holds a 'type' key
+                - type : the type of notification.
+            Other keys may be passed depending on the value of 'type'. In the
+            case where type is 'trait_change', we also have the following keys:
                 - owner : the HasTraits instance
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
                 - name : the name of the modified trait attribute.
-        name : list, str, None
-            If None, the handler will apply to all traits.  If a list
+        names : list, str, All
+            If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
+        type : str, All (default: 'trait_change')
+            The type of notification to filter by. If equal to All, then all
+            notifications are passed to the observe handler.
         """
-        names = parse_notifier_name(name)
+        names = parse_notifier_name(names)
         for n in names:
-            self._add_notifiers(handler, n)
+            self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, name=None):
+    def unobserve(self, handler, names=All, type='trait_change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -963,17 +1002,28 @@ class HasTraits(HasDescriptors):
         ----------
         handler : callable
             The callable called when a trait attribute changes.
-        name : list, str, None
-            If None, all change handlers for the specified name are
-            uninstalled.
+        names : list, str, All (default: All) 
+            The names of the traits for which the specified handler should be
+            uninstalled. If names is All, the specified handler is uninstalled
+            from the list of notifiers corresponding to all changes.
+        type : str or All (default: 'trait_change')
+            The type of notification to filter by. If All, the specified handler
+            is uninstalled from the list of notifiers corresponding to all types.
         """
-        names = parse_notifier_name(name)
+        names = parse_notifier_name(names)
         for n in names:
-            self._remove_notifiers(handler, n)
+            self._remove_notifiers(handler, n, type)
 
-    def unobserve_all(self):
-        """Remove all trait change handlers."""
-        self._trait_notifiers = {}
+    def unobserve_all(self, name=All):
+        """Remove trait change handlers of any type for the specified name.
+        If name is not specified, removes all trait notifiers."""
+        if name is All:
+            self._trait_notifiers = {}
+        else:
+            try:
+                del self._trait_notifiers[name]
+            except KeyError:
+                pass
 
     def _register_validator(self, handler, names):
         """Setup a handler to be called when a trait should be cross valdiated.
