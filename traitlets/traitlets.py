@@ -891,7 +891,6 @@ class HasTraits(HasDescriptors):
         # Traits catches and logs errors here.  I allow them to raise
         for c in callables:
             # Bound methods have an additional 'self' argument.
-            offset = -1 if isinstance(c, types.MethodType) else 0
 
             if isinstance(c, _CallbackWrapper):
                 # _CallbackWrappers are not compatible with getargspec and have one argument
