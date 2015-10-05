@@ -848,11 +848,11 @@ class HasTraits(HasDescriptors):
                 self._notify_change = _notify_change
                 self._cross_validation_lock = False
 
-                if isinstance(_notify_trait, types.MethodType):
+                if isinstance(_notify_change, types.MethodType):
                     # Presence of the method _notify_trait
                     # on __dict__ can cause memory leaks
                     # and prevents pickleability
-                    self.__dict__.pop('_notify_trait')
+                    self.__dict__.pop('_notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
