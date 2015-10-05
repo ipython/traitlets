@@ -483,13 +483,7 @@ class TraitType(BaseDescriptor):
         if silent is not True:
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
-            obj._notify_change(self.name, 'trait_change', {
-                'name': self.name,
-                'old': old_value,
-                'new': new_value,
-                'owner': obj,
-                'type': 'trait_change',
-            })
+            obj._notify_trait(self.name, old_value, new_value)
 
     def __set__(self, obj, value):
         if self.read_only:
@@ -864,6 +858,15 @@ class HasTraits(HasDescriptors):
                 for changes in cache.values():
                     for change in changes:
                         self._notify_change(change['name'], change['type'], change)
+
+    def _notify_trait(self, name, old_value, new_value):
+        self._notify_change(name, 'trait_change', {
+            'name': name,
+            'old': old_value,
+            'new': new_value,
+            'owner': self,
+            'type': 'trait_change',
+        })
 
     def _notify_change(self, name, type, change):
         callables = []
