@@ -763,13 +763,6 @@ class HasTraits(HasDescriptors):
 
     def __getstate__(self):
         d = self.__dict__.copy()
-        # FIXME: remove when support is bumped to 3.4.
-        # hold_trait_notifications sets and resets
-        # _notify_change forcing it onto __dict__
-        # the reference to the class made during
-        # load will reinstantiate the method
-        # (only used to preserve pickleability on Python < 3.4)
-        d.pop('_notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
@@ -854,6 +847,12 @@ class HasTraits(HasDescriptors):
                 # and fire resulting change notifications.
                 self._notify_change = _notify_change
                 self._cross_validation_lock = False
+
+                if isinstance(_notify_change, types.MethodType):
+                    # Presence of the method _notify_trait
+                    # on __dict__ can cause memory leaks
+                    # and prevents pickleability
+                    self.__dict__.pop('_notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
