@@ -17,11 +17,19 @@ import nose.tools as nt
 from nose import SkipTest
 
 from traitlets import (
+<<<<<<< HEAD
     HasTraits, MetaHasDescriptors, TraitType, Any, Bool, CBytes, Dict, Enum,
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default
+    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe
+=======
+    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
+    Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError, Union,
+    Undefined, Type, This, Instance, TCPAddress, List, Tuple, ObjectName,
+    DottedObjectName, CRegExp, link, directional_link, ForwardDeclaredType,
+    ForwardDeclaredInstance, validate, observe, default
+>>>>>>> default generators
 )
 from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif

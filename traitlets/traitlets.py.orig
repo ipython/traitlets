@@ -743,6 +743,10 @@ class ValidateHandler(EventHandler):
         inst._register_validator(meth, self.names)
 
 
+<<<<<<< HEAD
+class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
+    """The base class for all classes that have descriptors.
+=======
 class DefaultHandler(EventHandler):
 
     def __init__(self, name):
@@ -751,8 +755,10 @@ class DefaultHandler(EventHandler):
     def instance_init(self, inst):
         inst._trait_default_generators[self._name] = self
 
-class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
-    """The base class for all classes that have descriptors.
+
+class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
+    """The base class for all classes that have traitlets.
+>>>>>>> default generators
     """
 
     def __new__(cls, *args, **kw):
@@ -763,10 +769,20 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
+<<<<<<< HEAD
         inst.install_descriptors(cls)
         return inst
 
     def install_descriptors(self, cls):
+=======
+        inst._trait_values = {}
+        inst._trait_default_generators = {}
+        inst._trait_notifiers = {}
+        inst._trait_validators = {}
+        inst._cross_validation_lock = True
+        # Here we tell all the TraitType instances to set their default
+        # values on the instance.
+>>>>>>> default generators
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -784,7 +800,6 @@ class HasTraits(HasDescriptors):
 
     def install_descriptors(self, cls):
         self._trait_values = {}
-        self._trait_default_generators = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
         super(HasTraits, self).install_descriptors(cls)
