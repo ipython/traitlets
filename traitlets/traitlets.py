@@ -612,7 +612,16 @@ def _callback_wrapper(cb):
         return _CallbackWrapper(cb)
 
 
-class MetaHasDescriptors(type):
+class MetaHasTraits(type):
+    """Deprecated, use MetaHasDescriptors"""
+    def __init__(cls, *args, **kwargs):
+        if not isinstance(cls, MetaHasDescriptors):
+            warn("MetaHasTraits is deprecated, use MetaHasDescriptors",
+                DeprecationWarning, stacklevel=2)
+        super(MetaHasTraits, cls).__init__(*args, **kwargs)
+
+
+class MetaHasDescriptors(MetaHasTraits):
     """A metaclass for HasDescriptors.
 
     This metaclass makes sure that any TraitType class attributes are
@@ -648,14 +657,6 @@ class MetaHasDescriptors(type):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
-
-
-class MetaHasTraits(MetaHasDescriptors):
-    """Deprecated, use MetaHasDescriptors"""
-    def __init__(self, *args, **kwargs):
-        warn("MetaHasTraits is deprecated, use MetaHasDescriptors",
-            DeprecationWarning, stacklevel=2)
-        super(MetaHasTraits, self).__init__(*args, **kwargs)
 
 
 def observe(*names, **kwargs):
