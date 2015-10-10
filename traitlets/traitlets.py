@@ -1184,6 +1184,7 @@ class HasTraits(HasDescriptors):
             trait.instance_init(self)
 
     def set_trait(self, name, value):
+        """Forcibly sets trait attribute, including read-only attributes."""
         if not self.has_trait(name):
             raise TraitError("Class %s does not have a trait named %s" %
                                 (self.__class__.__name__, name))
