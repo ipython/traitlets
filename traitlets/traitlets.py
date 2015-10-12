@@ -1271,7 +1271,7 @@ class Type(ClassBasedTraitType):
         if not (inspect.isclass(klass) or isinstance(klass, py3compat.string_types)):
             raise TraitError("A Type trait must specify a class.")
 
-        self.klass       = klass
+        self.klass = klass
 
         super(Type, self).__init__(new_default_value, **metadata)
 
@@ -1313,7 +1313,11 @@ class Type(ClassBasedTraitType):
             self.default_value = self._resolve_string(self.default_value)
 
     def default_value_repr(self):
-        return repr('{}.{}'.format(self.default_value.__module__, self.default_value.__name__))
+        value = self.default_value
+        if isinstance(value, py3compat.string_types):
+            return repr(value)
+        else:
+            return repr('{}.{}'.format(value.__module__, value.__name__))
 
 
 class Instance(ClassBasedTraitType):
@@ -1402,6 +1406,9 @@ class Instance(ClassBasedTraitType):
             return None
         return self.klass(*(self.default_args or ()),
                           **(self.default_kwargs or {}))
+
+    def default_value_repr(self):
+        return repr(self.make_dynamic_default())
 
 
 class ForwardDeclaredMixin(object):
@@ -1902,9 +1909,6 @@ class Container(Instance):
             self._trait.this_class = self.this_class
             self._trait.instance_init(obj)
         super(Container, self).instance_init(obj)
-
-    def default_value_repr(self):
-        return repr(self.make_dynamic_default())
 
 
 class List(Container):
