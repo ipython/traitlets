@@ -806,7 +806,7 @@ class HasTraits(HasDescriptors):
             return
         else:
             cache = {}
-            _notify_change = self._notify_change
+            notify_change = self.notify_change
 
             def compress(past_changes, change):
                 """Merges the provided change with the last if possible."""
@@ -824,9 +824,9 @@ class HasTraits(HasDescriptors):
                 cache[a[0]] = compress(cache.get(a[0]), a[2])
 
             try:
-                # Replace _notify_change with `hold`, caching and compressing
+                # Replace notify_change with `hold`, caching and compressing
                 # notifications, disable cross validation and yield.
-                self._notify_change = hold
+                self.notify_change = hold
                 self._cross_validation_lock = True
                 yield
                 # Cross validate final values when context is released.
@@ -836,7 +836,7 @@ class HasTraits(HasDescriptors):
                     setattr(self, name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
-                self._notify_change = lambda *x: None
+                self.notify_change = lambda *x: None
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
@@ -848,23 +848,23 @@ class HasTraits(HasDescriptors):
                 cache = {}
                 raise e
             finally:
-                # Reset the _notify_change to original value, enable cross-validation
+                # Reset the notify_change to original value, enable cross-validation
                 # and fire resulting change notifications.
-                self._notify_change = _notify_change
+                self.notify_change = notify_change
                 self._cross_validation_lock = False
 
-                if isinstance(_notify_change, types.MethodType):
+                if isinstance(notify_change, types.MethodType):
                     # Presence of the method _notify_trait
                     # on __dict__ can cause memory leaks
                     # and prevents pickleability
-                    self.__dict__.pop('_notify_change')
+                    self.__dict__.pop('notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
-                        self._notify_change(change['name'], change['type'], change)
+                        self.notify_change(change['name'], change['type'], change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self._notify_change(name, 'trait_change', {
+        self.notify_change(name, 'trait_change', {
             'name': name,
             'old': old_value,
             'new': new_value,
@@ -872,7 +872,7 @@ class HasTraits(HasDescriptors):
             'type': 'trait_change',
         })
 
-    def _notify_change(self, name, type, change):
+    def notify_change(self, name, type, change):
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
         callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
