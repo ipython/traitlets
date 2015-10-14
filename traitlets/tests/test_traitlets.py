@@ -381,10 +381,10 @@ class TestHasTraitsNotify(TestCase):
         a.on_trait_change(callback4, 'a')
         a.a = 100000
         self.assertEqual(self.cb,('a',10000,100000,a))
-        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 1)
+        self.assertEqual(len(a._trait_notifiers['a']['change']), 1)
         a.on_trait_change(callback4, 'a', remove=True)
 
-        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 0)
+        self.assertEqual(len(a._trait_notifiers['a']['change']), 0)
 
     def test_notify_only_once(self):
 
@@ -449,10 +449,10 @@ class TestObserveDecorator(TestCase):
         a.b = 0.0
         self.assertEqual(len(self._notify1),0)
         a.a = 10
-        change = change_dict('a', 0, 10, a, 'trait_change')
+        change = change_dict('a', 0, 10, a, 'change')
         self.assertTrue(change in self._notify1)
         a.b = 10.0
-        change = change_dict('b', 0.0, 10.0, a, 'trait_change')
+        change = change_dict('b', 0.0, 10.0, a, 'change')
         self.assertTrue(change in self._notify1)
         self.assertRaises(TraitError,setattr,a,'a','bad string')
         self.assertRaises(TraitError,setattr,a,'b','bad string')
@@ -473,7 +473,7 @@ class TestObserveDecorator(TestCase):
         a.a = 0
         self.assertEqual(len(self._notify1),0)
         a.a = 10
-        change = change_dict('a', 0, 10, a, 'trait_change')
+        change = change_dict('a', 0, 10, a, 'change')
         self.assertTrue(change in self._notify1)
         self.assertRaises(TraitError,setattr,a,'a','bad string')
 
@@ -510,9 +510,9 @@ class TestObserveDecorator(TestCase):
         self.assertEqual(len(self._notify2),0)
         b.a = 10
         b.b = 10.0
-        change = change_dict('a', 0, 10, b, 'trait_change')
+        change = change_dict('a', 0, 10, b, 'change')
         self.assertTrue(change in self._notify1)
-        change = change_dict('b', 0.0, 10.0, b, 'trait_change')
+        change = change_dict('b', 0.0, 10.0, b, 'change')
         self.assertTrue(change in self._notify2)
 
     def test_static_notify(self):
@@ -529,7 +529,7 @@ class TestObserveDecorator(TestCase):
         # This is broken!!!
         self.assertEqual(len(a._notify1),0)
         a.a = 10
-        change = change_dict('a', 0, 10, a, 'trait_change')
+        change = change_dict('a', 0, 10, a, 'change')
         self.assertTrue(change in a._notify1)
 
         class B(A):
@@ -542,9 +542,9 @@ class TestObserveDecorator(TestCase):
         b = B()
         b.a = 10
         b.b = 10.0
-        change = change_dict('a', 0, 10, b, 'trait_change')
+        change = change_dict('a', 0, 10, b, 'change')
         self.assertTrue(change in b._notify1)
-        change = change_dict('b', 0.0, 10.0, b, 'trait_change')
+        change = change_dict('b', 0.0, 10.0, b, 'change')
         self.assertTrue(change in b._notify2)
 
     def test_notify_args(self):
@@ -565,12 +565,12 @@ class TestObserveDecorator(TestCase):
 
         a.observe(callback1, 'a')
         a.a = 100
-        change = change_dict('a', 10, 100, a, 'trait_change')
+        change = change_dict('a', 10, 100, a, 'change')
         self.assertEqual(self.cb, change)
-        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 1)
+        self.assertEqual(len(a._trait_notifiers['a']['change']), 1)
         a.unobserve(callback1, 'a')
 
-        self.assertEqual(len(a._trait_notifiers['a']['trait_change']), 0)
+        self.assertEqual(len(a._trait_notifiers['a']['change']), 0)
 
     def test_notify_only_once(self):
 
@@ -1987,5 +1987,3 @@ def test_default_value_repr():
     nt.assert_equal(C.n.default_value_repr(), '0')
     nt.assert_equal(C.lis.default_value_repr(), '[]')
     nt.assert_equal(C.d.default_value_repr(), '{}')
-
-        
