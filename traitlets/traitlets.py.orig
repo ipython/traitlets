@@ -58,6 +58,7 @@ from ipython_genutils.py3compat import iteritems, string_types
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .deprecated import DeprecatedClass
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -518,7 +519,7 @@ class TraitType(BaseDescriptor):
     def _cross_validate(self, obj, value):
         if self.name in obj._trait_validators:
             proposal = {'trait': self, 'value': value, 'owner': obj}
-            value = obj._trait_validators[self.name](obj, proposal)
+            value = obj._trait_validators[self.name](proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
             warn("_[traitname]_validate handlers are deprecated: use validate"
                 " decorator instead", DeprecationWarning, stacklevel=2)
@@ -628,16 +629,7 @@ def _callback_wrapper(cb):
         return _CallbackWrapper(cb)
 
 
-class MetaHasTraits(type):
-    """Deprecated, use MetaHasDescriptors"""
-    def __init__(cls, *args, **kwargs):
-        if not isinstance(cls, MetaHasDescriptors):
-            warn("MetaHasTraits is deprecated, use MetaHasDescriptors",
-                DeprecationWarning, stacklevel=2)
-        super(MetaHasTraits, cls).__init__(*args, **kwargs)
-
-
-class MetaHasDescriptors(MetaHasTraits):
+class MetaHasDescriptors(type):
     """A metaclass for HasDescriptors.
 
     This metaclass makes sure that any TraitType class attributes are
@@ -675,6 +667,9 @@ class MetaHasDescriptors(MetaHasTraits):
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
 
 
+MetaHasTraits = DeprecatedClass(MetaHasDescriptors, 'MetaHasTraits')
+
+
 def observe(*names, **kwargs):
     """ A decorator which can be used to observe Traits on a class.
 
@@ -683,7 +678,7 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', 'change'))
+    return ObserveHandler(names, type=kwargs.get('type', 'trait_change'))
 
 def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
@@ -735,7 +730,7 @@ class ObserveHandler(EventHandler):
 
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst.observe(self, self.names, type=self.type)
+        inst.observe(meth, self.names, type=self.type)
 
 
 class ValidateHandler(EventHandler):
@@ -745,9 +740,13 @@ class ValidateHandler(EventHandler):
     
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst._register_validator(self, self.names)
+        inst._register_validator(meth, self.names)
 
 
+<<<<<<< HEAD
+class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
+    """The base class for all classes that have descriptors.
+=======
 class DefaultHandler(EventHandler):
 
     def __init__(self, name):
@@ -756,8 +755,10 @@ class DefaultHandler(EventHandler):
     def instance_init(self, inst):
         inst._trait_default_generators[self._name] = self
 
-class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
-    """The base class for all classes that have descriptors.
+
+class HasTraits(py3compat.with_metaclass(MetaHasTraits, object)):
+    """The base class for all classes that have traitlets.
+>>>>>>> default generators
     """
 
     def __new__(cls, *args, **kw):
@@ -768,10 +769,20 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
+<<<<<<< HEAD
         inst.install_descriptors(cls)
         return inst
 
     def install_descriptors(self, cls):
+=======
+        inst._trait_values = {}
+        inst._trait_default_generators = {}
+        inst._trait_notifiers = {}
+        inst._trait_validators = {}
+        inst._cross_validation_lock = True
+        # Here we tell all the TraitType instances to set their default
+        # values on the instance.
+>>>>>>> default generators
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -789,7 +800,6 @@ class HasTraits(HasDescriptors):
 
     def install_descriptors(self, cls):
         self._trait_values = {}
-        self._trait_default_generators = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
         super(HasTraits, self).install_descriptors(cls)
@@ -805,6 +815,13 @@ class HasTraits(HasDescriptors):
 
     def __getstate__(self):
         d = self.__dict__.copy()
+        # FIXME: remove when support is bumped to 3.4.
+        # hold_trait_notifications sets and resets
+        # _notify_change forcing it onto __dict__
+        # the reference to the class made during
+        # load will reinstantiate the method
+        # (only used to preserve pickleability on Python < 3.4)
+        d.pop('_notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
@@ -850,10 +867,10 @@ class HasTraits(HasDescriptors):
                 if past_changes is None:
                     return [change]
                 else:
-                    if past_changes[-1]['type'] == 'change' and change['type'] == 'change':
+                    if past_changes[-1]['type'] == 'trait_change' and change['type'] == 'trait_change':
                         past_changes[-1]['new'] = change['new']
                     else:
-                        # In case of changes other than 'change', append the notification.
+                        # In case of changes other than 'trait_change', append the notification.
                         past_changes.append(change)
                     return past_changes
 
@@ -877,7 +894,7 @@ class HasTraits(HasDescriptors):
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
-                        if change['type'] == 'change':
+                        if change['type'] == 'trait_change':
                             if change['old'] is not Undefined:
                                 setattr(self, name, change['old'])
                             else:
@@ -889,24 +906,18 @@ class HasTraits(HasDescriptors):
                 # and fire resulting change notifications.
                 self._notify_change = _notify_change
                 self._cross_validation_lock = False
-
-                if isinstance(_notify_change, types.MethodType):
-                    # Presence of the method _notify_trait
-                    # on __dict__ can cause memory leaks
-                    # and prevents pickleability
-                    self.__dict__.pop('_notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
                         self._notify_change(change['name'], change['type'], change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self._notify_change(name, 'change', {
+        self._notify_change(name, 'trait_change', {
             'name': name,
             'old': old_value,
             'new': new_value,
             'owner': self,
-            'type': 'change',
+            'type': 'trait_change',
         })
 
     def _notify_change(self, name, type, change):
@@ -932,15 +943,13 @@ class HasTraits(HasDescriptors):
         # Traits catches and logs errors here.  I allow them to raise
         for c in callables:
             # Bound methods have an additional 'self' argument.
+            offset = -1 if isinstance(c, types.MethodType) else 0
 
             if isinstance(c, _CallbackWrapper):
                 # _CallbackWrappers are not compatible with getargspec and have one argument
-                c = c.__call__
-            elif isinstance(c, EventHandler):
-                c = getattr(self, c.name)
-
-            offset = 1 if isinstance(c, types.MethodType) else 0
-            nargs = len(getargspec(c)[0]) - offset
+                nargs = 1
+            else:
+                nargs = len(getargspec(c)[0]) + offset
 
             if nargs == 0:
                 c()
@@ -1009,7 +1018,7 @@ class HasTraits(HasDescriptors):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type='change'):
+    def observe(self, handler, names=All, type='trait_change'):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1022,7 +1031,7 @@ class HasTraits(HasDescriptors):
             dictionary. The change dictionary at least holds a 'type' key
                 - type : the type of notification.
             Other keys may be passed depending on the value of 'type'. In the
-            case where type is 'change', we also have the following keys:
+            case where type is 'trait_change', we also have the following keys:
                 - owner : the HasTraits instance
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
@@ -1031,7 +1040,7 @@ class HasTraits(HasDescriptors):
             If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
-        type : str, All (default: 'change')
+        type : str, All (default: 'trait_change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
@@ -1039,7 +1048,7 @@ class HasTraits(HasDescriptors):
         for n in names:
             self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=All, type='change'):
+    def unobserve(self, handler, names=All, type='trait_change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -1052,7 +1061,7 @@ class HasTraits(HasDescriptors):
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
-        type : str or All (default: 'change')
+        type : str or All (default: 'trait_change')
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
@@ -1221,7 +1230,6 @@ class HasTraits(HasDescriptors):
             trait.instance_init(self)
 
     def set_trait(self, name, value):
-        """Forcibly sets trait attribute, including read-only attributes."""
         if not self.has_trait(name):
             raise TraitError("Class %s does not have a trait named %s" %
                                 (self.__class__.__name__, name))
@@ -1308,7 +1316,7 @@ class Type(ClassBasedTraitType):
         if not (inspect.isclass(klass) or isinstance(klass, py3compat.string_types)):
             raise TraitError("A Type trait must specify a class.")
 
-        self.klass = klass
+        self.klass       = klass
 
         super(Type, self).__init__(new_default_value, **metadata)
 
@@ -1350,11 +1358,7 @@ class Type(ClassBasedTraitType):
             self.default_value = self._resolve_string(self.default_value)
 
     def default_value_repr(self):
-        value = self.default_value
-        if isinstance(value, py3compat.string_types):
-            return repr(value)
-        else:
-            return repr('{}.{}'.format(value.__module__, value.__name__))
+        return repr('{}.{}'.format(self.default_value.__module__, self.default_value.__name__))
 
 
 class Instance(ClassBasedTraitType):
@@ -1443,9 +1447,6 @@ class Instance(ClassBasedTraitType):
             return None
         return self.klass(*(self.default_args or ()),
                           **(self.default_kwargs or {}))
-
-    def default_value_repr(self):
-        return repr(self.make_dynamic_default())
 
 
 class ForwardDeclaredMixin(object):
@@ -1946,6 +1947,9 @@ class Container(Instance):
             self._trait.this_class = self.this_class
             self._trait.instance_init(obj)
         super(Container, self).instance_init(obj)
+
+    def default_value_repr(self):
+        return repr(self.make_dynamic_default())
 
 
 class List(Container):
