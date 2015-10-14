@@ -667,7 +667,7 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', 'trait_change'))
+    return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
 def validate(*names):
     """ A decorator which validates a HasTraits object's state when a Trait is set.
@@ -813,10 +813,10 @@ class HasTraits(HasDescriptors):
                 if past_changes is None:
                     return [change]
                 else:
-                    if past_changes[-1]['type'] == 'trait_change' and change['type'] == 'trait_change':
+                    if past_changes[-1]['type'] == 'change' and change['type'] == 'change':
                         past_changes[-1]['new'] = change['new']
                     else:
-                        # In case of changes other than 'trait_change', append the notification.
+                        # In case of changes other than 'change', append the notification.
                         past_changes.append(change)
                     return past_changes
 
@@ -840,7 +840,7 @@ class HasTraits(HasDescriptors):
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
-                        if change['type'] == 'trait_change':
+                        if change['type'] == 'change':
                             if change['old'] is not Undefined:
                                 setattr(self, name, change['old'])
                             else:
@@ -864,12 +864,12 @@ class HasTraits(HasDescriptors):
                         self._notify_change(change['name'], change['type'], change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self._notify_change(name, 'trait_change', {
+        self._notify_change(name, 'change', {
             'name': name,
             'old': old_value,
             'new': new_value,
             'owner': self,
-            'type': 'trait_change',
+            'type': 'change',
         })
 
     def _notify_change(self, name, type, change):
@@ -972,7 +972,7 @@ class HasTraits(HasDescriptors):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type='trait_change'):
+    def observe(self, handler, names=All, type='change'):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -985,7 +985,7 @@ class HasTraits(HasDescriptors):
             dictionary. The change dictionary at least holds a 'type' key
                 - type : the type of notification.
             Other keys may be passed depending on the value of 'type'. In the
-            case where type is 'trait_change', we also have the following keys:
+            case where type is 'change', we also have the following keys:
                 - owner : the HasTraits instance
                 - old : the old value of the modified trait attribute
                 - new : the new value of the modified trait attribute
@@ -994,7 +994,7 @@ class HasTraits(HasDescriptors):
             If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
-        type : str, All (default: 'trait_change')
+        type : str, All (default: 'change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
@@ -1002,7 +1002,7 @@ class HasTraits(HasDescriptors):
         for n in names:
             self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=All, type='trait_change'):
+    def unobserve(self, handler, names=All, type='change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -1015,7 +1015,7 @@ class HasTraits(HasDescriptors):
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
-        type : str or All (default: 'trait_change')
+        type : str or All (default: 'change')
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
