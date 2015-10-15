@@ -379,6 +379,8 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
+        self.default_handlers = []
+
         self.init()
 
     def init(self):
@@ -414,11 +416,19 @@ class TraitType(BaseDescriptor):
         If neither exist, it returns None
         """
         # Traitlets without a name are not on the instance, e.g. in List or Union
+
         if self.name:
             mro = type(obj).mro()
-            meth_name = '_%s_default' % self.name
+            for cls in mro:
+                for h in self.default_handlers:
+                    if h.this_class == cls:
+                        return types.MethodType(h.func, obj)
+
+            meth_name = '_%s_default' % self.name # deprecated
             for cls in mro[:mro.index(self.this_class)+1]:
                 if meth_name in cls.__dict__:
+                    warn("_[traitname]_default handlers are deprecated: use default"
+                         " decorator instead", DeprecationWarning, stacklevel=2)
                     return getattr(obj, meth_name)
 
         return getattr(self, 'make_dynamic_default', None)
@@ -678,7 +688,16 @@ def validate(*names):
         The str names of the Traits to validate.
     """
     return ValidateHandler(names)
-    
+
+def default(name):
+    """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
+
+    Parameters
+    ----------
+    name
+        The str name of the Trait on the object whose default should be generated.
+    """
+    return DefaultHandler(name)
 
 class EventHandler(BaseDescriptor):
 
@@ -718,6 +737,28 @@ class ValidateHandler(EventHandler):
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
         inst._register_validator(self, self.names)
+
+class DefaultHandler(EventHandler):
+
+    def __init__(self, name):
+        self._name = name
+        self._this_class = None
+
+    @property
+    def this_class(self):
+        return self._this_class
+
+    @this_class.setter
+    def this_class(self, cls):
+        try:
+            trait = getattr(cls, self._name)
+        except AttributeError:
+            t = (self._name, cls.__name__)
+            m = ("Can't register default generator because"
+                 " '%s' isn't a trait of %s instances" % t)
+            raise TraitError(m)
+        self._this_class = cls
+        trait.default_handlers.append(self)
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
