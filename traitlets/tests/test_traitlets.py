@@ -21,7 +21,7 @@ from traitlets import (
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe
+    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default
 )
 from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
@@ -91,10 +91,12 @@ class TestTraitType(TestCase):
         a = A()
         self.assertEqual(a.tt, 10)
 
-        # Defaults are validated when the HasTraits is instantiated
+        # Defaults are validated when they are retrieved
         class B(HasTraits):
             tt = MyIntTT('bad default')
-        self.assertRaises(TraitError, B)
+        b = B()
+        with self.assertRaises(TraitError):
+            b.tt
 
     def test_info(self):
         class A(HasTraits):
@@ -108,7 +110,7 @@ class TestTraitType(TestCase):
         a = A()
         self.assertRaises(TraitError, A.tt.error, a, 10)
 
-    def test_dynamic_initializer(self):
+    def test_deprecated_dynamic_initializer(self):
         class A(HasTraits):
             x = Int(10)
             def _x_default(self):
@@ -117,6 +119,43 @@ class TestTraitType(TestCase):
             x = Int(20)
         class C(A):
             def _x_default(self):
+                return 21
+
+        a = A()
+        self.assertEqual(a._trait_values, {})
+        self.assertEqual(a.x, 11)
+        self.assertEqual(a._trait_values, {'x': 11})
+        b = B()
+        self.assertEqual(b.x, 20)
+        self.assertEqual(b._trait_values, {'x': 20})
+        c = C()
+        self.assertEqual(c._trait_values, {})
+        self.assertEqual(c.x, 21)
+        self.assertEqual(c._trait_values, {'x': 21})
+        # Ensure that the base class remains unmolested when the _default
+        # initializer gets overridden in a subclass.
+        a = A()
+        c = C()
+        self.assertEqual(a._trait_values, {})
+        self.assertEqual(a.x, 11)
+        self.assertEqual(a._trait_values, {'x': 11})
+
+    def test_dynamic_initializer(self):
+
+        class A(HasTraits):
+            x = Int(10)
+
+            @default('x')
+            def _default_x(self):
+                return 11
+
+        class B(A):
+            x = Int(20)
+
+        class C(A):
+
+            @default('x')
+            def _default_x(self):
                 return 21
 
         a = A()
@@ -807,9 +846,10 @@ class TestType(TestCase):
 
         class C(HasTraits):
             klass = Type(None, B)
-
-        self.assertRaises(TraitError, C)
-
+        c = C()
+        with self.assertRaises(TraitError):
+            c.klass
+            
     def test_str_klass(self):
 
         class A(HasTraits):
