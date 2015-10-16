@@ -572,10 +572,10 @@ class TraitType(BaseDescriptor):
 
 class _CallbackWrapper(object):
     """An object adapting a on_trait_change callback into an observe callback.
-    
+
     The comparison operator __eq__ is implemented to enable removal of wrapped
     callbacks.
-    """ 
+    """
 
     def __init__(self, cb):
         self.cb = cb
@@ -660,7 +660,17 @@ class MetaHasDescriptors(MetaHasTraits):
 
 
 def observe(*names, **kwargs):
-    """ A decorator which can be used to observe Traits on a class.
+    """A decorator which can be used to observe Traits on a class.
+
+    The handler passed to the decorator can have no argument or one `change`
+    dict argument. The change dictionary at least holds a 'type' key
+        - type : the type of notification.
+    Other keys may be passed depending on the value of 'type'. In the case
+    where type is 'change', we also have the following keys:
+        - owner : the HasTraits instance
+        - old : the old value of the modified trait attribute
+        - new : the new value of the modified trait attribute
+        - name : the name of the modified trait attribute.
 
     Parameters
     ----------
@@ -670,15 +680,31 @@ def observe(*names, **kwargs):
     return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
 def validate(*names):
-    """ A decorator which validates a HasTraits object's state when a Trait is set.
+    """A decorator to register cross validator of HasTraits object's state
+    when a Trait is set.
+
+    The handler passed to the decorator must have one `proposal` dict argument.
+    The proposal dictionary must hold the following keys:
+        - owner : the HasTraits instance
+        - value : the proposed value for the modified trait attribute
+        - name : the name of the modified trait attribute.
 
     Parameters
     ----------
     names
         The str names of the Traits to validate.
+
+    Notes
+    -----
+    Since the owner has access to the `Hastraits` instance via the 'owner' key,
+    the registered cross validator could potentially make changes to attributes
+    of the `HasTraits` instance. However, we recommend not to do so. The reason
+    is that the cross-validation of attributes may run in arbitrary order when
+    exitting the `hold_trait_modification` context, and such changes may not
+    commute.
     """
     return ValidateHandler(names)
-    
+
 
 class EventHandler(BaseDescriptor):
 
@@ -691,7 +717,7 @@ class EventHandler(BaseDescriptor):
             return self.func(*args, **kwargs)
         else:
             return self._init_call(*args, **kwargs)
-        
+
     def __get__(self, inst, cls=None):
         if inst is None:
             return self
@@ -714,7 +740,7 @@ class ValidateHandler(EventHandler):
 
     def __init__(self, names):
         self.names = names
-    
+
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
         inst._register_validator(self, self.names)
