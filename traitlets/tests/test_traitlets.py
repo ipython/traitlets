@@ -1786,13 +1786,15 @@ class CacheModification(HasTraits):
     foo = Int()
     bar = Int()
 
-    def _bar_validate(self, value, trait):
-        self.foo = value
-        return value
+    @observe('bar')
+    def _bar_changed(self, change):
+        self.foo = change['new']
+        return change['new']
 
-    def _foo_validate(self, value, trait):
-        self.bar = value
-        return value
+    @observe('foo')
+    def _foo_changed(self, change):
+        self.bar = change['new']
+        return change['new']
 
 
 def test_cache_modification():

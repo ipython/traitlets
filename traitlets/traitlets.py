@@ -479,11 +479,7 @@ class TraitType(BaseDescriptor):
             return value
         if hasattr(self, 'validate'):
             value = self.validate(obj, value)
-        if obj._cross_validation_lock is False:
-            value = self._cross_validate(obj, value)
-        return value
 
-    def _cross_validate(self, obj, value):
         if self.name in obj._trait_validators:
             proposal = {'trait': self, 'value': value, 'owner': obj}
             value = obj._trait_validators[self.name](obj, proposal)
@@ -492,6 +488,7 @@ class TraitType(BaseDescriptor):
                 " decorator instead", DeprecationWarning, stacklevel=2)
             cross_validate = getattr(obj, '_%s_validate' % self.name)
             value = cross_validate(value, self)
+
         return value
 
     def __or__(self, other):
@@ -794,14 +791,14 @@ class HasTraits(HasDescriptors):
         self._trait_default_generators = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
-        self._cross_validation_lock = False
+        self._holding_trait_notifications = False
         super(HasTraits, self).install_descriptors(cls)
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
-        self._cross_validation_lock = False
+        self._holding_trait_notifications = False
         with self.hold_trait_notifications():
             for key, value in iteritems(kw):
                 setattr(self, key, value)
@@ -841,7 +838,7 @@ class HasTraits(HasDescriptors):
         race conditions in trait notifiers requesting other trait values.
         All trait notifications will fire after all values have been assigned.
         """
-        if self._cross_validation_lock is True:
+        if self._holding_trait_notifications is True:
             yield
             return
         else:
@@ -867,13 +864,7 @@ class HasTraits(HasDescriptors):
                 # Replace _notify_change with `hold`, caching and compressing
                 # notifications, disable cross validation and yield.
                 self._notify_change = hold
-                self._cross_validation_lock = True
                 yield
-                # Cross validate final values when context is released.
-                for name in list(cache.keys()):
-                    trait = getattr(self.__class__, name)
-                    value = trait._cross_validate(self, getattr(self, name))
-                    setattr(self, name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
                 self._notify_change = lambda *x: None
@@ -891,7 +882,7 @@ class HasTraits(HasDescriptors):
                 # Reset the _notify_change to original value, enable cross-validation
                 # and fire resulting change notifications.
                 self._notify_change = _notify_change
-                self._cross_validation_lock = False
+                self._holding_trait_notifications = False
 
                 if isinstance(_notify_change, types.MethodType):
                     # Presence of the method _notify_trait
