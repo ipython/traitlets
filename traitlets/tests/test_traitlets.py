@@ -1690,6 +1690,9 @@ class TestDirectionalLink(TestCase):
 class Pickleable(HasTraits):
 
     i = Int()
+    @default('i')
+    def _i_default(self):
+        return 1
     @observe('i')
     def _i_changed(self, change): pass
     @validate('i')
@@ -1700,7 +1703,7 @@ class Pickleable(HasTraits):
     
     def __init__(self):
         with self.hold_trait_notifications():
-            self.i = 1
+            self.i = 2
         self.on_trait_change(self._i_changed, 'i')
 
 def test_pickle_hastraits():
