@@ -402,56 +402,40 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = value
         return value
 
-    def _dynamic_default_callable(self, obj):
-        """Retrieve a callable to calculate the default for this traitlet.
+    def _dynamic_default_value(self, obj):
+        if self.name in obj._trait_default_generators:
+            return obj._trait_default_generators[self.name](obj)
 
-        This looks for:
+        mro = type(obj).mro()
+        # Handling deprecated magic method
+        meth_name = '_%s_default' % self.name
+        for cls in mro[:mro.index(self.this_class) + 1]:
+            if meth_name in cls.__dict__:
+                warn("_[traitname]_default handlers are deprecated: use default"
+                     " decorator instead", DeprecationWarning, stacklevel=2)
+                return getattr(obj, meth_name)()
 
-        - obj._{name}_default() on the class with the traitlet, or a subclass
-          that obj belongs to.
-        - trait.make_dynamic_default, which is defined by Instance
+        if hasattr(self, 'make_dynamic_default'):
+            return self.make_dynamic_default()
 
-        If neither exist, it returns None
-        """
-        # Traitlets without a name are not on the instance, e.g. in List or Union
-        if self.name:
-            mro = type(obj).mro()
-            meth_name = '_%s_default' % self.name
-            for cls in mro[:mro.index(self.this_class)+1]:
-                if meth_name in cls.__dict__:
-                    return getattr(obj, meth_name)
+        if self.default_value is not Undefined:
+            return self.default_value
 
-        return getattr(self, 'make_dynamic_default', None)
-
-    def instance_init(self, obj):
-        obj._cross_validation_lock = True
-        # If no dynamic initialiser is present, and the trait implementation or
-        # use provides a static default, transfer that to obj._trait_values.
-        if (self._dynamic_default_callable(obj) is None) \
-                and (self.default_value is not Undefined):
-            v = self._validate(obj, self.default_value)
-            if self.name is not None:
-                obj._trait_values[self.name] = v
-        obj._cross_validation_lock = False
+        raise TraitError("No default value found for %s "
+                         "trait of %r" % (self.name, obj))
 
     def get(self, obj, cls):
         try:
             value = obj._trait_values[self.name]
         except KeyError:
-            # Check for a dynamic initializer.
-            dynamic_default = self._dynamic_default_callable(obj)
-            if dynamic_default is None:
-                raise TraitError("No default value found for %s trait of %r"
-                                 % (self.name, obj))
-            value = self._validate(obj, dynamic_default())
+            raw = self._dynamic_default_value(obj)
+            value = self._validate(obj, raw)
             obj._trait_values[self.name] = value
-            return value
         except Exception:
             # This should never be reached.
             raise TraitError('Unexpected error in TraitType: '
                              'default value not set properly')
-        else:
-            return value
+        return value
 
     def __get__(self, obj, cls=None):
         """Get the value of the trait by self.name for the instance.
@@ -705,6 +689,16 @@ def validate(*names):
     """
     return ValidateHandler(names)
 
+def default(name):
+    """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
+
+    Parameters
+    ----------
+    name
+        The str name of the Trait on the object whose default should be generated.
+    """
+    return DefaultHandler(name)
+
 
 class EventHandler(BaseDescriptor):
 
@@ -723,6 +717,7 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
+
 class ObserveHandler(EventHandler):
 
     def __init__(self, names, type):
@@ -736,6 +731,7 @@ class ObserveHandler(EventHandler):
         meth = types.MethodType(self.func, inst)
         inst.observe(self, self.names, type=self.type)
 
+
 class ValidateHandler(EventHandler):
 
     def __init__(self, names):
@@ -745,6 +741,22 @@ class ValidateHandler(EventHandler):
         meth = types.MethodType(self.func, inst)
         inst._register_validator(self, self.names)
 
+
+class DefaultHandler(EventHandler):
+
+    def __init__(self, name):
+        self._name = name
+
+    def instance_init(self, inst):
+        try:
+            trait = getattr(inst.__class__, self._name)
+        except AttributeError:
+            raise TraitError("Can't register default generator because"
+                             " '%s' isn't a trait of %s instances" % t)
+        mro = type(inst).mro()
+        for cls in mro[:mro.index(trait.this_class) + 1]:
+            if self.this_class == cls:
+                inst._trait_default_generators[self._name] = self
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
     """The base class for all classes that have descriptors.
@@ -779,8 +791,10 @@ class HasTraits(HasDescriptors):
 
     def install_descriptors(self, cls):
         self._trait_values = {}
+        self._trait_default_generators = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
+        self._cross_validation_lock = False
         super(HasTraits, self).install_descriptors(cls)
 
     def __init__(self, *args, **kw):
@@ -799,6 +813,7 @@ class HasTraits(HasDescriptors):
         # recall of instance_init during __setstate__
         d['_trait_notifiers'] = {}
         d['_trait_validators'] = {}
+        d['_trait_default_generators'] = {}
         return d
 
     def __setstate__(self, state):
