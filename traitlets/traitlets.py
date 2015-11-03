@@ -315,6 +315,18 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
+    def class_init(self, obj):
+        """Part of the initialization which may depend on the underlying
+        HasTraits class.
+
+        It is typically overloaded for specific types.
+
+        This method is called by :meth:`HasTraits.__new__` and in the
+        :meth:`BaseDescriptor.instance_init` method of descriptors holding
+        other descriptors.
+        """
+        pass
+
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
         HasTraits instance.
@@ -415,10 +427,21 @@ class TraitType(BaseDescriptor):
         """
         # Traitlets without a name are not on the instance, e.g. in List or Union
         if self.name:
+
+            # Only look for default handlers in classes derived from self.this_class.
             mro = type(obj).mro()
+            for cls in mro[:mro.index(self.this_class) + 1]:
+                 default_handler = cls._trait_default_generators.get(self.name)
+                 if default_handler is not None:
+                     if default_handler.this_class == cls:
+                         return types.MethodType(default_handler.func, obj)
+
+            # Handling deprecated magic method
             meth_name = '_%s_default' % self.name
-            for cls in mro[:mro.index(self.this_class)+1]:
+            for cls in mro[:mro.index(self.this_class) + 1]:
                 if meth_name in cls.__dict__:
+                    warn("_[traitname]_default handlers are deprecated: use default"
+                         " decorator instead", DeprecationWarning, stacklevel=2)
                     return getattr(obj, meth_name)
 
         return getattr(self, 'make_dynamic_default', None)
@@ -633,7 +656,7 @@ class MetaHasDescriptors(MetaHasTraits):
 
         This sets :attr:`name` attribute of each descriptor in the class dict.
         """
-        for k,v in iteritems(classdict):
+        for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.name = k
             # Support of deprecated behavior allowing for TraitType types
@@ -653,9 +676,11 @@ class MetaHasDescriptors(MetaHasTraits):
         This sets the :attr:`this_class` attribute of each BaseDescriptor in the
         class dict to the newly created class ``cls``.
         """
+        cls._trait_default_generators = {}
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
+                v.class_init(cls)
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
 
 
@@ -705,6 +730,21 @@ def validate(*names):
     """
     return ValidateHandler(names)
 
+def default(name):
+    """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
+
+    Parameters
+    ----------
+    name
+        The str name of the Trait on the object whose default should be generated.
+
+    Notes
+    -----
+    Unlike observers and validators which are properties of the HasTraits instance,
+    default value generators are class-level properties.
+    """
+    return DefaultHandler(name)
+
 
 class EventHandler(BaseDescriptor):
 
@@ -723,6 +763,7 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
+
 class ObserveHandler(EventHandler):
 
     def __init__(self, names, type):
@@ -736,6 +777,7 @@ class ObserveHandler(EventHandler):
         meth = types.MethodType(self.func, inst)
         inst.observe(self, self.names, type=self.type)
 
+
 class ValidateHandler(EventHandler):
 
     def __init__(self, names):
@@ -744,6 +786,15 @@ class ValidateHandler(EventHandler):
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
         inst._register_validator(self, self.names)
+
+
+class DefaultHandler(EventHandler):
+
+    def __init__(self, name):
+        self._name = name
+
+    def class_init(self, this_class):
+        this_class._trait_default_generators[self._name] = self
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
