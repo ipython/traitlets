@@ -431,10 +431,10 @@ class TraitType(BaseDescriptor):
             # Only look for default handlers in classes derived from self.this_class.
             mro = type(obj).mro()
             for cls in mro[:mro.index(self.this_class) + 1]:
-                 default_handler = cls._trait_default_generators.get(self.name)
-                 if default_handler is not None:
-                     if default_handler.this_class == cls:
-                         return types.MethodType(default_handler.func, obj)
+                if hasattr(cls, '_trait_default_generators'):
+                    default_handler = cls._trait_default_generators.get(self.name)
+                    if default_handler is not None and default_handler.this_class == cls:
+                        return types.MethodType(default_handler.func, obj)
 
             # Handling deprecated magic method
             meth_name = '_%s_default' % self.name
@@ -676,12 +676,17 @@ class MetaHasDescriptors(MetaHasTraits):
         This sets the :attr:`this_class` attribute of each BaseDescriptor in the
         class dict to the newly created class ``cls``.
         """
-        cls._trait_default_generators = {}
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
-                v.class_init(cls)
+        cls.install_class_descriptors()
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
+
+    def install_class_descriptors(cls):
+        cls._trait_default_generators = {}
+        for k, v in iteritems(cls.__dict__):
+            if isinstance(v, BaseDescriptor):
+                v.class_init(cls)
 
 
 def observe(*names, **kwargs):
