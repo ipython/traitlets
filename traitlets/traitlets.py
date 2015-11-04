@@ -298,7 +298,7 @@ class BaseDescriptor(object):
 
     Notes
     -----
-    This implements Python's descriptor prototol.  
+    This implements Python's descriptor prototol.
 
     This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
@@ -317,19 +317,17 @@ class BaseDescriptor(object):
 
     def class_init(self, obj):
         """Part of the initialization which may depend on the underlying
-        HasTraits class.
+        HasDescriptors class.
 
         It is typically overloaded for specific types.
 
-        This method is called by :meth:`HasTraits.__new__` and in the
-        :meth:`BaseDescriptor.instance_init` method of descriptors holding
-        other descriptors.
+        This method is called by :meth:`MetaHasDescriptors.__init__`.
         """
         pass
 
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
-        HasTraits instance.
+        HasDescriptors instance.
 
         It is typically overloaded for specific types.
 
