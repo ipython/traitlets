@@ -674,10 +674,10 @@ class MetaHasDescriptors(type):
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
-        cls.install_class_descriptors()
+        cls.install_class()
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
 
-    def install_class_descriptors(cls):
+    def install_class(cls):
         for k, v in iteritems(cls.__dict__):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls)
@@ -686,9 +686,9 @@ class MetaHasDescriptors(type):
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def install_class_descriptors(cls):
+    def install_class(cls):
         cls._trait_default_generators = {}
-        super(MetaHasTraits, cls).install_class_descriptors()
+        super(MetaHasTraits, cls).install_class()
 
 
 def observe(*names, **kwargs):
@@ -816,10 +816,10 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
-        inst.install_descriptors(cls)
+        inst.install_instance(cls)
         return inst
 
-    def install_descriptors(self, cls):
+    def install_instance(self, cls):
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -835,11 +835,11 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
-    def install_descriptors(self, cls):
+    def install_instance(self, cls):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
-        super(HasTraits, self).install_descriptors(cls)
+        super(HasTraits, self).install_instance(cls)
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
