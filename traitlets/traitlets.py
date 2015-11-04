@@ -635,16 +635,7 @@ def _callback_wrapper(cb):
         return _CallbackWrapper(cb)
 
 
-class MetaHasTraits(type):
-    """Deprecated, use MetaHasDescriptors"""
-    def __init__(cls, *args, **kwargs):
-        if not isinstance(cls, MetaHasDescriptors):
-            warn("MetaHasTraits is deprecated, use MetaHasDescriptors",
-                DeprecationWarning, stacklevel=2)
-        super(MetaHasTraits, cls).__init__(*args, **kwargs)
-
-
-class MetaHasDescriptors(MetaHasTraits):
+class MetaHasDescriptors(type):
     """A metaclass for HasDescriptors.
 
     This metaclass makes sure that any TraitType class attributes are
@@ -659,6 +650,8 @@ class MetaHasDescriptors(MetaHasTraits):
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.name = k
+
+            # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
             elif inspect.isclass(v):
@@ -668,6 +661,8 @@ class MetaHasDescriptors(MetaHasTraits):
                     vinst = v()
                     vinst.name = k
                     classdict[k] = vinst
+            # ----------------------------------------------------------------
+
         return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
@@ -683,10 +678,17 @@ class MetaHasDescriptors(MetaHasTraits):
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
 
     def install_class_descriptors(cls):
-        cls._trait_default_generators = {}
         for k, v in iteritems(cls.__dict__):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls)
+
+
+class MetaHasTraits(MetaHasDescriptors):
+    """A metaclass for HasTraits."""
+
+    def install_class_descriptors(cls):
+        cls._trait_default_generators = {}
+        super(MetaHasTraits, cls).install_class_descriptors()
 
 
 def observe(*names, **kwargs):
@@ -831,7 +833,7 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
                     value.instance_init(self)
 
 
-class HasTraits(HasDescriptors):
+class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     def install_descriptors(self, cls):
         self._trait_values = {}
