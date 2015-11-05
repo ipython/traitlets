@@ -17,11 +17,11 @@ import nose.tools as nt
 from nose import SkipTest
 
 from traitlets import (
-    HasTraits, MetaHasDescriptors, TraitType, Any, Bool, CBytes, Dict, Enum,
+    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe
+    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default
 )
 from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
@@ -108,7 +108,7 @@ class TestTraitType(TestCase):
         a = A()
         self.assertRaises(TraitError, A.tt.error, a, 10)
 
-    def test_dynamic_initializer(self):
+    def test_deprecated_dynamic_initializer(self):
         class A(HasTraits):
             x = Int(10)
             def _x_default(self):
@@ -117,6 +117,43 @@ class TestTraitType(TestCase):
             x = Int(20)
         class C(A):
             def _x_default(self):
+                return 21
+
+        a = A()
+        self.assertEqual(a._trait_values, {})
+        self.assertEqual(a.x, 11)
+        self.assertEqual(a._trait_values, {'x': 11})
+        b = B()
+        self.assertEqual(b.x, 20)
+        self.assertEqual(b._trait_values, {'x': 20})
+        c = C()
+        self.assertEqual(c._trait_values, {})
+        self.assertEqual(c.x, 21)
+        self.assertEqual(c._trait_values, {'x': 21})
+        # Ensure that the base class remains unmolested when the _default
+        # initializer gets overridden in a subclass.
+        a = A()
+        c = C()
+        self.assertEqual(a._trait_values, {})
+        self.assertEqual(a.x, 11)
+        self.assertEqual(a._trait_values, {'x': 11})
+
+    def test_dynamic_initializer(self):
+
+        class A(HasTraits):
+            x = Int(10)
+
+            @default('x')
+            def _default_x(self):
+                return 11
+
+        class B(A):
+            x = Int(20)
+
+        class C(A):
+
+            @default('x')
+            def _default_x(self):
                 return 21
 
         a = A()
@@ -189,13 +226,13 @@ class TestTraitType(TestCase):
 class TestHasDescriptorsMeta(TestCase):
 
     def test_metaclass(self):
-        self.assertEqual(type(HasTraits), MetaHasDescriptors)
+        self.assertEqual(type(HasTraits), MetaHasTraits)
 
         class A(HasTraits):
             a = Int()
 
         a = A()
-        self.assertEqual(type(a.__class__), MetaHasDescriptors)
+        self.assertEqual(type(a.__class__), MetaHasTraits)
         self.assertEqual(a.a,0)
         a.a = 10
         self.assertEqual(a.a,10)

@@ -298,7 +298,7 @@ class BaseDescriptor(object):
 
     Notes
     -----
-    This implements Python's descriptor prototol.  
+    This implements Python's descriptor prototol.
 
     This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
@@ -315,9 +315,19 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
+    def class_init(self, cls):
+        """Part of the initialization which may depend on the underlying
+        HasDescriptors class.
+
+        It is typically overloaded for specific types.
+
+        This method is called by :meth:`MetaHasDescriptors.__init__`.
+        """
+        pass
+
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
-        HasTraits instance.
+        HasDescriptors instance.
 
         It is typically overloaded for specific types.
 
@@ -415,10 +425,21 @@ class TraitType(BaseDescriptor):
         """
         # Traitlets without a name are not on the instance, e.g. in List or Union
         if self.name:
+
+            # Only look for default handlers in classes derived from self.this_class.
             mro = type(obj).mro()
+            for cls in mro[:mro.index(self.this_class) + 1]:
+                if hasattr(cls, '_trait_default_generators'):
+                    default_handler = cls._trait_default_generators.get(self.name)
+                    if default_handler is not None and default_handler.this_class == cls:
+                        return types.MethodType(default_handler.func, obj)
+
+            # Handling deprecated magic method
             meth_name = '_%s_default' % self.name
-            for cls in mro[:mro.index(self.this_class)+1]:
+            for cls in mro[:mro.index(self.this_class) + 1]:
                 if meth_name in cls.__dict__:
+                    warn("_[traitname]_default handlers are deprecated: use default"
+                         " decorator instead", DeprecationWarning, stacklevel=2)
                     return getattr(obj, meth_name)
 
         return getattr(self, 'make_dynamic_default', None)
@@ -612,16 +633,7 @@ def _callback_wrapper(cb):
         return _CallbackWrapper(cb)
 
 
-class MetaHasTraits(type):
-    """Deprecated, use MetaHasDescriptors"""
-    def __init__(cls, *args, **kwargs):
-        if not isinstance(cls, MetaHasDescriptors):
-            warn("MetaHasTraits is deprecated, use MetaHasDescriptors",
-                DeprecationWarning, stacklevel=2)
-        super(MetaHasTraits, cls).__init__(*args, **kwargs)
-
-
-class MetaHasDescriptors(MetaHasTraits):
+class MetaHasDescriptors(type):
     """A metaclass for HasDescriptors.
 
     This metaclass makes sure that any TraitType class attributes are
@@ -633,9 +645,11 @@ class MetaHasDescriptors(MetaHasTraits):
 
         This sets :attr:`name` attribute of each descriptor in the class dict.
         """
-        for k,v in iteritems(classdict):
+        for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.name = k
+
+            # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
             elif inspect.isclass(v):
@@ -645,6 +659,8 @@ class MetaHasDescriptors(MetaHasTraits):
                     vinst = v()
                     vinst.name = k
                     classdict[k] = vinst
+            # ----------------------------------------------------------------
+
         return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
@@ -656,7 +672,21 @@ class MetaHasDescriptors(MetaHasTraits):
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
+        cls.setup_class()
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
+
+    def setup_class(cls):
+        for k, v in iteritems(cls.__dict__):
+            if isinstance(v, BaseDescriptor):
+                v.class_init(cls)
+
+
+class MetaHasTraits(MetaHasDescriptors):
+    """A metaclass for HasTraits."""
+
+    def setup_class(cls):
+        cls._trait_default_generators = {}
+        super(MetaHasTraits, cls).setup_class()
 
 
 def observe(*names, **kwargs):
@@ -705,6 +735,21 @@ def validate(*names):
     """
     return ValidateHandler(names)
 
+def default(name):
+    """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
+
+    Parameters
+    ----------
+    name
+        The str name of the Trait on the object whose default should be generated.
+
+    Notes
+    -----
+    Unlike observers and validators which are properties of the HasTraits instance,
+    default value generators are class-level properties.
+    """
+    return DefaultHandler(name)
+
 
 class EventHandler(BaseDescriptor):
 
@@ -723,6 +768,7 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
+
 class ObserveHandler(EventHandler):
 
     def __init__(self, names, type):
@@ -736,6 +782,7 @@ class ObserveHandler(EventHandler):
         meth = types.MethodType(self.func, inst)
         inst.observe(self, self.names, type=self.type)
 
+
 class ValidateHandler(EventHandler):
 
     def __init__(self, names):
@@ -744,6 +791,15 @@ class ValidateHandler(EventHandler):
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
         inst._register_validator(self, self.names)
+
+
+class DefaultHandler(EventHandler):
+
+    def __init__(self, name):
+        self._name = name
+
+    def class_init(self, cls):
+        cls._trait_default_generators[self._name] = self
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
@@ -758,10 +814,11 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
-        inst.install_descriptors(cls)
+        inst.setup_instance()
         return inst
 
-    def install_descriptors(self, cls):
+    def setup_instance(self):
+        cls = self.__class__
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -775,13 +832,13 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
                     value.instance_init(self)
 
 
-class HasTraits(HasDescriptors):
+class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
-    def install_descriptors(self, cls):
+    def setup_instance(self):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
-        super(HasTraits, self).install_descriptors(cls)
+        super(HasTraits, self).setup_instance()
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
@@ -1037,7 +1094,7 @@ class HasTraits(HasDescriptors):
         ----------
         handler : callable
             The callable called when a trait attribute changes.
-        names : list, str, All (default: All) 
+        names : list, str, All (default: All)
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
