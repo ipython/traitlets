@@ -315,7 +315,7 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
-    def class_init(self, obj):
+    def class_init(self, cls):
         """Part of the initialization which may depend on the underlying
         HasDescriptors class.
 
@@ -672,10 +672,10 @@ class MetaHasDescriptors(type):
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.this_class = cls
-        cls.install_class()
+        cls.setup_class()
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
 
-    def install_class(cls):
+    def setup_class(cls):
         for k, v in iteritems(cls.__dict__):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls)
@@ -684,9 +684,9 @@ class MetaHasDescriptors(type):
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def install_class(cls):
+    def setup_class(cls):
         cls._trait_default_generators = {}
-        super(MetaHasTraits, cls).install_class()
+        super(MetaHasTraits, cls).setup_class()
 
 
 def observe(*names, **kwargs):
@@ -798,8 +798,8 @@ class DefaultHandler(EventHandler):
     def __init__(self, name):
         self._name = name
 
-    def class_init(self, this_class):
-        this_class._trait_default_generators[self._name] = self
+    def class_init(self, cls):
+        cls._trait_default_generators[self._name] = self
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
@@ -814,10 +814,11 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, **kw)
-        inst.install_instance(cls)
+        inst.setup_instance()
         return inst
 
-    def install_instance(self, cls):
+    def setup_instance(self):
+        cls = self.__class__
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
             # __provides__ attributes even though they exist.  This causes
@@ -833,11 +834,11 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
-    def install_instance(self, cls):
+    def setup_instance(self):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
-        super(HasTraits, self).install_instance(cls)
+        super(HasTraits, self).setup_instance()
 
     def __init__(self, *args, **kw):
         # Allow trait values to be set using keyword arguments.
@@ -1093,7 +1094,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         ----------
         handler : callable
             The callable called when a trait attribute changes.
-        names : list, str, All (default: All) 
+        names : list, str, All (default: All)
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
