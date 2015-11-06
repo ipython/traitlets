@@ -48,6 +48,9 @@ class MyApp(Application):
     classes = List([Bar, Foo])
     config_file = Unicode(u'', help="Load this config file").tag(config=True)
 
+    warn_tpyo = Unicode(u"yes the name is wrong on purpose", config=True,
+            help="Should print a warning if `MyApp.warn-typo=...` command is passed")
+
     aliases = Dict({
                     'i' : 'Foo.i',
                     'j' : 'Foo.j',
@@ -135,6 +138,19 @@ class TestApplication(TestCase):
         app.init_bar()
         self.assertEqual(app.bar.enabled, True)
         self.assertEqual(app.bar.b, 10)
+
+    def test_warn_autocorrect(self):
+        stream = StringIO()
+        app = MyApp(log_level=logging.INFO)
+        app.log.handlers = [logging.StreamHandler(stream)]
+
+        cfg = Config()
+        cfg.MyApp.warn_typo = "WOOOO"
+        app.config = cfg
+
+        nt.assert_in("warn_typo", stream.getvalue())
+        nt.assert_in("warn_tpyo", stream.getvalue())
+        
     
     def test_flatten_flags(self):
         cfg = Config()

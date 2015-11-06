@@ -156,10 +156,10 @@ class Configurable(HasTraits):
                     from difflib import get_close_matches
                     matches = get_close_matches(name, traits)
                     if len(matches) == 1:
-                        self.log.warn("Config option `{option}` not recognized by `{klass}`, do you mean : `{matches}`"
+                        self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean : `{matches}`"
                                 .format(option=name, klass=type(self).__name__, matches=matches[0]))
                     elif len(matches) >= 1:
-                        self.log.warn("Config option `{option}` not recognized by `{klass}`, do you mean one of : `{matches}`"
+                        self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean one of : `{matches}`"
                                 .format(option=name, klass=type(self).__name__, matches=' ,'.join(matches)))
 
 
