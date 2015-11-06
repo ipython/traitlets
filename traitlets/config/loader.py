@@ -16,7 +16,7 @@ from ast import literal_eval
 from ipython_genutils.path import filefind
 from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
-from ipython_genutils.py3compat import unicode_type, iteritems
+from six import text_type, iteritems
 from traitlets.traitlets import HasTraits, List, Any
 
 #-----------------------------------------------------------------------------
@@ -603,7 +603,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         if enc is None:
             enc = DEFAULT_ENCODING
         for arg in argv:
-            if not isinstance(arg, unicode_type):
+            if not isinstance(arg, text_type):
                 # only decode if not already decoded
                 arg = arg.decode(enc)
             uargv.append(arg)
@@ -793,9 +793,9 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             else:
                 nargs = None
             if len(key) is 1:
-                paa('-'+key, '--'+key, type=unicode_type, dest=value, nargs=nargs)
+                paa('-'+key, '--'+key, type=text_type, dest=value, nargs=nargs)
             else:
-                paa('--'+key, type=unicode_type, dest=value, nargs=nargs)
+                paa('--'+key, type=text_type, dest=value, nargs=nargs)
         for key, (value, help) in iteritems(flags):
             if key in self.aliases:
                 #

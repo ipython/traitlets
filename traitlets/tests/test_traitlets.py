@@ -13,7 +13,7 @@ import sys
 from ._warnings import expected_warnings
 
 from nose2.compat import unittest
-from unittest import TestCase
+from unittest import TestCase, skipif
 from nose2.tools.such import helper as testhelper
 
 from traitlets import (
@@ -24,7 +24,8 @@ from traitlets import (
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors,
 )
-from ipython_genutils import py3compat
+
+import six
 
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
@@ -1143,30 +1144,30 @@ class TestInt(TraitTestBase):
     _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
                       10.1, -10.1, '10L', '-10L', '10.1', '-10.1', u'10L',
                       u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', -200]
-    if not py3compat.PY3:
+    if not six.PY3:
         _bad_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
 
 
 class LongTrait(HasTraits):
 
-    value = Long(99 if py3compat.PY3 else long(99))
+    value = Long(99 if six.PY3 else long(99))
 
 class TestLong(TraitTestBase):
 
     obj = LongTrait()
 
-    _default_value = 99 if py3compat.PY3 else long(99)
+    _default_value = 99 if six.PY3 else long(99)
     _good_values   = [10, -10]
     _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
                       None, 1j, 10.1, -10.1, '10', '-10', '10L', '-10L', '10.1',
                       '-10.1', u'10', u'-10', u'10L', u'-10L', u'10.1',
                       u'-10.1']
-    if not py3compat.PY3:
+    if not six.PY3:
         # maxint undefined on py3, because int == long
         _good_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
         _bad_values.extend([[long(10)], (long(10),)])
 
-    @unittest.skipIf(py3compat.PY3, "not relevant on py3")
+    @skipif(six.PY3, "not relevant on py3")
     def test_cast_small(self):
         """Long casts ints to long"""
         self.obj.value = 10
@@ -1183,10 +1184,10 @@ class TestInteger(TestLong):
     def coerce(self, n):
         return int(n)
 
-    @unittest.skipIf(py3compat.PY3, "not relevant on py3")
+    @skipif(six.PY3, "not relevant on py3")
     def test_cast_small(self):
         """Integer casts small longs to int"""
-        if py3compat.PY3:
+        if six.PY3:
             raise unittest.SkipTest("not relevant on py3")
 
         self.obj.value = long(100)
@@ -1206,7 +1207,7 @@ class TestFloat(TraitTestBase):
     _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None,
                       1j, '10', '-10', '10L', '-10L', '10.1', '-10.1', u'10',
                       u'-10', u'10L', u'-10L', u'10.1', u'-10.1', 201.0]
-    if not py3compat.PY3:
+    if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
 
 
@@ -1222,7 +1223,7 @@ class TestComplex(TraitTestBase):
     _good_values   = [10, -10, 10.1, -10.1, 10j, 10+10j, 10-10j,
                       10.1j, 10.1+10.1j, 10.1-10.1j]
     _bad_values    = [u'10L', u'-10L', 'ten', [10], {'ten': 10},(10,), None]
-    if not py3compat.PY3:
+    if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
 
 
@@ -1239,7 +1240,7 @@ class TestBytes(TraitTestBase):
                       b'-10L', b'10.1', b'-10.1', b'string']
     _bad_values    = [10, -10, 10.1, -10.1, 1j, [10],
                       ['ten'],{'ten': 10},(10,), None,  u'string']
-    if not py3compat.PY3:
+    if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
 
 
@@ -1256,7 +1257,7 @@ class TestUnicode(TraitTestBase):
                       '-10.1', '', u'', 'string', u'string', u"€"]
     _bad_values    = [10, -10, 10.1, -10.1, 1j,
                       [10], ['ten'], [u'ten'], {'ten': 10},(10,), None]
-    if not py3compat.PY3:
+    if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
 
 
