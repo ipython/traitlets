@@ -352,8 +352,8 @@ class TraitType(BaseDescriptor):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
-        values that are normally valid. The default is up to the subclass, but
-        most trait types have ``allow_none=False`` by default.
+        values that are normally valid. The default is up to the subclass.
+        For most trait types, the default value for ``allow_none`` is False.
 
         Extra metadata can be associated with the traitlet using the .tag() convenience method
         or by using the traitlet instance's .metadata dictionary.
@@ -417,9 +417,9 @@ class TraitType(BaseDescriptor):
 
         This looks for:
 
-        - obj._{name}_default() on the class with the traitlet, or a subclass
+        * obj._{name}_default() on the class with the traitlet, or a subclass
           that obj belongs to.
-        - trait.make_dynamic_default, which is defined by Instance
+        * trait.make_dynamic_default, which is defined by Instance
 
         If neither exist, it returns None
         """
@@ -692,15 +692,16 @@ class MetaHasTraits(MetaHasDescriptors):
 def observe(*names, **kwargs):
     """A decorator which can be used to observe Traits on a class.
 
-    The handler passed to the decorator can have no argument or one `change`
-    dict argument. The change dictionary at least holds a 'type' key
-        - type : the type of notification.
+    The handler passed to the decorator can have no argument or one ``change``
+    dict argument. The change dictionary at least holds a 'type' key,
+    corresponding to the type of notification.
+
     Other keys may be passed depending on the value of 'type'. In the case
     where type is 'change', we also have the following keys:
-        - owner : the HasTraits instance
-        - old : the old value of the modified trait attribute
-        - new : the new value of the modified trait attribute
-        - name : the name of the modified trait attribute.
+    * ``owner`` : the HasTraits instance
+    * ``old`` : the old value of the modified trait attribute
+    * ``new`` : the new value of the modified trait attribute
+    * ``name`` : the name of the modified trait attribute.
 
     Parameters
     ----------
@@ -713,11 +714,11 @@ def validate(*names):
     """A decorator to register cross validator of HasTraits object's state
     when a Trait is set.
 
-    The handler passed to the decorator must have one `proposal` dict argument.
+    The handler passed to the decorator must have one ``proposal`` dict argument.
     The proposal dictionary must hold the following keys:
-        - owner : the HasTraits instance
-        - value : the proposed value for the modified trait attribute
-        - name : the name of the modified trait attribute.
+    * ``owner`` : the HasTraits instance
+    * ``value`` : the proposed value for the modified trait attribute
+    * ``name`` : the name of the modified trait attribute.
 
     Parameters
     ----------
@@ -726,11 +727,11 @@ def validate(*names):
 
     Notes
     -----
-    Since the owner has access to the `Hastraits` instance via the 'owner' key,
+    Since the owner has access to the ``Hastraits`` instance via the 'owner' key,
     the registered cross validator could potentially make changes to attributes
-    of the `HasTraits` instance. However, we recommend not to do so. The reason
+    of the ``HasTraits`` instance. However, we recommend not to do so. The reason
     is that the cross-validation of attributes may run in arbitrary order when
-    exitting the `hold_trait_modification` context, and such changes may not
+    exitting the ``hold_trait_modification` context, and such changes may not
     commute.
     """
     return ValidateHandler(names)
@@ -745,8 +746,33 @@ def default(name):
 
     Notes
     -----
-    Unlike observers and validators which are properties of the HasTraits instance,
-    default value generators are class-level properties.
+    Unlike observers and validators which are properties of the HasTraits
+    instance, default value generators are class-level properties.
+
+    Besides, default generators are only invoked if they are registered in
+    subclasses of `this_type`.
+
+    ::
+
+        class A(HasTraits):
+            bar = Int()
+
+            @default('bar')
+            def get_bar_default(self):
+                return 11
+
+
+        class B(A):
+            bar = Float()  # This trait ignores the default generator defined in
+                           # the base class A
+
+
+        class C(B):
+
+            @default('bar')
+            def some_other_default(self):  # This default generator should not be
+                return 3.0                 # ignored since it is defined in a
+                                           # class derived from B.a.this_class.
     """
     return DefaultHandler(name)
 
@@ -1064,15 +1090,15 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         ----------
         handler : callable
             A callable that is called when a trait changes. Its
-            signature can be handler() or handler(change), where change is a
-            dictionary. The change dictionary at least holds a 'type' key
-                - type : the type of notification.
+            signature can be ``handler()`` or ``handler(change)``, where change
+            is a dictionary. The change dictionary at least holds a 'type' key.
+            * `type``: the type of notification.
             Other keys may be passed depending on the value of 'type'. In the
             case where type is 'change', we also have the following keys:
-                - owner : the HasTraits instance
-                - old : the old value of the modified trait attribute
-                - new : the new value of the modified trait attribute
-                - name : the name of the modified trait attribute.
+            * ``owner`` : the HasTraits instance
+            * ``old`` : the old value of the modified trait attribute
+            * ``new`` : the new value of the modified trait attribute
+            * ``name`` : the name of the modified trait attribute.
         names : list, str, All
             If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
@@ -1131,9 +1157,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             A callable that is called when the given trait is cross-validated.
             Its signature is handler(proposal), where proposal is a dictionary
             with the following keys:
-                - owner : the HasTraits instance
-                - value : the proposed value for the modified trait attribute
-                - name : the name of the modified trait attribute.
+                * ``owner`` : the HasTraits instance
+                * ``value`` : the proposed value for the modified trait attribute
+                * ``name`` : the name of the modified trait attribute.
         names : List of strings
             The names of the traits that should be cross-validated
         """
@@ -1162,7 +1188,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     @classmethod
     def class_traits(cls, **metadata):
-        """Get a `dict` of all the traits of this class.  The dictionary
+        """Get a ``dict`` of all the traits of this class.  The dictionary
         is keyed on the name and the values are the TraitType objects.
 
         This method is just like the :meth:`traits` method, but is unbound.
@@ -1216,7 +1242,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         return self.traits(**metadata).keys()
 
     def traits(self, **metadata):
-        """Get a `dict` of all the traits of this class.  The dictionary
+        """Get a ``dict`` of all the traits of this class.  The dictionary
         is keyed on the name and the values are the TraitType objects.
 
         The TraitTypes returned don't know anything about the values
@@ -1916,7 +1942,7 @@ class Container(Instance):
         If only one arg is given and it is not a Trait, it is taken as
         ``default_value``:
 
-        ``c = List([1,2,3])``
+        ``c = List([1, 2, 3])``
 
         Parameters
         ----------
@@ -2011,7 +2037,7 @@ class List(Container):
         If only one arg is given and it is not a Trait, it is taken as
         ``default_value``:
 
-        ``c = List([1,2,3])``
+        ``c = List([1, 2, 3])``
 
         Parameters
         ----------
@@ -2072,7 +2098,7 @@ class Set(List):
         If only one arg is given and it is not a Trait, it is taken as
         ``default_value``:
 
-        ``c = Set({1,2,3})``
+        ``c = Set({1, 2, 3})``
 
         Parameters
         ----------
@@ -2111,7 +2137,7 @@ class Tuple(Container):
         If only one arg is given and it is not a Trait, it is taken as
         default_value:
 
-        ``t = Tuple((1,2,3))``
+        ``t = Tuple((1, 2, 3))``
 
         Otherwise, ``default_value`` *must* be specified by keyword.
 
@@ -2126,8 +2152,8 @@ class Tuple(Container):
 
         default_value : SequenceType [ optional ]
             The default value for the Tuple.  Must be list/tuple/set, and
-            will be cast to a tuple. If `traits` are specified, the
-            `default_value` must conform to the shape and type they specify.
+            will be cast to a tuple. If ``traits`` are specified,
+            ``default_value`` must conform to the shape and type they specify.
         """
         default_value = metadata.pop('default_value', Undefined)
         # allow Tuple((values,)):

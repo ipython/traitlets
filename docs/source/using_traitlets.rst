@@ -35,14 +35,16 @@ For the available traitlet types and the arguments you can give them, see
 Dynamic default values
 ----------------------
 
-To calculate a default value dynamically, give your class a method named
-:samp:`_{traitname}_default`. This will be called on the instance,
-and should return the default value. For example::
+To calculate a default value dynamically, decorate a method of your class with
+`@default({traitname})`. This method will be called on the instance, and should
+return the default value. For example::
 
     import getpass
 
     class Identity(HasTraits):
         username = Unicode()
+
+        @default('username')
         def _username_default(self):
             return getpass.getuser()
 
@@ -61,7 +63,7 @@ To do something when a traitlet is changed, define a method named
 
 You can also add callbacks to a trait dynamically:
 
-.. automethod:: HasTraits.on_trait_change
+.. automethod:: HasTraits.observe
 
 .. note::
 
