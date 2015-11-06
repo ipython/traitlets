@@ -26,7 +26,9 @@ from traitlets.traitlets import (
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
 from ipython_genutils import py3compat
-from ipython_genutils.py3compat import string_types, iteritems
+
+import six
+from six import iteritems
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections
@@ -159,7 +161,7 @@ class Application(SingletonConfigurable):
     def _log_level_changed(self, change):
         """Adjust the log level when log_level is set."""
         new = change['new']
-        if isinstance(new, string_types):
+        if isinstance(new, six.string_types):
             new = getattr(logging, new)
             self.log_level = new
         self.log.setLevel(new)
@@ -225,10 +227,10 @@ class Application(SingletonConfigurable):
     def _flags_changed(self, change):
         """ensure flags dict is valid"""
         new = change['new']
-        for key, value in new.items():
+        for key, value in iteritems(new):
             assert len(value) == 2, "Bad flag: %r:%s" % (key, value)
             assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s" % (key, value)
-            assert isinstance(value[1], string_types), "Bad flag: %r:%s" % (key, value)
+            assert isinstance(value[1], six.string_types), "Bad flag: %r:%s" % (key, value)
 
 
     # subcommands for launching other applications
@@ -412,7 +414,7 @@ class Application(SingletonConfigurable):
         """Initialize a subcommand with argv."""
         subapp,help = self.subcommands.get(subc)
 
-        if isinstance(subapp, string_types):
+        if isinstance(subapp, six.string_types):
             subapp = import_item(subapp)
 
         # clear existing instances

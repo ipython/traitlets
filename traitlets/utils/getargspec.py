@@ -10,7 +10,7 @@
 """
 
 import inspect
-from ipython_genutils.py3compat import PY3
+from six import PY3
 
 # Unmodified from sphinx below this line
 
