@@ -1910,8 +1910,14 @@ class Enum(TraitType):
 
 class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
-
+    
+    def __init__(self, values, default_value=Undefined, **metadata):
+        values = [py3compat.cast_unicode_py2(value) for value in values]
+        super(CaselessStrEnum, self).__init__(values, default_value=default_value, **metadata)
+    
     def validate(self, obj, value):
+        if isinstance(value, str):
+            value = py3compat.cast_unicode_py2(value)
         if not isinstance(value, py3compat.string_types):
             self.error(obj, value)
 
