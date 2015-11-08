@@ -54,7 +54,6 @@ except:
 from warnings import warn, warn_explicit
 
 import six
-from six import iteritems
 
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
@@ -698,7 +697,7 @@ class MetaHasDescriptors(type):
 
     def __new__(mcls, name, bases, classdict):
         """Create the HasDescriptors class."""
-        for k, v in iteritems(classdict):
+        for k, v in classdict.items():
             # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
@@ -722,7 +721,7 @@ class MetaHasDescriptors(type):
         BaseDescriptor in the class dict of the newly created ``cls`` before
         calling their :attr:`class_init` method.
         """
-        for k, v in iteritems(classdict):
+        for k, v in classdict.items():
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
 
@@ -953,7 +952,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         super_args = args
         super_kwargs = {}
         with self.hold_trait_notifications():
-            for key, value in iteritems(kwargs):
+            for key, value in kwargs.items():
                 if self.has_trait(key):
                     setattr(self, key, value)
                 else:
