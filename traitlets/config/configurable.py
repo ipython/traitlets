@@ -11,7 +11,6 @@ from copy import deepcopy
 from .loader import Config, LazyConfigValue
 from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
-from six import iteritems
 
 
 #-----------------------------------------------------------------------------
@@ -140,7 +139,7 @@ class Configurable(HasTraits):
         
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():
-            for name, config_value in iteritems(my_config):
+            for name, config_value in my_config.items():
                 if name in traits:
                     if isinstance(config_value, LazyConfigValue):
                         # ConfigValue is a wrapper for using append / update on containers

@@ -28,7 +28,6 @@ from ipython_genutils.text import indent, wrap_paragraphs, dedent
 from ipython_genutils import py3compat
 
 import six
-from six import iteritems
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections
@@ -227,7 +226,7 @@ class Application(SingletonConfigurable):
     def _flags_changed(self, change):
         """ensure flags dict is valid"""
         new = change['new']
-        for key, value in iteritems(new):
+        for key, value in new.items():
             assert len(value) == 2, "Bad flag: %r:%s" % (key, value)
             assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s" % (key, value)
             assert isinstance(value[1], six.string_types), "Bad flag: %r:%s" % (key, value)
@@ -289,7 +288,7 @@ class Application(SingletonConfigurable):
             for c in cls.mro()[:-3]:
                 classdict[c.__name__] = c
 
-        for alias, longname in iteritems(self.aliases):
+        for alias, longname in self.aliases.items():
             classname, traitname = longname.split('.',1)
             cls = classdict[classname]
 
@@ -309,7 +308,7 @@ class Application(SingletonConfigurable):
             return
 
         lines = []
-        for m, (cfg,help) in iteritems(self.flags):
+        for m, (cfg,help) in self.flags.items():
             prefix = '--' if len(m) > 1 else '-'
             lines.append(prefix+m)
             lines.append(indent(dedent(help.strip())))
@@ -577,7 +576,6 @@ class Application(SingletonConfigurable):
 
     def exit(self, exit_status=0):
         self.log.debug("Exiting application: %s" % self.name)
-        logging.shutdown()
         sys.exit(exit_status)
 
     @classmethod
