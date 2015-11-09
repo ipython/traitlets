@@ -152,6 +152,16 @@ class Configurable(HasTraits):
                     # config object. If we don't, a mutable config_value will be
                     # shared by all instances, effectively making it a class attribute.
                     setattr(self, name, deepcopy(config_value))
+                elif isinstance(self, LoggingConfigurable):
+                    from difflib import get_close_matches
+                    matches = get_close_matches(name, traits)
+                    if len(matches) == 1:
+                        self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean : `{matches}`"
+                                .format(option=name, klass=type(self).__name__, matches=matches[0]))
+                    elif len(matches) >= 1:
+                        self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean one of : `{matches}`"
+                                .format(option=name, klass=type(self).__name__, matches=' ,'.join(matches)))
+
 
     def _config_changed(self, name, old, new):
         """Update all the class traits having ``config=True`` in metadata.
@@ -311,7 +321,20 @@ class Configurable(HasTraits):
 
 
 
-class SingletonConfigurable(Configurable):
+class LoggingConfigurable(Configurable):
+    """A parent class for Configurables that log.
+
+    Subclasses have a log trait, and the default behavior
+    is to get the logger from the currently running Application.
+    """
+
+    log = Instance('logging.Logger')
+    def _log_default(self):
+        from traitlets import log
+        return log.get_logger()
+
+
+class SingletonConfigurable(LoggingConfigurable):
     """A configurable that only allows one instance.
 
     This class is for classes that should only have one instance of itself
@@ -396,17 +419,5 @@ class SingletonConfigurable(Configurable):
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
 
-
-class LoggingConfigurable(Configurable):
-    """A parent class for Configurables that log.
-
-    Subclasses have a log trait, and the default behavior
-    is to get the logger from the currently running Application.
-    """
-
-    log = Instance('logging.Logger')
-    def _log_default(self):
-        from traitlets import log
-        return log.get_logger()
 
 
