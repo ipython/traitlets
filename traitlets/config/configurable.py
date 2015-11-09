@@ -180,19 +180,13 @@ class Configurable(HasTraits):
         self._load_config(change['new'], traits=traits, section_names=section_names)
 
     def update_config(self, config):
-        """Update config and trigger reload of config via trait events"""
-        # Save a copy of the old config
-        oldconfig = deepcopy(self.config)
-        # merge new config
+        """Update config and load the new values"""
+        # load config
+        self._load_config(config)
+        # merge it into self.config
         self.config.merge(config)
-        # unconditionally notify trait change, which triggers load of new config
-        self.notify_change({
-            'name': 'config',
-            'old': oldconfig,
-            'new': self.config,
-            'owner': self,
-            'type': 'change',
-        })
+        # TODO: trigger change event if/when dict-update change events take place
+        # DO NOT trigger full trait-change
 
     @classmethod
     def class_get_help(cls, inst=None):
