@@ -19,3 +19,4 @@ the configuration machinery.
     trait_types
     defining_traits
     config
+    changelog
