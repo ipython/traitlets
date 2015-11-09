@@ -51,15 +51,32 @@ return the default value. For example::
 Callbacks when traitlets change
 -------------------------------
 
-To do something when a traitlet is changed, define a method named
-:samp:`_{traitname}_changed`. This can have several possible signatures:
+To do something when a traitlet is changed, decorate a method with :func:`traitlets.observe`.
+The method will be called with a single argument, a dictionary of the form::
 
-.. class:: TraitletsCallbacksExample
+    {
+      'owner': object, # The HasTraits instance
+      'new': 6, # The new value
+      'old': 5, # The old value
+      'name': "foo", # The name of the changed trait
+      'type': 'change', # The event type of the noteification, usually 'change'
+    }
 
-   .. method:: _traitlet1_changed()
-               _traitlet2_changed(traitlet_name)
-               _traitlet3_changed(traitlet_name, new_value)
-               _traitlet4_changed(traitlet_name, old_value, new_value)
+For example::
+
+    from traitlets import HasTraits, Integer, observe
+    
+    class TraitletsExample(HasTraits):
+        num = Integer(5, help="a number").tag(config=True)
+        
+        @observe('num')
+        def _num_changed(self, change):
+            print("{name} changed from {old} to {new}".format(**change))
+
+
+.. versionchanged:: 4.1
+
+    The ``_{trait}_changed`` magic method-name approach is deprecated.
 
 You can also add callbacks to a trait dynamically:
 
@@ -67,6 +84,6 @@ You can also add callbacks to a trait dynamically:
 
 .. note::
 
-   If a traitlet with a dynamic default value has another value set before it is
-   used, the default will not be calculated.
-   Any callbacks on that trait will will fire, and *old_value* will be ``None``.
+    If a traitlet with a dynamic default value has another value set before it is
+    used, the default will not be calculated.
+    Any callbacks on that trait will will fire, and *old_value* will be ``None``.
