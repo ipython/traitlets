@@ -1642,6 +1642,28 @@ class TestDirectionalLink(TestCase):
         b.value = 6
         self.assertEqual(a.value, 5)
 
+    def test_tranform(self):
+        """Test transform link."""
+
+        # Create two simple classes with Int traitlets.
+        class A(HasTraits):
+            value = Int()
+        a = A(value=9)
+        b = A(value=8)
+
+        # Conenct the two classes.
+        c = directional_link((a, 'value'), (b, 'value'), lambda x: 2 * x)
+
+        # Make sure the values are correct at the point of linking.
+        self.assertEqual(b.value, 2 * a.value)
+
+        # Change one the value of the source and check that it modifies the target.
+        a.value = 5
+        self.assertEqual(b.value, 10)
+        # Change one the value of the target and check that it has no impact on the source
+        b.value = 6
+        self.assertEqual(a.value, 5)
+
     def test_link_different(self):
         """Verify two traitlets of different types can be linked together using link."""
 

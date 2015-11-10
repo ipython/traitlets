@@ -250,6 +250,8 @@ class directional_link(object):
     ----------
     source : (object, attribute name) pair
     target : (object, attribute name) pair
+    transform: callable (optional)
+        Data transformation between source and target.
 
     Examples
     --------
@@ -260,11 +262,13 @@ class directional_link(object):
     """
     updating = False
 
-    def __init__(self, source, target):
+    def __init__(self, source, target, transform=None):
+        self._transform = transform if transform else lambda x: x
         _validate_link(source, target)
         self.source, self.target = source, target
         try:
-            setattr(target[0], target[1], getattr(source[0], source[1]))
+            setattr(target[0], target[1],
+                    self._transform(getattr(source[0], source[1])))
         finally:
             self.source[0].observe(self._update, names=self.source[1])
 
@@ -280,7 +284,8 @@ class directional_link(object):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.target[0], self.target[1], change['new'])
+            setattr(self.target[0], self.target[1],
+                    self._transform(change['new']))
 
     def unlink(self):
         self.source[0].unobserve(self._update, names=self.source[1])
