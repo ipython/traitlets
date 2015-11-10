@@ -1,6 +1,6 @@
-CONTRIBUTING.md
-COPYING.md
-README.md
+include CONTRIBUTING.md
+include COPYING.md
+include README.md
 
 # Documentation
 graft docs
