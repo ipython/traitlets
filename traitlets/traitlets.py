@@ -136,6 +136,8 @@ def parse_notifier_name(names):
     Examples
     --------
 
+    >>> parse_notifier_name([])
+    [All]
     >>> parse_notifier_name('a')
     ['a']
     >>> parse_notifier_name(['a', 'b'])
@@ -146,6 +148,8 @@ def parse_notifier_name(names):
     if names is All or isinstance(names, string_types):
         return [names]
     elif isinstance(names, (list, tuple)):
+        if not names or All in names:
+            return [All]
         for n in names:
             assert isinstance(n, string_types), "names must be strings"
         return names
@@ -803,10 +807,7 @@ class EventHandler(BaseDescriptor):
 class ObserveHandler(EventHandler):
 
     def __init__(self, names, type):
-        if names is All:
-            self.trait_names = [All]
-        else:
-            self.trait_names = names
+        self.trait_names = names
         self.type = type
 
     def instance_init(self, inst):
