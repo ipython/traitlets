@@ -1600,9 +1600,14 @@ class Union(TraitType):
         self.default_value = self.trait_types[0].default_value
         super(Union, self).__init__(**metadata)
 
-    def instance_init(self, obj):
+    def class_init(self, cls):
         for trait_type in self.trait_types:
             trait_type.this_class = self.this_class
+            trait_type.class_init(cls)
+        super(Union, self).class_init(cls)
+
+    def instance_init(self, obj):
+        for trait_type in self.trait_types:
             trait_type.instance_init(obj)
         super(Union, self).instance_init(obj)
 
@@ -2024,9 +2029,14 @@ class Container(Instance):
                 validated.append(v)
         return self.klass(validated)
 
-    def instance_init(self, obj):
+    def class_init(self, cls):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
+            self._trait.class_init(cls)
+        super(Container, self).class_init(cls)
+
+    def instance_init(self, obj):
+        if isinstance(self._trait, TraitType):
             self._trait.instance_init(obj)
         super(Container, self).instance_init(obj)
 
@@ -2211,10 +2221,16 @@ class Tuple(Container):
                 validated.append(v)
         return tuple(validated)
 
-    def instance_init(self, obj):
+    def class_init(self, cls):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.this_class = self.this_class
+                trait.class_init(cls)
+        super(Container, self).class_init(cls)
+
+    def instance_init(self, obj):
+        for trait in self._traits:
+            if isinstance(trait, TraitType):
                 trait.instance_init(obj)
         super(Container, self).instance_init(obj)
 
@@ -2309,13 +2325,21 @@ class Dict(Instance):
                 validated[key] = v
         return self.klass(validated)
 
-    def instance_init(self, obj):
+    def class_init(self, cls):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
-            self._trait.instance_init(obj)
+            self._trait.class_init(cls)
         if self._traits is not None:
             for trait in self._traits.values():
                 trait.this_class = self.this_class
+                trait.class_init(cls)
+        super(Dict, self).class_init(cls)
+
+    def instance_init(self, obj):
+        if isinstance(self._trait, TraitType):
+            self._trait.instance_init(obj)
+        if self._traits is not None:
+            for trait in self._traits.values():
                 trait.instance_init(obj)
         super(Dict, self).instance_init(obj)
 
