@@ -804,33 +804,33 @@ class ObserveHandler(EventHandler):
 
     def __init__(self, names, type):
         if names is All:
-            self.names = [All]
+            self.trait_names = [All]
         else:
-            self.names = names
+            self.trait_names = names
         self.type = type
 
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst.observe(self, self.names, type=self.type)
+        inst.observe(self, self.trait_names, type=self.type)
 
 
 class ValidateHandler(EventHandler):
 
     def __init__(self, names):
-        self.names = names
+        self.trait_names = names
 
     def instance_init(self, inst):
         meth = types.MethodType(self.func, inst)
-        inst._register_validator(self, self.names)
+        inst._register_validator(self, self.trait_names)
 
 
 class DefaultHandler(EventHandler):
 
     def __init__(self, name):
-        self._name = name
+        self.trait_name = name
 
     def class_init(self, cls):
-        cls._trait_default_generators[self._name] = self
+        cls._trait_default_generators[self.trait_name] = self
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
