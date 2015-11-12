@@ -186,7 +186,7 @@ class Configurable(HasTraits):
         # merge new config
         self.config.merge(config)
         # unconditionally notify trait change, which triggers load of new config
-        self._notify_change('config', 'trait_change', {
+        self._notify_change({
             'name': 'config',
             'old': oldconfig,
             'new': self.config,

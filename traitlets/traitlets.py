@@ -934,8 +934,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                         past_changes.append(change)
                     return past_changes
 
-            def hold(*a):
-                cache[a[0]] = compress(cache.get(a[0]), a[2])
+            def hold(change):
+                name = change['name']
+                cache[name] = compress(cache.get(name), change)
 
             try:
                 # Replace _notify_change with `hold`, caching and compressing
@@ -950,7 +951,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                     setattr(self, name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
-                self._notify_change = lambda *x: None
+                self._notify_change = lambda x: None
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
@@ -975,10 +976,10 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
-                        self._notify_change(change['name'], change['type'], change)
+                        self._notify_change(change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self._notify_change(name, 'change', {
+        self._notify_change({
             'name': name,
             'old': old_value,
             'new': new_value,
@@ -986,7 +987,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             'type': 'change',
         })
 
-    def _notify_change(self, name, type, change):
+    def _notify_change(self, change):
+        name, type = change['name'], change['type']
+
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
         callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
