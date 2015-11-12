@@ -556,18 +556,28 @@ class TestObserveDecorator(TestCase):
 
         class A(HasTraits):
             a = Int()
+            b = Int()
             _notify1 = []
+            _notify_any = []
+            
             @observe('a')
             def _a_changed(self, change):
                 self._notify1.append(change)
 
+            @observe(All)
+            def _any_changed(self, change):
+                self._notify_any.append(change)
+
         a = A()
         a.a = 0
-        # This is broken!!!
         self.assertEqual(len(a._notify1),0)
         a.a = 10
         change = change_dict('a', 0, 10, a, 'change')
         self.assertTrue(change in a._notify1)
+        a.b = 1
+        self.assertEqual(len(a._notify_any), 2)
+        change = change_dict('b', 0, 1, a, 'change')
+        self.assertTrue(change in a._notify_any)
 
         class B(A):
             b = Float()
