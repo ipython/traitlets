@@ -650,43 +650,35 @@ class MetaHasDescriptors(type):
     """
 
     def __new__(mcls, name, bases, classdict):
-        """Create the HasDescriptors class.
-
-        This sets :attr:`name` attribute of each descriptor in the class dict.
-        """
+        """Create the HasDescriptors class."""
         for k, v in iteritems(classdict):
-            if isinstance(v, BaseDescriptor):
-                v.name = k
-
             # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
-            elif inspect.isclass(v):
-                if issubclass(v, TraitType):
-                    warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
-                         DeprecationWarning, stacklevel=2)
-                    vinst = v()
-                    vinst.name = k
-                    classdict[k] = vinst
+            if inspect.isclass(v) and issubclass(v, TraitType):
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                     DeprecationWarning, stacklevel=2)
+                classdict[k] = v()
             # ----------------------------------------------------------------
 
         return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
-        """Finish initializing the HasDescriptors class.
-
-        This sets the :attr:`this_class` attribute of each BaseDescriptor in the
-        class dict to the newly created class ``cls``.
-        """
-        for k, v in iteritems(classdict):
-            if isinstance(v, BaseDescriptor):
-                v.this_class = cls
-        cls.setup_class()
+        """Finish initializing the HasDescriptors class."""
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
+        cls.setup_class()
 
     def setup_class(cls):
-        for k, v in iteritems(cls.__dict__):
+        """Setup descriptor instance on the class
+
+        This sets the :attr:`this_class` and :attr:`name` attributes of each
+        BaseDescriptor in the class dict of the newly created ``cls`` before
+        calling their :attr:`class_init` method.
+        """
+        for k, v in iteritems(cls.__dict__.copy()):
             if isinstance(v, BaseDescriptor):
+                v.name = k
+                v.this_class = cls
                 v.class_init(cls)
 
 
