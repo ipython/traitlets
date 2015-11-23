@@ -27,7 +27,7 @@ pip install traitlets
 For a development installation:
 
 * Clone this repository and `cd` into it
-* `pip install --pre -e .`
+* `pip install -e .`
 
 ## Running the tests
 
