@@ -3,7 +3,7 @@ Using Traitlets
 
 .. currentmodule:: traitlets
 
-Any class with traitlet attributes must inherit from :class:`HasTraits`.
+Any class with trait attributes must inherit from :class:`HasTraits`.
 
 .. autoclass:: HasTraits
 
@@ -21,7 +21,7 @@ Any class with traitlet attributes must inherit from :class:`HasTraits`.
 
    .. automethod:: add_traits
 
-You then declare the traitlets on the class like this::
+You then declare the trait attributes on the class like this::
 
     from traitlets import HasTraits, Int, Unicode
 
@@ -29,7 +29,7 @@ You then declare the traitlets on the class like this::
         url = Unicode()
         timeout = Int(30)  # 30 will be the default value
 
-For the available traitlet types and the arguments you can give them, see
+For the available traitl types and the arguments you can give them, see
 :doc:`trait_types`.
 
 Dynamic default values
@@ -48,10 +48,10 @@ return the default value. For example::
         def _username_default(self):
             return getpass.getuser()
 
-Callbacks when traitlets change
--------------------------------
+Callbacks when trait attributes change
+--------------------------------------
 
-To do something when a traitlet is changed, decorate a method with :func:`traitlets.observe`.
+To do something when a trait attribute is changed, decorate a method with :func:`traitlets.observe`.
 The method will be called with a single argument, a dictionary of the form::
 
     {
@@ -59,7 +59,7 @@ The method will be called with a single argument, a dictionary of the form::
       'new': 6, # The new value
       'old': 5, # The old value
       'name': "foo", # The name of the changed trait
-      'type': 'change', # The event type of the noteification, usually 'change'
+      'type': 'change', # The event type of the notification, usually 'change'
     }
 
 For example::
@@ -84,6 +84,6 @@ You can also add callbacks to a trait dynamically:
 
 .. note::
 
-    If a traitlet with a dynamic default value has another value set before it is
-    used, the default will not be calculated.
+    If a trait attribute with a dynamic default value has another value set
+    before it is used, the default will not be calculated.
     Any callbacks on that trait will will fire, and *old_value* will be ``None``.
