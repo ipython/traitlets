@@ -970,7 +970,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 self._cross_validation_lock = False
 
                 if isinstance(_notify_change, types.MethodType):
-                    # Presence of the method _notify_trait
+                    # Presence of the _notify_change method
                     # on __dict__ can cause memory leaks
                     # and prevents pickleability
                     self.__dict__.pop('_notify_change')
