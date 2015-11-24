@@ -398,6 +398,8 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
+        self._target_event_handlers = []
+
         self.init()
 
     def init(self):
@@ -595,6 +597,32 @@ class TraitType(BaseDescriptor):
 
     def default_value_repr(self):
         return repr(self.default_value)
+
+    def class_init(self, cls):
+        for h in self._target_event_handlers:
+            if h.trait_names is None:
+                names = (self.name,)
+            else:
+                names = list(h.trait_names)
+                names.append(self.name)
+            h.update(trait_names=names)
+
+    def decorate(self, handler_type, *args, **kwargs):
+        if len(args) == 0:
+            h = handler_type(names=None, *args, **kwargs)
+        elif isinstance(args[0], types.FunctionType):
+            h = handler_type(names=None)(args[0])
+        self._target_event_handlers.append(h)
+        return h
+
+    def default(self, *args, **kwargs):
+        return self.decorate(DefaultHandler, *args, **kwargs)
+
+    def validator(self, *args, **kwargs):
+        return self.decorate(ValidateHandler, *args, **kwargs)
+
+    def observer(self, *args, **kwargs):
+        return self.decorate(ObserveHandler, *args, **kwargs)
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
@@ -803,35 +831,58 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names, type):
+    def __init__(self, names=None, type='change'):
         self.trait_names = names
         self.type = type
 
     def instance_init(self, inst):
-        meth = types.MethodType(self.func, inst)
+        if self.trait_names is None:
+            raise TraitError("handler has no trait names")
         inst.observe(self, self.trait_names, type=self.type)
 
 
 class ValidateHandler(EventHandler):
 
-    def __init__(self, names):
+    def __init__(self, names=None):
         self.trait_names = names
 
     def instance_init(self, inst):
-        meth = types.MethodType(self.func, inst)
+        if self.trait_names is None:
+            raise TraitError("handler has no trait names")
         inst._register_validator(self, self.trait_names)
 
 
 class DefaultHandler(EventHandler):
 
-    def __init__(self, name):
-        self.trait_name = name
+    def __init__(self, names=None):
+        self.trait_names = names
+
+    def update(self, **kwargs):
+        super(DefaultHandler,self).update(**kwargs)
+        if hasattr(self, '_pending_class') and 'trait_names' in kwargs:
+            self._assign_to_class(self._pending_class)
 
     def class_init(self, cls):
-        cls._trait_default_generators[self.trait_name] = self
+        if self.trait_names is not None:
+            self._assign_to_class(cls)
+        else:
+            # a temporary attribute used to cache the
+            # class until trait names are provided
+            self._pending_class = cls
+
+    def _assign_to_class(self, cls):
+        for n in self.trait_names:
+            cls._trait_default_generators[n] = self
+        if hasattr(self, '_pending_class'):
+            # delete the cached class now that it's set
+            delattr(self, '_pending_class')
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
