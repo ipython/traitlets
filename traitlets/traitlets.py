@@ -45,6 +45,7 @@ import inspect
 import re
 import sys
 import types
+import copy
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -398,7 +399,7 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
-        self._target_event_handlers = []
+        self.event_handlers = []
 
         self.init()
 
@@ -465,6 +466,9 @@ class TraitType(BaseDescriptor):
             if self.name is not None:
                 obj._trait_values[self.name] = v
         obj._cross_validation_lock = False
+
+        for h in self.event_handlers:
+            h.instance_init(obj)
 
     def get(self, obj, cls):
         try:
@@ -599,21 +603,23 @@ class TraitType(BaseDescriptor):
         return repr(self.default_value)
 
     def class_init(self, cls):
-        for h in self._target_event_handlers:
-            if h.trait_names is None:
-                names = (self.name,)
-            else:
-                names = list(h.trait_names)
-                names.append(self.name)
-            h.update(trait_names=names)
+        for h in self.event_handlers:
+            h.this_class = cls
+            h.class_init(cls)
+
+    def __call__(self, func):
+        self.event_handlers[-1](func)
+        return self
 
     def decorate(self, handler_type, *args, **kwargs):
-        if len(args) == 0:
-            h = handler_type(names=None, *args, **kwargs)
-        elif isinstance(args[0], types.FunctionType):
+        if len(args)==1 and isinstance(args[0], types.FunctionType):
             h = handler_type(names=None)(args[0])
-        self._target_event_handlers.append(h)
-        return h
+        else:
+            h = handler_type(names=None, *args, **kwargs)
+
+        new = copy.copy(self)
+        new.event_handlers.append(h)
+        return new
 
     def default(self, *args, **kwargs):
         return self.decorate(DefaultHandler, *args, **kwargs)
@@ -831,14 +837,18 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
-    def update(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+
+class TraitEventHandler(EventHandler):
+
+    def _init_call(self, func):
+        if self.trait_names is None:
+            self.trait_names = (func.__name__,)
+        return super(TraitEventHandler, self)._init_call(func)
 
 
-class ObserveHandler(EventHandler):
+class ObserveHandler(TraitEventHandler):
 
-    def __init__(self, names=None, type='change'):
+    def __init__(self, names, type='change'):
         self.trait_names = names
         self.type = type
 
@@ -848,9 +858,9 @@ class ObserveHandler(EventHandler):
         inst.observe(self, self.trait_names, type=self.type)
 
 
-class ValidateHandler(EventHandler):
+class ValidateHandler(TraitEventHandler):
 
-    def __init__(self, names=None):
+    def __init__(self, names):
         self.trait_names = names
 
     def instance_init(self, inst):
@@ -859,30 +869,14 @@ class ValidateHandler(EventHandler):
         inst._register_validator(self, self.trait_names)
 
 
-class DefaultHandler(EventHandler):
+class DefaultHandler(TraitEventHandler):
 
-    def __init__(self, names=None):
+    def __init__(self, names):
         self.trait_names = names
 
-    def update(self, **kwargs):
-        super(DefaultHandler,self).update(**kwargs)
-        if hasattr(self, '_pending_class') and 'trait_names' in kwargs:
-            self._assign_to_class(self._pending_class)
-
     def class_init(self, cls):
-        if self.trait_names is not None:
-            self._assign_to_class(cls)
-        else:
-            # a temporary attribute used to cache the
-            # class until trait names are provided
-            self._pending_class = cls
-
-    def _assign_to_class(self, cls):
         for n in self.trait_names:
             cls._trait_default_generators[n] = self
-        if hasattr(self, '_pending_class'):
-            # delete the cached class now that it's set
-            delattr(self, '_pending_class')
 
 
 class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
@@ -1069,7 +1063,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 # _CallbackWrappers are not compatible with getargspec and have one argument
                 c = c.__call__
             elif isinstance(c, EventHandler):
-                c = getattr(self, c.name)
+                c = types.MethodType(c.func, self)
 
             offset = 1 if isinstance(c, types.MethodType) else 0
             nargs = len(getargspec(c)[0]) - offset
