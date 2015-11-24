@@ -613,12 +613,21 @@ class TraitType(BaseDescriptor):
 
     def decorate(self, handler_type, *args, **kwargs):
         if len(args)==1 and isinstance(args[0], types.FunctionType):
-            h = handler_type(names=None)(args[0])
+            H = handler_type(names=None)(args[0])
         else:
-            h = handler_type(names=None, *args, **kwargs)
+            H = handler_type(names=None, *args, **kwargs)
 
         new = copy.copy(self)
-        new.event_handlers.append(h)
+
+        handlers = new.event_handlers[:]
+        new.event_handlers = handlers
+        for i in range(len(handlers)):
+            h = handlers[i]
+            one = h.one_per_trait
+            if one and h.__class__ is handler_type:
+                handlers.pop(i)
+
+        new.event_handlers.append(H)
         return new
 
     def default(self, *args, **kwargs):
@@ -840,6 +849,8 @@ class EventHandler(BaseDescriptor):
 
 class TraitEventHandler(EventHandler):
 
+    one_per_trait = False
+
     def _init_call(self, func):
         if self.trait_names is None:
             self.trait_names = (func.__name__,)
@@ -860,6 +871,8 @@ class ObserveHandler(TraitEventHandler):
 
 class ValidateHandler(TraitEventHandler):
 
+    one_per_trait = True
+
     def __init__(self, names):
         self.trait_names = names
 
@@ -870,6 +883,8 @@ class ValidateHandler(TraitEventHandler):
 
 
 class DefaultHandler(TraitEventHandler):
+
+    one_per_trait = True
 
     def __init__(self, names):
         self.trait_names = names
