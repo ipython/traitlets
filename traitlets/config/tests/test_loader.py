@@ -99,6 +99,27 @@ class TestFileCL(TestCase):
         cl = JSONFileConfigLoader(fname, log=log)
         config = cl.load_config()
         self._check_conf(config)
+
+    def test_context_manager(self):
+
+        fd, fname = mkstemp('.json')
+        f = os.fdopen(fd, 'w')
+        f.write('{}')
+        f.close()
+
+        cl = JSONFileConfigLoader(fname, log=log)
+
+        value = 'context_manager'
+
+        with cl as c:
+            c.MyAttr.value = value
+
+        self.assertEqual(cl.config.MyAttr.value, value)
+
+        # check that another loader does see the change
+        cl2 = JSONFileConfigLoader(fname, log=log)
+        self.assertEqual(cl.config.MyAttr.value, value)
+
     
     def test_collision(self):
         a = Config()
