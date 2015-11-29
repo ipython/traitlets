@@ -90,7 +90,7 @@ class TraitError(Exception):
 #-----------------------------------------------------------------------------
 
 
-def class_of( object ):
+def class_of(object):
     """ Returns a string containing the class name of an object with the
     correct indefinite article ('a' or 'an') preceding it (e.g., 'an Image',
     'a PlotValue').
@@ -101,7 +101,7 @@ def class_of( object ):
     return add_article( object.__class__.__name__ )
 
 
-def add_article( name ):
+def add_article(name):
     """ Returns a string containing the correct indefinite article ('a' or 'an')
     prefixed to the specified string.
     """
@@ -670,16 +670,16 @@ class MetaHasDescriptors(type):
     def __init__(cls, name, bases, classdict):
         """Finish initializing the HasDescriptors class."""
         super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
-        cls.setup_class()
+        cls.setup_class(classdict)
 
-    def setup_class(cls):
+    def setup_class(cls, classdict):
         """Setup descriptor instance on the class
 
         This sets the :attr:`this_class` and :attr:`name` attributes of each
         BaseDescriptor in the class dict of the newly created ``cls`` before
         calling their :attr:`class_init` method.
         """
-        for k, v in iteritems(cls.__dict__.copy()):
+        for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
 
@@ -687,9 +687,9 @@ class MetaHasDescriptors(type):
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def setup_class(cls):
+    def setup_class(cls, classdict):
         cls._trait_default_generators = {}
-        super(MetaHasTraits, cls).setup_class()
+        super(MetaHasTraits, cls).setup_class(classdict)
 
 
 def observe(*names, **kwargs):
