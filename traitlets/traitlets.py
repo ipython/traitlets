@@ -90,7 +90,7 @@ class TraitError(Exception):
 #-----------------------------------------------------------------------------
 
 
-def class_of ( object ):
+def class_of(object):
     """ Returns a string containing the class name of an object with the
     correct indefinite article ('a' or 'an') preceding it (e.g., 'an Image',
     'a PlotValue').
@@ -101,7 +101,7 @@ def class_of ( object ):
     return add_article( object.__class__.__name__ )
 
 
-def add_article ( name ):
+def add_article(name):
     """ Returns a string containing the correct indefinite article ('a' or 'an')
     prefixed to the specified string.
     """
@@ -302,6 +302,7 @@ dlink = directional_link
 # Base Descriptor Class 
 #-----------------------------------------------------------------------------
 
+
 class BaseDescriptor(object):
     """Base descriptor class
 
@@ -324,15 +325,18 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
-    def class_init(self, cls):
+    def class_init(self, cls, name):
         """Part of the initialization which may depend on the underlying
         HasDescriptors class.
 
         It is typically overloaded for specific types.
 
-        This method is called by :meth:`MetaHasDescriptors.__init__`.
+        This method is called by :meth:`MetaHasDescriptors.__init__`
+        passing the class (`cls`) and `name` under which the descriptor
+        has been assigned.
         """
-        pass
+        self.this_class = cls
+        self.name = name
 
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
@@ -650,52 +654,42 @@ class MetaHasDescriptors(type):
     """
 
     def __new__(mcls, name, bases, classdict):
-        """Create the HasDescriptors class.
-
-        This sets :attr:`name` attribute of each descriptor in the class dict.
-        """
+        """Create the HasDescriptors class."""
         for k, v in iteritems(classdict):
-            if isinstance(v, BaseDescriptor):
-                v.name = k
-
             # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
-            elif inspect.isclass(v):
-                if issubclass(v, TraitType):
-                    warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
-                         DeprecationWarning, stacklevel=2)
-                    vinst = v()
-                    vinst.name = k
-                    classdict[k] = vinst
+            if inspect.isclass(v) and issubclass(v, TraitType):
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                     DeprecationWarning, stacklevel=2)
+                classdict[k] = v()
             # ----------------------------------------------------------------
 
         return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
-        """Finish initializing the HasDescriptors class.
+        """Finish initializing the HasDescriptors class."""
+        super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
+        cls.setup_class(classdict)
 
-        This sets the :attr:`this_class` attribute of each BaseDescriptor in the
-        class dict to the newly created class ``cls``.
+    def setup_class(cls, classdict):
+        """Setup descriptor instance on the class
+
+        This sets the :attr:`this_class` and :attr:`name` attributes of each
+        BaseDescriptor in the class dict of the newly created ``cls`` before
+        calling their :attr:`class_init` method.
         """
         for k, v in iteritems(classdict):
             if isinstance(v, BaseDescriptor):
-                v.this_class = cls
-        cls.setup_class()
-        super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
-
-    def setup_class(cls):
-        for k, v in iteritems(cls.__dict__):
-            if isinstance(v, BaseDescriptor):
-                v.class_init(cls)
+                v.class_init(cls, k)
 
 
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def setup_class(cls):
+    def setup_class(cls, classdict):
         cls._trait_default_generators = {}
-        super(MetaHasTraits, cls).setup_class()
+        super(MetaHasTraits, cls).setup_class(classdict)
 
 
 def observe(*names, **kwargs):
@@ -830,7 +824,8 @@ class DefaultHandler(EventHandler):
     def __init__(self, name):
         self.trait_name = name
 
-    def class_init(self, cls):
+    def class_init(self, cls, name):
+        super(DefaultHandler, self).class_init(cls, name)
         cls._trait_default_generators[self.trait_name] = self
 
 
@@ -1604,11 +1599,11 @@ class Union(TraitType):
         self.default_value = self.trait_types[0].default_value
         super(Union, self).__init__(**metadata)
 
-    def class_init(self, cls):
+    def class_init(self, cls, name):
         for trait_type in self.trait_types:
             trait_type.this_class = self.this_class
-            trait_type.class_init(cls)
-        super(Union, self).class_init(cls)
+            trait_type.class_init(cls, name)
+        super(Union, self).class_init(cls, name)
 
     def instance_init(self, obj):
         for trait_type in self.trait_types:
@@ -2033,11 +2028,11 @@ class Container(Instance):
                 validated.append(v)
         return self.klass(validated)
 
-    def class_init(self, cls):
+    def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
-            self._trait.class_init(cls)
-        super(Container, self).class_init(cls)
+            self._trait.class_init(cls, name)
+        super(Container, self).class_init(cls, name)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
@@ -2225,12 +2220,12 @@ class Tuple(Container):
                 validated.append(v)
         return tuple(validated)
 
-    def class_init(self, cls):
+    def class_init(self, cls, name):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.this_class = self.this_class
-                trait.class_init(cls)
-        super(Container, self).class_init(cls)
+                trait.class_init(cls, name)
+        super(Container, self).class_init(cls, name)
 
     def instance_init(self, obj):
         for trait in self._traits:
@@ -2329,15 +2324,15 @@ class Dict(Instance):
                 validated[key] = v
         return self.klass(validated)
 
-    def class_init(self, cls):
+    def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
             self._trait.this_class = self.this_class
-            self._trait.class_init(cls)
+            self._trait.class_init(cls, name)
         if self._traits is not None:
             for trait in self._traits.values():
                 trait.this_class = self.this_class
-                trait.class_init(cls)
-        super(Dict, self).class_init(cls)
+                trait.class_init(cls, name)
+        super(Dict, self).class_init(cls, name)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
