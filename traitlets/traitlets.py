@@ -1601,7 +1601,7 @@ class Union(TraitType):
 
     def class_init(self, cls, name):
         for trait_type in self.trait_types:
-            trait_type.class_init(cls, name)
+            trait_type.class_init(cls, None)
         super(Union, self).class_init(cls, name)
 
     def instance_init(self, obj):
@@ -2034,7 +2034,7 @@ class Container(Instance):
 
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, name)
+            self._trait.class_init(cls, None)
         super(Container, self).class_init(cls, name)
 
     def instance_init(self, obj):
@@ -2226,7 +2226,7 @@ class Tuple(Container):
     def class_init(self, cls, name):
         for trait in self._traits:
             if isinstance(trait, TraitType):
-                trait.class_init(cls, name)
+                trait.class_init(cls, None)
         super(Container, self).class_init(cls, name)
 
     def instance_init(self, obj):
@@ -2328,10 +2328,10 @@ class Dict(Instance):
 
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, name)
+            self._trait.class_init(cls, None)
         if self._traits is not None:
             for trait in self._traits.values():
-                trait.class_init(cls, name)
+                trait.class_init(cls, None)
         super(Dict, self).class_init(cls, name)
 
     def instance_init(self, obj):
