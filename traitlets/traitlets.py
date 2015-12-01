@@ -1610,14 +1610,19 @@ class Union(TraitType):
         super(Union, self).instance_init(obj)
 
     def validate(self, obj, value):
-        for trait_type in self.trait_types:
-            try:
-                v = trait_type._validate(obj, value)
-                self.metadata = trait_type.metadata
-                return v
-            except TraitError:
-                continue
+        obj._cross_validation_lock = True
+        try:
+            for trait_type in self.trait_types:
+                try:
+                    v = trait_type._validate(obj, value)
+                    self.metadata = trait_type.metadata
+                    return v
+                except TraitError:
+                    continue
+        finally:
+            obj._cross_validation_lock = False
         self.error(obj, value)
+
 
     def __or__(self, other):
         if isinstance(other, Union):
