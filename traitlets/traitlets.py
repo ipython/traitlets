@@ -1601,7 +1601,6 @@ class Union(TraitType):
 
     def class_init(self, cls, name):
         for trait_type in self.trait_types:
-            trait_type.this_class = self.this_class
             trait_type.class_init(cls, name)
         super(Union, self).class_init(cls, name)
 
@@ -2030,7 +2029,6 @@ class Container(Instance):
 
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
-            self._trait.this_class = self.this_class
             self._trait.class_init(cls, name)
         super(Container, self).class_init(cls, name)
 
@@ -2223,7 +2221,6 @@ class Tuple(Container):
     def class_init(self, cls, name):
         for trait in self._traits:
             if isinstance(trait, TraitType):
-                trait.this_class = self.this_class
                 trait.class_init(cls, name)
         super(Container, self).class_init(cls, name)
 
@@ -2326,11 +2323,9 @@ class Dict(Instance):
 
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
-            self._trait.this_class = self.this_class
             self._trait.class_init(cls, name)
         if self._traits is not None:
             for trait in self._traits.values():
-                trait.this_class = self.this_class
                 trait.class_init(cls, name)
         super(Dict, self).class_init(cls, name)
 
