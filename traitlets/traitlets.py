@@ -805,7 +805,6 @@ class ObserveHandler(EventHandler):
         self.type = type
 
     def instance_init(self, inst):
-        meth = types.MethodType(self.func, inst)
         inst.observe(self, self.trait_names, type=self.type)
 
 
@@ -815,7 +814,6 @@ class ValidateHandler(EventHandler):
         self.trait_names = names
 
     def instance_init(self, inst):
-        meth = types.MethodType(self.func, inst)
         inst._register_validator(self, self.trait_names)
 
 
