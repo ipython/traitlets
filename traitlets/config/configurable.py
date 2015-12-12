@@ -186,18 +186,18 @@ class Configurable(HasTraits):
         # merge new config
         self.config.merge(config)
         # unconditionally notify trait change, which triggers load of new config
-        self._notify_change({
+        self.notify_change({
             'name': 'config',
             'old': oldconfig,
             'new': self.config,
             'owner': self,
-            'type': 'trait_change', 
+            'type': 'change',
         })
 
     @classmethod
     def class_get_help(cls, inst=None):
         """Get the help string for this class in ReST format.
-        
+
         If `inst` is given, it's current trait values will be used in place of
         class defaults.
         """

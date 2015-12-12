@@ -914,7 +914,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             return
         else:
             cache = {}
-            _notify_change = self._notify_change
+            notify_change = self.notify_change
 
             def compress(past_changes, change):
                 """Merges the provided change with the last if possible."""
@@ -933,9 +933,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 cache[name] = compress(cache.get(name), change)
 
             try:
-                # Replace _notify_change with `hold`, caching and compressing
+                # Replace notify_change with `hold`, caching and compressing
                 # notifications, disable cross validation and yield.
-                self._notify_change = hold
+                self.notify_change = hold
                 self._cross_validation_lock = True
                 yield
                 # Cross validate final values when context is released.
@@ -945,7 +945,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                     setattr(self, name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
-                self._notify_change = lambda x: None
+                self.notify_change = lambda x: None
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
@@ -957,23 +957,23 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 cache = {}
                 raise e
             finally:
-                # Reset the _notify_change to original value, enable cross-validation
+                # Reset the notify_change to original value, enable cross-validation
                 # and fire resulting change notifications.
-                self._notify_change = _notify_change
+                self.notify_change = notify_change
                 self._cross_validation_lock = False
 
-                if isinstance(_notify_change, types.MethodType):
-                    # Presence of the _notify_change method
+                if isinstance(notify_change, types.MethodType):
+                    # Presence of the notify_change method
                     # on __dict__ can cause memory leaks
                     # and prevents pickleability
-                    self.__dict__.pop('_notify_change')
+                    self.__dict__.pop('notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
-                        self._notify_change(change)
+                        self.notify_change(change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self._notify_change({
+        self.notify_change({
             'name': name,
             'old': old_value,
             'new': new_value,
@@ -981,7 +981,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             'type': 'change',
         })
 
-    def _notify_change(self, change):
+    def notify_change(self, change):
         name, type = change['name'], change['type']
 
         callables = []
