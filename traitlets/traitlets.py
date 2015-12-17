@@ -1211,13 +1211,11 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         if len(metadata) == 0:
             return traits
 
-        for meta_name, meta_eval in metadata.items():
-            if type(meta_eval) is not types.FunctionType:
-                metadata[meta_name] = _SimpleTest(meta_eval)
-
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
+                if type(meta_eval) is not types.FunctionType:
+                    meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
@@ -1263,13 +1261,11 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         if len(metadata) == 0:
             return traits
 
-        for meta_name, meta_eval in metadata.items():
-            if type(meta_eval) is not types.FunctionType:
-                metadata[meta_name] = _SimpleTest(meta_eval)
-
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
+                if type(meta_eval) is not types.FunctionType:
+                    meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
