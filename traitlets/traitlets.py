@@ -50,7 +50,7 @@ try:
     ClassTypes = (ClassType, type)
 except:
     ClassTypes = (type,)
-from warnings import warn
+from warnings import warn, warn_explicit
 
 from ipython_genutils import py3compat
 from ipython_genutils.py3compat import iteritems, string_types
@@ -89,6 +89,29 @@ class TraitError(Exception):
 # Utilities
 #-----------------------------------------------------------------------------
 
+
+def _deprecated_method(method, cls, method_name, msg):
+    """Show deprecation warning about a magic method definition.
+    
+    Uses warn_explicit to bind warning to method definition instead of triggering code,
+    which isn't relevant.
+    """
+    warn_msg = "{classname}.{method_name} is deprecated: {msg}".format(
+        classname=cls.__name__, method_name=method_name, msg=msg
+    )
+    
+    for parent in inspect.getmro(cls):
+        if method_name in parent.__dict__:
+            cls = parent
+            break
+    try:
+        fname = inspect.getsourcefile(method) or "<unknown>"
+        lineno = inspect.getsourcelines(method)[1] or 0
+    except TypeError as e:
+        # Failed to inspect for some reason
+        warn(warn_msg + ('\n(inspection failed)' % e), DeprecationWarning)
+    else:
+        warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
 def class_of(object):
     """ Returns a string containing the class name of an object with the
@@ -387,7 +410,7 @@ class TraitType(BaseDescriptor):
             )
 
         if len(metadata) > 0:
-            warn("metadata %s was set from the constructor.  Metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')"%(metadata,),
+            warn("metadata %s was set from the constructor.  Metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')" % (metadata,),
                  DeprecationWarning, stacklevel=2)
             if len(self.metadata) > 0:
                 self.metadata = self.metadata.copy()
@@ -451,9 +474,9 @@ class TraitType(BaseDescriptor):
             meth_name = '_%s_default' % self.name
             for cls in mro[:mro.index(self.this_class) + 1]:
                 if meth_name in cls.__dict__:
-                    warn("_[traitname]_default handlers are deprecated: use default"
-                         " decorator instead", DeprecationWarning, stacklevel=2)
-                    return getattr(obj, meth_name)
+                    method = getattr(obj, meth_name)
+                    _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
+                    return method
 
         return getattr(self, 'make_dynamic_default', None)
 
@@ -538,9 +561,10 @@ class TraitType(BaseDescriptor):
             proposal = {'trait': self, 'value': value, 'owner': obj}
             value = obj._trait_validators[self.name](obj, proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
-            warn("_[traitname]_validate handlers are deprecated: use validate"
-                " decorator instead", DeprecationWarning, stacklevel=2)
-            cross_validate = getattr(obj, '_%s_validate' % self.name)
+            meth_name = '_%s_validate' % self.name
+            cross_validate = getattr(obj, meth_name)
+            _deprecated_method(cross_validate, obj.__class__, meth_name,
+                "use @validate decorator instead.")
             value = cross_validate(value, self)
         return value
 
@@ -995,9 +1019,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         if hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
-                warn("_[traitname]_changed handlers are deprecated: use observe"
-                    " and unobserve instead", DeprecationWarning, stacklevel=2)
-                cb = getattr(self, '_%s_changed' % name)
+                _deprecated_method(class_value, self.__class__, magic_name,
+                    "use @observe and @unobserve instead.")
+                cb = getattr(self, magic_name)
                 # Only append the magic method if it was not manually registered
                 if cb not in callables:
                     callables.append(_callback_wrapper(cb))
@@ -1174,8 +1198,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             if hasattr(self, magic_name):
                 class_value = getattr(self.__class__, magic_name)
                 if not isinstance(class_value, ValidateHandler):
-                    warn("_[traitname]_validate handlers are deprecated: use validate"
-                         " decorator instead", DeprecationWarning, stacklevel=2)
+                    _deprecated_method(class_value, self.__class, magic_name,
+                        "use @validate decorator instead.")
         for name in names:
             self._trait_validators[name] = handler
 
