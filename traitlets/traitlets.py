@@ -519,6 +519,11 @@ class TraitType(BaseDescriptor):
             obj._notify_trait(self.name, old_value, new_value)
 
     def __set__(self, obj, value):
+        """Set the value of the trait by self.name for the instance.
+
+        Values pass through a validation stage where errors are raised when
+        impropper types, or types that cannot be coerced, are encountered.
+        """
         if self.read_only:
             raise TraitError('The "%s" trait is read-only.' % self.name)
         else:
@@ -721,7 +726,7 @@ def validate(*names):
     The proposal dictionary must hold the following keys:
     * ``owner`` : the HasTraits instance
     * ``value`` : the proposed value for the modified trait attribute
-    * ``name`` : the name of the modified trait attribute.
+    * ``trait`` : the TraitType instance associated with the attribute
 
     Parameters
     ----------
@@ -787,6 +792,7 @@ class EventHandler(BaseDescriptor):
         return self
 
     def __call__(self, *args, **kwargs):
+        """Pass `*args` and `**kwargs` to the handler's funciton if it exists."""
         if hasattr(self, 'func'):
             return self.func(*args, **kwargs)
         else:
@@ -1161,7 +1167,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             with the following keys:
                 * ``owner`` : the HasTraits instance
                 * ``value`` : the proposed value for the modified trait attribute
-                * ``name`` : the name of the modified trait attribute.
+                * ``trait`` : the TraitType instance associated with the attribute
         names : List of strings
             The names of the traits that should be cross-validated
         """
