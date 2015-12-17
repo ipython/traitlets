@@ -6,11 +6,10 @@
 
 from __future__ import print_function
 
-import logging
 from copy import deepcopy
 
 from .loader import Config, LazyConfigValue
-from traitlets.traitlets import HasTraits, Instance
+from traitlets.traitlets import HasTraits, Instance, observe, default
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 from ipython_genutils.py3compat import iteritems
 
@@ -162,8 +161,8 @@ class Configurable(HasTraits):
                         self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean one of : `{matches}`"
                                 .format(option=name, klass=type(self).__name__, matches=' ,'.join(matches)))
 
-
-    def _config_changed(self, name, old, new):
+    @observe('config')
+    def _config_changed(self, change):
         """Update all the class traits having ``config=True`` in metadata.
 
         For any class trait with a ``config`` metadata attribute that is
@@ -177,7 +176,7 @@ class Configurable(HasTraits):
         # classes that are Configurable subclasses.  This starts with Configurable
         # and works down the mro loading the config for each section.
         section_names = self.section_names()
-        self._load_config(new, traits=traits, section_names=section_names)
+        self._load_config(change['new'], traits=traits, section_names=section_names)
 
     def update_config(self, config):
         """Update config and trigger reload of config via trait events"""
@@ -329,6 +328,7 @@ class LoggingConfigurable(Configurable):
     """
 
     log = Instance('logging.Logger')
+    @default('log')
     def _log_default(self):
         from traitlets import log
         return log.get_logger()
