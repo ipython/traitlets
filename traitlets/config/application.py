@@ -22,7 +22,7 @@ from traitlets.config.loader import (
 )
 
 from traitlets.traitlets import (
-    Unicode, List, Enum, Dict, Instance, TraitError
+    Unicode, List, Enum, Dict, Instance, TraitError, observe, default
 )
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
@@ -177,7 +177,7 @@ class Application(SingletonConfigurable):
         _log_formatter = self._log_formatter_cls(fmt=new, datefmt=self.log_datefmt)
         _log_handler.setFormatter(_log_formatter)
     
-
+    @default('log')
     def _log_default(self):
         """Start logging for this application.
 
@@ -215,12 +215,14 @@ class Application(SingletonConfigurable):
     # this must be a dict of two-tuples, the first element being the Config/dict
     # and the second being the help string for the flag
     flags = Dict()
-    def _flags_changed(self, name, old, new):
+    @observe('flags')
+    def _flags_changed(self, change):
         """ensure flags dict is valid"""
-        for key,value in iteritems(new):
-            assert len(value) == 2, "Bad flag: %r:%s"%(key,value)
-            assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s"%(key,value)
-            assert isinstance(value[1], string_types), "Bad flag: %r:%s"%(key,value)
+        new = change['new']
+        for key, value in new.items():
+            assert len(value) == 2, "Bad flag: %r:%s" % (key, value)
+            assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s" % (key, value)
+            assert isinstance(value[1], string_types), "Bad flag: %r:%s" % (key, value)
 
 
     # subcommands for launching other applications
@@ -242,11 +244,12 @@ class Application(SingletonConfigurable):
         # options and config files.
         if self.__class__ not in self.classes:
             self.classes.insert(0, self.__class__)
-
-    def _config_changed(self, name, old, new):
-        SingletonConfigurable._config_changed(self, name, old, new)
+    
+    @observe('config')
+    def _config_changed(self, change):
+        super(Application, self)._config_changed(change)
         self.log.debug('Config changed:')
-        self.log.debug(repr(new))
+        self.log.debug(repr(change['new']))
 
     @catch_config_error
     def initialize(self, argv=None):
