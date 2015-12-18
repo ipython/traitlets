@@ -1045,21 +1045,11 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             # Bound methods have an additional 'self' argument.
 
             if isinstance(c, _CallbackWrapper):
-                # _CallbackWrappers are not compatible with getargspec and have one argument
                 c = c.__call__
             elif isinstance(c, EventHandler):
                 c = getattr(self, c.name)
-
-            offset = 1 if isinstance(c, types.MethodType) else 0
-            nargs = len(getargspec(c)[0]) - offset
-
-            if nargs == 0:
-                c()
-            elif nargs == 1:
-                c(change)
-            else:
-                raise TraitError('an observe change callback '
-                                    'must have 0-1 arguments.')
+            
+            c(change)
 
     def _add_notifiers(self, handler, name, type):
         if name not in self._trait_notifiers:
