@@ -631,7 +631,7 @@ class TestObserveDecorator(TestCase):
                 super(A, self).__init__(**kwargs)
                 self.observe(self.listener1, ['a'])
             
-            def listener1(self):
+            def listener1(self, change):
                 self.b += 1
 
         class B(A):
@@ -643,11 +643,11 @@ class TestObserveDecorator(TestCase):
                 super(B, self).__init__(**kwargs)
                 self.observe(self.listener2)
             
-            def listener2(self):
+            def listener2(self, change):
                 self.c += 1
             
             @observe('a')
-            def _a_changed(self):
+            def _a_changed(self, change):
                 self.d += 1
 
         b = B()
