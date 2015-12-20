@@ -11,7 +11,6 @@ import logging
 import os
 import re
 import sys
-from copy import deepcopy
 from collections import defaultdict
 
 from decorator import decorator
