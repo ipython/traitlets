@@ -747,6 +747,38 @@ def observe(*names, **kwargs):
     """
     return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
+
+def observe_compat(func):
+    """Backward-compatibility shim decorator for observers
+    
+    Use with:
+    
+    @observe('name')
+    @observe_compat
+    def _foo_changed(self, change):
+        ...
+    
+    With this, `super()._foo_changed(self, name, old, new)` in subclasses will still work.
+    Allows adoption of new observer API without breaking subclasses that override and super.
+    """
+    def compatible_observer(self, change_or_name, old=Undefined, new=Undefined):
+        if isinstance(change_or_name, dict):
+            change = change_or_name
+        else:
+            clsname = self.__class__.__name__
+            warn("A parent of %s._%s_changed has adopted the new @observe(change) API" % (
+                clsname, change_or_name), DeprecationWarning)
+            change = {
+                'type': 'change',
+                'old': old,
+                'new': new,
+                'name': change_or_name,
+                'owner': self,
+            }
+        return func(self, change)
+    return compatible_observer
+
+
 def validate(*names):
     """A decorator to register cross validator of HasTraits object's state
     when a Trait is set.
@@ -772,6 +804,7 @@ def validate(*names):
     commute.
     """
     return ValidateHandler(names)
+
 
 def default(name):
     """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.

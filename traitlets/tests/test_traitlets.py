@@ -21,7 +21,8 @@ from traitlets import (
     Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default
+    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
+    observe_compat,
 )
 from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
@@ -2056,3 +2057,57 @@ def test_default_value_repr():
     nt.assert_equal(C.n.default_value_repr(), '0')
     nt.assert_equal(C.lis.default_value_repr(), '[]')
     nt.assert_equal(C.d.default_value_repr(), '{}')
+
+
+class TransitionalClass(HasTraits):
+    
+    d = Any()
+    @default('d')
+    def _d_default(self):
+        return TransitionalClass
+
+    parent_super = False
+    calls_super = Integer(0)
+    
+    @default('calls_super')
+    def _calls_super_default(self):
+        return -1
+    
+    @observe('calls_super')
+    @observe_compat
+    def _calls_super_changed(self, change):
+        self.parent_super = change
+    
+    parent_override = False
+    overrides = Integer(0)
+    
+    @observe('overrides')
+    @observe_compat
+    def _overrides_changed(self, change):
+        self.parent_override = change
+
+
+class SubClass(TransitionalClass):
+    def _d_default(self):
+        return SubClass
+    
+    subclass_super = False
+    def _calls_super_changed(self, name, old, new):
+        self.subclass_super = True
+        super(SubClass, self)._calls_super_changed(name, old, new)
+    
+    subclass_override = False
+    def _overrides_changed(self, name, old, new):
+        self.subclass_override = True
+
+
+def test_subclass_compat():
+    obj = SubClass()
+    obj.calls_super = 5
+    nt.assert_true(obj.parent_super)
+    nt.assert_true(obj.subclass_super)
+    obj.overrides = 5
+    nt.assert_true(obj.subclass_override)
+    nt.assert_false(obj.parent_override)
+    nt.assert_is(obj.d, SubClass)
+
