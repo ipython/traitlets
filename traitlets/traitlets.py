@@ -746,7 +746,9 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', 'change'))
+    tags = kwargs.get('tags', {})
+    type = kwargs.get('type', 'change')
+    return ObserveHandler(names, type=type, tags=tags)
 
 
 def observe_compat(func):
@@ -869,12 +871,14 @@ class EventHandler(BaseDescriptor):
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names, type):
+    def __init__(self, names, type, tags):
         self.trait_names = names
+        self.tags = tags
         self.type = type
 
     def instance_init(self, inst):
-        inst.observe(self, self.trait_names, type=self.type)
+        inst.observe(self, self.trait_names,
+                     tags=self.tags, type=self.type)
 
 
 class ValidateHandler(EventHandler):
@@ -934,7 +938,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     def setup_instance(self, *args, **kwargs):
         self._trait_values = {}
-        self._trait_notifiers = {}
+        self._trait_notifiers = {'names': {}, 'tags': {}}
         self._trait_validators = {}
         super(HasTraits, self).setup_instance(*args, **kwargs)
 
@@ -975,7 +979,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
-        d['_trait_notifiers'] = {}
+        d['_trait_notifiers'] = {'names': {}, 'tags': {}}
         d['_trait_validators'] = {}
         return d
 
@@ -1098,10 +1102,25 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         name, type = change['name'], change['type']
 
         callables = []
-        callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
+        callables.extend(self._trait_notifiers['names'].get(name, {}).get(type, []))
+        callables.extend(self._trait_notifiers['names'].get(name, {}).get(All, []))
+        callables.extend(self._trait_notifiers['names'].get(All, {}).get(type, []))
+        callables.extend(self._trait_notifiers['names'].get(All, {}).get(All, []))
+
+        trait = getattr(self.__class__, name)
+        for k, v in trait.metadata.items():
+            try:
+                for n in self._trait_notifiers['tags'][k][v][type]:
+                    if n not in callables:
+                        callables.append(n)
+            except KeyError:
+                pass
+            try:
+                for n in self._trait_notifiers['tags'][k][v][All]:
+                    if n not in callables:
+                        callables.append(n)
+            except KeyError:
+                pass
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -1127,26 +1146,62 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             
             c(change)
 
-    def _add_notifiers(self, handler, name, type):
-        if name not in self._trait_notifiers:
-            nlist = []
-            self._trait_notifiers[name] = {type: nlist}
-        else:
-            if type not in self._trait_notifiers[name]:
+    def _add_notifiers(self, handler, name, tags, type):
+        if name:
+            if name not in self._trait_notifiers['names']:
                 nlist = []
-                self._trait_notifiers[name][type] = nlist
+                self._trait_notifiers['names'][name] = {type: nlist}
             else:
-                nlist = self._trait_notifiers[name][type]
-        if handler not in nlist:
-            nlist.append(handler)
+                if type not in self._trait_notifiers['names'][name]:
+                    nlist = []
+                    self._trait_notifiers['names'][name][type] = nlist
+                else:
+                    nlist = self._trait_notifiers['names'][name][type]
+            if handler not in nlist:
+                nlist.append(handler)
 
-    def _remove_notifiers(self, handler, name, type):
+        if tags:
+            tagged = self._trait_notifiers['tags']
+            for k, v in tags.items():
+                if k in tagged and v in tagged[k]:
+                    d = tagged[k][v]
+                else:
+                    d = {}
+                    if k in tagged:
+                        tagged[k][v] = d
+                    else:
+                        tagged[k] = {v: d}
+            if type not in d:
+                nlist = []
+                d[type] = nlist
+            else:
+                nlist = d[type]
+            if handler not in nlist:
+                nlist.append(handler)
+
+    def _remove_notifiers(self, handler, name, tags, type):
         try:
             if handler is None:
-                del self._trait_notifiers[name][type]
+                del self._trait_notifiers['names'][name][type]
             else:
-                self._trait_notifiers[name][type].remove(handler)
+                self._trait_notifiers['names'][name][type].remove(handler)
+            if name is not All:
+                trait = getattr(self.__class__, name, None)
+                if trait is not None:
+                    for k, v in trait.metadata.items():
+                        if handler is None:
+                            del self._trait_notifiers['tags'][k][v]
+                        else:
+                            self._trait_notifiers['tags'][k][v].remove(handler)
+                if tags:
+                    for k, v in tags.items():
+                        if handler is None:
+                            del self._trait_notifiers['tags'][k][v]
+                        else:
+                            self._trait_notifiers['tags'][k][v].remove(handler)
         except KeyError:
+            pass
+        except AttributeError:
             pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
@@ -1186,7 +1241,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type='change'):
+    def observe(self, handler, names=None, tags=None, type='change'):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1204,19 +1259,30 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             * ``old`` : the old value of the modified trait attribute
             * ``new`` : the new value of the modified trait attribute
             * ``name`` : the name of the modified trait attribute.
-        names : list, str, All
+        names : list, str, All, None
+            If no tags and no names are given, ``names`` will defaults to All.
             If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
+        tags: dict
+            Allows the handler to apply to traits which have been tagged with
+            metadata that match that tags given here. Tags are dyanmic, so if
+            trait metadata changes, the handlers which they are associated with
+            will as well.
         type : str, All (default: 'change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._add_notifiers(handler, n, type)
+        if names is None and tags is not None:
+            self._add_notifiers(handler, None, tags, type)
+        else:
+            if names is None and tags is None:
+                names = All
+            names = parse_notifier_name(names)
+            for n in names:
+                self._add_notifiers(handler, n, tags, type)
 
-    def unobserve(self, handler, names=All, type='change'):
+    def unobserve(self, handler, names=All, tags=None, type='change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -1235,7 +1301,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         """
         names = parse_notifier_name(names)
         for n in names:
-            self._remove_notifiers(handler, n, type)
+            self._remove_notifiers(handler, n, tags, type)
 
     def unobserve_all(self, name=All):
         """Remove trait change handlers of any type for the specified name.

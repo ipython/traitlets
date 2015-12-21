@@ -437,10 +437,10 @@ class TestHasTraitsNotify(TestCase):
         a.on_trait_change(callback4, 'a')
         a.a = 100000
         self.assertEqual(self.cb,('a',10000,100000,a))
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 1)
+        self.assertEqual(len(a._trait_notifiers['names']['a']['change']), 1)
         a.on_trait_change(callback4, 'a', remove=True)
 
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 0)
+        self.assertEqual(len(a._trait_notifiers['names']['a']['change']), 0)
 
     def test_notify_only_once(self):
 
@@ -633,10 +633,10 @@ class TestObserveDecorator(TestCase):
         a.a = 100
         change = change_dict('a', 10, 100, a, 'change')
         self.assertEqual(self.cb, change)
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 1)
+        self.assertEqual(len(a._trait_notifiers['names']['a']['change']), 1)
         a.unobserve(callback1, 'a')
 
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 0)
+        self.assertEqual(len(a._trait_notifiers['names']['a']['change']), 0)
 
     def test_notify_only_once(self):
 
@@ -676,6 +676,46 @@ class TestObserveDecorator(TestCase):
         b.a += 1
         self.assertEqual(b.b, b.c)
         self.assertEqual(b.b, b.d)
+
+    def test_observe_decorator_via_tags(self):
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(test=True)
+
+            @observe(tags={'test':True})
+            def _test_observer(self, change):
+                self.foo = change['new']
+
+        a = A()
+        a.bar = 1
+        self.assertEqual(a.foo, a.bar)
+
+        a.add_traits(baz=Int().tag(test=True))
+        a.baz = 2
+        self.assertEqual(a.foo, a.baz)
+
+    def test_observe_via_tags(self):
+
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(test=True)
+
+        a = A()
+
+        def _test_observer(change):
+            a.foo = change['new']
+
+        a.observe(_test_observer, tags={'test':True})
+        a.bar = 1
+        self.assertEqual(a.foo, a.bar)
+
+        a.add_traits(baz=Int().tag(test=True))
+        a.baz = 2
+        self.assertEqual(a.foo, a.baz)
+
+        a.unobserve(_test_observer)
+        a.bar = 3
+        self.assertNotEqual(a.bar, a.baz)
 
 
 class TestHasTraits(TestCase):
