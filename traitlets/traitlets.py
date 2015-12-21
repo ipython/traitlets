@@ -179,6 +179,23 @@ def parse_notifier_name(names):
         return names
 
 
+class _TaggedNotifierContainer:
+
+    def __init__(self, value):
+        self.notifiers = []
+        if isinstance(value, types.FunctionType):
+            self.eval = True
+        else:
+            self.eval = False
+        self.value = value
+
+    def __eq__(self, other):
+        if not self.eval or isinstance(other, types.FunctionType):
+            return self.value == other
+        else:
+            return self.value(other)
+
+
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
     def __call__ ( self, test  ):
@@ -1110,17 +1127,19 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         trait = getattr(self.__class__, name)
         for k, v in trait.metadata.items():
             try:
-                for n in self._trait_notifiers['tags'][k][v][type]:
-                    if n not in callables:
-                        callables.append(n)
+                if type in self._trait_notifiers['tags']:
+                    d = self._trait_notifiers['tags'][type]
+                else:
+                    d = self._trait_notifiers['tags'][All]
+                contianer = d[k][d[k].index(v)]
             except KeyError:
                 pass
-            try:
-                for n in self._trait_notifiers['tags'][k][v][All]:
-                    if n not in callables:
-                        callables.append(n)
-            except KeyError:
+            except ValueError:
                 pass
+            else:
+                for c in contianer.notifiers:
+                    if c not in callables:
+                        callables.append(c)
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -1162,22 +1181,25 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         if tags:
             tagged = self._trait_notifiers['tags']
-            for k, v in tags.items():
-                if k in tagged and v in tagged[k]:
-                    d = tagged[k][v]
-                else:
-                    d = {}
-                    if k in tagged:
-                        tagged[k][v] = d
-                    else:
-                        tagged[k] = {v: d}
-            if type not in d:
-                nlist = []
-                d[type] = nlist
+            if type in tagged:
+                d = tagged[type]
             else:
-                nlist = d[type]
-            if handler not in nlist:
-                nlist.append(handler)
+                d = {}
+                tagged[type] = d
+            for k, v in tags.items():
+                if k in d:
+                    l = d[k]
+                else:
+                    l = []
+                    d[k] = l
+                if v in l:
+                    i = l.index(v)
+                    c = l[i]
+                else:
+                    c = _TaggedNotifierContainer(v)
+                    l.append(c)
+            if handler not in c.notifiers:
+                c.notifiers.append(handler)
 
     def _remove_notifiers(self, handler, name, tags, type):
         try:
@@ -1185,24 +1207,28 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 del self._trait_notifiers['names'][name][type]
             else:
                 self._trait_notifiers['names'][name][type].remove(handler)
-            if name is not All:
-                trait = getattr(self.__class__, name, None)
-                if trait is not None:
-                    for k, v in trait.metadata.items():
-                        if handler is None:
-                            del self._trait_notifiers['tags'][k][v]
-                        else:
-                            self._trait_notifiers['tags'][k][v].remove(handler)
-                if tags:
-                    for k, v in tags.items():
-                        if handler is None:
-                            del self._trait_notifiers['tags'][k][v]
-                        else:
-                            self._trait_notifiers['tags'][k][v].remove(handler)
         except KeyError:
             pass
-        except AttributeError:
-            pass
+
+        if name is not All:
+            trait = getattr(self.__class__, name, None)
+            if isinstance(trait, TraitType):
+                for k, v in trait.metadata.items():
+                    try:
+                        if type in self._trait_notifiers['tags']:
+                            d = self._trait_notifiers['tags'][type]
+                        else:
+                            d = self._trait_notifiers['tags'][All]
+                        i = d[k].index(v)
+                    except KeyError:
+                        pass
+                    except ValueError:
+                        pass
+                    else:
+                        if hander is None:
+                            d[k].remove(i)
+                        else:
+                            d[k][i].remove(handler)
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
