@@ -9,7 +9,7 @@ from __future__ import print_function
 from copy import deepcopy
 
 from .loader import Config, LazyConfigValue
-from traitlets.traitlets import HasTraits, Instance, observe, default
+from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 from ipython_genutils.py3compat import iteritems
 
@@ -162,6 +162,7 @@ class Configurable(HasTraits):
                                 .format(option=name, klass=type(self).__name__, matches=' ,'.join(matches)))
 
     @observe('config')
+    @observe_compat
     def _config_changed(self, change):
         """Update all the class traits having ``config=True`` in metadata.
 
