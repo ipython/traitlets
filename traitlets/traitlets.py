@@ -471,15 +471,13 @@ class TraitType(BaseDescriptor):
 
             # Only look for default handlers in classes derived from self.this_class.
             mro = type(obj).mro()
+            meth_name = '_%s_default' % self.name
             for cls in mro[:mro.index(self.this_class) + 1]:
                 if hasattr(cls, '_trait_default_generators'):
                     default_handler = cls._trait_default_generators.get(self.name)
                     if default_handler is not None and default_handler.this_class == cls:
                         return types.MethodType(default_handler.func, obj)
 
-            # Handling deprecated magic method
-            meth_name = '_%s_default' % self.name
-            for cls in mro[:mro.index(self.this_class) + 1]:
                 if meth_name in cls.__dict__:
                     method = getattr(obj, meth_name)
                     _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
