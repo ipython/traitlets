@@ -11,7 +11,6 @@ import logging
 import os
 import re
 import sys
-from copy import deepcopy
 from collections import defaultdict
 
 from decorator import decorator
@@ -568,6 +567,7 @@ class Application(SingletonConfigurable):
 
     def exit(self, exit_status=0):
         self.log.debug("Exiting application: %s" % self.name)
+        logging.shutdown()
         sys.exit(exit_status)
 
     @classmethod
