@@ -9,6 +9,7 @@
 
 import pickle
 import re
+import os
 import sys
 from unittest import TestCase
 from ._warnings import expected_warnings
@@ -18,7 +19,7 @@ from nose import SkipTest
 
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
-    Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
+    Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError, Path,
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default
@@ -2056,3 +2057,24 @@ def test_default_value_repr():
     nt.assert_equal(C.n.default_value_repr(), '0')
     nt.assert_equal(C.lis.default_value_repr(), '[]')
     nt.assert_equal(C.d.default_value_repr(), '{}')
+
+def test_path():
+    class C(HasTraits):
+        p = Path()
+    
+    c = C()
+    nt.assert_equal(c.p, [])
+    c.p = os.pathsep.join(['foø', 'bår'])
+    nt.assert_equal(c.p, [u'foø', u'bår'])
+    nt.assert_is_instance(c.p[0], py3compat.unicode_type)
+    p = [u'∂', u'∫≈']
+    c.p = p
+    nt.assert_equal(c.p, p)
+    
+    with nt.assert_raises(TraitError):
+        c.p = [5]
+    
+    with nt.assert_raises(TraitError):
+        c.p = ('a',)
+
+    

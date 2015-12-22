@@ -42,6 +42,7 @@ Inheritance diagram:
 
 import contextlib
 import inspect
+import os
 import re
 import sys
 import types
@@ -2395,3 +2396,29 @@ class CRegExp(TraitType):
             return re.compile(value)
         except:
             self.error(obj, value)
+
+
+class Path(TraitType):
+    """A search-path trait that can be specified as a path string
+    
+    The trait will be a list of text objects, but can be specified as a single path-delimited string.
+    
+    'foo:bar' will be cast to ['foo', 'bar']
+    """
+    
+    default_value = []
+    info_text = 'a list of text paths or a %s-delimited path string' % os.pathsep
+    
+    def validate(self, obj, value):
+        if isinstance(value, py3compat.string_types):
+            value = py3compat.cast_unicode(value)
+            # split 'foo:bar' into ['foo', 'bar']
+            value = value.split(py3compat.cast_unicode(os.pathsep))
+        if isinstance(value, list):
+            if not all(isinstance(v, py3compat.string_types) for v in value):
+                self.error(obj, value)
+            value = [ py3compat.cast_unicode(v) for v in value ]
+        else:
+            self.error(obj, value)
+        return value
+
