@@ -2111,3 +2111,37 @@ def test_subclass_compat():
     nt.assert_false(obj.parent_override)
     nt.assert_is(obj.d, SubClass)
 
+
+class DefinesHandler(HasTraits):
+    parent_called = False
+    
+    trait = Integer()
+    @observe('trait')
+    def handler(self, change):
+        self.parent_called = True
+
+class OverridesHandler(DefinesHandler):
+    child_called = False
+    
+    @observe('trait')
+    def handler(self, change):
+        self.child_called = True
+
+class AddsHandler(DefinesHandler):
+    child_called = False
+    
+    @observe('trait')
+    def child_handler(self, change):
+        self.child_called = True
+
+def test_override_observer():
+    obj = OverridesHandler()
+    obj.trait = 5
+    nt.assert_true(obj.child_called)
+    nt.assert_false(obj.parent_called)
+
+def test_subclass_add_observer():
+    obj = AddsHandler()
+    obj.trait = 5
+    nt.assert_true(obj.child_called)
+    nt.assert_true(obj.parent_called)
