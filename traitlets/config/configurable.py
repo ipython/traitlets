@@ -7,8 +7,9 @@
 from __future__ import print_function
 
 from copy import deepcopy
+import warnings
 
-from .loader import Config, LazyConfigValue
+from .loader import Config, LazyConfigValue, _is_section_key
 from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 from ipython_genutils.py3compat import iteritems
@@ -151,15 +152,21 @@ class Configurable(HasTraits):
                     # config object. If we don't, a mutable config_value will be
                     # shared by all instances, effectively making it a class attribute.
                     setattr(self, name, deepcopy(config_value))
-                elif isinstance(self, LoggingConfigurable):
+                elif not _is_section_key(name) and not isinstance(config_value, Config):
                     from difflib import get_close_matches
+                    if isinstance(self, LoggingConfigurable):
+                        warn = self.log.warning
+                    else:
+                        warn = lambda msg: warnings.warn(msg, stacklevel=9)
                     matches = get_close_matches(name, traits)
+                    msg = u"Config option `{option}` not recognized by `{klass}`.".format(
+                        option=name, klass=self.__class__.__name__)
+                    
                     if len(matches) == 1:
-                        self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean : `{matches}`"
-                                .format(option=name, klass=type(self).__name__, matches=matches[0]))
+                        msg += u"  Did you mean `{matches}`?".format(matches=matches[0])
                     elif len(matches) >= 1:
-                        self.log.warning(u"Config option `{option}` not recognized by `{klass}`, do you mean one of : `{matches}`"
-                                .format(option=name, klass=type(self).__name__, matches=' ,'.join(matches)))
+                        msg +="  Did you mean one of: `{matches}`?".format(matches=', '.join(sorted(matches)))
+                    warn(msg)
 
     @observe('config')
     @observe_compat

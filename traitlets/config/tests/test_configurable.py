@@ -4,11 +4,15 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import logging
 from unittest import TestCase
 
+import nose.tools as nt
+
 from traitlets.config.configurable import (
-    Configurable, 
-    SingletonConfigurable
+    Configurable,
+    LoggingConfigurable,
+    SingletonConfigurable,
 )
 
 from traitlets.traitlets import (
@@ -103,7 +107,8 @@ class TestConfigurable(TestCase):
         config.Bar.b = 'later'
         config.Bar.c = 100.0
         f = Foo(config=config)
-        b = Bar(config=f.config)
+        with expected_warnings(['`b` not recognized']):
+            b = Bar(config=f.config)
         self.assertEqual(f.a, 10)
         self.assertEqual(f.b, 'wow')
         self.assertEqual(b.b, 'gotit')
@@ -123,11 +128,13 @@ class TestConfigurable(TestCase):
         config.Foo.a = 1
         config.Bar.b = 'or'  # Up above b is config=False, so this won't do it.
         config.Bar.c = 10.0
-        c = Bar(config=config)
+        with expected_warnings(['`b` not recognized']):
+            c = Bar(config=config)
         self.assertEqual(c.a, config.Foo.a)
         self.assertEqual(c.b, 'gotit')
         self.assertEqual(c.c, config.Bar.c)
-        c = Bar(a=2, b='and', c=20.0, config=config)
+        with expected_warnings(['`b` not recognized']):
+            c = Bar(a=2, b='and', c=20.0, config=config)
         self.assertEqual(c.a, 2)
         self.assertEqual(c.b, 'and')
         self.assertEqual(c.c, 20.0)
@@ -411,4 +418,37 @@ class TestConfigContainers(TestCase):
         d2 = DefaultConfigurable()
         self.assertIs(d2.config, single.config)
         self.assertEqual(d2.a, 5)
-        
+
+
+def test_warn_match():
+    class A(LoggingConfigurable):
+        foo = Integer(config=True)
+        bar = Integer(config=True)
+        baz = Integer(config=True)
+    
+    logger = logging.getLogger('test_warn_match')
+    
+    cfg = Config({'A': {'bat': 5}})
+    with nt.assert_logs(logger, logging.WARNING) as captured:
+        a = A(config=cfg, log=logger)
+    
+    output = '\n'.join(captured.output)
+    nt.assert_in('Did you mean one of: `bar, baz`?', output)
+    nt.assert_in('Config option `bat` not recognized by `A`.', output)
+
+    cfg = Config({'A': {'fool': 5}})
+    with nt.assert_logs(logger, logging.WARNING) as captured:
+        a = A(config=cfg, log=logger)
+    
+    output = '\n'.join(captured.output)
+    nt.assert_in('Config option `fool` not recognized by `A`.', output)
+    nt.assert_in('Did you mean `foo`?', output)
+
+    cfg = Config({'A': {'totally_wrong': 5}})
+    with nt.assert_logs(logger, logging.WARNING) as captured:
+        a = A(config=cfg, log=logger)
+
+    output = '\n'.join(captured.output)
+    nt.assert_in('Config option `totally_wrong` not recognized by `A`.', output)
+    nt.assert_not_in('Did you mean', output)
+
