@@ -42,7 +42,9 @@ Inheritance diagram:
 
 import contextlib
 import inspect
+import json
 import re
+import os
 import sys
 import types
 try:
@@ -380,11 +382,19 @@ class TraitType(BaseDescriptor):
 
     metadata = {}
     default_value = Undefined
+    envvar = None
     allow_none = False
     read_only = False
+    help = ''
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, help=None, **metadata):
+    def __init__(self,
+                 default_value=Undefined,
+                 allow_none=None,
+                 read_only=None,
+                 envvar=None,
+                 help=None,
+                 **metadata):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -396,11 +406,16 @@ class TraitType(BaseDescriptor):
         """
         if default_value is not Undefined:
             self.default_value = default_value
-        if allow_none is not None:
-            self.allow_none = allow_none
-        if read_only is not None:
-            self.read_only = read_only
-        self.help = help if help is not None else ''
+
+        # Note: assigning self.<variable> = self.variable in the else branches
+        # here actually has an effect.  It copies the default value specified
+        # in the class body onto the instance.
+        self.allow_none = (
+            allow_none if allow_none is not None else self.allow_none
+        )
+        self.read_only = read_only if read_only is not None else self.read_only
+        self.help = help if help is not None else self.help
+        self.envvar = envvar if envvar is not None else self.envvar
 
         if 'default' in metadata:
             # Warn the user that they probably meant default_value.
@@ -455,6 +470,44 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = value
         return value
 
+    def _default_from_envvar_internal(self):
+        """Internal method for producing a default from os.environ.
+
+        Forwards os.environ[self.envvar] to ``default_from_envvar``, which is
+        intended to be overridden by subclasses.
+        """
+        try:
+            value = os.environ[self.envvar]
+        except KeyError:
+            raise TraitError(
+                "{type} trait with name {name} expected "
+                "os.environ[{envvar!r}] to be set.".format(
+                    type=type(self).__name__,
+                    envvar=self.envvar,
+                    # repring here to add quotes in the formatted error message.
+                    name=repr(self.name) if self.name else "<anonymous>",
+                )
+            )
+        return self.default_from_envvar(value)
+
+    def default_from_envvar(self, s):
+        """
+        Produce a default value from the value of an environment variable.
+
+        Subclasses should override this to parse strings from the environment.
+
+        Parameters
+        ----------
+        s : str
+            A string value read from the operating system environment.
+
+        Returns
+        -------
+        default_value : object
+            An object to use as the default value.
+        """
+        return s
+
     def _dynamic_default_callable(self, obj):
         """Retrieve a callable to calculate the default for this traitlet.
 
@@ -484,6 +537,9 @@ class TraitType(BaseDescriptor):
                     method = getattr(obj, meth_name)
                     _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
                     return method
+
+        if self.envvar is not None:
+            return self._default_from_envvar
 
         return getattr(self, 'make_dynamic_default', None)
 
@@ -1644,6 +1700,10 @@ class Union(TraitType):
             obj._cross_validation_lock = False
         self.error(obj, value)
 
+    def default_from_envvar(self, s):
+        raise NotImplementedError(
+            "Environment variable defaults not supported for Union traitlets."
+        )
 
     def __or__(self, other):
         if isinstance(other, Union):
@@ -1690,6 +1750,9 @@ class Int(TraitType):
                                             self.min, value))
         return value
 
+    def default_from_envvar(self, s):
+        return int(s)
+
 
 class CInt(Int):
     """A casting version of the int trait."""
@@ -1716,6 +1779,9 @@ else:
             if isinstance(value, int):
                 return long(value)
             self.error(obj, value)
+
+        def default_from_envvar(self, s):
+            return long(s)
 
 
     class CLong(Long):
@@ -1749,6 +1815,10 @@ else:
                     return int(value)
             self.error(obj, value)
 
+        def default_from_envvar(self, s):
+            # This will get downcasted to `int` if appropriate in `validate`.
+            return long(s)
+
 
 class Float(TraitType):
     """A float trait."""
@@ -1775,6 +1845,9 @@ class Float(TraitType):
                                             self.min, self.max, value))
         return value
 
+    def default_from_envvar(self, s):
+        return float(s)
+
 
 class CFloat(Float):
     """A casting version of the float trait."""
@@ -1797,6 +1870,9 @@ class Complex(TraitType):
         if isinstance(value, (float, int)):
             return complex(value)
         self.error(obj, value)
+
+    def default_from_envvar(self, s):
+        return complex(s)
 
 
 class CComplex(Complex):
@@ -1821,6 +1897,9 @@ class Bytes(TraitType):
         if isinstance(value, bytes):
             return value
         self.error(obj, value)
+
+    def default_from_envvar(self, s):
+        return py3compat.cast_bytes(s)
 
 
 class CBytes(Bytes):
@@ -1849,6 +1928,9 @@ class Unicode(TraitType):
                 msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
                 raise TraitError(msg.format(value, self.name, class_of(obj)))
         self.error(obj, value)
+
+    def default_from_envvar(self, s):
+        return py3compat.cast_unicode(s)
 
 
 class CUnicode(Unicode):
@@ -1889,6 +1971,7 @@ class ObjectName(TraitType):
             return value
         self.error(obj, value)
 
+
 class DottedObjectName(ObjectName):
     """A string holding a valid dotted object name in Python, such as A.b3._c"""
     def validate(self, obj, value):
@@ -1909,6 +1992,13 @@ class Bool(TraitType):
         if isinstance(value, bool):
             return value
         self.error(obj, value)
+
+    def default_from_envvar(self, s):
+        if s.lower() == 'false':
+            return False
+        elif s.lower() == 'true':
+            return True
+        raise TraitError("Couldn't coerce envvar value %r to `bool`." % s)
 
 
 class CBool(Bool):
@@ -1941,6 +2031,7 @@ class Enum(TraitType):
         if self.allow_none:
             return result + ' or None'
         return result
+
 
 class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
@@ -2062,6 +2153,12 @@ class Container(Instance):
         if isinstance(self._trait, TraitType):
             self._trait.instance_init(obj)
         super(Container, self).instance_init(obj)
+
+    def default_from_envvar(self, s):
+        try:
+            return json.loads(s)
+        except:
+            raise TraitError("Couldn't parse envvar value %r as JSON." % s)
 
 
 class List(Container):
