@@ -471,15 +471,13 @@ class TraitType(BaseDescriptor):
 
             # Only look for default handlers in classes derived from self.this_class.
             mro = type(obj).mro()
+            meth_name = '_%s_default' % self.name
             for cls in mro[:mro.index(self.this_class) + 1]:
                 if hasattr(cls, '_trait_default_generators'):
                     default_handler = cls._trait_default_generators.get(self.name)
                     if default_handler is not None and default_handler.this_class == cls:
                         return types.MethodType(default_handler.func, obj)
 
-            # Handling deprecated magic method
-            meth_name = '_%s_default' % self.name
-            for cls in mro[:mro.index(self.this_class) + 1]:
                 if meth_name in cls.__dict__:
                     method = getattr(obj, meth_name)
                     _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
@@ -749,6 +747,38 @@ def observe(*names, **kwargs):
     """
     return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
+
+def observe_compat(func):
+    """Backward-compatibility shim decorator for observers
+    
+    Use with:
+    
+    @observe('name')
+    @observe_compat
+    def _foo_changed(self, change):
+        ...
+    
+    With this, `super()._foo_changed(self, name, old, new)` in subclasses will still work.
+    Allows adoption of new observer API without breaking subclasses that override and super.
+    """
+    def compatible_observer(self, change_or_name, old=Undefined, new=Undefined):
+        if isinstance(change_or_name, dict):
+            change = change_or_name
+        else:
+            clsname = self.__class__.__name__
+            warn("A parent of %s._%s_changed has adopted the new @observe(change) API" % (
+                clsname, change_or_name), DeprecationWarning)
+            change = {
+                'type': 'change',
+                'old': old,
+                'new': new,
+                'name': change_or_name,
+                'owner': self,
+            }
+        return func(self, change)
+    return compatible_observer
+
+
 def validate(*names):
     """A decorator to register cross validator of HasTraits object's state
     when a Trait is set.
@@ -774,6 +804,7 @@ def validate(*names):
     commute.
     """
     return ValidateHandler(names)
+
 
 def default(name):
     """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.

@@ -21,7 +21,7 @@ from traitlets.config.loader import (
 )
 
 from traitlets.traitlets import (
-    Unicode, List, Enum, Dict, Instance, TraitError, observe, default
+    Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
@@ -82,6 +82,7 @@ def catch_config_error(method, app, *args, **kwargs):
 
 class ApplicationError(Exception):
     pass
+
 
 class LevelFormatter(logging.Formatter):
     """Formatter with additional `highlevel` record
@@ -152,8 +153,12 @@ class Application(SingletonConfigurable):
     log_level = Enum((0,10,20,30,40,50,'DEBUG','INFO','WARN','ERROR','CRITICAL'),
                     default_value=logging.WARN,
                     help="Set the log level by value or name.").tag(config=True)
-    def _log_level_changed(self, name, old, new):
+
+    @observe('log_level')
+    @observe_compat
+    def _log_level_changed(self, change):
         """Adjust the log level when log_level is set."""
+        new = change['new']
         if isinstance(new, string_types):
             new = getattr(logging, new)
             self.log_level = new
@@ -164,16 +169,17 @@ class Application(SingletonConfigurable):
     log_datefmt = Unicode("%Y-%m-%d %H:%M:%S", 
         help="The date format used by logging formatters for %(asctime)s"
     ).tag(config=True)
-    def _log_datefmt_changed(self, name, old, new):
-        self._log_format_changed('log_format', self.log_format, self.log_format)
-    
+
     log_format = Unicode("[%(name)s]%(highlevel)s %(message)s",
         help="The Logging format template",
     ).tag(config=True)
-    def _log_format_changed(self, name, old, new):
+
+    @observe('log_datefmt', 'log_format')
+    @observe_compat
+    def _log_format_changed(self, change):
         """Change the log formatter when log_format is set."""
         _log_handler = self.log.handlers[0]
-        _log_formatter = self._log_formatter_cls(fmt=new, datefmt=self.log_datefmt)
+        _log_formatter = self._log_formatter_cls(fmt=self.log_format, datefmt=self.log_datefmt)
         _log_handler.setFormatter(_log_formatter)
     
     @default('log')
@@ -215,6 +221,7 @@ class Application(SingletonConfigurable):
     # and the second being the help string for the flag
     flags = Dict()
     @observe('flags')
+    @observe_compat
     def _flags_changed(self, change):
         """ensure flags dict is valid"""
         new = change['new']
@@ -245,6 +252,7 @@ class Application(SingletonConfigurable):
             self.classes.insert(0, self.__class__)
     
     @observe('config')
+    @observe_compat
     def _config_changed(self, change):
         super(Application, self)._config_changed(change)
         self.log.debug('Config changed:')

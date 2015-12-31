@@ -11,6 +11,11 @@ import os
 from io import StringIO
 from unittest import TestCase
 
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 pjoin = os.path.join
 
 import nose.tools as nt
@@ -219,3 +224,22 @@ class TestApplication(TestCase):
                 app.init_bar()
                 self.assertEqual(app.bar.b, 1)
 
+
+class DeprecatedApp(Application):
+    override_called = False
+    parent_called = False
+    def _config_changed(self, name, old, new):
+        self.override_called = True
+        def _capture(*args):
+            self.parent_called = True
+        with mock.patch.object(self.log, 'debug', _capture):
+            super(DeprecatedApp, self)._config_changed(name, old, new)
+
+def test_deprecated_notifier():
+    app = DeprecatedApp()
+    nt.assert_false(app.override_called)
+    nt.assert_false(app.parent_called)
+    app.config = Config({'A': {'b': 'c'}})
+    nt.assert_true(app.override_called)
+    nt.assert_true(app.parent_called)
+    
