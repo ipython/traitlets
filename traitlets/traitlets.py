@@ -92,14 +92,14 @@ class TraitError(Exception):
 
 def _deprecated_method(method, cls, method_name, msg):
     """Show deprecation warning about a magic method definition.
-    
+
     Uses warn_explicit to bind warning to method definition instead of triggering code,
     which isn't relevant.
     """
     warn_msg = "{classname}.{method_name} is deprecated: {msg}".format(
         classname=cls.__name__, method_name=method_name, msg=msg
     )
-    
+
     for parent in inspect.getmro(cls):
         if method_name in parent.__dict__:
             cls = parent
@@ -109,7 +109,7 @@ def _deprecated_method(method, cls, method_name, msg):
         lineno = inspect.getsourcelines(method)[1] or 0
     except TypeError as e:
         # Failed to inspect for some reason
-        warn(warn_msg + ('\n(inspection failed)' % e), DeprecationWarning)
+        warn(warn_msg + ('\n(inspection failed) %s' % e), DeprecationWarning)
     else:
         warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
