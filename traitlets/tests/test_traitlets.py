@@ -698,24 +698,25 @@ class TestObserveDecorator(TestCase):
 
         class A(HasTraits):
             foo = Int()
-            bar = Int().tag(type=None)
+            bar = Int().tag(type='a')
 
         a = A()
 
         def _test_observer(change):
             a.foo = change['new']
 
-        a.observe(_test_observer, tags={'type': lambda v: v is None})
+        a.observe(_test_observer, tags={'type': lambda v: v in 'abc'})
         a.bar = 1
         self.assertEqual(a.foo, a.bar)
 
-        a.add_traits(baz=Int().tag(type=None))
+        a.add_traits(baz=Int().tag(type='b'))
         a.baz = 2
         self.assertEqual(a.foo, a.baz)
 
-        a.unobserve(_test_observer)
+        a.unobserve(_test_observer, 'bar')
         a.bar = 3
-        self.assertNotEqual(a.bar, a.baz)
+        print(a._trait_notifiers)
+        self.assertNotEqual(a.foo, a.bar)
 
 
 class TestHasTraits(TestCase):
