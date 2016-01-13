@@ -213,3 +213,52 @@ The presence of the ``owner`` key in the proposal dictionary enable the
 use of other attributes of the object in the cross validation logic.
 However, we recommend that the custom cross validator don't modify the
 other attributes of the object but only coerce the proposed value.
+
+Backward-compatible upgrades
+----------------------------
+
+One challenge in adoption of a changing API is how to adopt the new API
+while maintaining backward compatibility for subclasses,
+as event listeners methods are *de facto* public APIs.
+
+Take for instance the following class:
+
+.. code:: python
+
+    from traitlets import HasTraits, Unicode
+    
+    class Parent(HasTraits):
+        prefix = Unicode()
+        path = Unicode()
+        def _path_changed(self, name, old, new):
+            self.prefix = os.path.dirname(new)
+
+And you know another package has the subclass:
+
+.. code:: python
+
+    from parent import Parent
+    class Child(Parent):
+        def _path_changed(self, name, old, new):
+            super()._path_changed(name, old, new)
+            if not os.path.exists(new):
+                os.makedirs(new)
+
+If the parent package wants to upgrade without breaking Child,
+it needs to preserve the signature of ``_path_changed``.
+For this, we have provided an ``@observe_compat`` decorator,
+which automatically shims the deprecated signature into the new signature:
+
+.. code:: python
+
+    from traitlets import HasTraits, Unicode, observe, observe_compat
+    
+    class Parent(HasTraits):
+        prefix = Unicode()
+        path = Unicode()
+        
+        @observe('path')
+        @observe_compat # <- this allows super()._path_changed in subclasses to work with the old signature.
+        def _path_changed(self, change):
+            self.prefix = os.path.dirname(change['value'])
+
