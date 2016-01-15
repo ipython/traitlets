@@ -29,7 +29,7 @@ You then declare the trait attributes on the class like this::
         url = Unicode()
         timeout = Int(30)  # 30 will be the default value
 
-For the available traitl types and the arguments you can give them, see
+For the available trait types and the arguments you can give them, see
 :doc:`trait_types`.
 
 Dynamic default values
