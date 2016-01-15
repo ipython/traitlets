@@ -118,8 +118,10 @@ subclass::
     from traitlets import Int, Float, Unicode, Bool
 
     class MyClass(Configurable):
-        name = Unicode(u'defaultname', config=True)
-        ranking = Integer(0, config=True)
+        name = Unicode(u'defaultname'
+            help="the name of the object"
+        ).tag(config=True)
+        ranking = Integer(0, help="the class's ranking").tag(config=True)
         value = Float(99.0)
         # The rest of the class implementation would go here..
 

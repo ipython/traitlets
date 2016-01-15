@@ -14,11 +14,12 @@ Highlights:
 
 Other changes:
 
-- Trait attributes initialized with `read_only=True` can only be set with the ``set_trait`` method. Attempts to
-directly modify a read-only trait attribute raises a ``TraitError``.
+- Trait attributes initialized with ``read_only=True`` can only be set with the ``set_trait`` method.
+  Attempts to directly modify a read-only trait attribute raises a ``TraitError``.
 - The directional link now takes an optional `transform` attribute allowing the modification of the value.
 - Various fixes and improvements to config-file generation (fixed ordering, Undefined showing up, etc.)
 - Warn on unrecognized traits that aren't configurable, to avoid silently ignoring mistyped config.
+
 
 4.0
 ---

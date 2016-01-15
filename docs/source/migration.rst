@@ -11,7 +11,7 @@ Separation of metadata and keyword arguments in ``TraitType`` contructors
 -------------------------------------------------------------------------
 
 In traitlets 4.0, trait types constructors used all unrecognized keyword
-arguments passed to the constructor (lie ``sync`` or ``config``) to
+arguments passed to the constructor (like ``sync`` or ``config``) to
 populate the ``metadata`` dictionary.
 
 In trailets 4.1, we deprecated this behavior. The preferred method to
