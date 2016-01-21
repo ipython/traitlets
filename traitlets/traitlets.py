@@ -800,7 +800,7 @@ def validate(*names):
     the registered cross validator could potentially make changes to attributes
     of the ``HasTraits`` instance. However, we recommend not to do so. The reason
     is that the cross-validation of attributes may run in arbitrary order when
-    exitting the ``hold_trait_modification` context, and such changes may not
+    exiting the ``hold_trait_notifications` context, and such changes may not
     commute.
     """
     return ValidateHandler(names)
