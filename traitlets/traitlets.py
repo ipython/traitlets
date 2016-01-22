@@ -1150,8 +1150,8 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         ----------
         handler : callable
             A callable that is called when a trait changes. Its
-            signature can be ``handler()`` or ``handler(change)``, where change
-            is a dictionary. The change dictionary at least holds a 'type' key.
+            signature should be ``handler(change)``, where ``change```is a
+            dictionary. The change dictionary at least holds a 'type' key.
             * ``type``: the type of notification.
             Other keys may be passed depending on the value of 'type'. In the
             case where type is 'change', we also have the following keys:
