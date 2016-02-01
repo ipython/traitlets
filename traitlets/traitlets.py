@@ -486,15 +486,14 @@ class TraitType(BaseDescriptor):
         return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
-        obj._cross_validation_lock = True
         # If no dynamic initialiser is present, and the trait implementation or
         # use provides a static default, transfer that to obj._trait_values.
-        if (self._dynamic_default_callable(obj) is None) \
-                and (self.default_value is not Undefined):
-            v = self._validate(obj, self.default_value)
-            if self.name is not None:
-                obj._trait_values[self.name] = v
-        obj._cross_validation_lock = False
+        with obj.cross_validation_lock:
+            if (self._dynamic_default_callable(obj) is None) \
+                    and (self.default_value is not Undefined):
+                v = self._validate(obj, self.default_value)
+                if self.name is not None:
+                    obj._trait_values[self.name] = v
 
     def get(self, obj, cls):
         try:
@@ -911,6 +910,10 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
         return inst
 
     def setup_instance(self):
+        """
+        This is called **before** self.__init__ is called.
+        """
+        self._cross_validation_lock = False
         cls = self.__class__
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
@@ -937,7 +940,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
-        self._cross_validation_lock = False
         with self.hold_trait_notifications():
             for key, value in iteritems(kw):
                 setattr(self, key, value)
@@ -967,6 +969,23 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             else:
                 if isinstance(value, EventHandler):
                     value.instance_init(self)
+
+    @property
+    @contextlib.contextmanager
+    def cross_validation_lock(self):
+        """
+        A contextmanager for running a block with our cross validation lock set
+        to True.
+
+        At the end of the block, the lock's value is restored to its value
+        prior to entering the block.
+        """
+        original_value = self._cross_validation_lock
+        try:
+            self._cross_validation_lock = True
+            yield
+        finally:
+            self._cross_validation_lock = original_value
 
     @contextlib.contextmanager
     def hold_trait_notifications(self):
@@ -1662,8 +1681,7 @@ class Union(TraitType):
         super(Union, self).instance_init(obj)
 
     def validate(self, obj, value):
-        obj._cross_validation_lock = True
-        try:
+        with obj.cross_validation_lock:
             for trait_type in self.trait_types:
                 try:
                     v = trait_type._validate(obj, value)
@@ -1671,10 +1689,7 @@ class Union(TraitType):
                     return v
                 except TraitError:
                     continue
-        finally:
-            obj._cross_validation_lock = False
         self.error(obj, value)
-
 
     def __or__(self, other):
         if isinstance(other, Union):
