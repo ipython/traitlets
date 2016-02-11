@@ -434,8 +434,10 @@ class JSONFileConfigLoader(FileConfigLoader):
         In case of any error, we do not want to write the potentially broken
         configuration to disk.
         """
+        self.config.version = 1
+        json_config = json.dumps(self.config, indent=2)
         with open(self.full_filename, 'w') as f:
-            f.write(json.dumps(self.config, indent=2))
+            f.write(json_config)
 
 
 
