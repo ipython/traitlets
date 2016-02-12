@@ -8,6 +8,7 @@ import logging
 from unittest import TestCase
 
 import nose.tools as nt
+from nose import SkipTest
 
 from traitlets.config.configurable import (
     Configurable,
@@ -421,6 +422,8 @@ class TestConfigContainers(TestCase):
 
 
 def test_warn_match():
+    if not hasattr(nt, 'assert_logs'):
+        raise SkipTest("Test requires nose.tests.assert_logs")
     class A(LoggingConfigurable):
         foo = Integer(config=True)
         bar = Integer(config=True)
