@@ -1096,7 +1096,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
             if isinstance(c, _CallbackWrapper):
                 c = c.__call__
-            elif isinstance(c, EventHandler):
+            elif isinstance(c, EventHandler) and c.name is not None:
                 c = getattr(self, c.name)
             
             c(change)
