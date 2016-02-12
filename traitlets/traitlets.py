@@ -1142,11 +1142,15 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             if k in d['tags']:
                 for t in (All, type):
                     if v in d['tags'][k] and t in d['tags'][k][v]:
-                        callables.extend(d['tags'][k][v][t])
+                        for c in d['tags'][k][v][t]:
+                            if c not in callables:
+                                callables.append(c)
                     elif _Unhashable in d['tags'][k]:
                         mapping = d['tags'][k][_Unhashable]
                         if v in mapping and t in mapping[v]:
-                            callables.extend(mapping[v][t])
+                            for c in mapping[v][t]:
+                                if c not in callables:
+                                    callables.append(c)
 
         # Now static ones
         magic_name = '_%s_changed' % name
