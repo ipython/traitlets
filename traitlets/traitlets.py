@@ -2479,7 +2479,7 @@ class UseEnum(TraitType):
                           "REQUIRE: enum.Enum, but was: %r" % enum_class
         allow_none = kwargs.get("allow_none", False)
         if default_value is None and not allow_none:
-            default_value = enum_class.__members__.values()[0]
+            default_value = list(enum_class.__members__.values())[0]
         super(UseEnum, self).__init__(default_value=default_value, **kwargs)
         self.enum_class = enum_class
         self.name_prefix = enum_class.__name__ + "."
@@ -2488,7 +2488,7 @@ class UseEnum(TraitType):
         """Selects enum-value by using its number-constant."""
         assert isinstance(value, int)
         enum_members = self.enum_class.__members__
-        for enum_item in enum_members.itervalues():
+        for enum_item in enum_members.values():
             if enum_item.value == value:
                 return enum_item
         # -- NOT FOUND:
