@@ -2454,7 +2454,7 @@ class UseEnum(TraitType):
 
         # -- SINCE: Python 3.4 (or install backport: pip install enum34)
         import enum
-        from traitlets import HasTraits
+        from traitlets import HasTraits, UseEnum
 
         class Color(enum.Enum):
             red = 1         # -- IMPLICIT: default_value
