@@ -120,7 +120,24 @@ class TestFileCL(TestCase):
         cl2 = JSONFileConfigLoader(fname, log=log)
         self.assertEqual(cl.config.MyAttr.value, value)
 
-    
+    def test_json_context_bad_write(self):
+        fd, fname = mkstemp('.json')
+        f = os.fdopen(fd, 'w')
+        f.write('{}')
+        f.close()
+        
+        with JSONFileConfigLoader(fname, log=log) as config:
+            config.A.b = 1
+        
+        with self.assertRaises(TypeError):
+            with JSONFileConfigLoader(fname, log=log) as config:
+                config.A.cant_json = lambda x: x
+        
+        loader = JSONFileConfigLoader(fname, log=log)
+        cfg = loader.load_config()
+        assert cfg.A.b == 1
+        assert 'cant_json' not in cfg.A
+
     def test_collision(self):
         a = Config()
         b = Config()
