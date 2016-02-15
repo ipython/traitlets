@@ -17,7 +17,7 @@
 # serve to show the default.
 
 import sys
-import os
+import os.path
 import shlex
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -28,6 +28,12 @@ import shlex
 # We load the ipython release info into a dict by explicit execution
 _release = {}
 exec(compile(open('../../traitlets/_version.py').read(), '../../traitlets/_version.py', 'exec'),_release)
+
+# -- ENSURE: Build docs with current development version of traitlets.
+# REQUIRED-BY: autodoc (autoclass, etc.)
+HERE = os.path.dirname(__file__)
+TOPDIR = os.path.join(HERE, "..", "..")
+sys.path.insert(0, os.path.abspath(TOPDIR))
 
 # -- General configuration ------------------------------------------------
 
@@ -69,7 +75,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'traitlets'
-copyright = u'2015, The IPython Development Team'
+copyright = u'2016, The IPython Development Team'
 author = u'The IPython Development Team'
 
 # The version info for the project you're documenting, acts as replacement for

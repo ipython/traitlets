@@ -68,6 +68,8 @@ setup_args = dict(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
 )
 
@@ -79,6 +81,7 @@ setuptools_args = {}
 install_requires = setuptools_args['install_requires'] = [
     'ipython_genutils',
     'decorator',
+    # MAYBE: 'enum34; python_version < "3,4"',
 ]
 
 extras_require = setuptools_args['extras_require'] = {
