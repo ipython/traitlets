@@ -7,8 +7,8 @@ import io
 import json
 import os
 
+from six import PY3
 from traitlets.config import LoggingConfigurable
-from ipython_genutils.py3compat import PY3
 from traitlets.traitlets import Unicode
 
 

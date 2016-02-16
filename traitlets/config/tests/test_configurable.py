@@ -21,7 +21,7 @@ from traitlets.traitlets import (
 )
 
 from traitlets.config.loader import Config
-from ipython_genutils.py3compat import PY3
+from six import PY3
 
 from ...tests._warnings import expected_warnings
 
