@@ -495,7 +495,7 @@ class TraitType(BaseDescriptor):
                 if self.name is not None:
                     obj._trait_values[self.name] = v
 
-    def get(self, obj, cls):
+    def get(self, obj, cls=None):
         try:
             value = obj._trait_values[self.name]
         except KeyError:
