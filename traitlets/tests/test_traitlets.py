@@ -22,7 +22,7 @@ from traitlets import (
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat,
+    observe_compat, BaseDescriptor, HasDescriptors,
 )
 from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
@@ -265,6 +265,25 @@ class TestHasDescriptorsMeta(TestCase):
         self.assertEqual(B.t.this_class, A)
         self.assertEqual(B.tt.this_class, B)
         self.assertEqual(B.ttt.this_class, B)
+
+class TestHasDescriptors(TestCase):
+
+    def test_setup_instance(self):
+
+        class FooDescriptor(BaseDescriptor):
+
+            def instance_init(self, inst):
+                foo = inst.foo # instance should have the attr
+
+        class HasFooDescriptors(HasDescriptors):
+
+            fd = FooDescriptor()
+
+            def setup_instance(self, *args, **kwargs):
+                self.foo = kwargs.get('foo', None)
+                super(HasFooDescriptors, self).setup_instance(*args, **kwargs)
+
+        hfd = HasFooDescriptors(foo='bar')
 
 class TestHasTraitsNotify(TestCase):
 
