@@ -898,14 +898,14 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
     """The base class for all classes that have descriptors.
     """
 
-    def __new__(cls, *args, **kw):
+    def __new__(cls, *args, **kwargs):
         # This is needed because object.__new__ only accepts
         # the cls argument.
         new_meth = super(HasDescriptors, cls).__new__
         if new_meth is object.__new__:
             inst = new_meth(cls)
         else:
-            inst = new_meth(cls, **kw)
+            inst = new_meth(cls, *args, **kwargs)
         inst.setup_instance()
         return inst
 
@@ -936,12 +936,12 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         self._trait_validators = {}
         super(HasTraits, self).setup_instance()
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, **kwargs):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
         with self.hold_trait_notifications():
-            for key, value in iteritems(kw):
+            for key, value in iteritems(kwargs):
                 setattr(self, key, value)
 
     def __getstate__(self):
