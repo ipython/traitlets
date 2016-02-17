@@ -2198,3 +2198,12 @@ def test_super_args():
     assert not hasattr(obj, 'c')
     nt.assert_equal(obj.super_args, ('a1', 'a2'))
     nt.assert_equal(obj.super_kwargs, {'b': 10, 'c': 'x'})
+
+def test_super_bad_args():
+    class SuperHasTraits(HasTraits):
+        a = Integer()
+    
+    with expected_warnings(["Passing unrecoginized arguments"]):
+        obj = SuperHasTraits(a=1, b=2)
+    nt.assert_equal(obj.a, 1)
+    assert not hasattr(obj, 'b')
