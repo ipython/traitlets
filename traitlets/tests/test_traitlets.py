@@ -2203,7 +2203,12 @@ def test_super_bad_args():
     class SuperHasTraits(HasTraits):
         a = Integer()
     
-    with expected_warnings(["Passing unrecoginized arguments"]):
+    if sys.version_info < (3,):
+        # Legacy Python, object.__init__ warns itself, instead of raising
+        w = ['object.__init__']
+    else:
+        w = ["Passing unrecoginized arguments"]
+    with expected_warnings(w):
         obj = SuperHasTraits(a=1, b=2)
     nt.assert_equal(obj.a, 1)
     assert not hasattr(obj, 'b')
