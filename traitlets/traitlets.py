@@ -953,7 +953,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             super(HasTraits, self).__init__(*super_args, **super_kwargs)
         except TypeError as e:
             arg_s_list = [ repr(arg) for arg in super_args ]
-            for k, v in kwargs.items():
+            for k, v in super_kwargs.items():
                 arg_s_list.append("%s=%r" % (k, v))
             arg_s = ', '.join(arg_s_list)
             warn(
