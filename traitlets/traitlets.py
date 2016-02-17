@@ -949,7 +949,24 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 else:
                     # passthrough args that don't set traits to super
                     super_kwargs[key] = value
-        super(HasTraits, self).__init__(*super_args, **super_kwargs)
+        try:
+            super(HasTraits, self).__init__(*super_args, **super_kwargs)
+        except TypeError as e:
+            arg_s_list = [ repr(arg) for arg in super_args ]
+            for k, v in kwargs.items():
+                arg_s_list.append("%s=%r" % (k, v))
+            arg_s = ', '.join(arg_s_list)
+            warn(
+                "Passing unrecoginized arguments to super({classname}).__init__({arg_s}).\n"
+                "{error}\n"
+                "This error will be raised in a future release of traitlets."
+                .format(
+                    arg_s=arg_s, classname=self.__class__.__name__,
+                    error=e,
+                ),
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
     def __getstate__(self):
         d = self.__dict__.copy()
