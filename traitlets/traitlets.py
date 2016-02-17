@@ -940,10 +940,16 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
+        super_args = args
+        super_kwargs = {}
         with self.hold_trait_notifications():
             for key, value in iteritems(kwargs):
-                setattr(self, key, value)
-        super(HasTraits, self).__init__()
+                if self.has_trait(key):
+                    setattr(self, key, value)
+                else:
+                    # passthrough args that don't set traits to super
+                    super_kwargs[key] = value
+        super(HasTraits, self).__init__(*super_args, **super_kwargs)
 
     def __getstate__(self):
         d = self.__dict__.copy()

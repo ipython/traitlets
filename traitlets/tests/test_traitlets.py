@@ -1044,7 +1044,7 @@ class TestThis(TestCase):
 
         tree = Tree(
             value='foo',
-            leaves=[Tree('bar'), Tree('buzz')]
+            leaves=[Tree(value='bar'), Tree(value='buzz')]
         )
 
         with self.assertRaises(TraitError):
@@ -2182,3 +2182,19 @@ def test_subclass_add_observer():
     obj.trait = 5
     nt.assert_true(obj.child_called)
     nt.assert_true(obj.parent_called)
+
+def test_super_args():
+    class SuperRecorder(object):
+        def __init__(self, *args, **kwargs):
+            self.super_args = args
+            self.super_kwargs = kwargs
+    
+    class SuperHasTraits(HasTraits, SuperRecorder):
+        i = Integer()
+    
+    obj = SuperHasTraits('a1', 'a2', b=10, i=5, c='x')
+    nt.assert_equal(obj.i, 5)
+    assert not hasattr(obj, 'b')
+    assert not hasattr(obj, 'c')
+    nt.assert_equal(obj.super_args, ('a1', 'a2'))
+    nt.assert_equal(obj.super_kwargs, {'b': 10, 'c': 'x'})
