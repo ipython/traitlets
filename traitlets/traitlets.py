@@ -906,10 +906,10 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
             inst = new_meth(cls)
         else:
             inst = new_meth(cls, *args, **kwargs)
-        inst.setup_instance()
+        inst.setup_instance(*args, **kwargs)
         return inst
 
-    def setup_instance(self):
+    def setup_instance(self, *args, **kwargs):
         """
         This is called **before** self.__init__ is called.
         """
@@ -930,11 +930,11 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
 
 class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
-    def setup_instance(self):
+    def setup_instance(self, *args, **kwargs):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
-        super(HasTraits, self).setup_instance()
+        super(HasTraits, self).setup_instance(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         # Allow trait values to be set using keyword arguments.
