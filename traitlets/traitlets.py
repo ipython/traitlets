@@ -898,14 +898,14 @@ class HasDescriptors(py3compat.with_metaclass(MetaHasDescriptors, object)):
     """The base class for all classes that have descriptors.
     """
 
-    def __new__(cls, *args, **kw):
+    def __new__(cls, *args, **kwargs):
         # This is needed because object.__new__ only accepts
         # the cls argument.
         new_meth = super(HasDescriptors, cls).__new__
         if new_meth is object.__new__:
             inst = new_meth(cls)
         else:
-            inst = new_meth(cls, **kw)
+            inst = new_meth(cls, *args, **kwargs)
         inst.setup_instance()
         return inst
 
