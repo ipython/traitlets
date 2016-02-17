@@ -943,6 +943,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         with self.hold_trait_notifications():
             for key, value in iteritems(kw):
                 setattr(self, key, value)
+        super(HasTraits, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
         d = self.__dict__.copy()
