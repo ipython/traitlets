@@ -936,13 +936,14 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         self._trait_validators = {}
         super(HasTraits, self).setup_instance()
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, **kwargs):
         # Allow trait values to be set using keyword arguments.
         # We need to use setattr for this to trigger validation and
         # notifications.
         with self.hold_trait_notifications():
-            for key, value in iteritems(kw):
+            for key, value in iteritems(kwargs):
                 setattr(self, key, value)
+        super(HasTraits, self).__init__()
 
     def __getstate__(self):
         d = self.__dict__.copy()
