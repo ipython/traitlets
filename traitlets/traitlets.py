@@ -1267,10 +1267,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             The names of the traits that should be cross-validated
         """
         for name in names:
-            if name in self._trait_validators:
-                raise TraitError("A cross-validator for the trait"
-                                 " '%s' already exists" % name)
-
             magic_name = '_%s_validate' % name
             if hasattr(self, magic_name):
                 class_value = getattr(self.__class__, magic_name)
