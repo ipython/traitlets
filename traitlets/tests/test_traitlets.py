@@ -956,9 +956,9 @@ class TestType(TestCase):
     def test_str_klass(self):
 
         class A(HasTraits):
-            klass = Type('ipython_genutils.ipstruct.Struct')
+            klass = Type('traitlets.tests.utils.Struct')
 
-        from ipython_genutils.ipstruct import Struct
+        from traitlets.tests.utils import Struct
         a = A()
         a.klass = Struct
         self.assertEqual(a.klass, Struct)
@@ -970,8 +970,8 @@ class TestType(TestCase):
         class A(HasTraits):
             klass = Type()
 
-        a = A(klass='ipython_genutils.ipstruct.Struct')
-        from ipython_genutils.ipstruct import Struct
+        a = A(klass='traitlets.tests.utils.Struct')
+        from traitlets.tests.utils import Struct
         self.assertEqual(a.klass, Struct)
 
 class TestInstance(TestCase):
@@ -1194,7 +1194,7 @@ class UnionTrait(HasTraits):
 
 class UnionTraitTest(TraitTestBase):
 
-    obj = UnionTrait(value='ipython_genutils.ipstruct.Struct')
+    obj = UnionTrait(value='traitlets.tests.utils.Struct')
     _good_values = [int, float, True]
     _bad_values = [[], (0,), 1j]
 
