@@ -6,6 +6,9 @@
 
 from __future__ import print_function
 
+import re
+import os
+import textwrap
 from copy import deepcopy
 import warnings
 
@@ -14,6 +17,101 @@ from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, de
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 from traitlets.utils.py3compat import iteritems
 
+
+#-----------------------------------------------------------------------------
+# Utilities
+#-----------------------------------------------------------------------------
+
+def indent(instr,nspaces=4, ntabs=0, flatten=False):
+    """Indent a string a given number of spaces or tabstops.
+
+    indent(str,nspaces=4,ntabs=0) -> indent str by ntabs+nspaces.
+
+    Parameters
+    ----------
+
+    instr : basestring
+        The string to be indented.
+    nspaces : int (default: 4)
+        The number of spaces to be indented.
+    ntabs : int (default: 0)
+        The number of tabs to be indented.
+    flatten : bool (default: False)
+        Whether to scrub existing indentation.  If True, all lines will be
+        aligned to the same indentation.  If False, existing indentation will
+        be strictly increased.
+
+    Returns
+    -------
+
+    str|unicode : string indented by ntabs and nspaces.
+
+    """
+    if instr is None:
+        return
+    ind = '\t'*ntabs+' '*nspaces
+    if flatten:
+        pat = re.compile(r'^\s*', re.MULTILINE)
+    else:
+        pat = re.compile(r'^', re.MULTILINE)
+    outstr = re.sub(pat, ind, instr)
+    if outstr.endswith(os.linesep+ind):
+        return outstr[:-len(ind)]
+    else:
+        return outstr
+
+
+def dedent(text):
+    """Equivalent of textwrap.dedent that ignores unindented first line.
+
+    This means it will still dedent strings like:
+    '''foo
+    is a bar
+    '''
+
+    For use in wrap_paragraphs.
+    """
+
+    if text.startswith('\n'):
+        # text starts with blank line, don't ignore the first line
+        return textwrap.dedent(text)
+
+    # split first line
+    splits = text.split('\n',1)
+    if len(splits) == 1:
+        # only one line
+        return textwrap.dedent(text)
+
+    first, rest = splits
+    # dedent everything but the first line
+    rest = textwrap.dedent(rest)
+    return '\n'.join([first, rest])
+
+
+def wrap_paragraphs(text, ncols=80):
+    """Wrap multiple paragraphs to fit a specified width.
+
+    This is equivalent to textwrap.wrap, but with support for multiple
+    paragraphs, as separated by empty lines.
+
+    Returns
+    -------
+
+    list of complete paragraphs, wrapped to fill `ncols` columns.
+    """
+    paragraph_re = re.compile(r'\n(\s*\n)+', re.MULTILINE)
+    text = dedent(text).strip()
+    paragraphs = paragraph_re.split(text)[::2] # every other entry is space
+    out_ps = []
+    indent_re = re.compile(r'\n\s+', re.MULTILINE)
+    for p in paragraphs:
+        # presume indentation that survives dedent is meaningful formatting,
+        # so don't fill unless text is flush.
+        if indent_re.search(p) is None:
+            # wrap paragraph
+            p = textwrap.fill(p, ncols)
+        out_ps.append(p)
+    return out_ps
 
 
 #-----------------------------------------------------------------------------
