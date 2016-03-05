@@ -380,6 +380,7 @@ class FileConfigLoader(ConfigLoader):
         self.path = path
         self.full_filename = ''
 
+    @staticmethod
     def filefind(filename, path_dirs=None):
         """Find a file by looking through a sequence of paths.
 
