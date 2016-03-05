@@ -12,7 +12,8 @@ import warnings
 from .loader import Config, LazyConfigValue, _is_section_key
 from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
-from ipython_genutils.py3compat import iteritems
+from traitlets.utils.py3compat import iteritems
+
 
 
 #-----------------------------------------------------------------------------

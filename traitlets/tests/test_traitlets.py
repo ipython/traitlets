@@ -24,8 +24,8 @@ from traitlets import (
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors,
 )
-from ipython_genutils import py3compat
 from ipython_genutils.testing.decorators import skipif
+from traitlets.utils import py3compat
 
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')

@@ -25,8 +25,10 @@ from traitlets.traitlets import (
 )
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import string_types, iteritems
+
+
+from traitlets.utils import py3compat
+from traitlets.utils.py3compat import string_types, iteritems
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections

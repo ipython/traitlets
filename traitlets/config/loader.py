@@ -14,9 +14,10 @@ import json
 from ast import literal_eval
 
 from ipython_genutils.path import filefind
-from ipython_genutils import py3compat
-from ipython_genutils.encoding import DEFAULT_ENCODING
-from ipython_genutils.py3compat import unicode_type, iteritems
+
+from traitlets.utils import py3compat
+from traitlets.utils.encoding import DEFAULT_ENCODING
+from traitlets.utils.py3compat import unicode_type, iteritems
 from traitlets.traitlets import HasTraits, List, Any
 
 #-----------------------------------------------------------------------------
