@@ -27,7 +27,7 @@ from traitlets.config.application import (
     Application
 )
 
-from ipython_genutils.tempdir import TemporaryDirectory
+from .tempdir import TemporaryDirectory
 from traitlets.traitlets import (
     Bool, Unicode, Integer, List, Dict
 )
