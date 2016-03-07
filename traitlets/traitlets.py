@@ -1053,7 +1053,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 for name in list(cache.keys()):
                     trait = getattr(self.__class__, name)
                     value = trait._cross_validate(self, getattr(self, name))
-                    setattr(self, name, value)
+                    self.set_trait(name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
                 self.notify_change = lambda x: None
@@ -1062,7 +1062,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                         # TODO: Separate in a rollback function per notification type.
                         if change['type'] == 'change':
                             if change['old'] is not Undefined:
-                                setattr(self, name, change['old'])
+                                self.set_trait(name, change['old'])
                             else:
                                 self._trait_values.pop(name)
                 cache = {}
