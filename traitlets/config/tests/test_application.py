@@ -18,6 +18,7 @@ except ImportError:
 
 pjoin = os.path.join
 
+from nose import SkipTest
 import nose.tools as nt
 
 from traitlets.config.configurable import Configurable
@@ -223,6 +224,31 @@ class TestApplication(TestCase):
                 app.load_config_file(name, path=[td1, td2])
                 app.init_bar()
                 self.assertEqual(app.bar.b, 1)
+    
+    def test_log_bad_config(self):
+        if not hasattr(nt, 'assert_logs'):
+            raise SkipTest("Test requires nose.tests.assert_logs")
+        app = MyApp()
+        app.log = logging.getLogger()
+        name = 'config.py'
+        with TemporaryDirectory() as td:
+            with open(pjoin(td, name), 'w') as f:
+                f.write("syntax error()")
+            with nt.assert_logs(app.log, logging.ERROR) as captured:
+                app.load_config_file(name, path=[td])
+        output = '\n'.join(captured.output)
+        self.assertIn('SyntaxError', output)
+    
+    def test_raise_on_bad_config(self):
+        app = MyApp()
+        app.raise_config_file_errors = True
+        app.log = logging.getLogger()
+        name = 'config.py'
+        with TemporaryDirectory() as td:
+            with open(pjoin(td, name), 'w') as f:
+                f.write("syntax error()")
+            with self.assertRaises(SyntaxError):
+                app.load_config_file(name, path=[td])
 
 
 class DeprecatedApp(Application):
@@ -235,6 +261,7 @@ class DeprecatedApp(Application):
         with mock.patch.object(self.log, 'debug', _capture):
             super(DeprecatedApp, self)._config_changed(name, old, new)
 
+
 def test_deprecated_notifier():
     app = DeprecatedApp()
     nt.assert_false(app.override_called)
@@ -242,4 +269,4 @@ def test_deprecated_notifier():
     app.config = Config({'A': {'b': 'c'}})
     nt.assert_true(app.override_called)
     nt.assert_true(app.parent_called)
-    
+
