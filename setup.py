@@ -82,7 +82,10 @@ install_requires = setuptools_args['install_requires'] = [
 ]
 
 extras_require = setuptools_args['extras_require'] = {
-
+    # -- SUPPORT UNIFORM-WHEELS: Extra packages for Python 2.7, 3.3
+    # SEE: https://bitbucket.org/pypa/wheel/ , CHANGES.txt (v0.24.0)
+    ':python_version=="2.7"': ["enum34"],
+    ':python_version=="3.3"': ["enum34"],
 }
 
 if 'setuptools' in sys.modules:
