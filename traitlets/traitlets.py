@@ -460,6 +460,7 @@ class TraitType(BaseDescriptor):
 
         This looks for:
 
+        * default generators registered with the @default descriptor.
         * obj._{name}_default() on the class with the traitlet, or a subclass
           that obj belongs to.
         * trait.make_dynamic_default, which is defined by Instance
@@ -1717,6 +1718,14 @@ class Union(TraitType):
             return Union(self.trait_types + other.trait_types)
         else:
             return Union(self.trait_types + [other])
+
+    def make_dynamic_default(self):
+        for trait_type in self.trait_types:
+            if trait_type.default_value != Undefined:
+                return trait_type.default_value
+            elif hasattr(trait_type, 'make_dynamic_default'):
+                return trait_type.make_dynamic_default()
+
 
 #-----------------------------------------------------------------------------
 # Basic TraitTypes implementations/subclasses
