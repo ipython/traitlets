@@ -965,7 +965,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                     arg_s=arg_s, classname=self.__class__.__name__,
                     error=e,
                 ),
-                RuntimeWarning,
+                DeprecationWarning,
                 stacklevel=2,
             )
 
