@@ -1,6 +1,22 @@
 Changes in Traitlets
 ====================
 
+4.2
+---
+
+`4.2 on GitHub <https://github.com/ipython/traitlets/milestones/4.2>`__
+
+- :class:`JSONFileConfigLoader` can be used as a context manager for updating configuration.
+- If a value in config does not map onto a configurable trait,
+  a message is displayed that the value will have no effect.
+- Unused arguments are passed to ``super()`` in ``HasTraits.__init__``,
+  improving support for multiple inheritance.
+- Various bugfixes and improvements in the new API introduced in 4.1.
+- Application subclasses may specify ``raise_config_file_errors = True``
+  to exit on failure to load config files,
+  instead of the default of logging the failures.
+
+
 4.1
 ---
 
