@@ -21,7 +21,7 @@ from traitlets.config.loader import (
 )
 
 from traitlets.traitlets import (
-    Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
+    Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
@@ -148,6 +148,9 @@ class Application(SingletonConfigurable):
     
     # the argv used to initialize the application
     argv = List()
+
+    # Whether failing to load config files should prevent startup
+    raise_config_file_errors = Bool(False)
 
     # The log level for the application
     log_level = Enum((0,10,20,30,40,50,'DEBUG','INFO','WARN','ERROR','CRITICAL'),
@@ -511,7 +514,7 @@ class Application(SingletonConfigurable):
         self.extra_args = loader.extra_args
 
     @classmethod
-    def _load_config_files(cls, basefilename, path=None, log=None):
+    def _load_config_files(cls, basefilename, path=None, log=None, raise_config_file_errors=False):
         """Load config files (py,json) by filename and path.
 
         yield each config object in turn.
@@ -536,6 +539,8 @@ class Application(SingletonConfigurable):
                     # unlikely event that the error raised before filefind finished
                     filename = loader.full_filename or basefilename
                     # problem while running the file
+                    if raise_config_file_errors:
+                        raise
                     if log:
                         log.error("Exception while loading config file %s",
                                 filename, exc_info=True)
@@ -553,7 +558,9 @@ class Application(SingletonConfigurable):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         loaded = []
-        for config in self._load_config_files(filename, path=path, log=self.log):
+        for config in self._load_config_files(filename, path=path, log=self.log,
+            raise_config_file_errors=self.raise_config_file_errors,
+        ):
             loaded.append(config)
             self.update_config(config)
         if len(loaded) > 1:
