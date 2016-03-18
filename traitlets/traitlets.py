@@ -1084,13 +1084,13 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                     for change in changes:
                         self.notify_change(change)
 
-    def _notify_trait(self, name, old_value, new_value):
+    def _notify_trait(self, name, old_value, new_value, type='change'):
         self.notify_change({
             'name': name,
             'old': old_value,
             'new': new_value,
             'owner': self,
-            'type': 'change',
+            'type': type,
         })
 
     def notify_change(self, change):
@@ -1185,7 +1185,7 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type='change'):
+    def observe(self, handler, names=All, type=All):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
