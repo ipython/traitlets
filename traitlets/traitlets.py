@@ -52,8 +52,8 @@ except:
     ClassTypes = (type,)
 from warnings import warn, warn_explicit
 
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import iteritems, string_types
+from .utils import py3compat
+from .utils.py3compat import iteritems, string_types
 
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item

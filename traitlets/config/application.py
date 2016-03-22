@@ -23,10 +23,12 @@ from traitlets.config.loader import (
 from traitlets.traitlets import (
     Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
-from ipython_genutils.importstring import import_item
-from ipython_genutils.text import indent, wrap_paragraphs, dedent
-from ipython_genutils import py3compat
-from ipython_genutils.py3compat import string_types, iteritems
+
+from .configurable import indent, wrap_paragraphs, dedent
+
+from traitlets.utils import py3compat
+from traitlets.utils.importstring import import_item
+from traitlets.utils.py3compat import string_types, iteritems
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections
