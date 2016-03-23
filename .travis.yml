@@ -6,8 +6,8 @@ python:
     - 3.3
 sudo: false
 install:
-    - pip install . coveralls
+    - pip install . cov-core
 script:
-    - nosetests --with-coverage --cover-package traitlets traitlets
+    - nose2 --with-coverage
 after_success:
     - coveralls
