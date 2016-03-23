@@ -18,8 +18,7 @@ except ImportError:
 
 pjoin = os.path.join
 
-from nose import SkipTest
-import nose.tools as nt
+from nose2.compat import unittest
 
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config
@@ -89,7 +88,7 @@ class TestApplication(TestCase):
         app.log_format = "%(message)s"
         app.log_datefmt = "%Y-%m-%d %H:%M"
         app.log.info("hello")
-        nt.assert_in("hello", stream.getvalue())
+        assert "hello" in stream.getvalue()
 
     def test_basic(self):
         app = MyApp()
@@ -154,8 +153,8 @@ class TestApplication(TestCase):
         cfg.MyApp.warn_typo = "WOOOO"
         app.config = cfg
 
-        nt.assert_in("warn_typo", stream.getvalue())
-        nt.assert_in("warn_tpyo", stream.getvalue())
+        self.assertIn("warn_typo", stream.getvalue())
+        self.assertIn("warn_tpyo", stream.getvalue())
         
     
     def test_flatten_flags(self):
@@ -226,15 +225,15 @@ class TestApplication(TestCase):
                 self.assertEqual(app.bar.b, 1)
     
     def test_log_bad_config(self):
-        if not hasattr(nt, 'assert_logs'):
-            raise SkipTest("Test requires nose.tests.assert_logs")
+        if not hasattr(self, 'assertLogs'):
+            raise unittest.SkipTest("Test requires unittest.TestCase.assertLogs")
         app = MyApp()
         app.log = logging.getLogger()
         name = 'config.py'
         with TemporaryDirectory() as td:
             with open(pjoin(td, name), 'w') as f:
                 f.write("syntax error()")
-            with nt.assert_logs(app.log, logging.ERROR) as captured:
+            with self.assertLogs(app.log, logging.ERROR) as captured:
                 app.load_config_file(name, path=[td])
         output = '\n'.join(captured.output)
         self.assertIn('SyntaxError', output)
@@ -264,9 +263,9 @@ class DeprecatedApp(Application):
 
 def test_deprecated_notifier():
     app = DeprecatedApp()
-    nt.assert_false(app.override_called)
-    nt.assert_false(app.parent_called)
+    assert not app.override_called
+    assert not app.parent_called
     app.config = Config({'A': {'b': 'c'}})
-    nt.assert_true(app.override_called)
-    nt.assert_true(app.parent_called)
+    assert app.override_called
+    assert app.parent_called
 
