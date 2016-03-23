@@ -7,8 +7,9 @@
 import logging
 from unittest import TestCase
 
-import nose.tools as nt
-from nose import SkipTest
+from nose2.compat import unittest
+from unittest import TestCase
+from nose2.tools.such import helper as testhelper
 
 from traitlets.config.configurable import (
     Configurable,
@@ -421,37 +422,40 @@ class TestConfigContainers(TestCase):
         self.assertEqual(d2.a, 5)
 
 
-def test_warn_match():
-    if not hasattr(nt, 'assert_logs'):
-        raise SkipTest("Test requires nose.tests.assert_logs")
+
+class TestLogger(unittest.TestCase):
+
     class A(LoggingConfigurable):
-        foo = Integer(config=True)
-        bar = Integer(config=True)
-        baz = Integer(config=True)
+            foo = Integer(config=True)
+            bar = Integer(config=True)
+            baz = Integer(config=True)
     
-    logger = logging.getLogger('test_warn_match')
-    
-    cfg = Config({'A': {'bat': 5}})
-    with nt.assert_logs(logger, logging.WARNING) as captured:
-        a = A(config=cfg, log=logger)
-    
-    output = '\n'.join(captured.output)
-    nt.assert_in('Did you mean one of: `bar, baz`?', output)
-    nt.assert_in('Config option `bat` not recognized by `A`.', output)
+    def test_warn_match(self):
+        if not hasattr(self, 'assertLogs'):
+            raise unittest.SkipTest("Test requires unittest.TestCase.assertLogs")
 
-    cfg = Config({'A': {'fool': 5}})
-    with nt.assert_logs(logger, logging.WARNING) as captured:
-        a = A(config=cfg, log=logger)
-    
-    output = '\n'.join(captured.output)
-    nt.assert_in('Config option `fool` not recognized by `A`.', output)
-    nt.assert_in('Did you mean `foo`?', output)
+        logger = logging.getLogger('test_warn_match')
+        cfg = Config({'A': {'bat': 5}})
+        with self.assertLogs(logger, logging.WARNING) as captured:
+            a = TestLogger.A(config=cfg, log=logger)
+        
+        output = '\n'.join(captured.output)
+        self.assertIn('Did you mean one of: `bar, baz`?', output)
+        self.assertIn('Config option `bat` not recognized by `A`.', output)
 
-    cfg = Config({'A': {'totally_wrong': 5}})
-    with nt.assert_logs(logger, logging.WARNING) as captured:
-        a = A(config=cfg, log=logger)
+        cfg = Config({'A': {'fool': 5}})
+        with self.assertLogs(logger, logging.WARNING) as captured:
+            a = TestLogger.A(config=cfg, log=logger)
+        
+        output = '\n'.join(captured.output)
+        self.assertIn('Config option `fool` not recognized by `A`.', output)
+        self.assertIn('Did you mean `foo`?', output)
 
-    output = '\n'.join(captured.output)
-    nt.assert_in('Config option `totally_wrong` not recognized by `A`.', output)
-    nt.assert_not_in('Did you mean', output)
+        cfg = Config({'A': {'totally_wrong': 5}})
+        with self.assertLogs(logger, logging.WARNING) as captured:
+            a = TestLogger.A(config=cfg, log=logger)
+
+        output = '\n'.join(captured.output)
+        self.assertIn('Config option `totally_wrong` not recognized by `A`.', output)
+        self.assertNotIn('Did you mean', output)
 

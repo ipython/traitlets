@@ -11,10 +11,9 @@ import pickle
 import sys
 
 from tempfile import mkstemp
-from unittest import TestCase
 
-from nose import SkipTest
-import nose.tools as nt
+from nose2.compat import unittest
+from unittest import TestCase
 
 
 
@@ -173,7 +172,7 @@ class TestFileCL(TestCase):
         f.close()
         # Unlink the file
         cl = JSONFileConfigLoader(fname, log=log)
-        with nt.assert_raises(ValueError):
+        with self.assertRaises(ValueError):
             cl.load_config()
 
 
@@ -276,7 +275,7 @@ class TestKeyValueCL(TestCase):
         try:
             barg = uarg.encode(sys.stdin.encoding)
         except (TypeError, UnicodeEncodeError):
-            raise SkipTest("sys.stdin.encoding can't handle 'é'")
+            raise unittest.SkipTest("sys.stdin.encoding can't handle 'é'")
         
         cl = self.klass(log=log)
         config = cl.load_config([barg])

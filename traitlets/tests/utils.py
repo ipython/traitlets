@@ -1,5 +1,4 @@
 import sys
-import nose.tools as nt
 
 from subprocess import Popen, PIPE
 
@@ -19,10 +18,10 @@ def check_help_output(pkg, subcommand=None):
         cmd.extend(subcommand)
     cmd.append('-h')
     out, err, rc = get_output_error_code(cmd)
-    nt.assert_equal(rc, 0, err)
-    nt.assert_not_in("Traceback", err)
-    nt.assert_in("Options", out)
-    nt.assert_in("--help-all", out)
+    assert rc == 0, err)
+    assert "Traceback" not in err
+    assert "Options" in out
+    assert "--help-all" in out
     return out, err
 
 
@@ -33,8 +32,8 @@ def check_help_all_output(pkg, subcommand=None):
         cmd.extend(subcommand)
     cmd.append('--help-all')
     out, err, rc = get_output_error_code(cmd)
-    nt.assert_equal(rc, 0, err)
-    nt.assert_not_in("Traceback", err)
-    nt.assert_in("Options", out)
-    nt.assert_in("Class parameters", out)
+    assert rc == 0, err)
+    assert "Traceback" not in err
+    assert "Options" in out
+    assert "Class parameters" in out
     return out, err

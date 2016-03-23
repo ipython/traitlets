@@ -10,11 +10,11 @@
 import pickle
 import re
 import sys
-from unittest import TestCase
 from ._warnings import expected_warnings
 
-import nose.tools as nt
-from nose import SkipTest
+from nose2.compat import unittest
+from unittest import TestCase
+from nose2.tools.such import helper as testhelper
 
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
@@ -25,7 +25,6 @@ from traitlets import (
     observe_compat, BaseDescriptor, HasDescriptors,
 )
 from ipython_genutils import py3compat
-from ipython_genutils.testing.decorators import skipif
 
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
@@ -1167,7 +1166,7 @@ class TestLong(TraitTestBase):
         _good_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
         _bad_values.extend([[long(10)], (long(10),)])
 
-    @skipif(py3compat.PY3, "not relevant on py3")
+    @unittest.skipIf(py3compat.PY3, "not relevant on py3")
     def test_cast_small(self):
         """Long casts ints to long"""
         self.obj.value = 10
@@ -1184,11 +1183,11 @@ class TestInteger(TestLong):
     def coerce(self, n):
         return int(n)
 
-    @skipif(py3compat.PY3, "not relevant on py3")
+    @unittest.skipIf(py3compat.PY3, "not relevant on py3")
     def test_cast_small(self):
         """Integer casts small longs to int"""
         if py3compat.PY3:
-            raise SkipTest("not relevant on py3")
+            raise unittest.SkipTest("not relevant on py3")
 
         self.obj.value = long(100)
         self.assertEqual(type(self.obj.value), int)
@@ -1462,8 +1461,8 @@ def test_dict_assignment():
     c = DictTrait()
     c.value = d
     d['a'] = 5
-    nt.assert_equal(d, c.value)
-    nt.assert_true(c.value is d)
+    assert d == c.value  
+    assert c.value is d
 
 class ValidatedDictTrait(HasTraits):
 
@@ -1489,9 +1488,9 @@ def test_dict_default_value():
         d2 = Dict()
 
     foo = Foo()
-    nt.assert_equal(foo.d1, {})
-    nt.assert_equal(foo.d2, {})
-    nt.assert_is_not(foo.d1, foo.d2)
+    assert foo.d1 == {}
+    assert foo.d2 ==  {}
+    assert foo.d1 is not foo.d2
 
 
 class TestValidationHook(TestCase):
@@ -1757,15 +1756,15 @@ def test_pickle_hastraits():
     for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
         p = pickle.dumps(c, protocol)
         c2 = pickle.loads(p)
-        nt.assert_equal(c2.i, c.i)
-        nt.assert_equal(c2.j, c.j)
+        assert c2.i == c.i
+        assert c2.j == c.j
 
     c.i = 5
     for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
         p = pickle.dumps(c, protocol)
         c2 = pickle.loads(p)
-        nt.assert_equal(c2.i, c.i)
-        nt.assert_equal(c2.j, c.j)
+        assert c2.i == c.i
+        assert c2.j == c.j
 
 
 def test_hold_trait_notifications():
@@ -1788,29 +1787,29 @@ def test_hold_trait_notifications():
     with t.hold_trait_notifications():
         with t.hold_trait_notifications():
             t.a = 1
-            nt.assert_equal(t.a, 1)
-            nt.assert_equal(changes, [])
+            assert t.a == 1
+            assert changes == []
         t.a = 2
-        nt.assert_equal(t.a, 2)
+        assert t.a == 2
         with t.hold_trait_notifications():
             t.a = 3
-            nt.assert_equal(t.a, 3)
-            nt.assert_equal(changes, [])
+            assert t.a == 3
+            assert changes == []
             t.a = 4
-            nt.assert_equal(t.a, 4)
-            nt.assert_equal(changes, [])
+            assert t.a == 4
+            assert changes == []
         t.a = 4
-        nt.assert_equal(t.a, 4)
-        nt.assert_equal(changes, [])
+        assert t.a == 4
+        assert changes == []
 
-    nt.assert_equal(changes, [(0, 4)])
+    assert changes == [(0, 4)]
     # Test roll-back
     try:
          with t.hold_trait_notifications():
              t.b = 1  # raises a Trait error
     except:
         pass
-    nt.assert_equal(t.b, 0)
+    assert t.b == 0
 
 
 class RollBack(HasTraits):
@@ -1884,12 +1883,12 @@ class OrderTraits(HasTraits):
 def test_notification_order():
     d = {c:c for c in 'abcdefghijkl'}
     obj = OrderTraits()
-    nt.assert_equal(obj.notified, {})
+    assert obj.notified == {}
     obj = OrderTraits(**d)
     notifications = {
         c: d for c in 'abcdefghijkl'
     }
-    nt.assert_equal(obj.notified, notifications)
+    assert obj.notified == notifications
 
 
 
@@ -2056,7 +2055,7 @@ def test_enum_no_default():
 
     c = C()
 
-    with nt.assert_raises(TraitError):
+    with testhelper.assertRaises(TraitError):
         t = c.t
 
     c = C(t='b')
@@ -2071,11 +2070,11 @@ def test_default_value_repr():
         lis = List()
         d = Dict()
     
-    nt.assert_equal(C.t.default_value_repr(), "'traitlets.HasTraits'")
-    nt.assert_equal(C.t2.default_value_repr(), "'traitlets.traitlets.HasTraits'")
-    nt.assert_equal(C.n.default_value_repr(), '0')
-    nt.assert_equal(C.lis.default_value_repr(), '[]')
-    nt.assert_equal(C.d.default_value_repr(), '{}')
+    assert C.t.default_value_repr() == "'traitlets.HasTraits'"
+    assert C.t2.default_value_repr() == "'traitlets.traitlets.HasTraits'"
+    assert C.n.default_value_repr() == '0'
+    assert C.lis.default_value_repr() == '[]'
+    assert C.d.default_value_repr() == '{}'
 
 
 class TransitionalClass(HasTraits):
@@ -2123,12 +2122,12 @@ class SubClass(TransitionalClass):
 def test_subclass_compat():
     obj = SubClass()
     obj.calls_super = 5
-    nt.assert_true(obj.parent_super)
-    nt.assert_true(obj.subclass_super)
+    assert obj.parent_super
+    assert obj.subclass_super
     obj.overrides = 5
-    nt.assert_true(obj.subclass_override)
-    nt.assert_false(obj.parent_override)
-    nt.assert_is(obj.d, SubClass)
+    assert obj.subclass_override
+    assert not obj.parent_override
+    assert obj.d is SubClass
 
 
 class DefinesHandler(HasTraits):
@@ -2151,8 +2150,8 @@ class OverridesHandler(DefinesHandler):
 def test_subclass_override_observer():
     obj = OverridesHandler()
     obj.trait = 5
-    nt.assert_true(obj.child_called)
-    nt.assert_false(obj.parent_called)
+    assert obj.child_called
+    assert not obj.parent_called
 
 
 class DoesntRegisterHandler(DefinesHandler):
@@ -2166,8 +2165,8 @@ def test_subclass_override_not_registered():
     """Subclass that overrides observer and doesn't re-register unregisters both"""
     obj = DoesntRegisterHandler()
     obj.trait = 5
-    nt.assert_false(obj.child_called)
-    nt.assert_false(obj.parent_called)
+    assert not obj.child_called
+    assert not obj.parent_called
 
 
 class AddsHandler(DefinesHandler):
@@ -2180,8 +2179,8 @@ class AddsHandler(DefinesHandler):
 def test_subclass_add_observer():
     obj = AddsHandler()
     obj.trait = 5
-    nt.assert_true(obj.child_called)
-    nt.assert_true(obj.parent_called)
+    assert obj.child_called
+    assert obj.parent_called
 
 def test_super_args():
     class SuperRecorder(object):
@@ -2193,11 +2192,11 @@ def test_super_args():
         i = Integer()
     
     obj = SuperHasTraits('a1', 'a2', b=10, i=5, c='x')
-    nt.assert_equal(obj.i, 5)
+    assert obj.i ==  5
     assert not hasattr(obj, 'b')
     assert not hasattr(obj, 'c')
-    nt.assert_equal(obj.super_args, ('a1', 'a2'))
-    nt.assert_equal(obj.super_kwargs, {'b': 10, 'c': 'x'})
+    assert obj.super_args == ('a1' ,  'a2')
+    assert obj.super_kwargs == {'b': 10 , 'c': 'x'}
 
 def test_super_bad_args():
     class SuperHasTraits(HasTraits):
@@ -2210,5 +2209,5 @@ def test_super_bad_args():
         w = ["Passing unrecoginized arguments"]
     with expected_warnings(w):
         obj = SuperHasTraits(a=1, b=2)
-    nt.assert_equal(obj.a, 1)
+    assert obj.a ==  1 
     assert not hasattr(obj, 'b')
