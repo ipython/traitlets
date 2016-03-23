@@ -6,6 +6,7 @@ python:
     - 3.3
 sudo: false
 install:
+    - pip install . nose2
     - pip install . cov-core
 script:
     - nose2 --with-coverage
