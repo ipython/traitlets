@@ -2401,26 +2401,26 @@ class Dict(Instance):
         return value
 
     def validate_elements(self, obj, value):
-        if self._traits is not None:
-            for key in self._traits:
-                if key not in value:
-                    raise TraitError("Missing required '%s' key for the '%s' trait of %s instance"
-                                     % (key, self.name, class_of(obj)))
-        if self._traits is None and (self._trait is None or
-                                     isinstance(self._trait, Any)):
+        use_dict = bool(self._traits)
+        default_to = (self._trait or Any())
+        if not use_dict and isinstance(default_to, Any):
             return value
+
         validated = {}
         for key in value:
-            v = value[key]
+            if use_dict and key in self._traits:
+                validate_with = self._traits[key]
+            else:
+                validate_with = default_to
             try:
-                if self._traits is not None and key in self._traits:
-                    v = self._traits[key]._validate(obj, v)
-                else:
-                    v = self._trait._validate(obj, v)
+                v = value[key]
+                if not isinstance(validate_with, Any):
+                    v = validate_with._validate(obj, v)
             except TraitError:
-                self.element_error(obj, v, self._trait)
+                self.element_error(obj, v, validate_with)
             else:
                 validated[key] = v
+
         return self.klass(validated)
 
     def class_init(self, cls, name):
