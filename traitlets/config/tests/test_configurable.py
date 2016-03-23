@@ -437,7 +437,7 @@ class TestLogger(unittest.TestCase):
         logger = logging.getLogger('test_warn_match')
         cfg = Config({'A': {'bat': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
-            a = A(config=cfg, log=logger)
+            a = TestLogger.A(config=cfg, log=logger)
         
         output = '\n'.join(captured.output)
         self.assertIn('Did you mean one of: `bar, baz`?', output)
@@ -445,7 +445,7 @@ class TestLogger(unittest.TestCase):
 
         cfg = Config({'A': {'fool': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
-            a = A(config=cfg, log=logger)
+            a = TestLogger.A(config=cfg, log=logger)
         
         output = '\n'.join(captured.output)
         self.assertIn('Config option `fool` not recognized by `A`.', output)
@@ -453,7 +453,7 @@ class TestLogger(unittest.TestCase):
 
         cfg = Config({'A': {'totally_wrong': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
-            a = A(config=cfg, log=logger)
+            a = TestLogger.A(config=cfg, log=logger)
 
         output = '\n'.join(captured.output)
         self.assertIn('Config option `totally_wrong` not recognized by `A`.', output)
