@@ -18,7 +18,7 @@ def check_help_output(pkg, subcommand=None):
         cmd.extend(subcommand)
     cmd.append('-h')
     out, err, rc = get_output_error_code(cmd)
-    assert rc == 0, err)
+    assert rc == 0, err
     assert "Traceback" not in err
     assert "Options" in out
     assert "--help-all" in out
