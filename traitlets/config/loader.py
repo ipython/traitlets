@@ -416,7 +416,6 @@ class JSONFileConfigLoader(FileConfigLoader):
             version = dictionary.pop('version')
         else:
             version = 1
-            self.log.warning("Unrecognized JSON config file version, assuming version {}".format(version))
 
         if version == 1:
             return Config(dictionary)
