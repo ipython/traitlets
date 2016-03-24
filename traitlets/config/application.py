@@ -577,6 +577,9 @@ class Application(SingletonConfigurable):
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
         for cls in self._classes_inc_parents():
+            if not cls.class_own_traits(config=True):
+                # skip classes with no config (Singleton, etc.)
+                continue
             lines.append(cls.class_config_section())
         return '\n'.join(lines)
 
