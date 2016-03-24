@@ -22,6 +22,7 @@ from nose2.compat import unittest
 
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config
+from traitlets.tests.utils import check_help_output, check_help_all_output
 
 from traitlets.config.application import (
     Application
@@ -269,3 +270,11 @@ def test_deprecated_notifier():
     assert app.override_called
     assert app.parent_called
 
+
+def test_help_output():
+    check_help_output(__name__)
+    check_help_all_output(__name__)
+
+if __name__ == '__main__':
+    # for test_help_output:
+    MyApp.launch_instance()
