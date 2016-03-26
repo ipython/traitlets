@@ -45,6 +45,7 @@ import inspect
 import re
 import sys
 import types
+import enum
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -2471,3 +2472,88 @@ class CRegExp(TraitType):
             return re.compile(value)
         except:
             self.error(obj, value)
+
+
+class UseEnum(TraitType):
+    """Use a Enum class as model for the data type description.
+    Note that if no default-value is provided, the first enum-value is used
+    as default-value.
+
+    .. sourcecode:: python
+
+        # -- SINCE: Python 3.4 (or install backport: pip install enum34)
+        import enum
+        from traitlets import HasTraits, UseEnum
+
+        class Color(enum.Enum):
+            red = 1         # -- IMPLICIT: default_value
+            blue = 2
+            green = 3
+
+        class MyEntity(HasTraits):
+            color = UseEnum(Color, default_value=Color.blue)
+
+        entity = MyEntity(color=Color.red)
+        entity.color = Color.green    # USE: Enum-value (preferred)
+        entity.color = "green"        # USE: name (as string)
+        entity.color = "Color.green"  # USE: scoped-name (as string)
+        entity.color = 3              # USE: number (as int)
+        assert entity.color is Color.green
+    """
+    default_value = None
+    info_text = "Trait type adapter to a Enum class"
+
+    def __init__(self, enum_class, default_value=None, **kwargs):
+        assert issubclass(enum_class, enum.Enum), \
+                          "REQUIRE: enum.Enum, but was: %r" % enum_class
+        allow_none = kwargs.get("allow_none", False)
+        if default_value is None and not allow_none:
+            default_value = list(enum_class.__members__.values())[0]
+        super(UseEnum, self).__init__(default_value=default_value, **kwargs)
+        self.enum_class = enum_class
+        self.name_prefix = enum_class.__name__ + "."
+
+    def select_by_number(self, value, default=Undefined):
+        """Selects enum-value by using its number-constant."""
+        assert isinstance(value, int)
+        enum_members = self.enum_class.__members__
+        for enum_item in enum_members.values():
+            if enum_item.value == value:
+                return enum_item
+        # -- NOT FOUND:
+        return default
+
+    def select_by_name(self, value, default=Undefined):
+        """Selects enum-value by using its name or scoped-name."""
+        assert isinstance(value, string_types)
+        if value.startswith(self.name_prefix):
+            # -- SUPPORT SCOPED-NAMES, like: "Color.red" => "red"
+            value = value.replace(self.name_prefix, "", 1)
+        return self.enum_class.__members__.get(value, default)
+
+    def validate(self, obj, value):
+        if isinstance(value, self.enum_class):
+            return value
+        elif isinstance(value, int):
+            # -- CONVERT: number => enum_value (item)
+            value2 = self.select_by_number(value)
+            if value2 is not Undefined:
+                return value2
+        elif isinstance(value, string_types):
+            # -- CONVERT: name or scoped_name (as string) => enum_value (item)
+            value2 = self.select_by_name(value)
+            if value2 is not Undefined:
+                return value2
+        elif value is None:
+            if self.allow_none:
+                return None
+            else:
+                return self.default_value
+        self.error(obj, value)
+
+    def info(self):
+        """Returns a description of this Enum trait (in case of errors)."""
+        result = "Any of: %s" % ", ".join(self.enum_class.__members__.keys())
+        if self.allow_none:
+            return result + " or None"
+        return result

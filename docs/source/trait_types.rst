@@ -101,6 +101,8 @@ Miscellaneous
 
 .. autoclass:: CaselessStrEnum
 
+.. autoclass:: UseEnum
+
 .. autoclass:: TCPAddress
 
 .. autoclass:: CRegExp
