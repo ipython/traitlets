@@ -1464,19 +1464,51 @@ def test_dict_assignment():
     assert d == c.value  
     assert c.value is d
 
-class ValidatedDictTrait(HasTraits):
+
+class UniformlyValidatedDictTrait(HasTraits):
+
+    value = Dict(trait=Unicode(),
+                 default_value={'foo': '1'})
+
+
+class TestInstanceUniformlyValidatedDict(TraitTestBase):
+
+    obj = UniformlyValidatedDictTrait()
+
+    _default_value = {'foo': '1'}
+    _good_values = [{'foo': '0', 'bar': '1'}]
+    _bad_values = [{'foo': 0, 'bar': '1'}]
+
+
+class KeyValidatedDictTrait(HasTraits):
+
+    value = Dict(traits={'foo': Int()},
+                 default_value={'foo': 1})
+
+
+class TestInstanceKeyValidatedDict(TraitTestBase):
+
+    obj = KeyValidatedDictTrait()
+
+    _default_value = {'foo': 1}
+    _good_values = [{'foo': 0, 'bar': '1'}, {'foo': 0, 'bar': 1}]
+    _bad_values = [{'foo': '0', 'bar': '1'}]
+
+
+class FullyValidatedDictTrait(HasTraits):
 
     value = Dict(trait=Unicode(),
                  traits={'foo': Int()},
                  default_value={'foo': 1})
 
-class TestInstanceDict(TraitTestBase):
 
-    obj = ValidatedDictTrait()
+class TestInstanceFullyValidatedDict(TraitTestBase):
+
+    obj = FullyValidatedDictTrait()
 
     _default_value = {'foo': 1}
-    _good_values = [{'0': 'foo', 'foo': 1}, {'1': 'bar', 'foo': 2}]
-    _bad_values = [{'0': 0, 'foo': 1}, {'1': 'bar', 'foo': 'bar'}]
+    _good_values = [{'foo': 0, 'bar': '1'}, {'foo': 1, 'bar': '2'}]
+    _bad_values = [{'foo': 0, 'bar': 1}, {'foo': '0', 'bar': '1'}]
 
 
 def test_dict_default_value():
