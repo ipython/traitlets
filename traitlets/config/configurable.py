@@ -6,11 +6,14 @@
 
 from __future__ import print_function
 
+import os
 from copy import deepcopy
 import warnings
 
 from .loader import Config, LazyConfigValue, _is_section_key
-from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
+from traitlets.traitlets import (HasTraits, BaseDescriptor, TraitType, Instance,
+                                observe, observe_compat, default)
+
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 from ipython_genutils.py3compat import iteritems
 
@@ -35,6 +38,31 @@ class Configurable(HasTraits):
 
     config = Instance(Config, (), {})
     parent = Instance('traitlets.config.configurable.Configurable', allow_none=True)
+
+    @classmethod
+    def setup_class(cls, classdict):
+        for k, v in iteritems(classdict):
+            if isinstance(v, BaseDescriptor):
+                v.class_init(cls, k)
+                if isinstance(v, TraitType) and 'envvar' in v.metadata:
+                    v.set_default_from_envvar(cls._generate_envvar_default(v))
+
+    @classmethod
+    def _generate_envvar_default(cls, trait):
+        """Generate a default for the trait from os.environ"""
+        vname = trait.metadata['envvar']
+        try:
+            return os.environ[vname]
+        except KeyError:
+            raise TraitError(
+                "{type} trait with name {name} expected "
+                "os.environ[{envvar!r}] to be set.".format(
+                    type=type(trait).__name__,
+                    envvar=vname,
+                    # repring here to add quotes in the formatted error message.
+                    name=repr(trait.name) if trait.name else "<anonymous>",
+                )
+            )
 
     def __init__(self, **kwargs):
         """Create a configurable given a config config.
@@ -422,4 +450,5 @@ class SingletonConfigurable(LoggingConfigurable):
         return hasattr(cls, "_instance") and cls._instance is not None
 
 
-
+def envvar_eval(s):
+    return eval(s)

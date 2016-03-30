@@ -18,7 +18,7 @@ from traitlets.config.configurable import (
 )
 
 from traitlets.traitlets import (
-    Integer, Float, Unicode, List, Dict, Set,
+    Type, Integer, Float, Unicode, List, Dict, Set, CBool
 )
 
 from traitlets.config.loader import Config
@@ -147,6 +147,17 @@ class TestConfigurable(TestCase):
     def test_help_inst(self):
         inst = MyConfigurable(a=5, b=4)
         self.assertEqual(MyConfigurable.class_get_help(inst), mc_help_inst)
+
+    def test_environment_variable_default(self):
+        import os
+
+        os.environ['MY_ENVVAR'] = 'true'
+
+        class A(Configurable):
+            b = CBool().tag(envvar='MY_ENVVAR')
+
+        a = A()
+        self.assertTrue(a.b)
 
 
 class TestSingletonConfigurable(TestCase):
