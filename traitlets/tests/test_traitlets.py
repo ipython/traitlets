@@ -715,7 +715,6 @@ class TestObserveDecorator(TestCase):
 
         a.unobserve(_test_observer, 'bar')
         a.bar = 3
-        print(a._trait_notifiers)
         self.assertNotEqual(a.foo, a.bar)
 
 

@@ -59,7 +59,7 @@ from ipython_genutils.py3compat import iteritems, string_types
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
-from .utils.index_table import itable
+from .utils.mapping import isdict
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -1126,31 +1126,38 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             'type': 'change',
         })
 
-    def notify_change(self, change):
-        name, type = change['name'], change['type']
-
-        callables = []
+    def trait_notifiers(self, name, type):
+        notifiers = []
         d = self._trait_notifiers
-        callables.extend(d['names'].get(name, {}).get(type, []))
-        callables.extend(d['names'].get(name, {}).get(All, []))
-        callables.extend(d['names'].get(All, {}).get(type, []))
-        callables.extend(d['names'].get(All, {}).get(All, []))
 
+        # named notifiers
+        notifiers.extend(d['names'].get(name, {}).get(type, []))
+        notifiers.extend(d['names'].get(name, {}).get(All, []))
+        notifiers.extend(d['names'].get(All, {}).get(type, []))
+        notifiers.extend(d['names'].get(All, {}).get(All, []))
+
+        # tagged notifiers
         trait = getattr(self.__class__, name)
-
         for k, v in trait.metadata.items():
             if k in d['tags']:
                 for t in (All, type):
-                    if v in d['tags'][k] and t in d['tags'][k][v]:
-                        for c in d['tags'][k][v][t]:
-                            if c not in callables:
-                                callables.append(c)
-                    elif _Unhashable in d['tags'][k]:
-                        mapping = d['tags'][k][_Unhashable]
-                        if v in mapping and t in mapping[v]:
-                            for c in mapping[v][t]:
-                                if c not in callables:
-                                    callables.append(c)
+                    if v in d['tags'][k]:
+                        if id(v) not in d['tags'][k].ids():
+                            # accounts for _SimpleEval
+                            isdictkeys = list(d['tags'][k].keys())
+                            v = isdictkeys[isdictkeys.index(v)]
+                        if t in d['tags'][k][v]:
+                            for c in d['tags'][k][v][t]:
+                                if c not in notifiers:
+                                    notifiers.append(c)
+
+        return notifiers
+
+
+    def notify_change(self, change):
+        name, type = change['name'], change['type']
+
+        callables = self.trait_notifiers(name, type)
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -1196,33 +1203,18 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 if k in tagged:
                     values = tagged[k]
                 else:
-                    values = {}
+                    values = isdict()
                     tagged[k] = values
 
                 if isinstance(v, types.FunctionType):
                     v = _SimpleEval(v)
 
-                try:
-                    hash(v)
-                except TypeError:
-                    # handle unhashable types
-                    if _Unhashable in values:
-                        mapping = values[_Unhashable]
-                    else:
-                        mapping = itable()
-                        values[_Unhashable] = mapping
-
-                    if v in mapping:
-                        d = mapping[d]
-                    else:
-                        d = {}
-                        mapping[v] = d
+                if v in values:
+                    d = values[v]
                 else:
-                    if v in values:
-                        d = values[v]
-                    else:
-                        d = {}
-                        values[v] = d
+                    # isdict handles unhashable types
+                    d = {}
+                    values[v] = d
 
                 if type in d:
                     nlist = d[type]
@@ -1249,22 +1241,18 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 for tags in (tags, trait.metadata):
                     for k, v in tags.items():
                         if k in d['tags']:
+                            mapping = d['tags'][k]
+                            if v in mapping and id(v) not in mapping.ids():
+                                # accounts for _SimpleEval
+                                isdictkeys = list(mapping.keys())
+                                v = isdictkeys[isdictkeys.index(v)]
                             try:
                                 if handler is None:
-                                    del d['tags'][k][v][type]
+                                    del mapping[v][type]
                                 else:
-                                    d['tags'][k][v][type].remove(handler)
-                            except:
-                                # check in the unhashables
-                                if _Unhashable in d['tags'][k]:
-                                    mapping = d['tags'][k][_Unhashable]
-                                    try:
-                                        if handler is None:
-                                            del mapping[v][type]
-                                        else:
-                                            mapping[v][type].remove(handler)
-                                    except:
-                                        pass   
+                                    mapping[v][type].remove(handler)
+                            except KeyError:
+                                pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
