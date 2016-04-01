@@ -59,7 +59,7 @@ from ipython_genutils.py3compat import iteritems, string_types
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
-from .utils.mapping import isdict
+from .utils.dict_types import mapping
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -214,7 +214,11 @@ class _SimpleEval:
         if isinstance(other, types.FunctionType):
             return self.func == other
         else:
-            return self.func(other)
+            try:
+                return self.func(other)
+            except:
+                return False
+    __hash__ = None
 
 
 def getmembers(object, predicate=None):
@@ -1142,15 +1146,11 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             if k in d['tags']:
                 for t in (All, type):
                     if v in d['tags'][k]:
-                        if id(v) not in d['tags'][k].ids():
-                            # accounts for _SimpleEval
-                            isdictkeys = list(d['tags'][k].keys())
-                            v = isdictkeys[isdictkeys.index(v)]
-                        if t in d['tags'][k][v]:
-                            for c in d['tags'][k][v][t]:
-                                if c not in notifiers:
-                                    notifiers.append(c)
-
+                        for m in d['tags'][k][v]:
+                            if t in m:
+                                for c in m[t]:
+                                    if c not in notifiers:
+                                        notifiers.append(c)
         return notifiers
 
 
@@ -1201,18 +1201,21 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             tagged = self._trait_notifiers['tags']
             for k, v in tags.items():
                 if k in tagged:
-                    values = tagged[k]
+                    notifier_mapping = tagged[k]
                 else:
-                    values = isdict()
-                    tagged[k] = values
+                    # mapping handles all types
+                    # and custom equivalence
+                    notifier_mapping = mapping()
+                    tagged[k] = notifier_mapping
 
                 if isinstance(v, types.FunctionType):
                     v = _SimpleEval(v)
+                # get the internal dict to which `v` should be assigned
+                values = notifier_mapping.get_internal_dict(v)
 
                 if v in values:
                     d = values[v]
                 else:
-                    # isdict handles unhashable types
                     d = {}
                     values[v] = d
 
@@ -1238,21 +1241,18 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             trait = getattr(self.__class__, name, None)
             if isinstance(trait, TraitType):
                 d = self._trait_notifiers
-                for tags in (tags, trait.metadata):
-                    for k, v in tags.items():
-                        if k in d['tags']:
-                            mapping = d['tags'][k]
-                            if v in mapping and id(v) not in mapping.ids():
-                                # accounts for _SimpleEval
-                                isdictkeys = list(mapping.keys())
-                                v = isdictkeys[isdictkeys.index(v)]
-                            try:
-                                if handler is None:
-                                    del mapping[v][type]
-                                else:
-                                    mapping[v][type].remove(handler)
-                            except KeyError:
-                                pass
+                for k, v in trait.metadata.items():
+                    if k in d['tags']:
+                        for t in (All, type):
+                            if v in d['tags'][k]:
+                                for m in d['tags'][k][v]:
+                                    try:
+                                        if handler is None:
+                                            del m[t]
+                                        else:
+                                            m[t].remove(handler)
+                                    except:
+                                        pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
