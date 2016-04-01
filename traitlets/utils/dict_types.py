@@ -5,6 +5,7 @@ A utility for mapping unhashable objects to values
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+from itertools import chain
 
 class isdict(object):
     
@@ -43,7 +44,7 @@ class isdict(object):
             raise KeyError(key)
     
     def __iter__(self):
-        return self._refs.values().__iter__()
+        return self.keys()
 
     def update(self, pairs=None):
         if pairs is not None:
@@ -80,10 +81,10 @@ class isdict(object):
         return self._dict.keys()
     
     def keys(self):
-        return list(self._refs.values())
+        return self._refs.values().__iter__()
     
     def values(self):
-        return list(self._dict.values())
+        return self._dict.values().__iter__()
         
     def items(self):
         return zip(self._refs.values(), self._dict.values())
@@ -128,9 +129,9 @@ class eqdict(object):
         else:
             del self._keys[i]
             del self._vals[i]
-    
+
     def __iter__(self):
-        return self._keys.__iter__()
+        return self.keys()
 
     def update(self, pairs=None):
         if pairs is not None:
@@ -162,10 +163,10 @@ class eqdict(object):
             return self._vals.pop(i)
     
     def keys(self):
-        return self._keys[:]
+        return self._keys.__iter__()
     
     def values(self):
-        return self._vals[:]
+        return self._vals.__iter__()
         
     def items(self):
         return zip(self._keys, self._vals)
@@ -219,6 +220,9 @@ class mapping(object):
             # __eq__ or __cmp__ are hashable
             self._dict[key] = value
 
+    def __iter__(self):
+        return self.keys()
+
     def get_internal_dict(self, key):
         """Return the internal dict to which this key would be assigned"""
         try:
@@ -233,17 +237,14 @@ class mapping(object):
             # __eq__ or __cmp__ are hashable
             return self._dict
 
-    def __iter__(self):
-        return self.keys().__iter__()
-
     def keys(self):
-        return self._is.keys() + self._eq.keys() + list(self._dict.keys())
+        return chain(self._is.keys(), self._eq.keys(), self._dict.keys())
 
     def values(self):
-        return self._is.values() + self._eq.values() + list(self._dict.values())
+        return chain(self._is.values(), elf._eq.values(), self._dict.values())
 
     def items(self):
-        return self._is.items() + self._eq.items() + self._dict.items()
+        return chain(self._is.items(), self._eq.items(), self._dict.items())
 
     def __repr__(self):
         body = []
