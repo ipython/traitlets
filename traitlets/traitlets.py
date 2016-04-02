@@ -1239,13 +1239,43 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         except KeyError:
             pass
 
+        if tags is All or tags is None:
+            all_tags = True
+        elif isinstance(tags, dict) and All in tags and tags[All] is All:
+            # explicit removal from all tags
+            all_tags = True
+            if name is All:
+                names = self.trait_names()
+        else:
+            all_tags = False
+            # convert filter functions to _SimpleEval
+            for k, v in tags.items():
+                if isinstance(v, types.FunctionType):
+                    tags[k] = _SimpleEval(v)
+
         if name is not All:
-            trait = getattr(self.__class__, name, None)
+            names = [name]
+        elif not all_tags:
+            # names can be `self.trait_names()`
+            # even if `all_tags` is True
+            names = self.trait_names()
+        else:
+            names = []
+
+        for n in names:
+            trait = getattr(self.__class__, n, None)
             if isinstance(trait, TraitType):
                 d = self._trait_notifiers
                 for k, v in trait.metadata.items():
-                    if k in d['tags']:
+                    if k in d['tags'] and (all_tags or k in tags):
                         if v in d['tags'][k]:
+                            if all_tags or (v == tags[k] or tags[k] is All):
+                                pass
+                            elif All in tags and tags[All] == v:
+                                # check for tag form `{All: <value>}`
+                                pass
+                            else:
+                                continue
                             for m in d['tags'][k][v]:
                                 for t in (All, type):
                                     try:
@@ -1316,25 +1346,32 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             If names is All, the handler will apply to all traits.  If a list
             of str, handler will apply to all names in the list.  If a
             str, the handler will apply just to that name.
-        tags: dict
+        tags: dict, All
             Allows the handler to apply to traits which have been tagged with
-            metadata that match that tags given here. Tags are dyanmic, so if
+            metadata that match the tags given here. Tags are dyanmic, so if
             trait metadata changes, the handlers which they are associated with
             will as well.
         type : str, All (default: 'change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
+
+        Notes
+        -----
+        The tags argument allows functions to be passed as values of keys in the
+        tags dict which filter traits based on metadata values. The functions
+        should take a single value as an argument and return a boolean. If any
+        function returns False or raises an error, then the trait is not included
+        in the output.
         """
         if names is None and tags is not None:
+            # add handler to tags only
             self._add_notifiers(handler, None, tags, type)
         else:
-            if names is None and tags is None:
-                names = All
-            names = parse_notifier_name(names)
+            names = parse_notifier_name(names or All)
             for n in names:
                 self._add_notifiers(handler, n, tags, type)
 
-    def unobserve(self, handler, names=All, tags=None, type='change'):
+    def unobserve(self, handler, names=All, tags=All, type='change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notificiations.
@@ -1347,13 +1384,29 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
             from the list of notifiers corresponding to all changes.
+        tags: dict
+            The tags for which the specified handler should be removed. If names
+            is All and tags is not All, the handler is uninstalled from all traits
+            with the corresponding metadata. By using All as a key or value in
+            the tags dict, the given handler will be removed from all traits whose
+            metadata have the specified keys or values. Tags are dyanmic, so if
+            trait metadata changes, the handlers which they are associated with will
+            as well.
         type : str or All (default: 'change')
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
+
+        Notes
+        -----
+        The tags argument allows functions to be passed as values of keys in the
+        tags dict which filter traits based on metadata values. The functions
+        should take a single value as an argument and return a boolean. If any
+        function returns False or raises an error, then the trait is not included
+        in the output.
         """
         names = parse_notifier_name(names)
         for n in names:
-            self._remove_notifiers(handler, n, tags or {}, type)
+            self._remove_notifiers(handler, n, tags, type)
 
     def unobserve_all(self, name=All):
         """Remove trait change handlers of any type for the specified name.

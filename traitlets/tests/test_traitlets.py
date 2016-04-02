@@ -717,7 +717,7 @@ class TestObserveDecorator(TestCase):
         self.assertEqual(a.foo, 3)
         a.foo = 0
 
-        a.unobserve(_test_observer1, 'bar')
+        a.unobserve(_test_observer1, 'bar', tags={'type': All})
         a.bar = 2
         self.assertEqual(a.foo, 1)
         a.foo = 0
@@ -729,6 +729,28 @@ class TestObserveDecorator(TestCase):
         self.assertEqual(a.foo, 1)
         a.foo = 0
 
+    def test_unobserve_via_tags(self):
+
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(type='a')
+
+        a = A()
+
+        def _test_observer(change):
+            a.foo += 1
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve(_test_observer, tags={All: 'a'})
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve(_test_observer, tags={All: All})
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve(_test_observer, tags={'type': lambda x: True})
+
+        a.bar = 1
+        self.assertEqual(a.foo, 0)
 
 class TestHasTraits(TestCase):
 
