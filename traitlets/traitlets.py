@@ -1141,17 +1141,19 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         notifiers.extend(d['names'].get(All, {}).get(All, []))
 
         # tagged notifiers
-        trait = getattr(self.__class__, name)
-        for k, v in trait.metadata.items():
-            if k in d['tags']:
-                for t in (All, type):
+        cls = self.__class__
+        trait = getattr(cls, name)
+        if not isinstance(trait, TraitType):
+            raise TraitError("The attribute '%s' is not trait"
+                             " of %s instances" % (name, cls))
+        else:
+            for k, v in trait.metadata.items():
+                if k in d['tags']:
                     if v in d['tags'][k]:
                         for m in d['tags'][k][v]:
-                            if t in m:
-                                for c in m[t]:
-                                    if c not in notifiers:
-                                        notifiers.append(c)
-        return notifiers
+                            notifiers.extend(m.get(All, []))
+                            notifiers.extend(m.get(type, []))
+            return notifiers
 
 
     def notify_change(self, change):
@@ -1243,9 +1245,9 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
                 d = self._trait_notifiers
                 for k, v in trait.metadata.items():
                     if k in d['tags']:
-                        for t in (All, type):
-                            if v in d['tags'][k]:
-                                for m in d['tags'][k][v]:
+                        if v in d['tags'][k]:
+                            for m in d['tags'][k][v]:
+                                for t in (All, type):
                                     try:
                                         if handler is None:
                                             del m[t]

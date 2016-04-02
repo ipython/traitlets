@@ -706,27 +706,24 @@ class TestObserveDecorator(TestCase):
             a.foo += 1
         def _test_observer2(change):
             a.foo += 1
-        def _test_observer3(change):
-            a.foo += 1
 
         # test that multiple evals will register together
         a.observe(_test_observer1, tags={'type': lambda v: v in 'ac'})
         a.observe(_test_observer2, tags={'type': lambda v: v in 'ab'})
-        # test that evals and static tags register together
-        a.observe(_test_observer3, tags={'type': 'a'})
+        # test that evals and static (but unhashable) tags register
+        a.observe(_test_observer1, tags={'type': 'a'})
 
         a.bar = 1
         self.assertEqual(a.foo, 3)
         a.foo = 0
 
         a.unobserve(_test_observer1, 'bar')
-        a.unobserve(_test_observer3, 'bar')
         a.bar = 2
         self.assertEqual(a.foo, 1)
         a.foo = 0
 
-        # test tagged notifiers know about
-        # dynamically added traits
+        # test that tagged notifiers know
+        # about dynamically added traits
         a.add_traits(baz=Int().tag(type='b'))
         a.baz = 1
         self.assertEqual(a.foo, 1)

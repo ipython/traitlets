@@ -72,9 +72,9 @@ class isdict(object):
             raise KeyError(key)
 
     def get(self, key, default=None):
-        try:
+        if key in self:
             return self.__getitem__(key)
-        except:
+        else:
             return default
 
     def ids(self):
@@ -99,7 +99,7 @@ class isdict(object):
 class eqdict(object):
  
     def __init__(self, pairs=None):
-        """A dict-like object for mapping equivalent keys to values"""
+        """A dict-like object for mapping equivalent keys to a set of values"""
         self._keys = []
         self._vals = []
         self.update(pairs)
@@ -148,9 +148,9 @@ class eqdict(object):
                     self.__setitem__(k, v)
 
     def get(self, key, default=None):
-        try:
+        if key in self:
             return self.__getitem__(key)
-        except KeyError:
+        else:
             return default
 
     def pop(self, key):
@@ -176,7 +176,6 @@ class eqdict(object):
         for k, v in self.items():
             body.append(repr(k) + ': ' + repr(v))
         return '{' + ', '.join(body) + '}'
-
 
 class mapping(object):
 
@@ -208,23 +207,13 @@ class mapping(object):
         return values
 
     def __setitem__(self, key, value):
-        try:
-            hash(key)
-        except:
-            if hasattr(key, '__eq__') or hasattr(key, '__cmp__'):
-                self._eq[key] = value
-            else:
-                self._is[key] = value
-        else:
-            # note that python 2 classes with
-            # __eq__ or __cmp__ are hashable
-            self._dict[key] = value
+        self.get_internal_dict(key)[key] = value
 
     def __iter__(self):
         return self.keys()
 
     def get_internal_dict(self, key):
-        """Return the internal dict to which this key would be assigned"""
+        """Return the sub-dict to which this key would be assigned"""
         try:
             hash(key)
         except:
@@ -245,6 +234,12 @@ class mapping(object):
 
     def items(self):
         return chain(self._is.items(), self._eq.items(), self._dict.items())
+
+    def get(self, key, default=None):
+        if key in self:
+            return self.__getitem__(key)
+        else:
+            return default
 
     def __repr__(self):
         body = []
