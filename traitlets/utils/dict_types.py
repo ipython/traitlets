@@ -193,7 +193,7 @@ class mapping(object):
         try:
             hash(key)
         except:
-            if key in self._is[key]:
+            if key in self._is:
                 values.append(self._is[key])
         else:
             # note that python 2 classes with

@@ -696,9 +696,13 @@ class TestObserveDecorator(TestCase):
 
     def test_observe_via_tags(self):
 
+        class unhashable(object):
+            __hash__ = None
+        u = unhashable()
+
         class A(HasTraits):
             foo = Int()
-            bar = Int().tag(type='a')
+            bar = Int().tag(type='a', obj=u)
 
         a = A()
 
@@ -710,23 +714,24 @@ class TestObserveDecorator(TestCase):
         # test that multiple evals will register together
         a.observe(_test_observer1, tags={'type': lambda v: v in 'ac'})
         a.observe(_test_observer2, tags={'type': lambda v: v in 'ab'})
-        # test that evals and static (but unhashable) tags register
+        # test that hashable and unhashable tags register
         a.observe(_test_observer1, tags={'type': 'a'})
+        a.observe(_test_observer1, tags={'obj': u})
 
         a.bar = 1
-        self.assertEqual(a.foo, 3)
+        assert a.foo == 4
         a.foo = 0
 
-        a.unobserve(_test_observer1, 'bar', tags={'type': All})
+        a.unobserve(_test_observer1, 'bar')
         a.bar = 2
-        self.assertEqual(a.foo, 1)
+        assert a.foo == 1
         a.foo = 0
 
         # test that tagged notifiers know
         # about dynamically added traits
         a.add_traits(baz=Int().tag(type='b'))
         a.baz = 1
-        self.assertEqual(a.foo, 1)
+        assert a.foo == 1
         a.foo = 0
 
     def test_unobserve_via_tags(self):
