@@ -200,14 +200,6 @@ class _SimpleTest:
         return self.__repr__()
 
 
-class _KeyValuePair:
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
-    def __eq__(self, other):
-        return self.key == other
-
-
 class _SimpleEval:
     def __init__(self, func): self.func = func
     def __eq__(self, other):
