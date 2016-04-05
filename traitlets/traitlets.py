@@ -1139,12 +1139,14 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
             raise TraitError("The attribute '%s' is not trait"
                              " of %s instances" % (name, cls))
         else:
-            for k, v in trait.metadata.items():
-                if k in d['tags']:
-                    if v in d['tags'][k]:
+            for K, V in trait.metadata.items():
+                # prodcue all combinations of K, V with All sentinal
+                for k, v in ((k, v) for k in (K, All) for v in (V, All)):
+                    if k in d['tags'] and v in d['tags'][k]:
                         for m in d['tags'][k][v]:
-                            notifiers.extend(m.get(All, []))
-                            notifiers.extend(m.get(type, []))
+                            for n in m.get(All, []) + m.get(type, []):
+                                if n not in notifiers:
+                                    notifiers.append(n)
             return notifiers
 
 
@@ -1236,8 +1238,6 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
         elif isinstance(tags, dict) and All in tags and tags[All] is All:
             # explicit removal from all tags
             all_tags = True
-            if name is All:
-                names = self.trait_names()
         else:
             all_tags = False
             # convert filter functions to _SimpleEval
@@ -1247,36 +1247,28 @@ class HasTraits(py3compat.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         if name is not All:
             names = [name]
-        elif not all_tags:
-            # names can be `self.trait_names()`
-            # even if `all_tags` is True
-            names = self.trait_names()
         else:
-            names = []
+            names = self.trait_names()
+
+        d = self._trait_notifiers['tags']
 
         for n in names:
             trait = getattr(self.__class__, n, None)
             if isinstance(trait, TraitType):
-                d = self._trait_notifiers
-                for k, v in trait.metadata.items():
-                    if k in d['tags'] and (all_tags or k in tags):
-                        if v in d['tags'][k]:
-                            if all_tags or (v == tags[k] or tags[k] is All):
-                                pass
-                            elif All in tags and tags[All] == v:
-                                # check for tag form `{All: <value>}`
-                                pass
-                            else:
-                                continue
-                            for m in d['tags'][k][v]:
-                                for t in (All, type):
-                                    try:
-                                        if handler is None:
-                                            del m[t]
-                                        else:
-                                            m[t].remove(handler)
-                                    except:
-                                        pass
+                for K, V in trait.metadata.items():
+                    # prodcue all combinations of K, V with All sentinal
+                    for k, v in ((k, v) for k in (K, All) for v in (V, All)):
+                        if (all_tags or k in tags) and k in d:
+                            if (all_tags or v == tags[k]) and v in d[k]:
+                                for m in d[k][v]:
+                                    for t in (All, type):
+                                        try:
+                                            if handler is None:
+                                                del m[t]
+                                            else:
+                                                m[t].remove(handler)
+                                        except:
+                                            pass
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.

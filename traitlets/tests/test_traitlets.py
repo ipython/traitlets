@@ -714,25 +714,44 @@ class TestObserveDecorator(TestCase):
         # test that multiple evals will register together
         a.observe(_test_observer1, tags={'type': lambda v: v in 'ac'})
         a.observe(_test_observer2, tags={'type': lambda v: v in 'ab'})
-        # test that hashable and unhashable tags register
-        a.observe(_test_observer1, tags={'type': 'a'})
-        a.observe(_test_observer1, tags={'obj': u})
 
         a.bar = 1
-        assert a.foo == 4
+        self.assertEqual(a.foo, 2)
         a.foo = 0
 
-        a.unobserve(_test_observer1, 'bar')
+        a.unobserve(_test_observer1)
+        a.unobserve(_test_observer2)
+
+        # test that hashable and unhashable tags register
+        a.observe(_test_observer1, tags={'type': 'a'})
+        a.observe(_test_observer2, tags={'obj': u})
+
         a.bar = 2
-        assert a.foo == 1
+        self.assertEqual(a.foo, 2)
         a.foo = 0
+
+        a.unobserve(_test_observer1)
+        a.unobserve(_test_observer2)
+
+        # test registration with All sentinal
+        a.observe(_test_observer1, tags={All: All})
+
+        a.bar = 3
+        self.assertEqual(a.foo, 1)
+        a.foo = 0
+
+        a.unobserve(_test_observer1)
 
         # test that tagged notifiers know
         # about dynamically added traits
+        a.observe(_test_observer1, tags={'type': 'b'})
+
         a.add_traits(baz=Int().tag(type='b'))
         a.baz = 1
-        assert a.foo == 1
+        self.assertEqual(a.foo, 1)
         a.foo = 0
+
+        a.unobserve(_test_observer1)
 
     def test_unobserve_via_tags(self):
 
