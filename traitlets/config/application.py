@@ -26,7 +26,8 @@ from traitlets.traitlets import (
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
 from ipython_genutils import py3compat
-from ipython_genutils.py3compat import string_types, iteritems
+
+import six
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections
@@ -162,7 +163,7 @@ class Application(SingletonConfigurable):
     def _log_level_changed(self, change):
         """Adjust the log level when log_level is set."""
         new = change['new']
-        if isinstance(new, string_types):
+        if isinstance(new, six.string_types):
             new = getattr(logging, new)
             self.log_level = new
         self.log.setLevel(new)
@@ -231,7 +232,7 @@ class Application(SingletonConfigurable):
         for key, value in new.items():
             assert len(value) == 2, "Bad flag: %r:%s" % (key, value)
             assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s" % (key, value)
-            assert isinstance(value[1], string_types), "Bad flag: %r:%s" % (key, value)
+            assert isinstance(value[1], six.string_types), "Bad flag: %r:%s" % (key, value)
 
 
     # subcommands for launching other applications
@@ -290,7 +291,7 @@ class Application(SingletonConfigurable):
             for c in cls.mro()[:-3]:
                 classdict[c.__name__] = c
 
-        for alias, longname in iteritems(self.aliases):
+        for alias, longname in self.aliases.items():
             classname, traitname = longname.split('.',1)
             cls = classdict[classname]
 
@@ -310,7 +311,7 @@ class Application(SingletonConfigurable):
             return
 
         lines = []
-        for m, (cfg,help) in iteritems(self.flags):
+        for m, (cfg,help) in self.flags.items():
             prefix = '--' if len(m) > 1 else '-'
             lines.append(prefix+m)
             lines.append(indent(dedent(help.strip())))
@@ -343,7 +344,7 @@ class Application(SingletonConfigurable):
                     app=self.name)):
             lines.append(p)
             lines.append('')
-        for subc, (cls, help) in iteritems(self.subcommands):
+        for subc, (cls, help) in self.subcommands.items():
             lines.append(subc)
             if help:
                 lines.append(indent(dedent(help.strip())))
@@ -415,7 +416,7 @@ class Application(SingletonConfigurable):
         """Initialize a subcommand with argv."""
         subapp,help = self.subcommands.get(subc)
 
-        if isinstance(subapp, string_types):
+        if isinstance(subapp, six.string_types):
             subapp = import_item(subapp)
 
         # clear existing instances
@@ -448,7 +449,7 @@ class Application(SingletonConfigurable):
         # flatten aliases, which have the form:
         # { 'alias' : 'Class.trait' }
         aliases = {}
-        for alias, cls_trait in iteritems(self.aliases):
+        for alias, cls_trait in self.aliases.items():
             cls,trait = cls_trait.split('.',1)
             children = mro_tree[cls]
             if len(children) == 1:
@@ -459,9 +460,9 @@ class Application(SingletonConfigurable):
         # flatten flags, which are of the form:
         # { 'key' : ({'Cls' : {'trait' : value}}, 'help')}
         flags = {}
-        for key, (flagdict, help) in iteritems(self.flags):
+        for key, (flagdict, help) in self.flags.items():
             newflag = {}
-            for cls, subdict in iteritems(flagdict):
+            for cls, subdict in flagdict.items():
                 children = mro_tree[cls]
                 # exactly one descendent, promote flag section
                 if len(children) == 1:
@@ -585,7 +586,6 @@ class Application(SingletonConfigurable):
 
     def exit(self, exit_status=0):
         self.log.debug("Exiting application: %s" % self.name)
-        logging.shutdown()
         sys.exit(exit_status)
 
     @classmethod
