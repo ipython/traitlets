@@ -2533,7 +2533,7 @@ class UseEnum(TraitType):
 
     def select_by_name(self, value, default=Undefined):
         """Selects enum-value by using its name or scoped-name."""
-        assert isinstance(value, string_types)
+        assert isinstance(value, six.string_types)
         if value.startswith(self.name_prefix):
             # -- SUPPORT SCOPED-NAMES, like: "Color.red" => "red"
             value = value.replace(self.name_prefix, "", 1)
@@ -2547,7 +2547,7 @@ class UseEnum(TraitType):
             value2 = self.select_by_number(value)
             if value2 is not Undefined:
                 return value2
-        elif isinstance(value, string_types):
+        elif isinstance(value, six.string_types):
             # -- CONVERT: name or scoped_name (as string) => enum_value (item)
             value2 = self.select_by_name(value)
             if value2 is not Undefined:
