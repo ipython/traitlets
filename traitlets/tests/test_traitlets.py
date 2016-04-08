@@ -13,7 +13,7 @@ import sys
 from ._warnings import expected_warnings
 
 from nose2.compat import unittest
-from unittest import TestCase, skipif
+from unittest import TestCase, skipIf
 from nose2.tools.such import helper as testhelper
 
 from traitlets import (
@@ -1167,7 +1167,7 @@ class TestLong(TraitTestBase):
         _good_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
         _bad_values.extend([[long(10)], (long(10),)])
 
-    @skipif(six.PY3, "not relevant on py3")
+    @skipIf(six.PY3, "not relevant on py3")
     def test_cast_small(self):
         """Long casts ints to long"""
         self.obj.value = 10
@@ -1184,7 +1184,7 @@ class TestInteger(TestLong):
     def coerce(self, n):
         return int(n)
 
-    @skipif(six.PY3, "not relevant on py3")
+    @skipIf(six.PY3, "not relevant on py3")
     def test_cast_small(self):
         """Integer casts small longs to int"""
         if six.PY3:
