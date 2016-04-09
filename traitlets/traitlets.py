@@ -89,14 +89,15 @@ class TraitError(Exception):
 # Utilities
 #-----------------------------------------------------------------------------
 
+from ipython_genutils.py3compat import cast_unicode_py2
+
 _name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*$")
 
 def isidentifier(s):
-    if six.PY3:
-        return s.isidentifier()
-    else:
+    if six.PY2:
         return bool(_name_re.match(s))
-        
+    else:
+        return s.isidentifier()
 
 def _deprecated_method(method, cls, method_name, msg):
     """Show deprecation warning about a magic method definition.
@@ -147,7 +148,7 @@ def repr_type(obj):
     error messages.
     """
     the_type = type(obj)
-    if (not six.PY3) and the_type is InstanceType:
+    if six.PY2 and the_type is InstanceType:
         # Old-style class.
         the_type = obj.__class__
     msg = '%r %r' % (obj, the_type)
@@ -1428,7 +1429,7 @@ class ClassBasedTraitType(TraitType):
 
     def error(self, obj, value):
         kind = type(value)
-        if (not six.PY3) and kind is InstanceType:
+        if six.PY2 and kind is InstanceType:
             msg = 'class %s' % value.__class__.__name__
         else:
             msg = '%s (i.e. %s)' % ( str( kind )[1:-1], repr( value ) )
@@ -1784,10 +1785,7 @@ class CInt(Int):
         except:
             self.error(obj, value)
 
-if six.PY3:
-    Long, CLong = Int, CInt
-    Integer = Int
-else:
+if six.PY2:
     class Long(TraitType):
         """A long integer trait."""
 
@@ -1832,6 +1830,9 @@ else:
                 if isinstance(value, Int64):
                     return int(value)
             self.error(obj, value)
+else:
+    Long, CLong = Int, CInt
+    Integer = Int
 
 
 class Float(TraitType):
@@ -1951,11 +1952,7 @@ class ObjectName(TraitType):
     This does not check that the name exists in any scope."""
     info_text = "a valid object identifier in Python"
 
-    if six.PY3:
-        # Python 3:
-        coerce_str = staticmethod(lambda _,s: s)
-
-    else:
+    if six.PY2:
         # Python 2:
         def coerce_str(self, obj, value):
             "In Python 2, coerce ascii-only unicode to str"
@@ -1965,6 +1962,8 @@ class ObjectName(TraitType):
                 except UnicodeEncodeError:
                     self.error(obj, value)
             return value
+    else:
+        coerce_str = staticmethod(lambda _,s: s)
 
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
@@ -2031,12 +2030,12 @@ class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
     
     def __init__(self, values, default_value=Undefined, **metadata):
-        values = [py3compat.cast_unicode_py2(value) for value in values]
+        values = [cast_unicode_py2(value) for value in values]
         super(CaselessStrEnum, self).__init__(values, default_value=default_value, **metadata)
     
     def validate(self, obj, value):
         if isinstance(value, str):
-            value = py3compat.cast_unicode_py2(value)
+            value = cast_unicode_py2(value)
         if not isinstance(value, six.string_types):
             self.error(obj, value)
 
