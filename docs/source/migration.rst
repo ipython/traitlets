@@ -85,12 +85,12 @@ for other notification types. By default, its value is equal to the
         print("{name} changed from {old} to {new}".format(**change))
 
     foo = Foo()
-    foo.observe(bar_changed, names='bar')
+    foo.observe(handle_change, names='bar')
 
 The new ``@observe`` decorator
 ------------------------------
 
-The use of the magic methods ``_{trait}_changed`` as hange handlers is
+The use of the magic methods ``_{trait}_changed`` as change handlers is
 deprecated, in favor of a new ``@observe`` method decorator.
 
 In addition to the ``names`` argument, the ``@observe`` method decorator
