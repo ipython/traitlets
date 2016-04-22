@@ -5,6 +5,11 @@ Functions for generating class specific documentation of traits and event handle
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import sys
+import types
+
+PY3 = sys.version_info >= (3, 0)
+
 _indent = 4
 nl = '\n'
 t = ' '*_indent
@@ -92,7 +97,7 @@ def _help_by_name(cls, name):
 # Public Documentation Generator
 # - - - - - - - - - - - - - - - -
 
-def traitlet_documentation(cls, name=None):
+def trait_documentation(cls, name=None):
     """Generate documentaiton for traits and event handlers on the class
 
     Parameters
@@ -117,3 +122,34 @@ def traitlet_documentation(cls, name=None):
         trait_helps = "\n".join(h for h in trait_helps if h)
         if trait_helps:
             return trait_title + nl + '-'*len(trait_title) + trait_helps
+
+if PY3:
+    def copy_func(f, name=None):
+        return types.FunctionType(f.__code__, f.__globals__, name or f.__name__,
+                                  f.__defaults__, f.__closure__)
+
+    def write_docs_to_class(cls, docs):
+        """Write traitlet documentation for this class to __init__"""
+        __init__ = copy_func(cls.__init__)
+
+        if __init__.__doc__ is not None:
+            __init__.__doc__ += '\n\n' + docs
+        else:
+            __init__.__doc__ = docs
+
+        cls.__init__ = __init__
+else:
+    def copy_func(f, name=None):
+        return types.FunctionType(f.func_code, f.func_globals, name or f.func_name,
+                                  f.func_defaults, f.func_closure)
+
+    def write_docs_to_class(cls, docs):
+        """Write traitlet documentation for this class to __init__"""
+        im_func = copy_func(cls.__init__.im_func)
+
+        if im_func.__doc__ is not None:
+            im_func.__doc__ += '\n\n' + docs
+        else:
+            im_func.__doc__ = docs
+
+        cls.__init__ = types.MethodType(im_func, None, cls)

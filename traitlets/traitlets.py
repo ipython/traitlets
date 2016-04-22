@@ -58,7 +58,7 @@ import six
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
-from .utils.docgen import traitlet_documentation
+from .utils import docgen
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -959,17 +959,9 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     @classmethod
     def setup_class(cls, classdict):
-        cls._write_docs_to_class()
         MetaHasTraits.setup_class(cls, classdict)
-
-    @classmethod
-    def _write_docs_to_class(cls):
-        docs = trait_documentation(cls)
-        if docs:
-            if cls.__doc__ is not None:
-                cls.__doc__ += '\n\n' + docs
-            else:
-                cls.__doc__ = docs
+        docs = docgen.trait_documentation(cls)
+        docgen.write_docs_to_class(cls, docs)
 
     def __init__(self, *args, **kwargs):
         # Allow trait values to be set using keyword arguments.
