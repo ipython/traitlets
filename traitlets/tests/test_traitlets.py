@@ -687,7 +687,6 @@ class TestHasTraits(TestCase):
             f = Float()
         a = A()
         self.assertEqual(sorted(a.trait_names()),['f','i'])
-        self.assertEqual(sorted(A.class_trait_names()),['f','i'])
         self.assertTrue(a.has_trait('f'))
         self.assertFalse(a.has_trait('g'))
 
@@ -717,7 +716,6 @@ class TestHasTraits(TestCase):
             f = Float()
         a = A()
         self.assertEqual(a.traits(), dict(i=A.i, f=A.f))
-        self.assertEqual(A.class_traits(), dict(i=A.i, f=A.f))
 
     def test_traits_metadata(self):
         class A(HasTraits):
