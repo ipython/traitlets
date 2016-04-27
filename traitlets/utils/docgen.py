@@ -73,7 +73,7 @@ def _help_by_name(cls, name):
         data = nl + '*' + data
 
     # parse event handlers
-    raw_event_objs = cls.events(name)
+    raw_event_objs = cls.trait_events(name)
     events = _gen_trait_event_docs(raw_event_objs)
     if events:
         events = nl + '*' + events
