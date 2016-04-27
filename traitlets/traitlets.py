@@ -1401,7 +1401,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             return trait.metadata.get(key, default)
 
     @classmethod
-    def class_own_events(cls, name):
+    def class_own_trait_events(cls, name):
         """Get a dict of all event handlers defined on this class, not a parent.
 
         Works like ``event_handlers``, except for excluding traits from parents.
@@ -1411,7 +1411,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 if getattr(sup, n, None) is not e}
 
     @classmethod
-    def events(cls, name=None):
+    def trait_events(cls, name=None):
         """Get a ``dict`` of all the event handlers of this class.
 
         Parameters
