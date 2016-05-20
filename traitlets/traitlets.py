@@ -637,6 +637,11 @@ class TraitType(BaseDescriptor):
 
         >>> Int(0).tag(config=True, sync=True)
         """
+        maybe_constructor_keywords = set(metadata.keys()).intersection({'help','allow_none', 'read_only_default_value'})
+        if maybe_constructor_keywords:
+            warn('The following attributes are set in using `tag`, but seem to be constructor keywords arguments: %s '%
+                    maybe_constructor_keywords, UserWarning, stacklevel=2)
+            
         self.metadata.update(metadata)
         return self
 
