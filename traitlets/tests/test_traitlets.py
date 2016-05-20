@@ -438,10 +438,10 @@ class TestHasTraitsNotify(TestCase):
         a.on_trait_change(callback4, 'a')
         a.a = 100000
         self.assertEqual(self.cb,('a',10000,100000,a))
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 1)
+        self.assertEqual(len(a._trait_notifiers.get_named_notifiers('a', 'change')), 1)
         a.on_trait_change(callback4, 'a', remove=True)
 
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 0)
+        self.assertEqual(len(a._trait_notifiers.get_named_notifiers('a', 'change')), 0)
 
     def test_notify_only_once(self):
 
@@ -634,10 +634,10 @@ class TestObserveDecorator(TestCase):
         a.a = 100
         change = change_dict('a', 10, 100, a, 'change')
         self.assertEqual(self.cb, change)
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 1)
+        self.assertEqual(len(a._trait_notifiers.get_named_notifiers('a', 'change')), 1)
         a.unobserve(callback1, 'a')
 
-        self.assertEqual(len(a._trait_notifiers['a']['change']), 0)
+        self.assertEqual(len(a._trait_notifiers.get_named_notifiers('a', 'change')), 0)
 
     def test_notify_only_once(self):
 
@@ -678,6 +678,139 @@ class TestObserveDecorator(TestCase):
         self.assertEqual(b.b, b.c)
         self.assertEqual(b.b, b.d)
 
+    def test_observe_decorator_via_tags(self):
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(test=True)
+
+            @observe(tags={'test':True})
+            def _test_observer(self, change):
+                self.foo = change['new']
+
+        a = A()
+        a.bar = 1
+        self.assertEqual(a.foo, a.bar)
+
+        a.add_traits(baz=Int().tag(test=True))
+        a.baz = 2
+        self.assertEqual(a.foo, a.baz)
+
+    def test_observe_via_tags(self):
+
+        class unhashable(object):
+            __hash__ = None
+        u = unhashable()
+
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(type='a', obj=u)
+
+        a = A()
+
+        def _test_observer1(change):
+            a.foo += 1
+        def _test_observer2(change):
+            a.foo += 1
+
+        # test that multiple evals will register together
+        a.observe(_test_observer1, tags={'type': lambda v: v in 'ac'})
+        a.observe(_test_observer2, tags={'type': lambda v: v in 'ab'})
+
+        a.bar = 1
+        self.assertEqual(a.foo, 2)
+        a.foo = 0
+
+        a.unobserve_all(_test_observer1)
+        a.unobserve_all(_test_observer2)
+
+        # test that hashable and unhashable tags register
+        a.observe(_test_observer1, tags={'type': 'a'})
+        a.observe(_test_observer2, tags={'obj': u})
+
+        a.bar = 2
+        self.assertEqual(a.foo, 2)
+        a.foo = 0
+
+        a.unobserve_all(_test_observer1)
+        a.unobserve_all(_test_observer2)
+
+        # test registration with All sentinal
+        a.observe(_test_observer1, tags={All: 'a'})
+
+        a.bar = 3
+        self.assertEqual(a.foo, 1)
+        a.foo = 0
+
+        a.unobserve_all(_test_observer1)
+
+        # test that tagged notifiers know
+        # about dynamically added traits
+        a.observe(_test_observer1, tags={'type': 'b'})
+
+        a.add_traits(baz=Int().tag(type='b'))
+        a.baz = 1
+        self.assertEqual(a.foo, 1)
+        a.foo = 0
+
+        a.unobserve_all(_test_observer1)
+
+    def test_unobserve_via_tags(self):
+
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(type='a')
+
+        a = A()
+
+        def _test_observer(change):
+            a.foo += 1
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve(_test_observer, names='bar')
+
+        a.bar = 1
+        self.assertEqual(a.foo, 0)
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve(_test_observer, tags={'type': 'a'})
+
+        a.bar = 2
+        self.assertEqual(a.foo, 0)
+
+    def test_unobserve_via_all_tags(self):
+
+        class A(HasTraits):
+            foo = Int()
+            bar = Int().tag(type='a')
+
+        a = A()
+
+        def _test_observer(change):
+            a.foo += 1
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve_all(_test_observer, tags={All: 'a'})
+
+        a.bar = 1
+        self.assertEqual(a.foo, 0)
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve_all(_test_observer, {'type': All})
+
+        a.bar = 2
+        self.assertEqual(a.foo, 0)
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve_all(_test_observer, tags=All)
+
+        a.bar = 3
+        self.assertEqual(a.foo, 0)
+
+        a.observe(_test_observer, tags={'type': 'a'})
+        a.unobserve_all(_test_observer, tags={'type': lambda x: True})
+
+        a.bar = 4
+        self.assertEqual(a.foo, 0)
 
 class TestHasTraits(TestCase):
 

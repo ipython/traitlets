@@ -58,6 +58,7 @@ import six
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .utils.dict_types import TraitNotifierMapping
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -79,11 +80,21 @@ from all trait attributes.
 '''
 )
 
+_Unhashable = Sentinel('Unhashable', 'traitlets',
+'''
+Used as a key in `HasTraits._trait_notifiers` for unhashable types.
+'''
+)
+
 # Deprecated alias
 NoDefaultSpecified = Undefined
 
 class TraitError(Exception):
     pass
+
+# used to lock reference counts to at least one
+# when observing tags with unhashable types.
+_lock_reference_count = {}
 
 #-----------------------------------------------------------------------------
 # Utilities
@@ -186,6 +197,24 @@ def parse_notifier_name(names):
             assert isinstance(n, six.string_types), "names must be strings"
         return names
 
+def parse_notifier_tags(tags, evals=True):
+    if tags is All:
+        parsed = {All: All}
+    elif isinstance(tags, dict):
+        if evals:
+            parsed = {}
+            for k, v in tags.items():
+                # convert filter functions to _SimpleEval
+                if isinstance(v, types.FunctionType):
+                    parsed[k] = _SimpleEval(v)
+                else:
+                    parsed[k] = v
+        else:
+            parsed = tags.copy()
+    else:
+        parsed = None
+    return parsed
+
 
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
@@ -195,6 +224,19 @@ class _SimpleTest:
         return "<SimpleTest(%r)" % self.value
     def __str__(self):
         return self.__repr__()
+
+
+class _SimpleEval:
+    def __init__(self, func): self.func = func
+    def __eq__(self, other):
+        if isinstance(other, types.FunctionType):
+            return self.func == other
+        else:
+            try:
+                return self.func(other)
+            except:
+                return False
+    __hash__ = None
 
 
 def getmembers(object, predicate=None):
@@ -759,7 +801,9 @@ def observe(*names, **kwargs):
     *names
         The str names of the Traits to observe on the object.
     """
-    return ObserveHandler(names, type=kwargs.get('type', 'change'))
+    tags = kwargs.get('tags', {})
+    type = kwargs.get('type', 'change')
+    return ObserveHandler(names, type=type, tags=tags)
 
 
 def observe_compat(func):
@@ -882,12 +926,14 @@ class EventHandler(BaseDescriptor):
 
 class ObserveHandler(EventHandler):
 
-    def __init__(self, names, type):
+    def __init__(self, names, type, tags):
         self.trait_names = names
+        self.tags = tags
         self.type = type
 
     def instance_init(self, inst):
-        inst.observe(self, self.trait_names, type=self.type)
+        inst.observe(self, self.trait_names,
+                     tags=self.tags, type=self.type)
 
 
 class ValidateHandler(EventHandler):
@@ -947,8 +993,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     def setup_instance(self, *args, **kwargs):
         self._trait_values = {}
-        self._trait_notifiers = {}
         self._trait_validators = {}
+        self._trait_notifiers = TraitNotifierMapping()
         super(HasTraits, self).setup_instance(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
@@ -988,7 +1034,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
-        d['_trait_notifiers'] = {}
+        d['_trait_notifiers'] = TraitNotifierMapping()
         d['_trait_validators'] = {}
         return d
 
@@ -1107,14 +1153,38 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             'type': 'change',
         })
 
+    def trait_notifiers(self, name, type):
+        notifiers = []
+        d = self._trait_notifiers
+
+        # named notifiers
+        for n, t in [(n, t) for n in (name, All) for t in (type, All)]:
+            for n in d.get_named_notifiers(n, t):
+                if n not in notifiers:
+                    notifiers.append(n)
+
+        # tagged notifiers
+        cls = self.__class__
+        trait = getattr(cls, name, None)
+        if isinstance(trait, TraitType):
+            for K, V in trait.metadata.items():
+                # prodcue combinations of K, V with All sentinal
+                for k, v in [(K, V), (K, All), (All, V)]:
+                    for t in ((type,) if type is All else (type, All)):
+                        for n in d.get_tagged_notifiers(k, v, t):
+                            if n not in notifiers:
+                                notifiers.append(n)
+                for n in d.get_tagged_notifiers(All, All, All):
+                    if n not in notifiers:
+                        notifiers.append(n)
+                        
+        return notifiers
+
+
     def notify_change(self, change):
         name, type = change['name'], change['type']
 
-        callables = []
-        callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
+        callables = self.trait_notifiers(name, type)
 
         # Now static ones
         magic_name = '_%s_changed' % name
@@ -1140,27 +1210,32 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             
             c(change)
 
-    def _add_notifiers(self, handler, name, type):
-        if name not in self._trait_notifiers:
-            nlist = []
-            self._trait_notifiers[name] = {type: nlist}
-        else:
-            if type not in self._trait_notifiers[name]:
-                nlist = []
-                self._trait_notifiers[name][type] = nlist
+    def _add_notifiers(self, handler, name, tags, type):
+        d = self._trait_notifiers
+        if name:
+            d.add_named_notifier(handler, name, type)
+        if name is not All and tags:
+            if All in tags and tags[All] is All:
+                d.add_named_notifier(handler, All, type)
             else:
-                nlist = self._trait_notifiers[name][type]
-        if handler not in nlist:
-            nlist.append(handler)
+                for k, v in tags.items():
+                    d.add_tagged_notifier(handler, k, v, type)
 
-    def _remove_notifiers(self, handler, name, type):
-        try:
-            if handler is None:
-                del self._trait_notifiers[name][type]
-            else:
-                self._trait_notifiers[name][type].remove(handler)
-        except KeyError:
-            pass
+    def _remove_notifiers(self, handler, name, tags, type):
+        d = self._trait_notifiers
+        if name is not None:
+            d.del_named_notifier(handler, name, type)
+            if name is not All:
+                trait = getattr(self.__class__, name, None)
+                if isinstance(trait, TraitType):
+                    for K, V in trait.metadata.items():
+                        # prodcue all combinations of K, V with All sentinal
+                        for k, v in [(K, V), (K, All), (All, V)]:
+                            for t in ((type,) if type is All else (type, All)):
+                                d.del_tagged_notifier(handler, k, v, t)
+                    d.del_tagged_notifier(handler, All, All, All)
+        for k, v in tags.items():
+            d.del_tagged_notifier(handler, k, v, type)
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
@@ -1199,10 +1274,10 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type='change'):
+    def observe(self, handler, names=None, tags=None, type='change'):
         """Setup a handler to be called when a trait changes.
 
-        This is used to setup dynamic notifications of trait changes.
+        This is used to setup dynamic notifications
 
         Parameters
         ----------
@@ -1217,49 +1292,130 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             * ``old`` : the old value of the modified trait attribute
             * ``new`` : the new value of the modified trait attribute
             * ``name`` : the name of the modified trait attribute.
-        names : list, str, All
-            If names is All, the handler will apply to all traits.  If a list
-            of str, handler will apply to all names in the list.  If a
+        names : list, str, All, None
+            If no tags and no names are given, ``names`` will default to All.
+            If names is All, the handler will apply to all traits. If a list
+            of str, handler will apply to all names in the list. If a
             str, the handler will apply just to that name.
+        tags: dict, All
+            Allows the handler to apply to traits which have been tagged with
+            metadata that match the tags given here. Tags are dyanmic, so if
+            trait metadata changes, the handlers which they are associated with
+            will as well.
         type : str, All (default: 'change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
-        """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=All, type='change'):
+        Notes
+        -----
+        The tags argument allows functions to be passed as values of keys in the
+        tags dict which filter traits based on metadata values. The functions
+        should take a single value as an argument and return a boolean. If any
+        function returns False or raises an error, then the trait is not included
+        in the output.
+        """
+        tags = parse_notifier_tags(tags)
+        if names is None and tags is not None:
+            self._add_notifiers(handler, names, tags, type)
+        else:
+            for n in parse_notifier_name(names or All):
+                self._add_notifiers(handler, n, tags, type)
+
+    def unobserve(self, handler=None, names=All, tags=All, type='change'):
         """Remove a trait change handler.
 
-        This is used to unregister handlers to trait change notificiations.
+        This is used to unregister the given handler as a notification.
 
         Parameters
         ----------
-        handler : callable
-            The callable called when a trait attribute changes.
-        names : list, str, All (default: All)
+        handler : callable, None
+            The callable called when a trait attribute changes. If no handler
+            is provided, all handlers of the given names, tags, and type are
+            unobserved.
+        names : list, str, All, None (default: All)
             The names of the traits for which the specified handler should be
             uninstalled. If names is All, the specified handler is uninstalled
-            from the list of notifiers corresponding to all changes.
+            from the list of notifiers corresponding to all changes. To avoid
+            removing the notifier from any trait names, use None.
+        tags: dict
+            The tags for which the specified handler should be removed. If names
+            is All and tags is not All, the handler is uninstalled from all traits
+            with the corresponding metadata. By using All as a key or value in the
+            tags dict, only those notifiers registered in the same way are removed.
+            To avoid removing the notifier from the any tags, use None.
         type : str or All (default: 'change')
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
-        """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._remove_notifiers(handler, n, type)
 
-    def unobserve_all(self, name=All):
-        """Remove trait change handlers of any type for the specified name.
-        If name is not specified, removes all trait notifiers."""
-        if name is All:
-            self._trait_notifiers = {}
+        Warning
+        -------
+        The tags argument allows functions to be passed as values of keys in the
+        tags dict. However they do not act as filter functions here, To use a
+        filter function in this way. Use ``unobserve_all``.
+        """
+        # filter funcs aren't converted to _SimpleEval
+        tags = parse_notifier_tags(tags, evals=False)
+        if names is None and tags is not None:
+            self._remove_notifiers(handler, names, tags, type)
         else:
-            try:
-                del self._trait_notifiers[name]
-            except KeyError:
-                pass
+            for n in parse_notifier_name(names or All):
+                self._remove_notifiers(handler, n, tags, type)
+
+    def unobserve_all(self, handler=None, name=All, tags=All, type=All):
+        """Greedy removal of notifiers - All is treated as equivalent to any value
+
+        This is used to unregister the given handler as a notification
+
+        Parameters
+        ----------
+        handler : callable, None
+            The callable called when a trait attribute changes. If no handler
+            is provided, all handlers of the given names, tags, and type are
+            unobserved.
+        names : list, str, All, None (default: All)
+            The names of the traits for which the specified handler should be
+            uninstalled. If names is All, the specified handler is uninstalled
+            from all notifiers of the given type that are registered to a
+            specific trait.
+        tags: dict
+            The tags for which the specified handler should be removed. By using
+            All as a key or value in the tags dict, the given handler will be
+            removed from all traits whose metadata have the specified values or keys,
+            because All is treated as equivalent to any value. To avoid removing the
+            notifier from the any tags, use None.
+        type : str or All (default: 'change')
+            The type of notification to filter by. If All, the specified handler
+            is uninstalled from the list of notifiers corresponding to all types.
+
+        Notes
+        -----
+        The tags argument allows functions to be passed as values of keys in the
+        tags dict which filter traits based on metadata values. The functions
+        should take a single value as an argument and return a boolean. If any
+        function returns False or raises an error, then the trait is not included
+        in the output.
+        """
+        # remove all matching names
+        if name is All and type is All:
+            self._trait_notifiers.clear_named()
+        elif name is not None:
+            for n, t in self._trait_notifiers.named_paths:
+                if name in (n, All) and type in (t, All):
+                    self._trait_notifiers.del_named_notifier(handler, n, t)
+        # remove all matching tags
+        if tags is All and type is All:
+            self._trait_notifiers.clear_tagged()
+        elif tags is not None:
+            tags = parse_notifier_tags(tags)
+            all_in_tags = All in tags
+            for k, v, t in self._trait_notifiers.tagged_paths:
+                if all_in_tags and tags[All] in (v, All):
+                    pass
+                elif k in tags and tags[k] in (v, All):
+                    pass
+                else:
+                    continue
+                self._trait_notifiers.del_tagged_notifier(handler, k, v, t)
 
     def _register_validator(self, handler, names):
         """Setup a handler to be called when a trait should be cross valdiated.
