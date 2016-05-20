@@ -743,7 +743,7 @@ class MetaHasTraits(MetaHasDescriptors):
 def observe(*names, **kwargs):
     """A decorator which can be used to observe Traits on a class.
 
-    The handler passed to the decorator can have no argument or one ``change``
+    The handler passed to the decorator will be called with one ``change``
     dict argument. The change dictionary at least holds a 'type' key,
     corresponding to the type of notification.
 
