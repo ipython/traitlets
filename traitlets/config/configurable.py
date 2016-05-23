@@ -205,7 +205,7 @@ class Configurable(HasTraits):
         final_help = []
         final_help.append(u'%s options' % cls.__name__)
         final_help.append(len(final_help[0])*u'-')
-        for k, v in sorted(cls.class_traits(config=True).items()):
+        for k, v in sorted(cls.traits(config=True).items()):
             help = cls.class_get_trait_help(v, inst)
             final_help.append(help)
         return '\n'.join(final_help)
@@ -261,7 +261,7 @@ class Configurable(HasTraits):
         s = "# %s configuration" % cls.__name__
         lines = [breaker, s, breaker, '']
         # get the description trait
-        desc = cls.class_traits().get('description')
+        desc = cls.traits().get('description')
         if desc:
             desc = desc.default_value
         else:

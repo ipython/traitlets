@@ -295,7 +295,7 @@ class Application(SingletonConfigurable):
             classname, traitname = longname.split('.',1)
             cls = classdict[classname]
 
-            trait = cls.class_traits(config=True)[traitname]
+            trait = cls.traits(config=True)[traitname]
             help = cls.class_get_trait_help(trait).splitlines()
             # reformat first line
             help[0] = help[0].replace(longname, alias) + ' (%s)'%longname

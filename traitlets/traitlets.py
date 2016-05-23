@@ -58,6 +58,7 @@ import six
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .utils import docgen
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -161,7 +162,6 @@ def is_trait(t):
     return (isinstance(t, TraitType) or
             (isinstance(t, type) and issubclass(t, TraitType)))
 
-
 def parse_notifier_name(names):
     """Convert the name argument to a list of names.
 
@@ -185,7 +185,6 @@ def parse_notifier_name(names):
         for n in names:
             assert isinstance(n, six.string_types), "names must be strings"
         return names
-
 
 class _SimpleTest:
     def __init__ ( self, value ): self.value = value
@@ -819,14 +818,13 @@ def validate(*names):
     """
     return ValidateHandler(names)
 
-
-def default(name):
+def default(*names):
     """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
 
     Parameters
     ----------
-    name
-        The str name of the Trait on the object whose default should be generated.
+    *names:
+        The str names of the Traits on the object whose default should be generated.
 
     Notes
     -----
@@ -858,10 +856,12 @@ def default(name):
                 return 3.0                 # ignored since it is defined in a
                                            # class derived from B.a.this_class.
     """
-    return DefaultHandler(name)
+    return DefaultHandler(names)
 
 
 class EventHandler(BaseDescriptor):
+
+    info_text = None
 
     def _init_call(self, func):
         self.func = func
@@ -879,8 +879,14 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
+    def info(self):
+        """Returns helpful info"""
+        return self.info_text
+
 
 class ObserveHandler(EventHandler):
+
+    info_text = "observes changes"
 
     def __init__(self, names, type):
         self.trait_names = names
@@ -892,6 +898,8 @@ class ObserveHandler(EventHandler):
 
 class ValidateHandler(EventHandler):
 
+    info_text = "validates values"
+
     def __init__(self, names):
         self.trait_names = names
 
@@ -901,12 +909,15 @@ class ValidateHandler(EventHandler):
 
 class DefaultHandler(EventHandler):
 
-    def __init__(self, name):
-        self.trait_name = name
+    info_text = "sets the default"
+
+    def __init__(self, names):
+        self.trait_names = names
 
     def class_init(self, cls, name):
         super(DefaultHandler, self).class_init(cls, name)
-        cls._trait_default_generators[self.trait_name] = self
+        for name in self.trait_names:
+            cls._trait_default_generators[name] = self
 
 
 class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
@@ -950,6 +961,12 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         self._trait_notifiers = {}
         self._trait_validators = {}
         super(HasTraits, self).setup_instance(*args, **kwargs)
+
+    @classmethod
+    def setup_class(cls, classdict):
+        MetaHasTraits.setup_class(cls, classdict)
+        docs = docgen.trait_documentation(cls)
+        docgen.write_docs_to_class(cls, docs)
 
     def __init__(self, *args, **kwargs):
         # Allow trait values to be set using keyword arguments.
@@ -1405,6 +1422,15 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         else:
             return trait.metadata.get(key, default)
 
+
+    def set_trait(self, name, value):
+        """Forcibly sets trait attribute, including read-only attributes."""
+        if not self.has_trait(name):
+            raise TraitError("Class %s does not have a trait named %s" %
+                                (self.__class__.__name__, name))
+        else:
+            self.traits()[name].set(self, value)
+
     @classmethod
     def class_own_trait_events(cls, name):
         """Get a dict of all event handlers defined on this class, not a parent.
@@ -1439,6 +1465,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                     if cls.trait_names(**v.tags):
                         events[k] = v
         return events
+
 
 #-----------------------------------------------------------------------------
 # Actual TraitTypes implementations/subclasses
@@ -1731,7 +1758,7 @@ class Union(TraitType):
         with the validation function of Float, then Bool, and finally Int.
         """
         self.trait_types = trait_types
-        self.info_text = " or ".join([tt.info_text for tt in self.trait_types])
+        self.info_text = " or ".join([tt.info() for tt in self.trait_types])
         self.default_value = self.trait_types[0].default_value
         super(Union, self).__init__(**metadata)
 
