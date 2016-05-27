@@ -113,6 +113,8 @@ The answers to these questions are provided by the various
 application uses. Let's look at how this would work for a simple configurable
 subclass::
 
+.. code-block:: python
+
     # Sample configurable:
     from traitlets.config.configurable import Configurable
     from traitlets import Int, Float, Unicode, Bool
@@ -130,6 +132,8 @@ of which (``name``, ``ranking``) can be configured.  All of the attributes
 are given types and default values.  If a :class:`MyClass` is instantiated,
 but not configured, these default values will be used.  But let's see how
 to configure this class in a configuration file::
+
+.. code-block:: python
 
     # Sample config file
     c.MyClass.name = 'coolname'
@@ -287,8 +291,21 @@ Is the same as adding:
     c.InteractiveShell.use_readline=False
     c.BaseIPythonApplication.profile='myprofile'
 
-to your config file. Key/Value arguments *always* take a value, separated by '='
+to your configuration file. Key/Value arguments *always* take a value, separated by '='
 and no spaces.
+
+.. note::
+
+    By default any error in configuration files with lead to this configuration
+    file be ignored by default.  Application subclasses may specify
+    `raise_config_file_errors = True` to exit on failure to load config files,
+    instead of the default of logging the failures.
+
+.. versionadded:: 4.3
+
+    The environement variable ``TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR``
+    to ``'1'`` or ``'true'`` to change the defautl value of ``raise_config_file_errors``.
+
 
 Common Arguments
 ----------------

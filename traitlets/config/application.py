@@ -62,6 +62,17 @@ subcommand 'cmd', do: `{app} cmd -h`.
 # Application class
 #-----------------------------------------------------------------------------
 
+
+
+_envvar = os.environ.get('TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR','')
+if _envvar.lower() in {'1','true'}:
+    TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR = True
+elif _envvar.lower() in {'0','false',''} :
+    TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR = False
+else:
+    raise ValueError("Unsupported value for environment variable: 'TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR' is set to '%s' which is none of  {'0', '1', 'false', 'true', ''}."% _envvar )
+
+
 @decorator
 def catch_config_error(method, app, *args, **kwargs):
     """Method decorator for catching invalid config (Trait/ArgumentErrors) during init.
@@ -151,7 +162,7 @@ class Application(SingletonConfigurable):
     argv = List()
 
     # Whether failing to load config files should prevent startup
-    raise_config_file_errors = Bool(False)
+    raise_config_file_errors = Bool(TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR)
 
     # The log level for the application
     log_level = Enum((0,10,20,30,40,50,'DEBUG','INFO','WARN','ERROR','CRITICAL'),
