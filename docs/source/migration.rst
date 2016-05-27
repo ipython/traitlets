@@ -93,8 +93,8 @@ The new ``@observe`` decorator
 The use of the magic methods ``_{trait}_changed`` as change handlers is
 deprecated, in favor of a new ``@observe`` method decorator.
 
-In addition to the ``names`` argument, the ``@observe`` method decorator
-has a ``type`` keyword argument (defaulting to ``'change'``) to filter
+The ``@observe`` method decorator takes the names of traits to be observed as positional arguments and
+has a ``type`` keyword-only argument (defaulting to ``'change'``) to filter
 by notification type.
 
 **Example:**
