@@ -1308,35 +1308,13 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             getattr(cls, name).set(self, value)
 
     @classmethod
-    def class_own_traits(cls, **metadata):
-        """Get a dict of all the traitlets defined on this class, not a parent.
-
-        Works like ``traits``, except for excluding traits from parents.
-        """
-        sup = super(cls, cls)
-        return {n: t for (n, t) in cls.traits(**metadata).items()
-                if getattr(sup, n, None) is not t}
-
-    @classmethod
-    def has_trait(cls, name):
-        """Returns True if the object has a trait with the specified name."""
-        return isinstance(getattr(cls, name, None), TraitType)
-
-    @classmethod
-    def trait_names(cls, **metadata):
-        """Get a list of all the names of this class' traits."""
-        return cls.traits(**metadata).keys()
-
-    @classmethod
     def class_trait_names(cls, **metadata):
         """Get a list of all the names of this class' traits.
 
         This method is just like the :meth:`trait_names` method,
         but is unbound.
         """
-        warn("``HasTraits.class_trait_names`` is deprecated in favor of ``HasTraits.trait_names``"
-             " as a classmethod", DeprecationWarning, stacklevel=2)
-        return cls.traits(**metadata).keys()
+        return cls.class_traits(**metadata).keys()
 
     @classmethod
     def class_traits(cls, **metadata):
@@ -1355,12 +1333,43 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        warn("``HasTraits.class_traits`` is deprecated in favor of ``HasTraits.traits``"
-             " as a classmethod", DeprecationWarning, stacklevel=2)
-        return cls.traits(**metadata)
+        traits = dict([memb for memb in getmembers(cls) if
+                     isinstance(memb[1], TraitType)])
+
+        if len(metadata) == 0:
+            return traits
+
+        result = {}
+        for name, trait in traits.items():
+            for meta_name, meta_eval in metadata.items():
+                if type(meta_eval) is not types.FunctionType:
+                    meta_eval = _SimpleTest(meta_eval)
+                if not meta_eval(trait.metadata.get(meta_name, None)):
+                    break
+            else:
+                result[name] = trait
+
+        return result
 
     @classmethod
-    def traits(cls, **metadata):
+    def class_own_traits(cls, **metadata):
+        """Get a dict of all the traitlets defined on this class, not a parent.
+
+        Works like `class_traits`, except for excluding traits from parents.
+        """
+        sup = super(cls, cls)
+        return {n: t for (n, t) in cls.class_traits(**metadata).items()
+                if getattr(sup, n, None) is not t}
+
+    def has_trait(self, name):
+        """Returns True if the object has a trait with the specified name."""
+        return isinstance(getattr(self.__class__, name, None), TraitType)
+        
+    def trait_names(self, **metadata):
+        """Get a list of all the names of this class' traits."""
+        return self.traits(**metadata).keys()
+
+    def traits(self, **metadata):
         """Get a ``dict`` of all the traits of this class.  The dictionary
         is keyed on the name and the values are the TraitType objects.
 
@@ -1374,19 +1383,17 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = dict([memb for memb in getmembers(cls) if
+        traits = dict([memb for memb in getmembers(self.__class__) if
                      isinstance(memb[1], TraitType)])
 
         if len(metadata) == 0:
             return traits
 
-        for meta_name, meta_eval in metadata.items():
-            if type(meta_eval) is not types.FunctionType:
-                metadata[meta_name] = _SimpleTest(meta_eval)
-
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
+                if type(meta_eval) is not types.FunctionType:
+                    meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
@@ -1394,14 +1401,13 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         return result
 
-    @classmethod
-    def trait_metadata(cls, traitname, key, default=None):
+    def trait_metadata(self, traitname, key, default=None):
         """Get metadata values for trait by key."""
         try:
-            trait = getattr(cls, traitname)
+            trait = getattr(self.__class__, traitname)
         except AttributeError:
             raise TraitError("Class %s does not have a trait named %s" %
-                                (cls.__name__, traitname))
+                                (self.__class__.__name__, traitname))
         else:
             return trait.metadata.get(key, default)
 
@@ -1422,12 +1428,13 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         Parameters
         ----------
         name: str (default: None)
-            The name of a trait of this class. If name is ``None`` then all 
+            The name of a trait of this class. If name is ``None`` then all
             the event handlers of this class will be returned instead.
 
         Returns
         -------
-        The event handlers associated with a trait name, or all event handlers."""
+        The event handlers associated with a trait name, or all event handlers.
+        """
         events = {}
         for k, v in getmembers(cls):
             if isinstance(v, EventHandler):
