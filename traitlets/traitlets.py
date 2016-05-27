@@ -58,6 +58,7 @@ import six
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .utils.bunch import Bunch
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -265,13 +266,13 @@ class link(object):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.target[0], self.target[1], change['new'])
+            setattr(self.target[0], self.target[1], change.new)
 
     def _update_source(self, change):
         if self.updating:
             return
         with self._busy_updating():
-            setattr(self.source[0], self.source[1], change['new'])
+            setattr(self.source[0], self.source[1], change.new)
 
     def unlink(self):
         self.source[0].unobserve(self._update_target, names=self.source[1])
@@ -321,7 +322,7 @@ class directional_link(object):
             return
         with self._busy_updating():
             setattr(self.target[0], self.target[1],
-                    self._transform(change['new']))
+                    self._transform(change.new))
 
     def unlink(self):
         self.source[0].unobserve(self._update, names=self.source[1])
@@ -679,13 +680,13 @@ class _CallbackWrapper(object):
         if self.nargs == 0:
             self.cb()
         elif self.nargs == 1:
-            self.cb(change['name'])
+            self.cb(change.name)
         elif self.nargs == 2:
-            self.cb(change['name'], change['new'])
+            self.cb(change.name, change.new)
         elif self.nargs == 3:
-            self.cb(change['name'], change['old'], change['new'])
+            self.cb(change.name, change.old, change.new)
         elif self.nargs == 4:
-            self.cb(change['name'], change['old'], change['new'], change['owner'])
+            self.cb(change.name, change.old, change.new, change.owner)
 
 def _callback_wrapper(cb):
     if isinstance(cb, _CallbackWrapper):
@@ -782,13 +783,13 @@ def observe_compat(func):
             clsname = self.__class__.__name__
             warn("A parent of %s._%s_changed has adopted the new @observe(change) API" % (
                 clsname, change_or_name), DeprecationWarning)
-            change = {
-                'type': 'change',
-                'old': old,
-                'new': new,
-                'name': change_or_name,
-                'owner': self,
-            }
+            change = Bunch(
+                type='change',
+                old=old,
+                new=new,
+                name=change_or_name,
+                owner=self,
+            )
         return func(self, change)
     return compatible_observer
 
@@ -1047,15 +1048,15 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 if past_changes is None:
                     return [change]
                 else:
-                    if past_changes[-1]['type'] == 'change' and change['type'] == 'change':
-                        past_changes[-1]['new'] = change['new']
+                    if past_changes[-1]['type'] == 'change' and change.type == 'change':
+                        past_changes[-1]['new'] = change.new
                     else:
                         # In case of changes other than 'change', append the notification.
                         past_changes.append(change)
                     return past_changes
 
             def hold(change):
-                name = change['name']
+                name = change.name
                 cache[name] = compress(cache.get(name), change)
 
             try:
@@ -1075,9 +1076,9 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
-                        if change['type'] == 'change':
-                            if change['old'] is not Undefined:
-                                self.set_trait(name, change['old'])
+                        if change.type == 'change':
+                            if change.old is not Undefined:
+                                self.set_trait(name, change.old)
                             else:
                                 self._trait_values.pop(name)
                 cache = {}
@@ -1099,16 +1100,19 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                         self.notify_change(change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self.notify_change({
-            'name': name,
-            'old': old_value,
-            'new': new_value,
-            'owner': self,
-            'type': 'change',
-        })
+        self.notify_change(Bunch(
+            name=name,
+            old=old_value,
+            new=new_value,
+            owner=self,
+            type='change',
+        ))
 
     def notify_change(self, change):
-        name, type = change['name'], change['type']
+        if not isinstance(change, Bunch):
+            # cast to bunch if given a dict
+            change = Bunch(change)
+        name, type = change.name, change.type
 
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
