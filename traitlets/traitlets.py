@@ -758,6 +758,8 @@ def observe(*names, **kwargs):
     ----------
     *names
         The str names of the Traits to observe on the object.
+    type: str, kwarg-only
+        The type of event to observe (e.g. 'change')
     """
     return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
@@ -1232,7 +1234,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def unobserve(self, handler, names=All, type='change'):
         """Remove a trait change handler.
 
-        This is used to unregister handlers to trait change notificiations.
+        This is used to unregister handlers to trait change notifications.
 
         Parameters
         ----------
