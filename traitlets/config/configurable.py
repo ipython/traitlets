@@ -183,7 +183,7 @@ class Configurable(HasTraits):
         # classes that are Configurable subclasses.  This starts with Configurable
         # and works down the mro loading the config for each section.
         section_names = self.section_names()
-        self._load_config(change['new'], traits=traits, section_names=section_names)
+        self._load_config(change.new, traits=traits, section_names=section_names)
 
     def update_config(self, config):
         """Update config and load the new values"""

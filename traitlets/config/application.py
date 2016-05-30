@@ -173,7 +173,7 @@ class Application(SingletonConfigurable):
     @observe_compat
     def _log_level_changed(self, change):
         """Adjust the log level when log_level is set."""
-        new = change['new']
+        new = change.new
         if isinstance(new, six.string_types):
             new = getattr(logging, new)
             self.log_level = new
@@ -239,7 +239,7 @@ class Application(SingletonConfigurable):
     @observe_compat
     def _flags_changed(self, change):
         """ensure flags dict is valid"""
-        new = change['new']
+        new = change.new
         for key, value in new.items():
             assert len(value) == 2, "Bad flag: %r:%s" % (key, value)
             assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s" % (key, value)
@@ -271,7 +271,7 @@ class Application(SingletonConfigurable):
     def _config_changed(self, change):
         super(Application, self)._config_changed(change)
         self.log.debug('Config changed:')
-        self.log.debug(repr(change['new']))
+        self.log.debug(repr(change.new))
 
     @catch_config_error
     def initialize(self, argv=None):
