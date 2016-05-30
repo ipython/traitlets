@@ -578,7 +578,7 @@ class TraitType(BaseDescriptor):
 
     def _cross_validate(self, obj, value):
         if self.name in obj._trait_validators:
-            proposal = {'trait': self, 'value': value, 'owner': obj}
+            proposal = Bunch({'trait': self, 'value': value, 'owner': obj})
             value = obj._trait_validators[self.name](obj, proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
             meth_name = '_%s_validate' % self.name
@@ -1236,7 +1236,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def unobserve(self, handler, names=All, type='change'):
         """Remove a trait change handler.
 
-        This is used to unregister handlers to trait change notificiations.
+        This is used to unregister handlers to trait change notifications.
 
         Parameters
         ----------
@@ -1266,19 +1266,19 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 pass
 
     def _register_validator(self, handler, names):
-        """Setup a handler to be called when a trait should be cross valdiated.
+        """Setup a handler to be called when a trait should be cross validated.
 
         This is used to setup dynamic notifications for cross-validation.
 
         If a validator is already registered for any of the provided names, a
-        TraitError is raised and no new validator is registerd.
+        TraitError is raised and no new validator is registered.
 
         Parameters
         ----------
         handler : callable
             A callable that is called when the given trait is cross-validated.
-            Its signature is handler(proposal), where proposal is a dictionary
-            with the following keys:
+            Its signature is handler(proposal), where proposal is a Bunch (dictionary with attribute access)
+            with the following attributes/keys:
                 * ``owner`` : the HasTraits instance
                 * ``value`` : the proposed value for the modified trait attribute
                 * ``trait`` : the TraitType instance associated with the attribute
