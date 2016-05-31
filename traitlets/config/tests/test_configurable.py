@@ -19,6 +19,7 @@ from traitlets.config.configurable import (
 
 from traitlets.traitlets import (
     Integer, Float, Unicode, List, Dict, Set,
+    _deprecations_shown,
 )
 
 from traitlets.config.loader import Config
@@ -401,6 +402,8 @@ class TestConfigContainers(TestCase):
         class SomeSingleton(SingletonConfigurable):
             pass
 
+        # reset deprecation limiter
+        _deprecations_shown.clear()
         with expected_warnings(['Metadata should be set using the \.tag\(\) method']):
             class DefaultConfigurable(Configurable):
                 a = Integer(config=True)
