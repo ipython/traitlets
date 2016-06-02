@@ -18,7 +18,8 @@ class Bunch(dict):
         self.__setitem__(key, value)
     
     def __dir__(self):
-        names = super(Bunch, self).__dir__()
+        # py2-compat: can't use super because dict doesn't have __dir__
+        names = dir({})
         names.extend(self.keys())
         return names
 
