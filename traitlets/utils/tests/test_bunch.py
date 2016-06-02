@@ -7,3 +7,8 @@ def test_bunch():
     assert b.x == 5
     b['a'] = 'hi'
     assert b.a == 'hi'
+
+def test_bunch_dir():
+    b = Bunch(x=5, y=10)
+    assert 'x' in dir(b)
+    assert 'keys' in dir(b)

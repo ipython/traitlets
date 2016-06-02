@@ -16,3 +16,10 @@ class Bunch(dict):
     
     def __setattr__(self, key, value):
         self.__setitem__(key, value)
+    
+    def __dir__(self):
+        # py2-compat: can't use super because dict doesn't have __dir__
+        names = dir({})
+        names.extend(self.keys())
+        return names
+
