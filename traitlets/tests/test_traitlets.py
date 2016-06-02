@@ -12,9 +12,9 @@ import re
 import sys
 from ._warnings import expected_warnings
 
-from nose2.compat import unittest
-from unittest import TestCase, skipIf
-from nose2.tools.such import helper as testhelper
+from unittest import TestCase
+import pytest
+from pytest import mark
 
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
@@ -1167,7 +1167,7 @@ class TestLong(TraitTestBase):
         _good_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
         _bad_values.extend([[long(10)], (long(10),)])
 
-    @skipIf(six.PY3, "not relevant on py3")
+    @mark.skipif(six.PY3, reason="not relevant on py3")
     def test_cast_small(self):
         """Long casts ints to long"""
         self.obj.value = 10
@@ -1184,11 +1184,9 @@ class TestInteger(TestLong):
     def coerce(self, n):
         return int(n)
 
-    @skipIf(six.PY3, "not relevant on py3")
+    @mark.skipif(six.PY3, reason="not relevant on py3")
     def test_cast_small(self):
         """Integer casts small longs to int"""
-        if six.PY3:
-            raise unittest.SkipTest("not relevant on py3")
 
         self.obj.value = long(100)
         self.assertEqual(type(self.obj.value), int)
@@ -2088,7 +2086,7 @@ def test_enum_no_default():
 
     c = C()
 
-    with testhelper.assertRaises(TraitError):
+    with pytest.raises(TraitError):
         t = c.t
 
     c = C(t='b')

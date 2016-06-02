@@ -7,9 +7,7 @@
 import logging
 from unittest import TestCase
 
-from nose2.compat import unittest
-from unittest import TestCase
-from nose2.tools.such import helper as testhelper
+from pytest import mark
 
 from traitlets.config.configurable import (
     Configurable,
@@ -422,18 +420,15 @@ class TestConfigContainers(TestCase):
         self.assertEqual(d2.a, 5)
 
 
-
-class TestLogger(unittest.TestCase):
+class TestLogger(TestCase):
 
     class A(LoggingConfigurable):
             foo = Integer(config=True)
             bar = Integer(config=True)
             baz = Integer(config=True)
     
+    @mark.skipif(not hasattr(TestCase, 'assertLogs'), reason='requires TestCase.assertLogs')
     def test_warn_match(self):
-        if not hasattr(self, 'assertLogs'):
-            raise unittest.SkipTest("Test requires unittest.TestCase.assertLogs")
-
         logger = logging.getLogger('test_warn_match')
         cfg = Config({'A': {'bat': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
