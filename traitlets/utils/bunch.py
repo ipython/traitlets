@@ -16,3 +16,9 @@ class Bunch(dict):
     
     def __setattr__(self, key, value):
         self.__setitem__(key, value)
+    
+    def __dir__(self):
+        names = super(Bunch, self).__dir__()
+        names.extend(self.keys())
+        return names
+
