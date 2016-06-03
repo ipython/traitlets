@@ -31,7 +31,8 @@ For a development installation:
 
 ## Running the tests
 
-* `nosetests traitlets`.
+    pip install "traitlets[test]"
+    py.test traitlets
 
 ## Usage
 
