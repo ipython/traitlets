@@ -18,7 +18,7 @@ except ImportError:
 
 pjoin = os.path.join
 
-from nose2.compat import unittest
+from pytest import mark
 
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config
@@ -225,9 +225,8 @@ class TestApplication(TestCase):
                 app.init_bar()
                 self.assertEqual(app.bar.b, 1)
     
+    @mark.skipif(not hasattr(TestCase, 'assertLogs'), reason='requires TestCase.assertLogs')
     def test_log_bad_config(self):
-        if not hasattr(self, 'assertLogs'):
-            raise unittest.SkipTest("Test requires unittest.TestCase.assertLogs")
         app = MyApp()
         app.log = logging.getLogger()
         name = 'config.py'

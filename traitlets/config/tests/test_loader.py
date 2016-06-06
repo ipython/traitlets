@@ -9,13 +9,10 @@ import logging
 import os
 import pickle
 import sys
-
 from tempfile import mkstemp
-
-from nose2.compat import unittest
 from unittest import TestCase
 
-
+from pytest import skip
 
 from traitlets.config.loader import (
     Config,
@@ -275,7 +272,7 @@ class TestKeyValueCL(TestCase):
         try:
             barg = uarg.encode(sys.stdin.encoding)
         except (TypeError, UnicodeEncodeError):
-            raise unittest.SkipTest("sys.stdin.encoding can't handle 'é'")
+            raise skip("sys.stdin.encoding can't handle 'é'")
         
         cl = self.klass(log=log)
         config = cl.load_config([barg])

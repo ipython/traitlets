@@ -6,9 +6,9 @@ python:
     - 3.3
 sudo: false
 install:
-    - pip install . nose2
-    - pip install . cov-core
+    - pip install .
+    - pip install traitlets[test] pytest-cov codecov
 script:
-    - nose2 --with-coverage
+    - py.test --cov traitlets -v traitlets
 after_success:
-    - coveralls
+    - codecov
