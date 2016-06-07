@@ -49,7 +49,7 @@ return the default value. For example:
 
 ```Python
 import getpass
-from traitlets import HasTraits, Unicode, observe
+from traitlets import HasTraits, Unicode, default
 
 class Identity(HasTraits):
     username = Unicode()
