@@ -581,18 +581,31 @@ class Application(SingletonConfigurable):
         yield each config object in turn.
         """
 
+        def new_loader(name, path):
+            if name.endswith('.py'):
+                return cls.python_config_loader_class(name, path=path, log=log)
+            elif name.endswith('.json'):
+                return cls.json_config_loader_class(name, path=path, log=log)
+
         if not isinstance(path, list):
             path = [path]
         for path in path[::-1]:
             # path list is in descending priority order, so load files backwards:
-            pyloader = cls.python_config_loader_class(basefilename+'.py', path=path, log=log)
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
-            jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
+            pyloader = new_loader(basefilename + '.py', path=path)
+            jsonloader = new_loader(basefilename + '.json', path=path)
+            loaders = [pyloader, jsonloader]
+            # load conf.d/config files in lorder
+            conf_d = os.path.join(path, basefilename + '.d')
+            if os.path.isdir(conf_d):
+                for filename in sorted(os.listdir(conf_d)):
+                    if filename.endswith(('.py', '.json')):
+                        loaders.append(new_loader(filename, path=conf_d))
             config = None
             loaded = []
             filenames = []
-            for loader in [pyloader, jsonloader]:
+            for loader in loaders:
                 try:
                     config = loader.load_config()
                 except ConfigFileNotFound:
