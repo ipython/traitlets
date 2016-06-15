@@ -649,6 +649,14 @@ class TraitType(BaseDescriptor):
     def default_value_repr(self):
         return repr(self.default_value)
 
+    def set_default_from_envvar(self, string):
+        """Set the default value for the trait from os.environ.
+
+        This hook is only triggered if the key 'envvar' is in metadata, and the trait
+        exists on a :class:`Configurable` instance at the time the class is constructed.
+        """
+        self.default = string
+
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
 #-----------------------------------------------------------------------------
@@ -2050,6 +2058,14 @@ class CBool(Bool):
             return bool(value)
         except:
             self.error(obj, value)
+
+    def set_default_from_envvar(self, string):
+        lowered = string.lower()
+        if lowered == 'true':
+            value = True
+        if lowered == 'false':
+            value = False
+        self.default_value = value
 
 
 class Enum(TraitType):
