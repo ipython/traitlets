@@ -42,6 +42,7 @@ Inheritance diagram:
 
 import contextlib
 import inspect
+import numbers
 import re
 import sys
 import types
@@ -1799,6 +1800,7 @@ class Int(TraitType):
 
     default_value = 0
     info_text = 'an int'
+    _number_type = int
 
     def __init__(self, default_value=Undefined,
                  allow_none=None, **kwargs):
@@ -1806,11 +1808,39 @@ class Int(TraitType):
         self.max = kwargs.pop('max', None)
         super(Int, self).__init__(default_value=default_value,
                                   allow_none=allow_none, **kwargs)
+    
+    def _cast_number(self, value):
+        """Cast numbers to my integer type
+        
+        Casting is only allowed if value does not change.
+        """
+        if isinstance(value, numbers.Number):
+            # allow any Number that can be interpreted as an integer
+            try:
+                if hasattr(value, 'real'):
+                    real = value.real
+                else:
+                    real = value
+                int_value = self._number_type(real)
+            except Exception:
+                # cannot cast
+                pass
+            else:
+                if int_value == value:
+                    # only allow casting if value did not change
+                    value = int_value
+        return value
+
+    def _check_type(self, obj, value):
+        """Verify that the value has the right type."""
+        if not isinstance(value, self._number_type):
+            self.error(obj, value)
 
     def validate(self, obj, value):
-        if not isinstance(value, int):
-            self.error(obj, value)
-        if self.max is not None and value > self.max:        
+        value = self._cast_number(value)
+        self._check_type(obj, value)
+
+        if self.max is not None and value > self.max:
             raise TraitError("The value of the '%s' trait of %s instance should "
                              "not be greater than %s, but a value of %s was "
                              "specified" % (self.name, class_of(obj),
@@ -1818,7 +1848,7 @@ class Int(TraitType):
         if self.min is not None and value < self.min:
             raise TraitError("The value of the '%s' trait of %s instance should "
                              "not be less than %s, but a value of %s was "
-                             "specified" % (self.name, class_of(obj), 
+                             "specified" % (self.name, class_of(obj),
                                             self.min, value))
         return value
 
@@ -1828,55 +1858,42 @@ class CInt(Int):
 
     def validate(self, obj, value):
         try:
-            return int(value)
+            value = int(value)
         except:
             self.error(obj, value)
+        return super(CInt, self).validate(obj, value)
 
 if six.PY2:
-    class Long(TraitType):
+    class Long(Int):
         """A long integer trait."""
 
         default_value = 0
         info_text = 'a long'
-
-        def validate(self, obj, value):
-            if isinstance(value, long):
-                return value
-            if isinstance(value, int):
-                return long(value)
-            self.error(obj, value)
-
+        _number_type = long
 
     class CLong(Long):
         """A casting version of the long integer trait."""
 
         def validate(self, obj, value):
             try:
-                return long(value)
-            except:
+                value = long(value)
+            except Exception:
                 self.error(obj, value)
+            return super(CLong, self).validate(obj, value)
 
-    class Integer(TraitType):
+    class Integer(Int):
         """An integer trait.
 
         Longs that are unnecessary (<= sys.maxint) are cast to ints."""
 
         default_value = 0
         info_text = 'an integer'
+        
+        def _check_type(self, obj, value):
+            """Allow int or long"""
+            if not isinstance(value, (int, long)):
+                self.error(obj, value)
 
-        def validate(self, obj, value):
-            if isinstance(value, int):
-                return value
-            if isinstance(value, long):
-                # downcast longs that fit in int:
-                # note that int(n > sys.maxint) returns a long, so
-                # we don't need a condition on this cast
-                return int(value)
-            if sys.platform == "cli":
-                from System import Int64
-                if isinstance(value, Int64):
-                    return int(value)
-            self.error(obj, value)
 else:
     Long, CLong = Int, CInt
     Integer = Int

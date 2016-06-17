@@ -7,6 +7,8 @@
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+import decimal
+import fractions
 import pickle
 import re
 import sys
@@ -1140,7 +1142,7 @@ class TestInt(TraitTestBase):
 
     obj = IntTrait()
     _default_value = 99
-    _good_values   = [10, -10]
+    _good_values   = [10, -10, -5., 6., -2 + 0j, decimal.Decimal(5), fractions.Fraction(8, 4)]
     _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
                       10.1, -10.1, '10L', '-10L', '10.1', '-10.1', u'10L',
                       u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', -200]
@@ -1157,7 +1159,7 @@ class TestLong(TraitTestBase):
     obj = LongTrait()
 
     _default_value = 99 if six.PY3 else long(99)
-    _good_values   = [10, -10]
+    _good_values   = [10, -10, 5.0, -2.0, 5 + 0j, decimal.Decimal(5), fractions.Fraction(8, 4)]
     _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
                       None, 1j, 10.1, -10.1, '10', '-10', '10L', '-10L', '10.1',
                       '-10.1', u'10', u'-10', u'10L', u'-10L', u'10.1',
@@ -1182,7 +1184,7 @@ class TestInteger(TestLong):
     _default_value = 1
 
     def coerce(self, n):
-        return int(n)
+        return int(n.real)
 
     @mark.skipif(six.PY3, reason="not relevant on py3")
     def test_cast_small(self):
