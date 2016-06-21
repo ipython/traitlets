@@ -42,6 +42,7 @@ Inheritance diagram:
 
 import contextlib
 import inspect
+import os
 import re
 import sys
 import types
@@ -100,6 +101,22 @@ def isidentifier(s):
     else:
         return s.isidentifier()
 
+_deprecations_shown = set()
+def _should_warn(key):
+    """Add our own checks for too many deprecation warnings.
+    
+    Limit to once per package.
+    """
+    env_flag = os.environ.get('TRAITLETS_ALL_DEPRECATIONS')
+    if env_flag and env_flag != '0':
+        return True
+    
+    if key not in _deprecations_shown:
+        _deprecations_shown.add(key)
+        return True
+    else:
+        return False
+
 def _deprecated_method(method, cls, method_name, msg):
     """Show deprecation warning about a magic method definition.
 
@@ -114,6 +131,11 @@ def _deprecated_method(method, cls, method_name, msg):
         if method_name in parent.__dict__:
             cls = parent
             break
+    # limit deprecation messages to once per package
+    package_name = cls.__module__.split('.', 1)[0]
+    key = (package_name, msg)
+    if not _should_warn(key):
+        return
     try:
         fname = inspect.getsourcefile(method) or "<unknown>"
         lineno = inspect.getsourcelines(method)[1] or 0
@@ -426,9 +448,14 @@ class TraitType(BaseDescriptor):
             while f.f_code.co_name == '__init__':
                 stacklevel += 1
                 f = f.f_back
-            
-            warn("metadata %s was set from the constructor.  Metadata should be set using the .tag() method, e.g., Int().tag(key1='value1', key2='value2')" % (metadata,),
-                 DeprecationWarning, stacklevel=stacklevel)
+            mod = f.f_globals.get('__name__') or ''
+            pkg = mod.split('.', 1)[0]
+            key = tuple(['metadata-tag', pkg] + sorted(metadata))
+            if _should_warn(key):
+                warn("metadata %s was set from the constructor. "
+                     "Metadata should be set using the .tag() method, "
+                     "e.g., Int().tag(key1='value1', key2='value2')" % (metadata,),
+                     DeprecationWarning, stacklevel=stacklevel)
             if len(self.metadata) > 0:
                 self.metadata = self.metadata.copy()
                 self.metadata.update(metadata)
