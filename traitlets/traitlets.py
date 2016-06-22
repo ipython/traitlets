@@ -988,7 +988,7 @@ class ObserveHandler(TraitEventHandler):
 
     caches_instance_resources = True
 
-    def __init__(self, names, tags, type):
+    def __init__(self, names, type, tags):
         super(ObserveHandler, self).__init__(names, tags)
         self.type = type
 
@@ -1376,7 +1376,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=None, tags=None, type='change'):
+    def observe(self, handler, names=None, type='change', tags=None):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1411,10 +1411,10 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         if isinstance(handler, ObserveHandler):
             self._add_notifiers(handler, names, type)
         else:
-            event = ObserveHandler(names, tags, type)
+            event = ObserveHandler(names, type, tags)
             event(handler).register(self)
 
-    def unobserve(self, handler, names=None, tags=None, type='change'):
+    def unobserve(self, handler, names=None, type='change', tags=None):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notifications.
