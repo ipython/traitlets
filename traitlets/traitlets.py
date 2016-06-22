@@ -187,10 +187,10 @@ def is_trait(t):
 
 def parse_notifier_name(names):
     """Convert the name argument to a list of names.
-
     Examples
     --------
-
+    >>> parse_notifier_name(None)
+    []
     >>> parse_notifier_name([])
     [All]
     >>> parse_notifier_name('a')
@@ -200,15 +200,35 @@ def parse_notifier_name(names):
     >>> parse_notifier_name(All)
     [All]
     """
-    if names is All or isinstance(names, six.string_types):
+    if names is None:
+        return []
+    elif names is All or isinstance(names, six.string_types):
         return [names]
     else:
-        if not names or All in names:
-            return [All]
+        try:
+            names = list(names)
+        except:
+            raise TypeError("could not coerce to 'list'")
         for n in names:
-            if not isinstance(n, six.string_types):
-                raise TypeError("names must be strings, not %r" % n)
+            if n is not All and not isinstance(n, six.string_types):
+                raise ValueError("names must be strings or %r" % All)
         return names
+
+
+def parse_notifier_tags(obj, tags):
+    """Convert the tags argument to a list of names.
+
+    Parameters
+    ----------
+    obj: HasTraits instance or class
+        The object to which the tags apply
+    tags: dict
+        The tags being converted to trait names
+    """
+    if tags is None or not len(tags):
+        return []
+    else:
+        return list(obj.trait_names(**tags))
 
 
 class _SimpleTest:
@@ -786,7 +806,8 @@ def observe(*names, **kwargs):
     for name in names:
         if name is not All and not isinstance(name, six.string_types):
             raise TypeError("trait names to observe must be strings or All, not %r" % name)
-    return ObserveHandler(names, type=kwargs.get('type', 'change'))
+    return ObserveHandler(names, tags=kwargs.get('tags', {}),
+                        type=kwargs.get('type', 'change'))
 
 
 def observe_compat(func):
@@ -820,7 +841,7 @@ def observe_compat(func):
     return compatible_observer
 
 
-def validate(*names):
+def validate(*names, **kwargs):
     """A decorator to register cross validator of HasTraits object's state
     when a Trait is set.
 
@@ -849,10 +870,10 @@ def validate(*names):
     for name in names:
         if name is not All and not isinstance(name, six.string_types):
             raise TypeError("trait names to validate must be strings or All, not %r" % name)
-    return ValidateHandler(names)
+    return ValidateHandler(names, tags=kwargs.get('tags', {}))
 
 
-def default(name):
+def default(*names, **kwargs):
     """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
 
     Parameters
@@ -890,12 +911,17 @@ def default(name):
                 return 3.0                 # ignored since it is defined in a
                                            # class derived from B.a.this_class.
     """
-    if not isinstance(name, six.string_types):
-        raise TypeError("Trait name must be a string or All, not %r" % name)
-    return DefaultHandler(name)
+    if not names:
+        raise TypeError("Please specify at least one trait name to validate.")
+    for name in names:
+        if name is not All and not isinstance(name, six.string_types):
+            raise TypeError("trait names to validate must be strings or All, not %r" % name)
+    return DefaultHandler(names, tags=kwargs.get('tags', {}))
 
 
 class EventHandler(BaseDescriptor):
+
+    func = None
 
     def _init_call(self, func):
         self.func = func
@@ -903,7 +929,7 @@ class EventHandler(BaseDescriptor):
 
     def __call__(self, *args, **kwargs):
         """Pass `*args` and `**kwargs` to the handler's function if it exists."""
-        if hasattr(self, 'func'):
+        if self.func is not None:
             return self.func(*args, **kwargs)
         else:
             return self._init_call(*args, **kwargs)
@@ -914,33 +940,131 @@ class EventHandler(BaseDescriptor):
         return types.MethodType(self.func, inst)
 
 
-class ObserveHandler(EventHandler):
+class TraitEventHandler(EventHandler):
 
-    def __init__(self, names, type):
-        self.trait_names = names
+    metadata = {}
+    trait_names = ()
+
+    def __init__(self, names, tags):
+        if tags: self.metadata = tags
+        if names: self.trait_names = names
+
+    def register(self, inst, names=None):
+        """Associate this event with traits on an instance"""
+        pass
+
+    def event_of(self, obj, names=None):
+        """Get the object's trait names this instance is an event of
+
+        Parameters
+        ----------
+        obj: HasTraits instance or class
+            The instance or class being examined
+        name: list, tuple
+            A list of those trait's names. Only those names which
+            this instance is an event of will be returned. If no
+            names are given, then all the trait names of this event
+            are returned instead.
+
+        Returns
+        -------
+        A ``set`` of trait names
+        """
+        named = parse_notifier_name(self.trait_names)
+        tagged = parse_notifier_tags(obj, self.metadata)
+        if names is not None:
+            return set(names).intersection(named + tagged)
+        else:
+            return set(named + tagged)
+
+    def __eq__(self, other):
+        if isinstance(other, TraitEventHandler):
+            return self is other
+        else:
+            return other == self.func
+
+
+class ObserveHandler(TraitEventHandler):
+
+    caches_instance_resources = True
+
+    def __init__(self, names, tags, type):
+        super(ObserveHandler, self).__init__(names, tags)
         self.type = type
 
     def instance_init(self, inst):
-        inst.observe(self, self.trait_names, type=self.type)
+        self.register(inst)
+
+    def register(self, inst, names=None):
+        if names is not None:
+            matched = self.event_of(inst, names)
+            if len(matched)!=len(names):
+                diff = set(names).difference(matched)
+                m = "Not handling events for %r"
+                raise TraitError(m % list(diff))
+            else:
+                names = list(matched)
+        else:
+            names = self.event_of(inst)
+        inst.observe(self, names, type=self.type)
 
 
-class ValidateHandler(EventHandler):
+class ValidateHandler(TraitEventHandler):
 
-    def __init__(self, names):
-        self.trait_names = names
+    caches_instance_resources = True
 
     def instance_init(self, inst):
-        inst._register_validator(self, self.trait_names)
+        self.register(inst)
+
+    def register(self, inst, names=None):
+        if names is not None:
+            matched = self.event_of(inst, names)
+            if len(matched)!=names:
+                diff = set(names).difference(matched)
+                m = "Not handling events for %r"
+                raise TraitError(m % diff)
+            else:
+                names = list(matched)
+        else:
+            names = self.event_of(inst)
+        inst._register_validator(self, names)
 
 
-class DefaultHandler(EventHandler):
+class DefaultHandler(TraitEventHandler):
 
-    def __init__(self, name):
-        self.trait_name = name
+    caches_class_resources = True
 
     def class_init(self, cls, name):
         super(DefaultHandler, self).class_init(cls, name)
-        cls._trait_default_generators[self.trait_name] = self
+        self.register(cls)
+
+    def register(self, cls, names=None):
+        """Associate this event with traits on a class"""
+        if not issubclass(cls, HasTraits):
+            raise TypeError("Expected a HasTraits subclass")
+        elif names is not None:
+            matched = self.event_of(cls, names)
+            if len(matched)!=names:
+                diff = set(names).difference(matched)
+                m = "Not handling events for %r"
+                raise TraitError(m % diff)
+            else:
+                names = list(matched)
+        else:
+            names = self.event_of(cls)
+        self._register(cls, names)
+
+    def _register(self, cls, names):
+        # Class creation prevents registration logic from being
+        # properly overridden if done on the class, because super
+        # fails. Thus the event is registered here, through the
+        # descriptor, so super can be used when overriding it.
+        for n in names:
+            if n in cls._trait_default_generators:
+                raise TraitError("%s has a conflicting default"
+                    " generator for '%s'" % (cls.__name__, n))
+            else:
+                cls._trait_default_generators[n] = self
 
 
 class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
@@ -995,6 +1119,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
+        self._static_trait_notifiers = []
         super(HasTraits, self).setup_instance(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
@@ -1037,6 +1162,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         # recall of instance_init during __setstate__
         d['_trait_notifiers'] = {}
         d['_trait_validators'] = {}
+        d['_static_trait_notifiers'] = []
         return d
 
     def __setstate__(self, state):
@@ -1182,32 +1308,36 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
             if isinstance(c, _CallbackWrapper):
                 c = c.__call__
-            elif isinstance(c, EventHandler) and c.name is not None:
+            elif isinstance(c, TraitEventHandler) and c.name is not None:
                 c = getattr(self, c.name)
 
             c(change)
 
-    def _add_notifiers(self, handler, name, type):
-        if name not in self._trait_notifiers:
-            nlist = []
-            self._trait_notifiers[name] = {type: nlist}
-        else:
-            if type not in self._trait_notifiers[name]:
+    def _add_notifiers(self, handler, names, type):
+        for name in names:
+            if name not in self._trait_notifiers:
                 nlist = []
-                self._trait_notifiers[name][type] = nlist
+                self._trait_notifiers[name] = {type: nlist}
             else:
-                nlist = self._trait_notifiers[name][type]
-        if handler not in nlist:
-            nlist.append(handler)
+                if type not in self._trait_notifiers[name]:
+                    nlist = []
+                    self._trait_notifiers[name][type] = nlist
+                else:
+                    nlist = self._trait_notifiers[name][type]
+            if handler not in nlist:
+                nlist.append(handler)
+        if handler.name is None and handler not in self._static_trait_notifiers:
+            self._static_trait_notifiers.append(handler)
 
-    def _remove_notifiers(self, handler, name, type):
-        try:
-            if handler is None:
-                del self._trait_notifiers[name][type]
-            else:
-                self._trait_notifiers[name][type].remove(handler)
-        except KeyError:
-            pass
+    def _remove_notifiers(self, handler, names, type):
+        for name in names:
+            try:
+                i = self._trait_notifiers[name][type].index(handler)
+                event = self._trait_notifiers[name][type].pop(i)
+            except KeyError:
+                pass
+        if event.name is None:
+            self._static_trait_notifiers.remove(handler)
 
     def on_trait_change(self, handler=None, name=None, remove=False):
         """DEPRECATED: Setup a handler to be called when a trait changes.
@@ -1246,7 +1376,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type='change'):
+    def observe(self, handler, names=None, tags=None, type='change'):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1272,11 +1402,19 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._add_notifiers(handler, n, type)
+        if isinstance(tags, six.string_types):
+            warn("new argument 'tags' introduced: use 'type' as keyword",
+                 DeprecationWarning, stacklevel=2)
+            type, tags = tags, None
+        if names is None and tags is None:
+            names = All
+        if isinstance(handler, ObserveHandler):
+            self._add_notifiers(handler, names, type)
+        else:
+            event = ObserveHandler(names, tags, type)
+            event(handler).register(self)
 
-    def unobserve(self, handler, names=All, type='change'):
+    def unobserve(self, handler, names=None, tags=None, type='change'):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notifications.
@@ -1293,20 +1431,47 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._remove_notifiers(handler, n, type)
+        if isinstance(tags, six.string_types):
+            warn("new argument 'tags' introduced: use 'type' as keyword",
+                 DeprecationWarning, stacklevel=2)
+            type, tags = tags, None
+        if names is None and tags is None:
+            names = All
+        named = parse_notifier_name(names)
+        tagged = parse_notifier_tags(self, tags)
+        self._remove_notifiers(handler, named + tagged, type)
 
-    def unobserve_all(self, name=All):
-        """Remove trait change handlers of any type for the specified name.
-        If name is not specified, removes all trait notifiers."""
-        if name is All:
+    def unobserve_all(self, name=All, type=All):
+        """Remove trait change handlers of for the given name and type.
+
+        Parameters
+        ----------
+            name: str, All
+                If name is All, then all handlers of the given type are removed.
+                If a name is specified, then all handlers of that name and type
+                are removed instead.
+            type: str, All
+                If type is All, then all handlers of the given name are removed.
+                If a type is specified, then all handlers of that type and name
+                are removed instead.
+        """
+        if name is All and type is All:
             self._trait_notifiers = {}
+            self._static_trait_notifiers = []
         else:
+            names = self.trait_names() if name is All else [name]
             try:
-                del self._trait_notifiers[name]
+                for n in self.trait_names():
+                    types = self._trait_notifiers[n] if type is All else [type]
+                    for t in types:
+                        handlers = self._trait_notifiers[n][t]
+                        del self._trait_notifiers[n][t]
+                        for h in handlers:
+                            if h.name is None:
+                                self._static_trait_notifiers.remove(h)
             except KeyError:
                 pass
+
 
     def _register_validator(self, handler, names):
         """Setup a handler to be called when a trait should be cross validated.
@@ -1342,6 +1507,15 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """Dynamically add trait attributes to the HasTraits instance."""
         self.__class__ = type(self.__class__.__name__, (self.__class__,),
                               traits)
+
+        events = self._static_trait_notifiers
+        events.extend(self.trait_events().values())
+
+        for e in events:
+            if e.caches_instance_resources:
+                for n in e.event_of(self, traits.keys()):
+                    e.register(self, (n,))
+
         for trait in traits.values():
             trait.instance_init(self)
 
@@ -2255,7 +2429,7 @@ class Container(Instance):
             if isinstance(trait, type):
                 warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
                      " Passing types is deprecated in traitlets 4.1.",
-                     DeprecationWarning, stacklevel=3)
+                     DeprecationWarning, stacklevel=2)
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
