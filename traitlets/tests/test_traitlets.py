@@ -22,7 +22,7 @@ from traitlets import (
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, envvar_default
 )
 
 import six
@@ -175,6 +175,28 @@ class TestTraitType(TestCase):
         self.assertEqual(a._trait_values, {})
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
+
+    def test_envvar_dynamic_initializer(self):
+        import os
+
+        os.environ['MY_ENVVAR'] = 'true'
+
+        class A(HasTraits):
+            b = Bool()
+
+            @envvar_default('b', 'MY_ENVVAR')
+            def _b_from_envvar(self, init):
+                if init.value is None:
+                    m = "The trait '%s' expected os.environ[%r] to be set"
+                    raise TraitError(m % (init.trait.name, init.envvar))
+                else:
+                    return bool(init.value)
+
+        a = A()
+        self.assertTrue(a.b)
+        del os.environ['MY_ENVVAR']
+        del a._trait_values['b']
+        self.assertRaises(TraitError, getattr, a, 'b')
 
     def test_tag_metadata(self):
         class MyIntTT(TraitType):
