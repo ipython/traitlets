@@ -6,6 +6,7 @@
 
 from __future__ import print_function
 
+from copy import deepcopy
 import json
 import logging
 import os
@@ -258,6 +259,14 @@ class Application(SingletonConfigurable):
     # extra command-line arguments that don't set config values
     extra_args = List(Unicode())
 
+    cli_config = Instance(Config, (), {},
+        help="""The subset of our configuration that came from the command-line
+
+        We re-load this configuration after loading config files,
+        to ensure that it maintains highest priority.
+        """
+    )
+
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
@@ -265,7 +274,7 @@ class Application(SingletonConfigurable):
         # options and config files.
         if self.__class__ not in self.classes:
             self.classes.insert(0, self.__class__)
-    
+
     @observe('config')
     @observe_compat
     def _config_changed(self, change):
@@ -520,8 +529,8 @@ class Application(SingletonConfigurable):
         flags,aliases = self.flatten_flags()
         loader = KVArgParseConfigLoader(argv=argv, aliases=aliases,
                                         flags=flags, log=self.log)
-        config = loader.load_config()
-        self.update_config(config)
+        self.cli_config = deepcopy(loader.load_config())
+        self.update_config(self.cli_config)
         # store unparsed args in extra_args
         self.extra_args = loader.extra_args
 
@@ -570,11 +579,15 @@ class Application(SingletonConfigurable):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         loaded = []
+        new_config = Config()
         for config in self._load_config_files(filename, path=path, log=self.log,
             raise_config_file_errors=self.raise_config_file_errors,
         ):
             loaded.append(config)
-            self.update_config(config)
+            new_config.merge(config)
+        # add self.cli_config to preserve CLI config priority
+        new_config.merge(self.cli_config)
+        self.update_config(new_config)
         if len(loaded) > 1:
             collisions = loaded[0].collisions(loaded[1])
             if collisions:
