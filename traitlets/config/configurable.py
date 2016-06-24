@@ -188,6 +188,10 @@ class Configurable(HasTraits):
 
     def update_config(self, config):
         """Update config and load the new values"""
+        # make a copy of our config prior to loading to protect IPython,
+        # which relies on self.config being immutable
+        # to preserve CLI config priority
+        self.config = deepcopy(self.config)
         # load config
         self._load_config(config)
         # merge it into self.config
