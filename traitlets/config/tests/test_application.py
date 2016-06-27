@@ -115,6 +115,32 @@ class TestApplication(TestCase):
         self.assertEqual(app.foo.i, 10)
         self.assertEqual(app.foo.j, 10)
         self.assertEqual(app.bar.enabled, False)
+    
+    def test_ipython_cli_priority(self):
+        name = 'config.py'
+        class TestApp(Application):
+            value = Unicode().tag(config=True)
+            aliases = {'v': 'TestApp.value'}
+        app = TestApp()
+        with TemporaryDirectory() as td:
+            config_file = pjoin(td, name)
+            with open(config_file, 'w') as f:
+                f.write("c.TestApp.value = 'config file'")
+            # follow IPython's config-loading sequence to ensure CLI priority is preserved
+            app.parse_command_line(['--v=cli'])
+            # this is where IPython makes a mistake:
+            # it assumes app.config will not be modified,
+            # and storing a reference is storing a copy
+            cli_config = app.config
+            assert 'value' in app.config.TestApp
+            assert app.config.TestApp.value == 'cli'
+            app.load_config_file(name, path=[td])
+            assert app.config.TestApp.value == 'config file'
+            # enforce cl-opts override config file opts:
+            # this is where IPython makes a mistake: it assumes
+            # that cl_config is a different object, but it isn't.
+            app.update_config(cli_config)
+            assert app.config.TestApp.value == 'cli'
 
     def test_flags(self):
         app = MyApp()
