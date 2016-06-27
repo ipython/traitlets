@@ -187,9 +187,12 @@ class Configurable(HasTraits):
 
     def update_config(self, config):
         """Update config and load the new values"""
-        # make a copy of our config prior to loading to protect IPython,
-        # which relies on self.config being immutable
-        # to preserve CLI config priority
+        # traitlets prior to 4.2 created a copy of self.config in order to trigger change events.
+        # Some projects (IPython < 5) relied upon one side effect of this,
+        # that self.config prior to update_config was not modified in-place.
+        # For backward-compatibility, we must ensure that self.config
+        # is a new object and not modified in-place,
+        # but config consumers should not rely on this behavior.
         self.config = deepcopy(self.config)
         # load config
         self._load_config(config)
