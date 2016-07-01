@@ -2213,6 +2213,47 @@ def test_subclass_add_observer():
     assert obj.child_called
     assert obj.parent_called
 
+
+def test_observe_iterables():
+
+    class C(HasTraits):
+        i = Integer()
+        s = Unicode()
+
+    c = C()
+    recorded = {}
+    def record(change):
+        recorded['change'] = change
+
+    # observe with names=set
+    c.observe(record, names={'i', 's'})
+    c.i = 5
+    assert recorded['change'].name == 'i'
+    assert recorded['change'].new == 5
+    c.s = 'hi'
+    assert recorded['change'].name == 's'
+    assert recorded['change'].new == 'hi'
+
+    # observe with names=custom container with iter, contains
+    class MyContainer(object):
+        def __init__(self, container):
+            self.container = container
+
+        def __iter__(self):
+            return iter(self.container)
+
+        def __contains__(self, key):
+            return key in self.container
+
+    c.observe(record, names=MyContainer({'i', 's'}))
+    c.i = 10
+    assert recorded['change'].name == 'i'
+    assert recorded['change'].new == 10
+    c.s = 'ok'
+    assert recorded['change'].name == 's'
+    assert recorded['change'].new == 'ok'
+
+
 def test_super_args():
     class SuperRecorder(object):
         def __init__(self, *args, **kwargs):

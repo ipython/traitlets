@@ -202,11 +202,12 @@ def parse_notifier_name(names):
     """
     if names is All or isinstance(names, six.string_types):
         return [names]
-    elif isinstance(names, (list, tuple)):
+    else:
         if not names or All in names:
             return [All]
         for n in names:
-            assert isinstance(n, six.string_types), "names must be strings"
+            if not isinstance(n, six.string_types):
+                raise TypeError("names must be strings, not %r" % n)
         return names
 
 
