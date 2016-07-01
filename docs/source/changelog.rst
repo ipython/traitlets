@@ -4,6 +4,24 @@ Changes in Traitlets
 4.2
 ---
 
+4.2.2
+*****
+
+`4.2.2 on GitHub <https://github.com/ipython/traitlets/milestones/4.2.2>`__
+
+Partially revert a change in 4.1 that prevented IPython's command-line options from taking priority over config files.
+
+
+4.2.1
+*****
+
+`4.2.1 on GitHub <https://github.com/ipython/traitlets/milestones/4.2.1>`__
+
+Demotes warning about unused arguments in ``HasTraits.__init__`` introduced in 4.2.0 to DeprecationWarning.
+
+4.2.0
+*****
+
 `4.2 on GitHub <https://github.com/ipython/traitlets/milestones/4.2>`__
 
 - :class:`JSONFileConfigLoader` can be used as a context manager for updating configuration.
