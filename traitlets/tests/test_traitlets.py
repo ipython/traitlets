@@ -637,7 +637,6 @@ class TestObserveDecorator(TestCase):
             bar = Int().tag(type='a', obj=u)
             baz = Int().tag(type='z')
 
-
         a = A()
 
         def _test_observer1(change):
@@ -700,6 +699,57 @@ class TestObserveDecorator(TestCase):
         a.bar = 2
         self.assertEqual(a.foo, 0)
 
+    def test_validate_via_tags(self):
+
+        def _domain_like(x):
+            return isinstance(x, (tuple, list)) and len(x) == 2
+
+        class A(HasTraits):
+            foo = Int().tag(domain=(1, 11))
+            bar = Int().tag(domain=(4, 8))
+            baz = Int().tag(domain=None)
+
+            @validate(tags={'domain': lambda x: _domain_like(x)})
+            def _domain_type_coecer(self, prop):
+                d = prop.trait.metadata['domain']
+                if prop.value <= d[0]:
+                    return d[0]
+                elif prop.value >= d[1]:
+                    return d[1]-1
+                else:
+                    return prop.value
+
+        a = A()
+
+        a.foo = 0
+        self.assertEqual(a.foo, 1)
+        a.foo = 11
+        self.assertEqual(a.foo, 10)
+        a.foo = 6
+        self.assertEqual(a.foo, 6)
+
+        a.bar = 0
+        self.assertEqual(a.bar, 4)
+        a.bar = 11
+        self.assertEqual(a.bar, 7)
+        a.bar = 6
+        self.assertEqual(a.bar, 6)
+
+    def test_default_via_tags(self):
+
+        class A(HasTraits):
+            foo = Int().tag(type='a')
+            bar = Int().tag(type='a')
+            baz = Int().tag(type='b')
+
+            @default(tags={'type': 'a'})
+            def _a_type_default(self):
+                return 1
+
+        a = A()
+        self.assertEqual(a.foo, 1)
+        self.assertEqual(a.bar, 1)
+        self.assertEqual(a.baz, 0)
 
     def test_subclass(self):
 

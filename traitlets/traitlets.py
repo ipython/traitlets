@@ -67,7 +67,6 @@ SequenceTypes = (list, tuple, set, frozenset)
 # Basic classes
 #-----------------------------------------------------------------------------
 
-
 Undefined = Sentinel('Undefined', 'traitlets',
 '''
 Used in Traitlets to specify that no defaults are set in kwargs
@@ -204,15 +203,13 @@ def parse_notifier_name(names):
         return []
     elif names is All or isinstance(names, six.string_types):
         return [names]
+    elif not names or All in names:
+        return [All]
     else:
-        try:
-            names = list(names)
-        except:
-            raise TypeError("could not coerce to 'list'")
         for n in names:
-            if n is not All and not isinstance(n, six.string_types):
-                raise ValueError("names must be strings or %r" % All)
-        return names
+            if not isinstance(n, six.string_types):
+                raise TypeError("names must be strings, not %s" % n)
+        return list(names)
 
 
 def parse_notifier_tags(obj, tags):
@@ -225,10 +222,17 @@ def parse_notifier_tags(obj, tags):
     tags: dict
         The tags being converted to trait names
     """
+    if isinstance(obj, HasTraits):
+        method = obj.trait_names
+    elif issubclass(obj, HasTraits):
+        method = obj.class_trait_names
+    else:
+        raise TypeError("Expected an instance or class from a HasTraits subclass")
+
     if tags is None or not len(tags):
         return []
     else:
-        return list(obj.trait_names(**tags))
+        return list(method(**tags))
 
 
 class _SimpleTest:
@@ -943,13 +947,13 @@ class EventHandler(BaseDescriptor):
 class TraitEventHandler(EventHandler):
 
     metadata = {}
-    trait_names = ()
+    trait_names = []
 
     def __init__(self, names, tags):
+        if names: self.trait_names = parse_notifier_name(names)
         if tags: self.metadata = tags
-        if names: self.trait_names = names
 
-    def register(self, inst, names=None):
+    def register(self, inst):
         """Associate this event with traits on an instance"""
         pass
 
@@ -970,12 +974,11 @@ class TraitEventHandler(EventHandler):
         -------
         A ``set`` of trait names
         """
-        named = parse_notifier_name(self.trait_names)
         tagged = parse_notifier_tags(obj, self.metadata)
         if names is not None:
-            return set(names).intersection(named + tagged)
+            return set(names).intersection(self.trait_names + tagged)
         else:
-            return set(named + tagged)
+            return set(self.trait_names + tagged)
 
     def __eq__(self, other):
         if isinstance(other, TraitEventHandler):
@@ -1459,19 +1462,24 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             self._trait_notifiers = {}
             self._static_trait_notifiers = []
         else:
-            names = self.trait_names() if name is All else [name]
-            try:
-                for n in self.trait_names():
-                    types = self._trait_notifiers[n] if type is All else [type]
-                    for t in types:
+            for n in self._trait_notifiers if name is All else [name]:
+                if type is All:
+                    try:
+                        tnames = self._trait_notifiers[n]
+                    except:
+                        continue
+                else:
+                    tnames = [type]
+                for t in tnames:
+                    try:
                         handlers = self._trait_notifiers[n][t]
+                    except KeyError:
+                        pass
+                    else:
                         del self._trait_notifiers[n][t]
                         for h in handlers:
                             if h.name is None:
                                 self._static_trait_notifiers.remove(h)
-            except KeyError:
-                pass
-
 
     def _register_validator(self, handler, names):
         """Setup a handler to be called when a trait should be cross validated.
