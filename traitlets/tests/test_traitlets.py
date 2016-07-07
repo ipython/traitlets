@@ -22,7 +22,7 @@ from traitlets import (
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, EventHandler
 )
 
 import six
@@ -480,6 +480,49 @@ class TestHasTraitsNotify(TestCase):
         b.a += 1
         self.assertEqual(b.b, b.c)
         self.assertEqual(b.b, b.d)
+
+
+class TestEventHandler(TestCase):
+
+    def test_event_handler_setup(self):
+        e = EventHandler()
+        # no callback by default
+        self.assertEqual(e.func, None)
+
+        cb0 = lambda : None
+        cb1 = lambda : None
+
+        # register a callback
+        e.setup_callback(cb0)
+        self.assertEqual(e.func, cb0)
+
+        # check that re-registration raises by default
+        self.assertRaises(ValueError, e.setup_callback, cb1)
+
+        # force re-registration
+        e.setup_callback(cb1, force=True)
+        self.assertEqual(e.func, cb1)
+
+    def test_event_handler_call(self):
+        e = EventHandler()
+        # no callback by default
+        self.assertEqual(e.func, None)
+
+        a = type('A', (object,), {'e': e})()
+        cb = lambda inst, n: setattr(inst, 'x', n)
+        cb1 = lambda inst, n: setattr(inst, 'x', inst.x + n)
+
+        # register a callback
+        e.setup_callback(cb)
+
+        e(a, 0)
+        # check the static callback
+        self.assertEqual(a.x, 0)
+
+        a.e(1)
+        # check the bound callback
+        self.assertEqual(a.x, 1)
+
 
 class TestObserveDecorator(TestCase):
 
