@@ -1727,27 +1727,24 @@ class ForwardDeclaredInstance(ForwardDeclaredMixin, Instance):
     pass
 
 
-class This(ClassBasedTraitType):
-    """A trait for instances of the class containing this trait.
+class This(Instance):
+    """A trait for instances of the class owning this trait.
 
-    Because how how and when class bodies are executed, the ``This``
-    trait can only have a default value of None.  This, and because we
-    always validate default values, ``allow_none`` is *always* true.
+    Because of how and when class bodies are executed, the ``This``
+    trait holds a temporary class type until the owner class has been
+    setup by :class:`MetaHasDescriptors`. At which point, the final
+    instance type is assigned by :meth:`class_init`.
     """
 
     info_text = 'an instance of the same type as the receiver or None'
+    allow_none = True
 
-    def __init__(self, **metadata):
-        super(This, self).__init__(None, **metadata)
+    # A temporary value until class_init is called
+    klass = type('UndefinedClass', (object,), {})
 
-    def validate(self, obj, value):
-        # What if value is a superclass of obj.__class__?  This is
-        # complicated if it was the superclass that defined the This
-        # trait.
-        if isinstance(value, self.this_class) or (value is None):
-            return value
-        else:
-            self.error(obj, value)
+    def class_init(self, cls, name):
+        super(This, self).class_init(cls, name)
+        self.klass = cls
 
 
 class Union(TraitType):
