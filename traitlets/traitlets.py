@@ -1727,7 +1727,17 @@ class ForwardDeclaredInstance(ForwardDeclaredMixin, Instance):
     pass
 
 
-class This(Instance):
+class ThisClassMixin(object):
+
+    # A temporary value until class_init is called
+    klass = type('UndefinedClass', (object,), {})
+
+    def class_init(self, cls, name):
+        super(ThisClassMixin, self).class_init(cls, name)
+        self.klass = self.this_class
+
+
+class This(ThisClassMixin, Instance):
     """A trait for instances of the class owning this trait.
 
     Because of how and when class bodies are executed, the ``This``
@@ -1739,12 +1749,22 @@ class This(Instance):
     info_text = 'an instance of the same type as the receiver or None'
     allow_none = True
 
-    # A temporary value until class_init is called
-    klass = type('UndefinedClass', (object,), {})
+
+class ThisType(ThisClassMixin, Type):
+    """A trait for subclasses of the class owning this trait.
+
+    Because of how and when class bodies are executed, the ``This``
+    trait holds a temporary class type until the owner class has been
+    setup by :class:`MetaHasDescriptors`. At which point, the final
+    instance type is assigned by :meth:`class_init`.
+    """
+
+    def __init__(self, default_value=Undefined, **metadata):
+        super(ThisType, self).__init__(default_value, self.klass, **metadata)
 
     def class_init(self, cls, name):
-        super(This, self).class_init(cls, name)
-        self.klass = cls
+        super(ThisType, self).class_init(cls, name)
+        self.default_value = self.klass
 
 
 class Union(TraitType):

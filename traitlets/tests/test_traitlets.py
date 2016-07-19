@@ -22,7 +22,7 @@ from traitlets import (
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, ThisType
 )
 
 import six
@@ -1049,6 +1049,61 @@ class TestThis(TestCase):
 
         with self.assertRaises(TraitError):
             tree.leaves = [1, 2]
+
+class TestThisType(TestCase):
+
+    def test_this_class(self):
+        class Foo(HasTraits):
+            this_type = ThisType()
+
+        f = Foo()
+        self.assertEqual(f.this_type, Foo)
+        f.this_type = Foo
+        self.assertEqual(f.this_type, Foo)
+        self.assertRaises(TraitError, setattr, f, 'this_type', 10)
+
+    def test_this_inst(self):
+        class Foo(HasTraits):
+            this_type = ThisType()
+
+        f = Foo()
+        f.this_type = Foo
+        self.assertTrue(issubclass(f.this_type, Foo))
+
+    def test_subclass(self):
+        class Foo(HasTraits):
+            t = ThisType()
+        class Bar(Foo):
+            pass
+        f = Foo()
+        b = Bar()
+        f.t = Bar
+        b.t = Foo
+        self.assertEqual(f.t, Bar)
+        self.assertEqual(b.t, Foo)
+
+    def test_subclass_override(self):
+        class Foo(HasTraits):
+            t = ThisType()
+        class Bar(Foo):
+            t = ThisType()
+        f = Foo()
+        b = Bar()
+        f.t = Bar
+        self.assertEqual(f.t, Bar)
+        self.assertRaises(TraitError, setattr, b, 't', Foo)
+
+    def test_this_in_container(self):
+
+        class A(HasTraits):
+            types = Dict(ThisType())
+        class B(A): pass
+        class C(B): pass
+        a = A(
+            types={'b': B, 'c': C}
+        )
+        with self.assertRaises(TraitError):
+            a.types = {'b': 1, 'c': 2}
 
 class TraitTestBase(TestCase):
     """A best testing class for basic trait types."""
