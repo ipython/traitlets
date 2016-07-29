@@ -116,16 +116,49 @@ class TestApplication(TestCase):
         self.assertEqual(app.foo.j, 10)
         self.assertEqual(app.bar.enabled, False)
     
-    def test_ipython_cli_priority(self):
+    def test_cli_priority(self):
+        """Test that loading config files does not override CLI options"""
         name = 'config.py'
         class TestApp(Application):
             value = Unicode().tag(config=True)
+            config_file_loaded = Bool().tag(config=True)
             aliases = {'v': 'TestApp.value'}
         app = TestApp()
         with TemporaryDirectory() as td:
             config_file = pjoin(td, name)
             with open(config_file, 'w') as f:
-                f.write("c.TestApp.value = 'config file'")
+                f.writelines([
+                    "c.TestApp.value = 'config file'\n",
+                    "c.TestApp.config_file_loaded = True\n"
+                ])
+
+            app.parse_command_line(['--v=cli'])
+            assert 'value' in app.config.TestApp
+            assert app.config.TestApp.value == 'cli'
+            assert app.value == 'cli'
+
+            app.load_config_file(name, path=[td])
+            assert app.config_file_loaded
+            assert app.config.TestApp.value == 'cli'
+            assert app.value == 'cli'
+
+    def test_ipython_cli_priority(self):
+        # this test is almost entirely redundant with above,
+        # but we can keep it around in case of subtle issues creeping into
+        # the exact sequence IPython follows.
+        name = 'config.py'
+        class TestApp(Application):
+            value = Unicode().tag(config=True)
+            config_file_loaded = Bool().tag(config=True)
+            aliases = {'v': 'TestApp.value'}
+        app = TestApp()
+        with TemporaryDirectory() as td:
+            config_file = pjoin(td, name)
+            with open(config_file, 'w') as f:
+                f.writelines([
+                    "c.TestApp.value = 'config file'\n",
+                    "c.TestApp.config_file_loaded = True\n"
+                ])
             # follow IPython's config-loading sequence to ensure CLI priority is preserved
             app.parse_command_line(['--v=cli'])
             # this is where IPython makes a mistake:
@@ -134,13 +167,15 @@ class TestApplication(TestCase):
             cli_config = app.config
             assert 'value' in app.config.TestApp
             assert app.config.TestApp.value == 'cli'
+            assert app.value == 'cli'
             app.load_config_file(name, path=[td])
-            assert app.config.TestApp.value == 'config file'
+            assert app.config_file_loaded
             # enforce cl-opts override config file opts:
             # this is where IPython makes a mistake: it assumes
             # that cl_config is a different object, but it isn't.
             app.update_config(cli_config)
             assert app.config.TestApp.value == 'cli'
+            assert app.value == 'cli'
 
     def test_flags(self):
         app = MyApp()
