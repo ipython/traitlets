@@ -893,16 +893,28 @@ def default(name):
 
 class EventHandler(BaseDescriptor):
 
-    def _init_call(self, func):
+    func = None
+
+    def setup_callback(self, func, force=False):
+        """Setup a new callback for the event
+
+        Use ``force=True`` to setup the callback even if one already exists
+        """
+        if self.func is not None and not force:
+            raise ValueError("a callback already exist")
         self.func = func
         return self
 
     def __call__(self, *args, **kwargs):
-        """Pass `*args` and `**kwargs` to the handler's funciton if it exists."""
-        if hasattr(self, 'func'):
+        """A proxy for the event's callback
+
+        If no callback has been setup, an attempt is made to setup one up
+        (without calling it) by passing all arguments to ``setup_callback``
+        """
+        if self.func is not None:
             return self.func(*args, **kwargs)
         else:
-            return self._init_call(*args, **kwargs)
+            return self.setup_callback(*args, **kwargs)
 
     def __get__(self, inst, cls=None):
         if inst is None:
