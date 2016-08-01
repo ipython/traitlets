@@ -766,6 +766,10 @@ class MetaHasTraits(MetaHasDescriptors):
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
         super(MetaHasTraits, cls).setup_class(classdict)
+        if len(cls.class_trait_names()):
+            from .doclogs import HasTraitsDocLog, write_docs_to_class
+            cls._doclog = HasTraitsDocLog(cls)
+            write_docs_to_class(cls, cls._doclog.document())
 
 
 def observe(*names, **kwargs):
@@ -893,6 +897,8 @@ def default(name):
 
 class EventHandler(BaseDescriptor):
 
+    info_text = None
+
     def _init_call(self, func):
         self.func = func
         return self
@@ -909,8 +915,14 @@ class EventHandler(BaseDescriptor):
             return self
         return types.MethodType(self.func, inst)
 
+    def info(self):
+        """Return some helpful info"""
+        return self.info_text
+
 
 class ObserveHandler(EventHandler):
+
+    info_text = "observes changes"
 
     def __init__(self, names, type):
         self.trait_names = names
@@ -922,6 +934,8 @@ class ObserveHandler(EventHandler):
 
 class ValidateHandler(EventHandler):
 
+    info_text = "validates values"
+
     def __init__(self, names):
         self.trait_names = names
 
@@ -930,6 +944,8 @@ class ValidateHandler(EventHandler):
 
 
 class DefaultHandler(EventHandler):
+
+    info_text = "default value generator"
 
     def __init__(self, name):
         self.trait_name = name
@@ -974,6 +990,8 @@ class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
 
 
 class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
+
+    _doclog = None
 
     def setup_instance(self, *args, **kwargs):
         self._trait_values = {}
