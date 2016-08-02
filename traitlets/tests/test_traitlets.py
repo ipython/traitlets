@@ -1181,8 +1181,8 @@ class TestMinBoundLong(TraitTestBase):
     obj = MinBoundLongTrait()
 
     _default_value = 99 if six.PY3 else long(99)
-    _good_values   = [5, 10L]
-    _bad_values    = [4, -10L]
+    _good_values   = [5, 10]
+    _bad_values    = [4, -10]
 
 
 class MaxBoundLongTrait(HasTraits):
@@ -1192,8 +1192,8 @@ class TestMaxBoundLong(TraitTestBase):
     obj = MaxBoundLongTrait()
 
     _default_value = 5 if six.PY3 else long(5)
-    _good_values   = [10, -2L]
-    _bad_values    = [11, 20L]
+    _good_values   = [10, -2]
+    _bad_values    = [11, 20]
 
 
 class IntegerTrait(HasTraits):
