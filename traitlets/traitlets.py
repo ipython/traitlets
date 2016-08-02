@@ -250,7 +250,6 @@ def _validate_link(*tuples):
         if not trait_name in obj.traits():
             raise TypeError("%r has no trait %r" % (obj, trait_name))
 
-
 class link(object):
     """Link traits from different objects together so they remain in sync.
 
@@ -1821,6 +1820,30 @@ class Any(TraitType):
     info_text = 'any value'
 
 
+def _validate_bounds(trait, obj, value):
+    """
+    Validate that a number to be applied to a trait is between bounds.
+
+    If value is not between min_bound and max_bound, this raises a
+    TraitError with an error message appropriate for this trait.
+    """
+    if trait.min is not None and value < trait.min:
+        raise TraitError(
+            "The value of the '{name}' trait of {klass} instance should "
+            "not be less than {min_bound}, but a value of {value} was "
+            "specified".format(
+                name=trait.name, klass=class_of(obj),
+                value=value, min_bound=trait.min))
+    if trait.max is not None and value > trait.max:
+        raise TraitError(
+            "The value of the '{name}' trait of {klass} instance should "
+            "not be greater than {max_bound}, but a value of {value} was "
+            "specified".format(
+                name=trait.name, klass=class_of(obj),
+                value=value, max_bound=trait.max))
+    return value
+
+
 class Int(TraitType):
     """An int trait."""
 
@@ -1837,16 +1860,7 @@ class Int(TraitType):
     def validate(self, obj, value):
         if not isinstance(value, int):
             self.error(obj, value)
-        if self.max is not None and value > self.max:        
-            raise TraitError("The value of the '%s' trait of %s instance should "
-                             "not be greater than %s, but a value of %s was "
-                             "specified" % (self.name, class_of(obj),
-                                            self.max, value))
-        if self.min is not None and value < self.min:
-            raise TraitError("The value of the '%s' trait of %s instance should "
-                             "not be less than %s, but a value of %s was "
-                             "specified" % (self.name, class_of(obj), 
-                                            self.min, value))
+        value = _validate_bounds(self, obj, value)
         return value
 
 
@@ -1866,12 +1880,23 @@ if six.PY2:
         default_value = 0
         info_text = 'a long'
 
-        def validate(self, obj, value):
+        def __init__(self, default_value=Undefined, allow_none=None, **kwargs):
+            self.min = kwargs.pop('min', None)
+            self.max = kwargs.pop('max', None)
+            super(Long, self).__init__(
+                default_value=default_value,
+                allow_none=allow_none, **kwargs)
+
+        def _validate_long(self, obj, value):
             if isinstance(value, long):
                 return value
             if isinstance(value, int):
                 return long(value)
             self.error(obj, value)
+
+        def validate(self, obj, value):
+            value = self._validate_long(obj, value)
+            return _validate_bounds(self, obj, value)
 
 
     class CLong(Long):
@@ -1883,6 +1908,7 @@ if six.PY2:
             except:
                 self.error(obj, value)
 
+
     class Integer(TraitType):
         """An integer trait.
 
@@ -1891,7 +1917,14 @@ if six.PY2:
         default_value = 0
         info_text = 'an integer'
 
-        def validate(self, obj, value):
+        def __init__(self, default_value=Undefined, allow_none=None, **kwargs):
+            self.min = kwargs.pop('min', None)
+            self.max = kwargs.pop('max', None)
+            super(Integer, self).__init__(
+                default_value=default_value,
+                allow_none=allow_none, **kwargs)
+
+        def _validate_int(self, obj, value):
             if isinstance(value, int):
                 return value
             if isinstance(value, long):
@@ -1904,6 +1937,11 @@ if six.PY2:
                 if isinstance(value, Int64):
                     return int(value)
             self.error(obj, value)
+
+        def validate(self, obj, value):
+            value = self._validate_int(obj, value)
+            return _validate_bounds(self, obj, value)
+
 else:
     Long, CLong = Int, CInt
     Integer = Int

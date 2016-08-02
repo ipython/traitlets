@@ -1174,6 +1174,28 @@ class TestLong(TraitTestBase):
         self.assertEqual(type(self.obj.value), long)
 
 
+class MinBoundLongTrait(HasTraits):
+    value = Long(99 if six.PY3 else long(99), min=5)
+
+class TestMinBoundLong(TraitTestBase):
+    obj = MinBoundLongTrait()
+
+    _default_value = 99 if six.PY3 else long(99)
+    _good_values   = [5, 10L]
+    _bad_values    = [4, -10L]
+
+
+class MaxBoundLongTrait(HasTraits):
+    value = Long(5 if six.PY3 else long(5), max=10)
+
+class TestMaxBoundLong(TraitTestBase):
+    obj = MaxBoundLongTrait()
+
+    _default_value = 5 if six.PY3 else long(5)
+    _good_values   = [10, -2L]
+    _bad_values    = [11, 20L]
+
+
 class IntegerTrait(HasTraits):
     value = Integer(1)
 
@@ -1190,6 +1212,28 @@ class TestInteger(TestLong):
 
         self.obj.value = long(100)
         self.assertEqual(type(self.obj.value), int)
+
+
+class MinBoundIntegerTrait(HasTraits):
+    value = Integer(5, min=3)
+
+class TestMinBoundInteger(TraitTestBase):
+    obj = MinBoundIntegerTrait()
+
+    _default_value = 5
+    _good_values   = 3, 20
+    _bad_values    = [2, -10]
+
+
+class MaxBoundIntegerTrait(HasTraits):
+    value = Integer(1, max=3)
+
+class TestMaxBoundInteger(TraitTestBase):
+    obj = MaxBoundIntegerTrait()
+
+    _default_value = 1
+    _good_values   = 3, -2
+    _bad_values    = [4, 10]
 
 
 class FloatTrait(HasTraits):
