@@ -1977,9 +1977,11 @@ class CFloat(Float):
 
     def validate(self, obj, value):
         try:
-            return float(value)
+            value = float(value)
         except:
             self.error(obj, value)
+        return _validate_bounds(self, obj, value)
+
 
 class Complex(TraitType):
     """A trait for complex numbers."""

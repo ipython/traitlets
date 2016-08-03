@@ -1315,7 +1315,8 @@ class TestCFloat(TraitTestBase):
 
     _default_value = 99.0
     _good_values   = [10, 10.0, 10.5, '10.0', '10', '-10', '10.0', u'10']
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j]
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
+                      200.1, '200.1']
 
     def coerce(self, v):
         return float(v)
