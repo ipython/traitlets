@@ -1860,8 +1860,7 @@ class Int(TraitType):
     def validate(self, obj, value):
         if not isinstance(value, int):
             self.error(obj, value)
-        value = _validate_bounds(self, obj, value)
-        return value
+        return _validate_bounds(self, obj, value)
 
 
 class CInt(Int):
@@ -1968,8 +1967,7 @@ class Float(TraitType):
             value = float(value)
         if not isinstance(value, float):
             self.error(obj, value)
-        value = _validate_bounds(self, obj, value)
-        return value
+        return _validate_bounds(self, obj, value)
 
 
 class CFloat(Float):
