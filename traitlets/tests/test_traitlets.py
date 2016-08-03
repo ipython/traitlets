@@ -18,9 +18,9 @@ from pytest import mark
 
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
-    Int, CInt, Long, CLong, Integer, Float, Complex, Bytes, Unicode, TraitError,
-    Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
-    ObjectName, DottedObjectName, CRegExp, link, directional_link,
+    Int, CInt, Long, CLong, Integer, Float, CFloat, Complex, Bytes, Unicode,
+    TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
+    List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors,
 )
@@ -1303,6 +1303,22 @@ class TestFloat(TraitTestBase):
                       u'-10', u'10L', u'-10L', u'10.1', u'-10.1', 201.0]
     if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
+
+
+class CFloatTrait(HasTraits):
+
+    value = CFloat('99.0', max=200.0)
+
+class TestCFloat(TraitTestBase):
+
+    obj = CFloatTrait()
+
+    _default_value = 99.0
+    _good_values   = [10, 10.0, 10.5, '10.0', '10', '-10', '10.0', u'10']
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j]
+
+    def coerce(self, v):
+        return float(v)
 
 
 class ComplexTrait(HasTraits):
