@@ -18,9 +18,9 @@ from pytest import mark
 
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
-    Int, Long, Integer, Float, Complex, Bytes, Unicode, TraitError,
-    Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
-    ObjectName, DottedObjectName, CRegExp, link, directional_link,
+    Int, CInt, Long, CLong, Integer, Float, CFloat, Complex, Bytes, Unicode,
+    TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
+    List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors,
 )
@@ -1148,6 +1148,32 @@ class TestInt(TraitTestBase):
         _bad_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
 
 
+class CIntTrait(HasTraits):
+    value = CInt('5')
+
+class TestCInt(TraitTestBase):
+    obj = CIntTrait()
+
+    _default_value = 5
+    _good_values   = ['10', '-10', u'10', u'-10', 10, 10.0, -10.0, 10.1]
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
+                      None, 1j, '10.1', u'10.1']
+
+    def coerce(self, n):
+        return int(n)
+
+
+class MinBoundCIntTrait(HasTraits):
+    value = CInt('5', min=3)
+
+class TestMinBoundCInt(TestCInt):
+    obj = MinBoundCIntTrait()
+
+    _default_value = 5
+    _good_values   = [3, 3.0, '3']
+    _bad_values    = [2.6, 2, -3, -3.0]
+
+
 class LongTrait(HasTraits):
 
     value = Long(99 if six.PY3 else long(99))
@@ -1174,6 +1200,54 @@ class TestLong(TraitTestBase):
         self.assertEqual(type(self.obj.value), long)
 
 
+class MinBoundLongTrait(HasTraits):
+    value = Long(99 if six.PY3 else long(99), min=5)
+
+class TestMinBoundLong(TraitTestBase):
+    obj = MinBoundLongTrait()
+
+    _default_value = 99 if six.PY3 else long(99)
+    _good_values   = [5, 10]
+    _bad_values    = [4, -10]
+
+
+class MaxBoundLongTrait(HasTraits):
+    value = Long(5 if six.PY3 else long(5), max=10)
+
+class TestMaxBoundLong(TraitTestBase):
+    obj = MaxBoundLongTrait()
+
+    _default_value = 5 if six.PY3 else long(5)
+    _good_values   = [10, -2]
+    _bad_values    = [11, 20]
+
+
+class CLongTrait(HasTraits):
+    value = CLong('5')
+
+class TestCLong(TraitTestBase):
+    obj = CLongTrait()
+
+    _default_value = 5 if six.PY3 else long(5)
+    _good_values   = ['10', '-10', u'10', u'-10', 10, 10.0, -10.0, 10.1]
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
+                      None, 1j, '10.1', u'10.1']
+
+    def coerce(self, n):
+        return int(n) if six.PY3 else long(n)
+
+
+class MaxBoundCLongTrait(HasTraits):
+    value = CLong('5', max=10)
+
+class TestMaxBoundCLong(TestCLong):
+    obj = MaxBoundCLongTrait()
+
+    _default_value = 5 if six.PY3 else long(5)
+    _good_values   = [10, '10', 10.3]
+    _bad_values    = [11.0, '11']
+
+
 class IntegerTrait(HasTraits):
     value = Integer(1)
 
@@ -1192,6 +1266,28 @@ class TestInteger(TestLong):
         self.assertEqual(type(self.obj.value), int)
 
 
+class MinBoundIntegerTrait(HasTraits):
+    value = Integer(5, min=3)
+
+class TestMinBoundInteger(TraitTestBase):
+    obj = MinBoundIntegerTrait()
+
+    _default_value = 5
+    _good_values   = 3, 20
+    _bad_values    = [2, -10]
+
+
+class MaxBoundIntegerTrait(HasTraits):
+    value = Integer(1, max=3)
+
+class TestMaxBoundInteger(TraitTestBase):
+    obj = MaxBoundIntegerTrait()
+
+    _default_value = 1
+    _good_values   = 3, -2
+    _bad_values    = [4, 10]
+
+
 class FloatTrait(HasTraits):
 
     value = Float(99.0, max=200.0)
@@ -1207,6 +1303,23 @@ class TestFloat(TraitTestBase):
                       u'-10', u'10L', u'-10L', u'10.1', u'-10.1', 201.0]
     if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
+
+
+class CFloatTrait(HasTraits):
+
+    value = CFloat('99.0', max=200.0)
+
+class TestCFloat(TraitTestBase):
+
+    obj = CFloatTrait()
+
+    _default_value = 99.0
+    _good_values   = [10, 10.0, 10.5, '10.0', '10', '-10', '10.0', u'10']
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
+                      200.1, '200.1']
+
+    def coerce(self, v):
+        return float(v)
 
 
 class ComplexTrait(HasTraits):
