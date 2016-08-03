@@ -1968,11 +1968,7 @@ class Float(TraitType):
             value = float(value)
         if not isinstance(value, float):
             self.error(obj, value)
-        if value > self.max or value < self.min:
-            raise TraitError("The value of the '%s' trait of %s instance should "
-                             "be between %s and %s, but a value of %s was "
-                             "specified" % (self.name, class_of(obj),
-                                            self.min, self.max, value))
+        value = _validate_bounds(self, obj, value)
         return value
 
 
