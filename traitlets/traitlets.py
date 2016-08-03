@@ -1869,9 +1869,11 @@ class CInt(Int):
 
     def validate(self, obj, value):
         try:
-            return int(value)
+            value = int(value)
         except:
             self.error(obj, value)
+        return _validate_bounds(self, obj, value)
+
 
 if six.PY2:
     class Long(TraitType):
@@ -1904,9 +1906,10 @@ if six.PY2:
 
         def validate(self, obj, value):
             try:
-                return long(value)
+                value = long(value)
             except:
                 self.error(obj, value)
+            return _validate_bounds(self, obj, value)
 
 
     class Integer(TraitType):
@@ -1957,7 +1960,7 @@ class Float(TraitType):
                  allow_none=None, **kwargs):
         self.min = kwargs.pop('min', -float('inf'))
         self.max = kwargs.pop('max', float('inf'))
-        super(Float, self).__init__(default_value=default_value, 
+        super(Float, self).__init__(default_value=default_value,
                                     allow_none=allow_none, **kwargs)
 
     def validate(self, obj, value):

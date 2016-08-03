@@ -1163,6 +1163,17 @@ class TestCInt(TraitTestBase):
         return int(n)
 
 
+class MinBoundCIntTrait(HasTraits):
+    value = CInt('5', min=3)
+
+class TestMinBoundCInt(TestCInt):
+    obj = MinBoundCIntTrait()
+
+    _default_value = 5
+    _good_values   = [3, 3.0, '3']
+    _bad_values    = [2.6, 2, -3, -3.0]
+
+
 class LongTrait(HasTraits):
 
     value = Long(99 if six.PY3 else long(99))
@@ -1224,6 +1235,17 @@ class TestCLong(TraitTestBase):
 
     def coerce(self, n):
         return int(n) if six.PY3 else long(n)
+
+
+class MaxBoundCLongTrait(HasTraits):
+    value = CLong('5', max=10)
+
+class TestMaxBoundCLong(TestCLong):
+    obj = MaxBoundCLongTrait()
+
+    _default_value = 5 if six.PY3 else long(5)
+    _good_values   = [10, '10', 10.3]
+    _bad_values    = [11.0, '11']
 
 
 class IntegerTrait(HasTraits):
