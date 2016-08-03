@@ -18,7 +18,7 @@ from pytest import mark
 
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
-    Int, Long, CLong, Integer, Float, Complex, Bytes, Unicode, TraitError,
+    Int, CInt, Long, CLong, Integer, Float, Complex, Bytes, Unicode, TraitError,
     Union, All, Undefined, Type, This, Instance, TCPAddress, List, Tuple,
     ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
@@ -1146,6 +1146,21 @@ class TestInt(TraitTestBase):
                       u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', -200]
     if not six.PY3:
         _bad_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
+
+
+class CIntTrait(HasTraits):
+    value = CInt('5')
+
+class TestCInt(TraitTestBase):
+    obj = CIntTrait()
+
+    _default_value = 5
+    _good_values   = ['10', '-10', u'10', u'-10', 10, 10.0, -10.0, 10.1]
+    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
+                      None, 1j, '10.1', u'10.1']
+
+    def coerce(self, n):
+        return int(n)
 
 
 class LongTrait(HasTraits):
