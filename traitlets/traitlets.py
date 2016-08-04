@@ -123,7 +123,7 @@ def _deprecated_method(method, cls, method_name, msg):
     Uses warn_explicit to bind warning to method definition instead of triggering code,
     which isn't relevant.
     """
-    warn_msg = "{classname}.{method_name} is deprecated: {msg}".format(
+    warn_msg = "{classname}.{method_name} is deprecated in traitlets 4.1: {msg}".format(
         classname=cls.__name__, method_name=method_name, msg=msg
     )
 
@@ -453,7 +453,7 @@ class TraitType(BaseDescriptor):
             key = tuple(['metadata-tag', pkg] + sorted(metadata))
             if _should_warn(key):
                 warn("metadata %s was set from the constructor. "
-                     "Metadata should be set using the .tag() method, "
+                     "With traitlets 4.1, metadata should be set using the .tag() method, "
                      "e.g., Int().tag(key1='value1', key2='value2')" % (metadata,),
                      DeprecationWarning, stacklevel=stacklevel)
             if len(self.metadata) > 0:
@@ -479,14 +479,14 @@ class TraitType(BaseDescriptor):
 
         Use self.default_value instead
         """
-        warn("get_default_value is deprecated: use the .default_value attribute", DeprecationWarning,
+        warn("get_default_value is deprecated in traitlets 4.0: use the .default_value attribute", DeprecationWarning,
              stacklevel=2)
         return self.default_value
 
     def init_default_value(self, obj):
         """DEPRECATED: Set the static default value for the trait type.
         """
-        warn("init_default_value is deprecated, and may be removed in the future", DeprecationWarning,
+        warn("init_default_value is deprecated in traitlets 4.0, and may be removed in the future", DeprecationWarning,
              stacklevel=2)
         value = self._validate(obj, self.default_value)
         obj._trait_values[self.name] = value
@@ -643,7 +643,7 @@ class TraitType(BaseDescriptor):
             msg = "use the instance .help string directly, like x.help"
         else:
             msg = "use the instance .metadata dictionary directly, like x.metadata[key] or x.metadata.get(key, default)"
-        warn(msg, DeprecationWarning, stacklevel=2)
+        warn("Deprecated in traitlets 4.1, " + msg, DeprecationWarning, stacklevel=2)
         return self.metadata.get(key, default)
 
     def set_metadata(self, key, value):
@@ -655,7 +655,7 @@ class TraitType(BaseDescriptor):
             msg = "use the instance .help string directly, like x.help = value"
         else:
             msg = "use the instance .metadata dictionary directly, like x.metadata[key] = value"
-        warn(msg, DeprecationWarning, stacklevel=2)
+        warn("Deprecated in traitlets 4.1, " + msg, DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
     def tag(self, **metadata):
@@ -736,7 +736,8 @@ class MetaHasDescriptors(type):
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
             if inspect.isclass(v) and issubclass(v, TraitType):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
+                     " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
                 classdict[k] = v()
             # ----------------------------------------------------------------
@@ -815,7 +816,7 @@ def observe_compat(func):
             change = change_or_name
         else:
             clsname = self.__class__.__name__
-            warn("A parent of %s._%s_changed has adopted the new @observe(change) API" % (
+            warn("A parent of %s._%s_changed has adopted the new (traitlets 4.1) @observe(change) API" % (
                 clsname, change_or_name), DeprecationWarning)
             change = Bunch(
                 type='change',
@@ -1016,6 +1017,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             warn(
                 "Passing unrecoginized arguments to super({classname}).__init__({arg_s}).\n"
                 "{error}\n"
+                "This is deprecated in traitlets 4.2."
                 "This error will be raised in a future release of traitlets."
                 .format(
                     arg_s=arg_s, classname=self.__class__.__name__,
@@ -1235,7 +1237,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             If False (the default), then install the handler.  If True
             then unintall it.
         """
-        warn("on_trait_change is deprecated: use observe instead",
+        warn("on_trait_change is deprecated in traitlets 4.1: use observe instead",
              DeprecationWarning, stacklevel=2)
         if name is None:
             name = All
@@ -2224,7 +2226,8 @@ class Container(Instance):
 
         if is_trait(trait):
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
+                     " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=3)
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
@@ -2423,7 +2426,8 @@ class Tuple(Container):
         self._traits = []
         for trait in traits:
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                     " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
             t = trait() if isinstance(trait, type) else trait
             self._traits.append(t)
@@ -2510,7 +2514,8 @@ class Dict(Instance):
         # Case where a type of TraitType is provided rather than an instance
         if is_trait(trait):
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)",
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                     " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
