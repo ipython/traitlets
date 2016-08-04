@@ -202,11 +202,12 @@ def parse_notifier_name(names):
     """
     if names is All or isinstance(names, six.string_types):
         return [names]
-    elif isinstance(names, (list, tuple)):
+    else:
         if not names or All in names:
             return [All]
         for n in names:
-            assert isinstance(n, six.string_types), "names must be strings"
+            if not isinstance(n, six.string_types):
+                raise TypeError("names must be strings, not %r" % n)
         return names
 
 
@@ -788,6 +789,11 @@ def observe(*names, **kwargs):
     type: str, kwarg-only
         The type of event to observe (e.g. 'change')
     """
+    if not names:
+        raise TypeError("Please specify at least one trait name to observe.")
+    for name in names:
+        if name is not All and not isinstance(name, six.string_types):
+            raise TypeError("trait names to observe must be strings or All, not %r" % name)
     return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
 
@@ -839,13 +845,18 @@ def validate(*names):
 
     Notes
     -----
-    Since the owner has access to the ``Hastraits`` instance via the 'owner' key,
+    Since the owner has access to the ``HasTraits`` instance via the 'owner' key,
     the registered cross validator could potentially make changes to attributes
     of the ``HasTraits`` instance. However, we recommend not to do so. The reason
     is that the cross-validation of attributes may run in arbitrary order when
     exiting the ``hold_trait_notifications` context, and such changes may not
     commute.
     """
+    if not names:
+        raise TypeError("Please specify at least one trait name to validate.")
+    for name in names:
+        if name is not All and not isinstance(name, six.string_types):
+            raise TypeError("trait names to validate must be strings or All, not %r" % name)
     return ValidateHandler(names)
 
 
@@ -887,6 +898,8 @@ def default(name):
                 return 3.0                 # ignored since it is defined in a
                                            # class derived from B.a.this_class.
     """
+    if not isinstance(name, six.string_types):
+        raise TypeError("Trait name must be a string or All, not %r" % name)
     return DefaultHandler(name)
 
 
@@ -897,7 +910,7 @@ class EventHandler(BaseDescriptor):
         return self
 
     def __call__(self, *args, **kwargs):
-        """Pass `*args` and `**kwargs` to the handler's funciton if it exists."""
+        """Pass `*args` and `**kwargs` to the handler's function if it exists."""
         if hasattr(self, 'func'):
             return self.func(*args, **kwargs)
         else:
