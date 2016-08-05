@@ -763,6 +763,27 @@ class MetaHasDescriptors(type):
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
+    def __new__(mcs, name, bases, classdict):
+        def sphinx(trait_name, trait):
+            return (
+                ':param {name}: {doc}\n:type {name}: :class:`{cls}`'.format(
+                    name=trait_name,
+                    doc=trait.help,
+                    cls=trait.__class__.__name__
+                )
+            )
+
+        doc_str = classdict.get('__doc__', '')
+        traits = {key: value for key, value in classdict.items()
+                  if isinstance(value, TraitType)}
+        if traits:
+            doc_str += '\n\nTraits:\n\n' + '\n'.join(
+                (sphinx(key, value) for key, value in traits.items())
+            )
+        classdict['__doc__'] = doc_str.strip()
+
+        return super(MetaHasTraits, mcs).__new__(mcs, name, bases, classdict)
+
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
         super(MetaHasTraits, cls).setup_class(classdict)
