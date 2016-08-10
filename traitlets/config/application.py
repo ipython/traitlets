@@ -80,7 +80,7 @@ def catch_config_error(method, app, *args, **kwargs):
 
     On a TraitError (generally caused by bad config), this will print the trait's
     message, and exit the app.
-    
+
     For use on init methods, to prevent invoking excepthook on invalid input.
     """
     try:
@@ -99,23 +99,23 @@ class ApplicationError(Exception):
 
 class LevelFormatter(logging.Formatter):
     """Formatter with additional `highlevel` record
-    
+
     This field is empty if log level is less than highlevel_limit,
     otherwise it is formatted with self.highlevel_format.
-    
+
     Useful for adding 'WARNING' to warning messages,
     without adding 'INFO' to info, etc.
     """
     highlevel_limit = logging.WARN
     highlevel_format = " %(levelname)s |"
-    
+
     def format(self, record):
         if record.levelno >= self.highlevel_limit:
             record.highlevel = self.highlevel_format % record.__dict__
         else:
             record.highlevel = ""
         return super(LevelFormatter, self).format(record)
-            
+
 
 class Application(SingletonConfigurable):
     """A singleton application with full configuration support."""
@@ -131,7 +131,7 @@ class Application(SingletonConfigurable):
     option_description = Unicode(option_description)
     keyvalue_description = Unicode(keyvalue_description)
     subcommand_description = Unicode(subcommand_description)
-    
+
     python_config_loader_class = PyFileConfigLoader
     json_config_loader_class = JSONFileConfigLoader
 
@@ -158,7 +158,7 @@ class Application(SingletonConfigurable):
 
     # The version string of this application.
     version = Unicode(u'0.0')
-    
+
     # the argv used to initialize the application
     argv = List()
 
@@ -179,10 +179,10 @@ class Application(SingletonConfigurable):
             new = getattr(logging, new)
             self.log_level = new
         self.log.setLevel(new)
-    
+
     _log_formatter_cls = LevelFormatter
-    
-    log_datefmt = Unicode("%Y-%m-%d %H:%M:%S", 
+
+    log_datefmt = Unicode("%Y-%m-%d %H:%M:%S",
         help="The date format used by logging formatters for %(asctime)s"
     ).tag(config=True)
 
@@ -197,7 +197,7 @@ class Application(SingletonConfigurable):
         _log_handler = self.log.handlers[0]
         _log_formatter = self._log_formatter_cls(fmt=self.log_format, datefmt=self.log_datefmt)
         _log_handler.setFormatter(_log_formatter)
-    
+
     @default('log')
     def _log_default(self):
         """Start logging for this application.
@@ -217,7 +217,7 @@ class Application(SingletonConfigurable):
                 break
             else:
                 _log = _log.parent
-        if sys.executable.endswith('pythonw.exe'):
+        if sys.executable and sys.executable.endswith('pythonw.exe'):
             # this should really go to a file, but file-logging is only
             # hooked up in parallel applications
             _log_handler = logging.StreamHandler(open(os.devnull, 'w'))
@@ -445,17 +445,17 @@ class Application(SingletonConfigurable):
         self.subapp = subapp.instance(config=self.config)
         # and initialize subapp
         self.subapp.initialize(argv)
-    
+
     def flatten_flags(self):
         """flatten flags and aliases, so cl-args override as expected.
-        
+
         This prevents issues such as an alias pointing to InteractiveShell,
         but a config file setting the same trait in TerminalInteraciveShell
         getting inappropriate priority over the command-line arg.
 
         Only aliases with exactly one descendent in the class list
         will be promoted.
-        
+
         """
         # build a tree of classes in our list that inherit from a particular
         # it will be a dict by parent classname of classes in our list
@@ -476,7 +476,7 @@ class Application(SingletonConfigurable):
                 # exactly one descendent, promote alias
                 cls = children[0]
             aliases[alias] = '.'.join([cls,trait])
-        
+
         # flatten flags, which are of the form:
         # { 'key' : ({'Cls' : {'trait' : value}}, 'help')}
         flags = {}
@@ -496,7 +496,7 @@ class Application(SingletonConfigurable):
         """Parse the command line arguments."""
         argv = sys.argv[1:] if argv is None else argv
         self.argv = [ py3compat.cast_unicode(arg) for arg in argv ]
-        
+
         if argv and argv[0] == 'help':
             # turn `ipython help notebook` into `ipython notebook -h`
             argv = argv[1:] + ['-h']
@@ -524,7 +524,7 @@ class Application(SingletonConfigurable):
         if '--version' in interpreted_argv or '-V' in interpreted_argv:
             self.print_version()
             self.exit(0)
-        
+
         # flatten flags&aliases, so cl-args get appropriate priority:
         flags,aliases = self.flatten_flags()
         loader = KVArgParseConfigLoader(argv=argv, aliases=aliases,
@@ -540,7 +540,7 @@ class Application(SingletonConfigurable):
 
         yield each config object in turn.
         """
-        
+
         if not isinstance(path, list):
             path = [path]
         for path in path[::-1]:
@@ -615,7 +615,7 @@ class Application(SingletonConfigurable):
     @classmethod
     def launch_instance(cls, argv=None, **kwargs):
         """Launch a global instance of this Application
-        
+
         If a global instance already exists, this reinitializes and starts it
         """
         app = cls.instance(**kwargs)
@@ -661,7 +661,7 @@ def boolean_flag(name, configurable, set_help='', unset_help=''):
 
 def get_config():
     """Get the config object for the global Application instance, if there is one
-    
+
     otherwise return an empty config object
     """
     if Application.initialized():
