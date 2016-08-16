@@ -544,16 +544,8 @@ class TraitType(BaseDescriptor):
             old_value = obj._trait_values[self.name]
         except KeyError:
             old_value = self.default_value
-
         obj._trait_values[self.name] = new_value
-        try:
-            silent = bool(old_value == new_value)
-        except:
-            # if there is an error in comparing, default to notify
-            silent = False
-        if silent is not True:
-            # we explicitly compare silent to True just in case the equality
-            # comparison above returns something other than True/False
+        if new_value != old_value:
             obj._notify_trait(self.name, old_value, new_value)
 
     def __set__(self, obj, value):
