@@ -1,43 +1,24 @@
 Using Traitlets
 ===============
 
-.. currentmodule:: traitlets
+In short, traitlets let the user define classes that have
 
-Any class with trait attributes must inherit from :class:`HasTraits`.
+1. Attributes (traits) with type checking and dynamically computed
+   default values
+2. Traits emit change events when attributes are modified
+3. Traitlets perform some validation and allow coercion of new trait
+   values on assignment. They also allow the user to define custom
+   validation logic for attributes based on the value of other
+   attributes.
 
-.. autoclass:: HasTraits
+Default values, and checking type and value
+-------------------------------------------
 
-   .. automethod:: has_trait
+At its most basic, traitlets provides type checking, and dynamic default
+value generation of attributes on :class:``traitlets.HasTraits``
+subclasses:
 
-   .. automethod:: trait_names
-
-   .. automethod:: class_trait_names
-
-   .. automethod:: traits
-
-   .. automethod:: class_traits
-
-   .. automethod:: trait_metadata
-
-   .. automethod:: add_traits
-
-You then declare the trait attributes on the class like this::
-
-    from traitlets import HasTraits, Int, Unicode
-
-    class Requester(HasTraits):
-        url = Unicode()
-        timeout = Int(30)  # 30 will be the default value
-
-For the available trait types and the arguments you can give them, see
-:doc:`trait_types`.
-
-Dynamic default values
-----------------------
-
-To calculate a default value dynamically, decorate a method of your class with
-`@default({traitname})`. This method will be called on the instance, and should
-return the default value. For example::
+.. code:: python
 
     import getpass
 
@@ -45,45 +26,97 @@ return the default value. For example::
         username = Unicode()
 
         @default('username')
-        def _username_default(self):
+        def _default_username(self):
             return getpass.getuser()
 
-Callbacks when trait attributes change
---------------------------------------
+.. code:: python
 
-To do something when a trait attribute is changed, decorate a method with :func:`traitlets.observe`.
-The method will be called with a single argument, a dictionary of the form::
+    class Foo(HasTraits):
+        bar = Int()
 
-    {
-      'owner': object, # The HasTraits instance
-      'new': 6, # The new value
-      'old': 5, # The old value
-      'name': "foo", # The name of the changed trait
-      'type': 'change', # The event type of the notification, usually 'change'
-    }
+    foo = Foo(bar='3')  # raises a TraitError
 
-For example::
+::
 
-    from traitlets import HasTraits, Integer, observe
-    
-    class TraitletsExample(HasTraits):
-        num = Integer(5, help="a number").tag(config=True)
-        
-        @observe('num')
-        def _num_changed(self, change):
-            print("{name} changed from {old} to {new}".format(**change))
+    TraitError: The 'bar' trait of a Foo instance must be an int,
+    but a value of '3' <class 'str'> was specified
 
+observe
+-------
 
-.. versionchanged:: 4.1
+Traitlets implement the observer pattern
 
-    The ``_{trait}_changed`` magic method-name approach is deprecated.
+.. code:: python
 
-You can also add callbacks to a trait dynamically:
+    class Foo(HasTraits):
+        bar = Int()
+        baz = Unicode()
 
-.. automethod:: HasTraits.observe
+    foo = Foo()
 
-.. note::
+    def func(change):
+        print(change['old'])
+        print(change['new'])   # as of traitlets 4.3, one should be able to
+                               # write print(change.new) instead
 
-    If a trait attribute with a dynamic default value has another value set
-    before it is used, the default will not be calculated.
-    Any callbacks on that trait will will fire, and *old_value* will be ``None``.
+    foo.observe(func, names=['bar'])
+    foo.bar = 1  # prints '0\n 1'
+    foo.baz = 'abc'  # prints nothing
+
+When observers are methods of the class, a decorator syntax can be used.
+
+.. code:: python
+
+    class Foo(HasTraits):
+        bar = Int()
+        baz = Unicode()
+
+        @observe('bar')
+        def _observe_bar(self, change):
+            print(change['old'])
+            print(change['new'])
+
+Validation
+----------
+
+Custom validation logic on trait classes
+
+.. code:: python
+
+    from traitlets import HasTraits, TraitError, Int, Bool, validate
+
+    class Parity(HasTraits):
+        value = Int()
+        parity = Int()
+
+        @validate('value')
+        def _valid_value(self, proposal):
+            if proposal['value'] % 2 != self.parity:
+                raise TraitError('value and parity should be consistent')
+            return proposal['value']
+
+        @validate('parity')
+        def _valid_parity(self, proposal):
+            parity = proposal['value']
+            if parity not in [0, 1]:
+                raise TraitError('parity should be 0 or 1')
+            if self.value % 2 != parity:
+                raise TraitError('value and parity should be consistent')
+            return proposal['value']
+
+    parity_check = Parity(value=2)
+
+    # Changing required parity and value together while holding cross validation
+    with parity_check.hold_trait_notifications():
+        parity_check.value = 1
+        parity_check.parity = 1
+
+In the case where the a validation error occurs when
+``hold_trait_notifications`` context manager is released, changes are
+rolled back to the initial state.
+
+-  Finally, trait type can have other events than trait changes. This
+   capability was added so as to enable notifications on change of
+   values in container classes. The items available in the dictionary
+   passed to the observer registered with ``observe`` depends on the
+   event type.

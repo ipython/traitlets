@@ -18,6 +18,7 @@ the configuration machinery.
     using_traitlets
     trait_types
     defining_traits
+    api
     config
     migration
     changelog
