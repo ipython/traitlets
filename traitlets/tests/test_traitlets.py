@@ -195,7 +195,9 @@ class TestTraitType(TestCase):
         class Foo(HasTraits):
             bar = (Int().tag(ta=1) | Dict().tag(ta=2, ti='b')).tag(ti='a')
         foo = Foo()
-        self.assertEqual(foo.trait_metadata('bar', 'ta'), 1)
+        # At this point, no value has been set for bar, so value-specific
+        # is not set.
+        self.assertEqual(foo.trait_metadata('bar', 'ta'), None)
         self.assertEqual(foo.trait_metadata('bar', 'ti'), 'a')
         foo.bar = {}
         self.assertEqual(foo.trait_metadata('bar', 'ta'), 2)

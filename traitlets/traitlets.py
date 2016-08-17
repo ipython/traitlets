@@ -1794,10 +1794,6 @@ class Union(TraitType):
         for trait_type in self.trait_types:
             trait_type.instance_init(obj)
         super(Union, self).instance_init(obj)
-        # Calling get once in instance_init forces the default value to be
-        # generated. This is required for the trait metadata for the initial
-        # value to be initialized
-        self.get(obj)
 
     def validate(self, obj, value):
         with obj.cross_validation_lock:
