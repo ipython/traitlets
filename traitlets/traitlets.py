@@ -1595,7 +1595,7 @@ class Type(ClassBasedTraitType):
         if isinstance(self.klass, six.string_types):
             klass = self.klass
         else:
-            klass = self.klass.__module__+'.'+self.klass.__name__
+            klass = self.klass.__module__ + '.' + self.klass.__name__
         result = "a subclass of '%s'" % klass
         if self.allow_none:
             return result + ' or None'
@@ -1781,7 +1781,7 @@ class Union(TraitType):
         with the validation function of Float, then Bool, and finally Int.
         """
         self.trait_types = trait_types
-        self.info_text = " or ".join([tt.info_text for tt in self.trait_types])
+        self.info_text = " or ".join([tt.info() for tt in self.trait_types])
         super(Union, self).__init__(**kwargs)
 
     def class_init(self, cls, name):
