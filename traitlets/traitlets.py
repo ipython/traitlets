@@ -1782,7 +1782,6 @@ class Union(TraitType):
         """
         self.trait_types = trait_types
         self.info_text = " or ".join([tt.info_text for tt in self.trait_types])
-        self.default_value = self.trait_types[0].default_value
         super(Union, self).__init__(**kwargs)
 
     def class_init(self, cls, name):
@@ -1815,8 +1814,10 @@ class Union(TraitType):
             return Union(self.trait_types + [other])
 
     def make_dynamic_default(self):
+        if self.default_value is not Undefined:
+            return self.default_value
         for trait_type in self.trait_types:
-            if trait_type.default_value != Undefined:
+            if trait_type.default_value is not Undefined:
                 return trait_type.default_value
             elif hasattr(trait_type, 'make_dynamic_default'):
                 return trait_type.make_dynamic_default()
