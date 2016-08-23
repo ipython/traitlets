@@ -206,6 +206,11 @@ class TestTraitType(TestCase):
         self.assertEqual(foo.trait_metadata('bar', 'ta'), 1)
         self.assertEqual(foo.trait_metadata('bar', 'ti'), 'a')
 
+    def test_union_default_value(self):
+        class Foo(HasTraits):
+            bar = Union([Dict(), Int()], default_value=1)
+        foo = Foo()
+        self.assertEqual(foo.bar, 1)
 
     def test_deprecated_metadata_access(self):
         class MyIntTT(TraitType):
