@@ -22,7 +22,7 @@ from traitlets import (
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors, rollback_change
+    observe_compat, BaseDescriptor, HasDescriptors, rollback_change, EDict
 )
 
 import six
@@ -1993,6 +1993,27 @@ class TestRollback(TestCase):
             RollBack(bar=1)
 
         self.assertRaises(TraitError, assign_rollback)
+
+    def test_edict_rollback(self):
+        class Foo(HasTraits):
+            bar = EDict(default_value={1: 1, 2: 2})
+            baz = Int()
+
+        foo = Foo()
+        try:
+            # This one should roll back due to baz failed validation
+            with foo.hold_trait_notifications():
+                foo.bar[1] = 2
+                del foo.bar[2]
+                foo.baz = ''  #triggers trait error and rollback
+        except TraitError:
+            self.assertEqual(foo.bar, {1: 1, 2: 2})
+        # This one should roll back due to baz failed validation
+        with foo.hold_trait_notifications():
+            foo.bar[1] = 2
+            del foo.bar[2]
+        self.assertEqual(foo.bar, {1: 2})
+
 
 
 class CacheModification(HasTraits):

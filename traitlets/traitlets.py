@@ -1116,7 +1116,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 self.notify_change = lambda x: None
                 for name, changes in cache.items():
                     for change in changes[::-1]:
-                        change.rollback(change)
+                        if 'rollback' in change:
+                            change.rollback(change)
                 cache = {}
                 raise e
             finally:
