@@ -110,7 +110,7 @@ def _should_warn(key):
     env_flag = os.environ.get('TRAITLETS_ALL_DEPRECATIONS')
     if env_flag and env_flag != '0':
         return True
-    
+
     if key not in _deprecations_shown:
         _deprecations_shown.add(key)
         return True
@@ -354,7 +354,7 @@ dlink = directional_link
 
 
 #-----------------------------------------------------------------------------
-# Base Descriptor Class 
+# Base Descriptor Class
 #-----------------------------------------------------------------------------
 
 
@@ -416,7 +416,7 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, help=None, **metadata):
+    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, help=None, **kwargs):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -434,14 +434,7 @@ class TraitType(BaseDescriptor):
             self.read_only = read_only
         self.help = help if help is not None else ''
 
-        if 'default' in metadata:
-            # Warn the user that they probably meant default_value.
-            warn(
-                "Parameter 'default' passed to TraitType. "
-                "Did you mean 'default_value'?"
-            )
-
-        if len(metadata) > 0:
+        if len(kwargs) > 0:
             stacklevel = 1
             f = inspect.currentframe()
             # count supers to determine stacklevel for warning
@@ -450,17 +443,17 @@ class TraitType(BaseDescriptor):
                 f = f.f_back
             mod = f.f_globals.get('__name__') or ''
             pkg = mod.split('.', 1)[0]
-            key = tuple(['metadata-tag', pkg] + sorted(metadata))
+            key = tuple(['metadata-tag', pkg] + sorted(kwargs))
             if _should_warn(key):
                 warn("metadata %s was set from the constructor. "
                      "With traitlets 4.1, metadata should be set using the .tag() method, "
-                     "e.g., Int().tag(key1='value1', key2='value2')" % (metadata,),
+                     "e.g., Int().tag(key1='value1', key2='value2')" % (kwargs,),
                      DeprecationWarning, stacklevel=stacklevel)
             if len(self.metadata) > 0:
                 self.metadata = self.metadata.copy()
-                self.metadata.update(metadata)
+                self.metadata.update(kwargs)
             else:
-                self.metadata = metadata
+                self.metadata = kwargs
         else:
             self.metadata = self.metadata.copy()
 
@@ -664,7 +657,7 @@ class TraitType(BaseDescriptor):
         if maybe_constructor_keywords:
             warn('The following attributes are set in using `tag`, but seem to be constructor keywords arguments: %s '%
                     maybe_constructor_keywords, UserWarning, stacklevel=2)
-            
+
         self.metadata.update(metadata)
         return self
 
@@ -796,14 +789,14 @@ def observe(*names, **kwargs):
 
 def observe_compat(func):
     """Backward-compatibility shim decorator for observers
-    
+
     Use with:
-    
+
     @observe('name')
     @observe_compat
     def _foo_changed(self, change):
         ...
-    
+
     With this, `super()._foo_changed(self, name, old, new)` in subclasses will still work.
     Allows adoption of new observer API without breaking subclasses that override and super.
     """
@@ -1180,7 +1173,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 c = c.__call__
             elif isinstance(c, EventHandler) and c.name is not None:
                 c = getattr(self, c.name)
-            
+
             c(change)
 
     def _add_notifiers(self, handler, name, type):
@@ -1407,7 +1400,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def has_trait(self, name):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
-        
+
     def trait_names(self, **metadata):
         """Get a list of all the names of this class' traits."""
         return list(self.traits(**metadata))
@@ -1451,6 +1444,9 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         except AttributeError:
             raise TraitError("Class %s does not have a trait named %s" %
                                 (self.__class__.__name__, traitname))
+        metadata_name = '_' + traitname + '_metadata'
+        if hasattr(self, metadata_name) and key in getattr(self, metadata_name):
+            return getattr(self, metadata_name).get(key, default)
         else:
             return trait.metadata.get(key, default)
 
@@ -1532,7 +1528,7 @@ class ClassBasedTraitType(TraitType):
 class Type(ClassBasedTraitType):
     """A trait whose value must be a subclass of a specified class."""
 
-    def __init__ (self, default_value=Undefined, klass=None, **metadata):
+    def __init__ (self, default_value=Undefined, klass=None, **kwargs):
         """Construct a Type trait
 
         A Type trait specifies that its values must be subclasses of
@@ -1572,7 +1568,7 @@ class Type(ClassBasedTraitType):
 
         self.klass = klass
 
-        super(Type, self).__init__(new_default_value, **metadata)
+        super(Type, self).__init__(new_default_value, **kwargs)
 
     def validate(self, obj, value):
         """Validates that the value is a valid object instance."""
@@ -1629,7 +1625,7 @@ class Instance(ClassBasedTraitType):
 
     klass = None
 
-    def __init__(self, klass=None, args=None, kw=None, **metadata):
+    def __init__(self, klass=None, args=None, kw=None, **kwargs):
         """Construct an Instance trait.
 
         This trait allows values that are instances of a particular
@@ -1658,7 +1654,7 @@ class Instance(ClassBasedTraitType):
         """
         if klass is None:
             klass = self.klass
-        
+
         if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, six.string_types)):
             self.klass = klass
         else:
@@ -1673,7 +1669,7 @@ class Instance(ClassBasedTraitType):
         self.default_args = args
         self.default_kwargs = kw
 
-        super(Instance, self).__init__(**metadata)
+        super(Instance, self).__init__(**kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, self.klass):
@@ -1747,8 +1743,8 @@ class This(ClassBasedTraitType):
 
     info_text = 'an instance of the same type as the receiver or None'
 
-    def __init__(self, **metadata):
-        super(This, self).__init__(None, **metadata)
+    def __init__(self, **kwargs):
+        super(This, self).__init__(None, **kwargs)
 
     def validate(self, obj, value):
         # What if value is a superclass of obj.__class__?  This is
@@ -1763,7 +1759,7 @@ class This(ClassBasedTraitType):
 class Union(TraitType):
     """A trait type representing a Union type."""
 
-    def __init__(self, trait_types, **metadata):
+    def __init__(self, trait_types, **kwargs):
         """Construct a Union  trait.
 
         This trait allows values that are allowed by at least one of the
@@ -1783,7 +1779,7 @@ class Union(TraitType):
         self.trait_types = trait_types
         self.info_text = " or ".join([tt.info_text for tt in self.trait_types])
         self.default_value = self.trait_types[0].default_value
-        super(Union, self).__init__(**metadata)
+        super(Union, self).__init__(**kwargs)
 
     def class_init(self, cls, name):
         for trait_type in self.trait_types:
@@ -1800,7 +1796,9 @@ class Union(TraitType):
             for trait_type in self.trait_types:
                 try:
                     v = trait_type._validate(obj, value)
-                    self.metadata = trait_type.metadata
+                    # In the case of an element trait, the name is None
+                    if self.name is not None:
+                        setattr(obj, '_' + self.name + '_metadata', trait_type.metadata)
                     return v
                 except TraitError:
                     continue
@@ -2130,11 +2128,11 @@ class CBool(Bool):
 class Enum(TraitType):
     """An enum whose value must be in a given sequence."""
 
-    def __init__(self, values, default_value=Undefined, **metadata):
+    def __init__(self, values, default_value=Undefined, **kwargs):
         self.values = values
-        if metadata.get('allow_none', False) and default_value is Undefined:
+        if kwargs.get('allow_none', False) and default_value is Undefined:
             default_value = None
-        super(Enum, self).__init__(default_value, **metadata)
+        super(Enum, self).__init__(default_value, **kwargs)
 
     def validate(self, obj, value):
         if value in self.values:
@@ -2150,11 +2148,11 @@ class Enum(TraitType):
 
 class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
-    
-    def __init__(self, values, default_value=Undefined, **metadata):
+
+    def __init__(self, values, default_value=Undefined, **kwargs):
         values = [cast_unicode_py2(value) for value in values]
-        super(CaselessStrEnum, self).__init__(values, default_value=default_value, **metadata)
-    
+        super(CaselessStrEnum, self).__init__(values, default_value=default_value, **kwargs)
+
     def validate(self, obj, value):
         if isinstance(value, str):
             value = cast_unicode_py2(value)
@@ -2176,7 +2174,7 @@ class Container(Instance):
     _valid_defaults = SequenceTypes
     _trait = None
 
-    def __init__(self, trait=None, default_value=None, **metadata):
+    def __init__(self, trait=None, default_value=None, **kwargs):
         """Create a container trait type from a list, set, or tuple.
 
         The default value is created by doing ``List(default_value)``,
@@ -2204,7 +2202,7 @@ class Container(Instance):
         allow_none : bool [ default False ]
             Whether to allow the value to be None
 
-        **metadata : any
+        **kwargs : any
             further keys for extensions to the Trait (e.g. config)
 
         """
@@ -2229,7 +2227,7 @@ class Container(Instance):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
-        super(Container,self).__init__(klass=self.klass, args=args, **metadata)
+        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
 
     def element_error(self, obj, element, validator):
         e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
@@ -2276,7 +2274,7 @@ class List(Container):
     klass = list
     _cast_types = (tuple,)
 
-    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize, **metadata):
+    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize, **kwargs):
         """Create a List trait type from a list, set, or tuple.
 
         The default value is created by doing ``list(default_value)``,
@@ -2310,7 +2308,7 @@ class List(Container):
         self._minlen = minlen
         self._maxlen = maxlen
         super(List, self).__init__(trait=trait, default_value=default_value,
-                                **metadata)
+                                   **kwargs)
 
     def length_error(self, obj, value):
         e = "The '%s' trait of %s instance must be of length %i <= L <= %i, but a value of %s was specified." \
@@ -2337,7 +2335,7 @@ class Set(List):
 
     # Redefine __init__ just to make the docstring more accurate.
     def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize,
-                 **metadata):
+                 **kwargs):
         """Create a Set trait type from a list, set, or tuple.
 
         The default value is created by doing ``set(default_value)``,
@@ -2368,7 +2366,7 @@ class Set(List):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        super(Set, self).__init__(trait, default_value, minlen, maxlen, **metadata)
+        super(Set, self).__init__(trait, default_value, minlen, maxlen, **kwargs)
 
 
 class Tuple(Container):
@@ -2376,7 +2374,7 @@ class Tuple(Container):
     klass = tuple
     _cast_types = (list,)
 
-    def __init__(self, *traits, **metadata):
+    def __init__(self, *traits, **kwargs):
         """Create a tuple from a list, set, or tuple.
 
         Create a fixed-type tuple with Traits:
@@ -2406,7 +2404,7 @@ class Tuple(Container):
             will be cast to a tuple. If ``traits`` are specified,
             ``default_value`` must conform to the shape and type they specify.
         """
-        default_value = metadata.pop('default_value', Undefined)
+        default_value = kwargs.pop('default_value', Undefined)
         # allow Tuple((values,)):
         if len(traits) == 1 and default_value is Undefined and not is_trait(traits[0]):
             default_value = traits[0]
@@ -2431,7 +2429,7 @@ class Tuple(Container):
         if self._traits and default_value is None:
             # don't allow default to be an empty container if length is specified
             args = None
-        super(Container,self).__init__(klass=self.klass, args=args, **metadata)
+        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
 
     def validate_elements(self, obj, value):
         if not self._traits:
@@ -2470,7 +2468,7 @@ class Dict(Instance):
     _trait = None
 
     def __init__(self, trait=None, traits=None, default_value=Undefined,
-                 **metadata):
+                 **kwargs):
         """Create a dict trait type from a dict.
 
         The default value is created by doing ``dict(default_value)``,
@@ -2519,7 +2517,7 @@ class Dict(Instance):
 
         self._traits = traits
 
-        super(Dict, self).__init__(klass=dict, args=args, **metadata)
+        super(Dict, self).__init__(klass=dict, args=args, **kwargs)
 
     def element_error(self, obj, element, validator):
         e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \

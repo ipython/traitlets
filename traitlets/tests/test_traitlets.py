@@ -191,6 +191,22 @@ class TestTraitType(TestCase):
         # make sure that changing a's metadata didn't change b's metadata
         self.assertNotIn('c', b.metadata)
 
+    def test_union_metadata(self):
+        class Foo(HasTraits):
+            bar = (Int().tag(ta=1) | Dict().tag(ta=2, ti='b')).tag(ti='a')
+        foo = Foo()
+        # At this point, no value has been set for bar, so value-specific
+        # is not set.
+        self.assertEqual(foo.trait_metadata('bar', 'ta'), None)
+        self.assertEqual(foo.trait_metadata('bar', 'ti'), 'a')
+        foo.bar = {}
+        self.assertEqual(foo.trait_metadata('bar', 'ta'), 2)
+        self.assertEqual(foo.trait_metadata('bar', 'ti'), 'b')
+        foo.bar = 1
+        self.assertEqual(foo.trait_metadata('bar', 'ta'), 1)
+        self.assertEqual(foo.trait_metadata('bar', 'ti'), 'a')
+
+
     def test_deprecated_metadata_access(self):
         class MyIntTT(TraitType):
             metadata = {'a': 1, 'b': 2}
