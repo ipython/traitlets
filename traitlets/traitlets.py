@@ -469,11 +469,6 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
-        self.init()
-
-    def init(self):
-        pass
-
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
 
