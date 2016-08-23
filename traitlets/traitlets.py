@@ -56,6 +56,7 @@ from warnings import warn, warn_explicit
 
 import six
 
+from .eventful import edict
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
@@ -974,6 +975,11 @@ class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
                 if isinstance(value, BaseDescriptor):
                     value.instance_init(self)
 
+def rollback_change(change):
+    if change.old is not Undefined:
+        change.owner.set_trait(change.name, change.old)
+    else:
+        change.owner._trait_values.pop(change.name)
 
 class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
@@ -1110,12 +1116,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 self.notify_change = lambda x: None
                 for name, changes in cache.items():
                     for change in changes[::-1]:
-                        # TODO: Separate in a rollback function per notification type.
-                        if change.type == 'change':
-                            if change.old is not Undefined:
-                                self.set_trait(name, change.old)
-                            else:
-                                self._trait_values.pop(name)
+                        change.rollback(change)
                 cache = {}
                 raise e
             finally:
@@ -1140,6 +1141,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             old=old_value,
             new=new_value,
             owner=self,
+            rollback=rollback_change,
             type='change',
         ))
 
@@ -2571,6 +2573,120 @@ class Dict(Instance):
             for trait in self._traits.values():
                 trait.instance_init(obj)
         super(Dict, self).instance_init(obj)
+
+def rollback_set_element(change):
+    evdict = getattr(change.owner, change.name)
+    if change.old is Undefined:
+        del evdict[change.key]
+    else:
+        evdict[change.key] = change.old
+
+def rollback_del_element(change):
+    evdict = getattr(change.owner, change.name)
+    evdict[change.key] = change.old
+
+
+class EDict(TraitType):
+
+    def _validate(self, obj, value):
+        # Callbacks are wired in _validate instead of set
+        # so that it is wired even in the case where make dynamic defaults is
+        # called (delayed initialization).
+        value = super(EDict, self)._validate(obj, value)
+        self._set_callbacks(obj, value)
+        return value
+
+    def validate(self, obj, value):
+        if isinstance(value, dict):
+            value = edict(value)
+            return value
+        else:
+            self.error(obj, value)
+
+    def set(self, obj, value):
+        new_value = self._validate(obj, value)
+        old_value = obj._trait_values.get(self.name, {})
+        obj._trait_values[self.name] = new_value
+        self._clear_callbacks(old_value)
+        if old_value != new_value:
+            obj._notify_trait(self.name, old_value, new_value)
+
+    def _set_callbacks(self, obj, value):
+        value.pre_set = self._pre_set(obj, value)
+        value.post_set = self._post_set(obj, value)
+        value.pre_del = self._pre_del(obj, value)
+        value.post_del = self._post_del(obj, value)
+
+    def _clear_callbacks(self, evdict):
+        if hasattr(evdict, 'pre_set'):
+            del evdict.pre_set
+        if hasattr(evdict, 'post_set'):
+            del evdict.post_set
+        if hasattr(evdict, 'pre_del'):
+            del evdict.pre_del
+        if hasattr(evdict, 'post_del'):
+            del evdict.post_del
+
+    def _pre_set(self, obj, evdict):
+        def pre_set(k, v):
+            if k in evdict:
+                getattr(obj, self._cache_name())[k] = evdict[k]
+            return v
+        return pre_set
+
+    def _post_set(self, obj, evdict):
+        def post_set(k, v):
+            obj.notify_change(Bunch(
+                key=k,
+                new=v,
+                old=getattr(obj, self._cache_name()).get(k, Undefined),
+                owner=obj,
+                name=self.name,
+                rollback=rollback_set_element,
+                type='element_set',
+            ))
+        return post_set
+
+    def _pre_del(self, obj, evdict):
+        def pre_del(k):
+            if k in evdict:
+                getattr(obj, self._cache_name())[k] = evdict[k]
+        return pre_del
+
+    def _post_del(self, obj, evdict):
+        def post_del(k):
+            obj.notify_change(Bunch(
+                key=k,
+                owner=obj,
+                old=getattr(obj, self._cache_name())[k],
+                name=self.name,
+                rollback=rollback_del_element,
+                type='element_del',
+            ))
+        return post_del
+
+    def info(self):
+        result = 'dictionary'
+        if self.allow_none:
+            return result + ' or None'
+        else:
+            return result
+
+    def make_dynamic_default(self):
+        if self.default_value is not Undefined:
+            return edict(self.default_value)
+        else:
+            return edict()
+
+    def default_value_repr(self):
+        return repr(self.make_dynamic_default())
+
+    def instance_init(self, obj):
+        setattr(obj, self._cache_name(), {})
+        super(EDict, self).instance_init(obj)
+
+    def _cache_name(self):
+        return '_' + self.name + '_cache'
 
 
 class TCPAddress(TraitType):

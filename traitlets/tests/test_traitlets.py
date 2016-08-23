@@ -22,14 +22,14 @@ from traitlets import (
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, rollback_change
 )
 
 import six
 
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
-    return dict(zip(change_names, ordered_values))
+    return dict(zip(change_names, ordered_values), rollback=rollback_change)
 
 #-----------------------------------------------------------------------------
 # Helper classes for testing
