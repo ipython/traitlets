@@ -125,3 +125,67 @@ For example::
 
 
 
+Detailed API reference
+------------------------
+Module: :mod:`traitlets.traitlets`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.traitlets
+    :members:
+    :private-members:
+
+Module: :mod:`traitlets.config.configurable`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.config.configurable
+    :members:
+    :private-members:
+
+Module: :mod:`traitlets.config.application`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.config.application
+    :members:
+    :private-members:
+
+Module: :mod:`traitlets.config.loader`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.config.loader
+    :members:
+    :private-members:
+
+Module: :mod:`traitlets.config.manager`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.config.manager
+    :members:
+    :private-members:
+
+Module: :mod:`traitlets.log`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.log
+    :members:
+    :private-members:
+
+Module: :mod:`traitlets.utils.bunch`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.utils.bunch
+    :members:
+    :private-members:
+
+
+Module: :mod:`traitlets.utils.getargspec`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.utils.getargspec
+    :members:
+    :private-members:
+
+
+Module: :mod:`traitlets.utils.importstring`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.utils.importstring
+    :members:
+    :private-members:
+
+
+Module: :mod:`traitlets.utils.sentinel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. automodule:: traitlets.utils.sentinel
+    :members:
+    :private-members:

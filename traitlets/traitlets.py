@@ -104,13 +104,13 @@ def isidentifier(s):
 _deprecations_shown = set()
 def _should_warn(key):
     """Add our own checks for too many deprecation warnings.
-    
+
     Limit to once per package.
     """
     env_flag = os.environ.get('TRAITLETS_ALL_DEPRECATIONS')
     if env_flag and env_flag != '0':
         return True
-    
+
     if key not in _deprecations_shown:
         _deprecations_shown.add(key)
         return True
@@ -354,7 +354,7 @@ dlink = directional_link
 
 
 #-----------------------------------------------------------------------------
-# Base Descriptor Class 
+# Base Descriptor Class
 #-----------------------------------------------------------------------------
 
 
@@ -664,7 +664,7 @@ class TraitType(BaseDescriptor):
         if maybe_constructor_keywords:
             warn('The following attributes are set in using `tag`, but seem to be constructor keywords arguments: %s '%
                     maybe_constructor_keywords, UserWarning, stacklevel=2)
-            
+
         self.metadata.update(metadata)
         return self
 
@@ -796,14 +796,14 @@ def observe(*names, **kwargs):
 
 def observe_compat(func):
     """Backward-compatibility shim decorator for observers
-    
-    Use with:
-    
-    @observe('name')
-    @observe_compat
-    def _foo_changed(self, change):
-        ...
-    
+
+    Use with::
+
+        @observe('name')
+        @observe_compat
+        def _foo_changed(self, change):
+            ...
+
     With this, `super()._foo_changed(self, name, old, new)` in subclasses will still work.
     Allows adoption of new observer API without breaking subclasses that override and super.
     """
@@ -846,7 +846,7 @@ def validate(*names):
     the registered cross validator could potentially make changes to attributes
     of the ``HasTraits`` instance. However, we recommend not to do so. The reason
     is that the cross-validation of attributes may run in arbitrary order when
-    exiting the ``hold_trait_notifications` context, and such changes may not
+    exiting the ``hold_trait_notifications`` context, and such changes may not
     commute.
     """
     if not names:
@@ -1180,7 +1180,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 c = c.__call__
             elif isinstance(c, EventHandler) and c.name is not None:
                 c = getattr(self, c.name)
-            
+
             c(change)
 
     def _add_notifiers(self, handler, name, type):
@@ -1407,7 +1407,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def has_trait(self, name):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
-        
+
     def trait_names(self, **metadata):
         """Get a list of all the names of this class' traits."""
         return list(self.traits(**metadata))
@@ -1658,7 +1658,7 @@ class Instance(ClassBasedTraitType):
         """
         if klass is None:
             klass = self.klass
-        
+
         if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, six.string_types)):
             self.klass = klass
         else:
@@ -2150,11 +2150,11 @@ class Enum(TraitType):
 
 class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
-    
+
     def __init__(self, values, default_value=Undefined, **metadata):
         values = [cast_unicode_py2(value) for value in values]
         super(CaselessStrEnum, self).__init__(values, default_value=default_value, **metadata)
-    
+
     def validate(self, obj, value):
         if isinstance(value, str):
             value = cast_unicode_py2(value)
