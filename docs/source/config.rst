@@ -111,7 +111,8 @@ attributes on this. All you have to know is:
 The answers to these questions are provided by the various
 :class:`~traitlets.config.Configurable` subclasses that an
 application uses. Let's look at how this would work for a simple configurable
-subclass::
+subclass
+
 .. code-block:: python
 
     # Sample configurable:
@@ -130,7 +131,8 @@ In this example, we see that :class:`MyClass` has three attributes, two
 of which (``name``, ``ranking``) can be configured.  All of the attributes
 are given types and default values.  If a :class:`MyClass` is instantiated,
 but not configured, these default values will be used.  But let's see how
-to configure this class in a configuration file::
+to configure this class in a configuration file
+
 .. code-block:: python
 
     # Sample config file
