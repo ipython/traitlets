@@ -12,7 +12,7 @@ import logging
 import os
 import re
 import sys
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from decorator import decorator
 
@@ -597,14 +597,43 @@ class Application(SingletonConfigurable):
                 ))
 
 
+    def _classes_in_config_sample(self):
+        """
+        Yields only classes with own traits, and their subclasses.
+
+        Thus, produced sample config-file will contain all classes
+        on which a trait-value may be overridden:
+
+        - either on the class owning the trait,
+        - or on its subclasses, even if those subclasses do not define
+          any traits themselves.
+        """
+        cls_to_config = OrderedDict( (cls, bool(cls.class_own_traits(config=True)))
+                              for cls
+                              in self._classes_inc_parents())
+
+        def is_any_parent_included(cls):
+            return any(b in cls_to_config and cls_to_config[b] for b in cls.__bases__)
+
+        ## Mark "empty" classes for inclusion if their parents own-traits,
+        #  and loop until no more classes gets marked.
+        #
+        while True:
+            to_incl_orig = cls_to_config.copy()
+            cls_to_config = OrderedDict( (cls, inc_yes or is_any_parent_included(cls))
+                                  for cls, inc_yes
+                                  in cls_to_config.items())
+            if cls_to_config == to_incl_orig:
+                break
+        for cl, inc_yes in cls_to_config.items():
+            if inc_yes:
+                yield cl
+
     def generate_config_file(self):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self._classes_inc_parents():
-            if not cls.class_own_traits(config=True):
-                # skip classes with no config (Singleton, etc.)
-                continue
+        for cls in self._classes_in_config_sample():
             lines.append(cls.class_config_section())
         return '\n'.join(lines)
 
