@@ -416,7 +416,7 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=None, read_only=None, help=None, **kwargs):
+    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -428,7 +428,7 @@ class TraitType(BaseDescriptor):
         """
         if default_value is not Undefined:
             self.default_value = default_value
-        if allow_none is not None:
+        if allow_none:
             self.allow_none = allow_none
         if read_only is not None:
             self.read_only = read_only
@@ -653,7 +653,7 @@ class TraitType(BaseDescriptor):
 
         >>> Int(0).tag(config=True, sync=True)
         """
-        maybe_constructor_keywords = set(metadata.keys()).intersection({'help','allow_none', 'read_only_default_value'})
+        maybe_constructor_keywords = set(metadata.keys()).intersection({'help','allow_none', 'read_only', 'default_value'})
         if maybe_constructor_keywords:
             warn('The following attributes are set in using `tag`, but seem to be constructor keywords arguments: %s '%
                     maybe_constructor_keywords, UserWarning, stacklevel=2)
@@ -1860,8 +1860,7 @@ class Int(TraitType):
     default_value = 0
     info_text = 'an int'
 
-    def __init__(self, default_value=Undefined,
-                 allow_none=None, **kwargs):
+    def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', None)
         self.max = kwargs.pop('max', None)
         super(Int, self).__init__(default_value=default_value,
@@ -1891,7 +1890,7 @@ if six.PY2:
         default_value = 0
         info_text = 'a long'
 
-        def __init__(self, default_value=Undefined, allow_none=None, **kwargs):
+        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
             self.min = kwargs.pop('min', None)
             self.max = kwargs.pop('max', None)
             super(Long, self).__init__(
@@ -1929,7 +1928,7 @@ if six.PY2:
         default_value = 0
         info_text = 'an integer'
 
-        def __init__(self, default_value=Undefined, allow_none=None, **kwargs):
+        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
             self.min = kwargs.pop('min', None)
             self.max = kwargs.pop('max', None)
             super(Integer, self).__init__(
@@ -1965,8 +1964,7 @@ class Float(TraitType):
     default_value = 0.0
     info_text = 'a float'
 
-    def __init__(self, default_value=Undefined,
-                 allow_none=None, **kwargs):
+    def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', -float('inf'))
         self.max = kwargs.pop('max', float('inf'))
         super(Float, self).__init__(default_value=default_value,
