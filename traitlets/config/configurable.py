@@ -66,12 +66,12 @@ class Configurable(HasTraits):
             if kwargs.get('config', None) is None:
                 kwargs['config'] = parent.config
             self.parent = parent
-        
+
         config = kwargs.pop('config', None)
-        
+
         # load kwarg traits, other than config
         super(Configurable, self).__init__(**kwargs)
-        
+
         # load config
         if config is not None:
             # We used to deepcopy, but for now we are trying to just save
@@ -85,7 +85,7 @@ class Configurable(HasTraits):
         else:
             # allow _config_default to return something
             self._load_config(self.config)
-        
+
         # Ensure explicit kwargs are applied after loading config.
         # This is usually redundant, but ensures config doesn't override
         # explicitly assigned values.
@@ -95,25 +95,25 @@ class Configurable(HasTraits):
     #-------------------------------------------------------------------------
     # Static trait notifiations
     #-------------------------------------------------------------------------
-    
+
     @classmethod
     def section_names(cls):
         """return section names as a list"""
         return  [c.__name__ for c in reversed(cls.__mro__) if
             issubclass(c, Configurable) and issubclass(cls, c)
         ]
-    
+
     def _find_my_config(self, cfg):
         """extract my config from a global Config object
-        
+
         will construct a Config object of only the config values that apply to me
         based on my mro(), as well as those of my parent(s) if they exist.
-        
+
         If I am Bar and my parent is Foo, and their parent is Tim,
         this will return merge following config sections, in this order::
-        
+
             [Bar, Foo.bar, Tim.Foo.Bar]
-        
+
         With the last item being the highest priority.
         """
         cfgs = [cfg]
@@ -127,17 +127,17 @@ class Configurable(HasTraits):
                 if c._has_section(sname):
                     my_config.merge(c[sname])
         return my_config
-    
+
     def _load_config(self, cfg, section_names=None, traits=None):
         """load traits from a Config object"""
-        
+
         if traits is None:
             traits = self.traits(config=True)
         if section_names is None:
             section_names = self.section_names()
-        
+
         my_config = self._find_my_config(cfg)
-        
+
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():
             for name, config_value in my_config.items():
@@ -160,7 +160,7 @@ class Configurable(HasTraits):
                     matches = get_close_matches(name, traits)
                     msg = u"Config option `{option}` not recognized by `{klass}`.".format(
                         option=name, klass=self.__class__.__name__)
-                    
+
                     if len(matches) == 1:
                         msg += u"  Did you mean `{matches}`?".format(matches=matches[0])
                     elif len(matches) >= 1:
@@ -220,7 +220,7 @@ class Configurable(HasTraits):
     @classmethod
     def class_get_trait_help(cls, trait, inst=None):
         """Get the help string for a single trait.
-        
+
         If `inst` is given, it's current trait values will be used in place of
         the class default.
         """
@@ -265,7 +265,8 @@ class Configurable(HasTraits):
 
         # section header
         breaker = '#' + '-'*78
-        s = "# %s configuration" % cls.__name__
+        parent_classes = ','.join(p.__name__ for p in cls.__bases__)
+        s = "# %s(%s) configuration" % (cls.__name__, parent_classes)
         lines = [breaker, s, breaker, '']
         # get the description trait
         desc = cls.class_traits().get('description')
