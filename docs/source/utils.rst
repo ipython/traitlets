@@ -5,4 +5,4 @@ Utils
 
 A simple utility to import something by its string name.
 
-.. autoclass:: import_item
+.. autofunction:: import_item
