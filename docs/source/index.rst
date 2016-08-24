@@ -20,5 +20,6 @@ the configuration machinery.
     defining_traits
     api
     config
+    utils
     migration
     changelog
