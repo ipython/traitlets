@@ -261,7 +261,7 @@ class Configurable(HasTraits):
             """return a commented, wrapped block."""
             s = '\n\n'.join(wrap_paragraphs(s, 78))
 
-            return '# ' + s.replace('\n', '\n# ')
+            return '## ' + s.replace('\n', '\n#  ')
 
         # section header
         breaker = '#' + '-'*78
@@ -281,7 +281,7 @@ class Configurable(HasTraits):
 
         for name, trait in sorted(cls.class_own_traits(config=True).items()):
             lines.append(c(trait.help))
-            lines.append('# c.%s.%s = %s' % (cls.__name__, name, trait.default_value_repr()))
+            lines.append('#c.%s.%s = %s' % (cls.__name__, name, trait.default_value_repr()))
             lines.append('')
         return '\n'.join(lines)
 
