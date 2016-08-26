@@ -1052,12 +1052,15 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         At the end of the block, the lock's value is restored to its value
         prior to entering the block.
         """
-        original_value = self._cross_validation_lock
-        try:
-            self._cross_validation_lock = True
+        if self._cross_validation_lock:
             yield
-        finally:
-            self._cross_validation_lock = original_value
+            return
+        else:
+            try:
+                self._cross_validation_lock = True
+                yield
+            finally:
+                self._cross_validation_lock = False
 
     @contextlib.contextmanager
     def hold_trait_notifications(self):
@@ -1068,7 +1071,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         race conditions in trait notifiers requesting other trait values.
         All trait notifications will fire after all values have been assigned.
         """
-        if self._cross_validation_lock is True:
+        if self._cross_validation_lock:
             yield
             return
         else:
