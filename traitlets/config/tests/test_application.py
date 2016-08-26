@@ -6,6 +6,7 @@ Tests for traitlets.config.application.Application
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import json
 import logging
 import os
 from io import StringIO
@@ -298,6 +299,31 @@ class TestApplication(TestCase):
                 app.load_config_file(name, path=[td1, td2])
                 app.init_bar()
                 self.assertEqual(app.bar.b, 1)
+
+    @mark.skipif(not hasattr(TestCase, 'assertLogs'), reason='requires TestCase.assertLogs')
+    def test_log_collisions(self):
+        app = MyApp()
+        app.log = logging.getLogger()
+        app.log.setLevel(logging.INFO)
+        name = 'config'
+        with TemporaryDirectory('_1') as td:
+            with open(pjoin(td, name + '.py'), 'w') as f:
+                f.write("get_config().Bar.b = 1")
+            with open(pjoin(td, name + '.json'), 'w') as f:
+                json.dump({
+                    'Bar': {
+                        'b': 2
+                    }
+                }, f)
+            with self.assertLogs(app.log, logging.WARNING) as captured:
+                app.load_config_file(name, path=[td])
+                app.init_bar()
+        assert app.bar.b == 2
+        output = '\n'.join(captured.output)
+        assert 'Collision' in output
+        assert '1 ignored, using 2' in output
+        assert pjoin(td, name + '.py') in output
+        assert pjoin(td, name + '.json') in output
 
     @mark.skipif(not hasattr(TestCase, 'assertLogs'), reason='requires TestCase.assertLogs')
     def test_log_bad_config(self):
