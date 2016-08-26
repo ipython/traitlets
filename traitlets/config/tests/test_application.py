@@ -64,13 +64,13 @@ class MyApp(Application):
                     'enabled' : 'Bar.enabled',
                     'log-level' : 'Application.log_level',
                 })
-    
+
     flags = Dict(dict(enable=({'Bar': {'enabled' : True}}, "Set Bar.enabled to True"),
                   disable=({'Bar': {'enabled' : False}}, "Set Bar.enabled to False"),
                   crit=({'Application' : {'log_level' : logging.CRITICAL}},
                         "set level=CRITICAL"),
             ))
-    
+
     def init_foo(self):
         self.foo = Foo(parent=self)
 
@@ -115,7 +115,7 @@ class TestApplication(TestCase):
         self.assertEqual(app.foo.i, 10)
         self.assertEqual(app.foo.j, 10)
         self.assertEqual(app.bar.enabled, False)
-    
+
     def test_cli_priority(self):
         """Test that loading config files does not override CLI options"""
         name = 'config.py'
@@ -185,7 +185,7 @@ class TestApplication(TestCase):
         app.parse_command_line(["--enable"])
         app.init_bar()
         self.assertEqual(app.bar.enabled, True)
-    
+
     def test_aliases(self):
         app = MyApp()
         app.parse_command_line(["--i=5", "--j=10"])
@@ -193,7 +193,7 @@ class TestApplication(TestCase):
         self.assertEqual(app.foo.i, 5)
         app.init_foo()
         self.assertEqual(app.foo.j, 10)
-    
+
     def test_flag_clobber(self):
         """test that setting flags doesn't clobber existing settings"""
         app = MyApp()
@@ -217,8 +217,8 @@ class TestApplication(TestCase):
 
         self.assertIn("warn_typo", stream.getvalue())
         self.assertIn("warn_tpyo", stream.getvalue())
-        
-    
+
+
     def test_flatten_flags(self):
         cfg = Config()
         cfg.MyApp.log_level = logging.WARN
@@ -230,7 +230,7 @@ class TestApplication(TestCase):
         self.assertEqual(app.log_level, logging.CRITICAL)
         # this would be app.config.Application.log_level if it failed:
         self.assertEqual(app.config.MyApp.log_level, logging.CRITICAL)
-    
+
     def test_flatten_aliases(self):
         cfg = Config()
         cfg.MyApp.log_level = logging.WARN
@@ -242,7 +242,7 @@ class TestApplication(TestCase):
         self.assertEqual(app.log_level, logging.CRITICAL)
         # this would be app.config.Application.log_level if it failed:
         self.assertEqual(app.config.MyApp.log_level, "CRITICAL")
-    
+
     def test_extra_args(self):
         app = MyApp()
         app.parse_command_line(["--Bar.b=5", 'extra', "--disable", 'args'])
@@ -256,7 +256,7 @@ class TestApplication(TestCase):
         self.assertEqual(app.bar.enabled, True)
         self.assertEqual(app.bar.b, 5)
         self.assertEqual(app.extra_args, ['extra', '--disable', 'args'])
-    
+
     def test_unicode_argv(self):
         app = MyApp()
         app.parse_command_line(['ünîcødé'])
@@ -268,7 +268,20 @@ class TestApplication(TestCase):
     def test_generate_config_file(self):
         app = MyApp()
         assert 'The integer b.' in app.generate_config_file()
-    
+
+    def test_generate_config_file_classes_to_include(self):
+        class NoTraits(Foo, Bar):
+            pass
+
+        app = MyApp()
+        app.classes.append(NoTraits)
+        conf_txt = app.generate_config_file()
+        self.assertIn('The integer b.', conf_txt)
+        self.assertIn('# Bar(Configurable)', conf_txt)
+        self.assertIn('# Foo(Configurable)', conf_txt)
+        self.assertNotIn('# Configurable', conf_txt)
+        self.assertIn('# NoTraits(Foo,Bar)', conf_txt)
+
     def test_multi_file(self):
         app = MyApp()
         app.log = logging.getLogger()
@@ -285,7 +298,7 @@ class TestApplication(TestCase):
                 app.load_config_file(name, path=[td1, td2])
                 app.init_bar()
                 self.assertEqual(app.bar.b, 1)
-    
+
     @mark.skipif(not hasattr(TestCase, 'assertLogs'), reason='requires TestCase.assertLogs')
     def test_log_bad_config(self):
         app = MyApp()
@@ -298,7 +311,7 @@ class TestApplication(TestCase):
                 app.load_config_file(name, path=[td])
         output = '\n'.join(captured.output)
         self.assertIn('SyntaxError', output)
-    
+
     def test_raise_on_bad_config(self):
         app = MyApp()
         app.raise_config_file_errors = True
