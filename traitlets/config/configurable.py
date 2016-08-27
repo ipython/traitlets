@@ -272,8 +272,8 @@ class Configurable(HasTraits):
         desc = cls.class_traits().get('description')
         if desc:
             desc = desc.default_value
-        else:
-            # no description trait, use __doc__
+        if not desc:
+            # no description from trait, use __doc__
             desc = getattr(cls, '__doc__', '')
         if desc:
             lines.append(c(desc))
