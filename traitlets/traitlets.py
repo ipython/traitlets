@@ -104,7 +104,7 @@ def isidentifier(s):
 _deprecations_shown = set()
 def _should_warn(key):
     """Add our own checks for too many deprecation warnings.
-    
+
     Limit to once per package.
     """
     env_flag = os.environ.get('TRAITLETS_ALL_DEPRECATIONS')
@@ -1247,7 +1247,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         ----------
         handler : callable
             A callable that is called when a trait changes. Its
-            signature should be ``handler(change)``, where ``change```is a
+            signature should be ``handler(change)``, where ``change`` is a
             dictionary. The change dictionary at least holds a 'type' key.
             * ``type``: the type of notification.
             Other keys may be passed depending on the value of 'type'. In the
