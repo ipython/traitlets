@@ -550,6 +550,8 @@ class Application(SingletonConfigurable):
                 log.debug("Looking for %s in %s", basefilename, path)
             jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
             config = None
+            loaded = []
+            filenames = []
             for loader in [pyloader, jsonloader]:
                 try:
                     config = loader.load_config()
@@ -569,32 +571,31 @@ class Application(SingletonConfigurable):
                     if log:
                         log.debug("Loaded config file: %s", loader.full_filename)
                 if config:
-                     yield config
-
-        raise StopIteration
+                    for filename, earlier_config in zip(filenames, loaded):
+                        collisions = earlier_config.collisions(config)
+                        if collisions and log:
+                            log.warning("Collisions detected in {0} and {1} config files."
+                                " {1} has higher priority: {2}".format(
+                                filename, loader.full_filename, json.dumps(collisions, indent=2),
+                            ))
+                    yield config
+                    loaded.append(config)
+                    filenames.append(loader.full_filename)
+            
 
 
     @catch_config_error
     def load_config_file(self, filename, path=None):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
-        loaded = []
         new_config = Config()
         for config in self._load_config_files(filename, path=path, log=self.log,
             raise_config_file_errors=self.raise_config_file_errors,
         ):
-            loaded.append(config)
             new_config.merge(config)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
-        if len(loaded) > 1:
-            collisions = loaded[0].collisions(loaded[1])
-            if collisions:
-                self.log.warning("Collisions detected in {0}.py and {0}.json config files."
-                              " {0}.json has higher priority: {1}".format(
-                              filename, json.dumps(collisions, indent=2),
-                ))
 
 
     def _classes_in_config_sample(self):
