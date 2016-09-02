@@ -1,6 +1,27 @@
 Changes in Traitlets
 ====================
 
+4.3
+---
+
+4.3.0
+*****
+
+`4.3.0 on GitHub <https://github.com/ipython/traitlets/milestones/4.3>`__
+
+- Improvements to generated config file output.
+- Allow TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR env to override :attr:`Application.raise_config_file_errors`,
+  so that config file errors can result in exiting immediately.
+- Avoid using root logger. If no application logger is registers,
+  the ``'traitlets'`` logger will be used instead of root.
+- Change/Validation arguments are now Bunch objects, allowing attribute-access,
+  in addition to dictionary access.
+- Reduce number of common deprecation messages in certain cases.
+- Ensure command-line options always have higher priority than config files.
+- Add bounds on numeric traits.
+- Improved various error messages.
+
+
 4.2
 ---
 
