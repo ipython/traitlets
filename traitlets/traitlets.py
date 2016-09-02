@@ -1875,17 +1875,6 @@ class Int(TraitType):
         return _validate_bounds(self, obj, value)
 
 
-class CInt(Int):
-    """A casting version of the int trait."""
-
-    def validate(self, obj, value):
-        try:
-            value = int(value)
-        except:
-            self.error(obj, value)
-        return _validate_bounds(self, obj, value)
-
-
 if six.PY2:
     class Long(TraitType):
         """A long integer trait."""
@@ -1909,17 +1898,6 @@ if six.PY2:
 
         def validate(self, obj, value):
             value = self._validate_long(obj, value)
-            return _validate_bounds(self, obj, value)
-
-
-    class CLong(Long):
-        """A casting version of the long integer trait."""
-
-        def validate(self, obj, value):
-            try:
-                value = long(value)
-            except:
-                self.error(obj, value)
             return _validate_bounds(self, obj, value)
 
 
@@ -1957,8 +1935,7 @@ if six.PY2:
             return _validate_bounds(self, obj, value)
 
 else:
-    Long, CLong = Int, CInt
-    Integer = Int
+    Integer, Long = Int, Int
 
 
 class Float(TraitType):
@@ -1981,17 +1958,6 @@ class Float(TraitType):
         return _validate_bounds(self, obj, value)
 
 
-class CFloat(Float):
-    """A casting version of the float trait."""
-
-    def validate(self, obj, value):
-        try:
-            value = float(value)
-        except:
-            self.error(obj, value)
-        return _validate_bounds(self, obj, value)
-
-
 class Complex(TraitType):
     """A trait for complex numbers."""
 
@@ -2006,15 +1972,6 @@ class Complex(TraitType):
         self.error(obj, value)
 
 
-class CComplex(Complex):
-    """A casting version of the complex number trait."""
-
-    def validate (self, obj, value):
-        try:
-            return complex(value)
-        except:
-            self.error(obj, value)
-
 # We should always be explicit about whether we're using bytes or unicode, both
 # for Python 3 conversion and for reliable unicode behaviour on Python 2. So
 # we don't have a Str type.
@@ -2028,16 +1985,6 @@ class Bytes(TraitType):
         if isinstance(value, bytes):
             return value
         self.error(obj, value)
-
-
-class CBytes(Bytes):
-    """A casting version of the byte string trait."""
-
-    def validate(self, obj, value):
-        try:
-            return bytes(value)
-        except:
-            self.error(obj, value)
 
 
 class Unicode(TraitType):
@@ -2056,16 +2003,6 @@ class Unicode(TraitType):
                 msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
                 raise TraitError(msg.format(value, self.name, class_of(obj)))
         self.error(obj, value)
-
-
-class CUnicode(Unicode):
-    """A casting version of the unicode trait."""
-
-    def validate(self, obj, value):
-        try:
-            return six.text_type(value)
-        except:
-            self.error(obj, value)
 
 
 class ObjectName(TraitType):
@@ -2115,16 +2052,6 @@ class Bool(TraitType):
         if isinstance(value, bool):
             return value
         self.error(obj, value)
-
-
-class CBool(Bool):
-    """A casting version of the boolean trait."""
-
-    def validate(self, obj, value):
-        try:
-            return bool(value)
-        except:
-            self.error(obj, value)
 
 
 class Enum(TraitType):
@@ -2591,20 +2518,6 @@ class TCPAddress(TraitType):
                         return value
         self.error(obj, value)
 
-class CRegExp(TraitType):
-    """A casting compiled regular expression trait.
-
-    Accepts both strings and compiled regular expressions. The resulting
-    attribute will be a compiled regular expression."""
-
-    info_text = 'a regular expression'
-
-    def validate(self, obj, value):
-        try:
-            return re.compile(value)
-        except:
-            self.error(obj, value)
-
 
 class UseEnum(TraitType):
     """Use a Enum class as model for the data type description.
@@ -2689,3 +2602,101 @@ class UseEnum(TraitType):
         if self.allow_none:
             return result + " or None"
         return result
+
+#-----------------------------------------------------------------------------
+# Casting TraitTypes
+#-----------------------------------------------------------------------------
+
+class CastingMixin(TraitType):
+    """A mixin class for TraitTypes which cast inputs
+
+    Attributes
+    ----------
+    cast_to : callable
+        The callable which will be casting inputs.
+    _cast_types : tuple of classes
+        An attribute that can be assigned in subclasses
+        to limit what types of values are allowed to be
+        cast (this attribute is not defined in the base
+        class for mixin purposes).
+    """
+
+    cast_to = None
+
+    def validate(self, obj, value):
+        cast_types = getattr(self, '_cast_types', All)
+        if cast_types is not All:
+            for cls in cast_types:
+                if isinstance(value, cls):
+                    break
+            else:
+                self.error(obj, value)
+        try:
+            value = self.cast_to(value)
+        except Exception as e:
+            self.error(obj, value)
+        s = super(CastingMixin, self)
+        if hasattr(s, "validate"):
+            value = s.validate(obj, value)
+        return value
+
+    def info(self):
+        cast_types = getattr(self, '_cast_types', All)
+        if cast_types is not All:
+            return " or ".join(class_of(c) for c in set(cast_types).union([self.cast_to]))
+        else:
+            return "cast to %s" % (self.info_text or class_of(self.cast_to))
+
+
+class CInt(CastingMixin, Int):
+    """A casting version of the int trait."""
+    cast_to = int
+
+if six.PY2:
+    # inheritance from Long handled above
+    class CLong(CastingMixin, Long):
+        """A casting version of the long integer trait."""
+        cast_to = long
+else:
+    CLong = CInt
+
+class CFloat(CastingMixin, Float):
+    """A casting version of the float trait."""
+    cast_to = float
+
+class CComplex(CastingMixin, Complex):
+    """A casting version of the complex number trait."""
+    cast_to = complex
+
+class CBytes(CastingMixin, Bytes):
+    """A casting version of the byte string trait."""
+    cast_to = bytes
+
+class CUnicode(CastingMixin, Unicode):
+    """A casting version of the unicode trait."""
+    cast_to = six.text_type
+
+class CBool(CastingMixin, Bool):
+    """A casting version of the boolean trait."""
+    cast_to = bool
+
+class CList(CastingMixin, List):
+    cast_to = list
+
+class CSet(CastingMixin, Set):
+    cast_to = set
+
+class CTuple(CastingMixin, Tuple):
+    cast_to = tuple
+
+class CDict(CastingMixin, Dict):
+    cast_to = dict
+
+class CRegExp(CastingMixin, TraitType):
+    """A casting compiled regular expression trait.
+
+    Accepts both strings and compiled regular expressions. The resulting
+    attribute will be a compiled regular expression."""
+
+    info_text = 'a regular expression'
+    cast_to = staticmethod(re.compile)
