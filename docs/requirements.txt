@@ -1,1 +1,4 @@
-ipython_genutils
+ipython-genutils
+Sphinx
+sphinx-rtd-theme
+traitlets>=4.3.0b1
