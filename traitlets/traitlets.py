@@ -2632,6 +2632,10 @@ class EDict(TraitType):
         def pre_set(k, v):
             if k in evdict:
                 getattr(obj, self._cache_name())[k] = evdict[k]
+            # validating a copy of the attribute with the deleted key
+            value = getattr(obj, self.name).copy()
+            value[k] = v
+            self._validate(obj, value)
             return v
         return pre_set
 
@@ -2652,6 +2656,10 @@ class EDict(TraitType):
         def pre_del(k):
             if k in evdict:
                 getattr(obj, self._cache_name())[k] = evdict[k]
+                # validating a copy of the attribute with the deleted key
+                value = getattr(obj, self.name).copy()
+                del value[k]
+                self._validate(obj, value)
         return pre_del
 
     def _post_del(self, obj, evdict):
