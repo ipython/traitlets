@@ -4,6 +4,6 @@ channels:
   - conda
 dependencies:
   - python=3
-  - ipython-genutils
+  - ipython_genutils
   - sphinx
   - sphinx_rtd_theme
