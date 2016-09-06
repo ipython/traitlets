@@ -1,4 +1,4 @@
 ipython-genutils
 Sphinx
 sphinx-rtd-theme
-traitlets>=4.3.0b1
+-e ../.
