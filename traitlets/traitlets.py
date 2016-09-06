@@ -2468,8 +2468,9 @@ class Tuple(Container):
 class Dict(Instance):
     """An instance of a Python dict."""
     _trait = None
+    _key_trait = None
 
-    def __init__(self, trait=None, traits=None, default_value=Undefined,
+    def __init__(self, trait=None, key_trait=None, traits=None, default_value=Undefined,
                  **kwargs):
         """Create a dict trait type from a dict.
 
@@ -2477,12 +2478,17 @@ class Dict(Instance):
         which creates a copy of the ``default_value``.
 
         trait : TraitType [ optional ]
-            The type for restricting the contents of the Container. If
+            The type for restricting the values of the container. If
+            unspecified, types are not checked.
+
+        key_trait : TraitType [ optional ]
+            The type for restricting the keys of the container. If
             unspecified, types are not checked.
 
         traits : Dictionary of trait types [optional]
-            The type for restricting the content of the Dictionary for certain
-            keys.
+            Override `trait` for certain keys of the container.
+            Additionally, when `traits` is given, the keys of `traits` are
+            required to be present in the container.
 
         default_value : SequenceType [ optional ]
             The default value for the Dict.  Must be dict, tuple, or None, and
@@ -2517,12 +2523,21 @@ class Dict(Instance):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
+        if is_trait(key_trait):
+            if isinstance(key_trait, type):
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                     " Passing types is deprecated in traitlets 4.1.",
+                     DeprecationWarning, stacklevel=2)
+            self._key_trait = key_trait() if isinstance(key_trait, type) else key_trait
+        elif key_trait is not None:
+            raise TypeError("`key_trait` must be a Trait or None, got %s" % repr_type(key_trait))
+
         self._traits = traits
 
         super(Dict, self).__init__(klass=dict, args=args, **kwargs)
 
-    def element_error(self, obj, element, validator):
-        e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
+    def element_error(self, obj, element, validator, side='Values'):
+        e = side + " of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
             % (self.name, class_of(obj), validator.info(), repr_type(element))
         raise TraitError(e)
 
@@ -2535,12 +2550,18 @@ class Dict(Instance):
 
     def validate_elements(self, obj, value):
         use_dict = bool(self._traits)
+        key_trait = self._key_trait
         default_to = (self._trait or Any())
         if not use_dict and isinstance(default_to, Any):
             return value
 
         validated = {}
         for key in value:
+            if key_trait:
+                try:
+                    key = key_trait._validate(obj, key)
+                except TraitError:
+                    self.element_error(obj, key, key_trait, 'Keys')
             if use_dict and key in self._traits:
                 validate_with = self._traits[key]
             else:
@@ -2550,7 +2571,7 @@ class Dict(Instance):
                 if not isinstance(validate_with, Any):
                     v = validate_with._validate(obj, v)
             except TraitError:
-                self.element_error(obj, v, validate_with)
+                self.element_error(obj, v, validate_with, 'Values')
             else:
                 validated[key] = v
 
