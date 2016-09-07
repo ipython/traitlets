@@ -2471,18 +2471,21 @@ class Dict(Instance):
 
     def __init__(self, trait=None, traits=None, default_value=Undefined,
                  **kwargs):
-        """Create a dict trait type from a dict.
+        """Create a dict trait type from a Python dict.
 
         The default value is created by doing ``dict(default_value)``,
         which creates a copy of the ``default_value``.
 
-        trait : TraitType [ optional ]
-            The type for restricting the contents of the Container. If
-            unspecified, types are not checked.
+        Parameters
+        ----------
 
-        traits : Dictionary of trait types [optional]
-            The type for restricting the content of the Dictionary for certain
-            keys.
+        trait : TraitType [ optional ]
+            The specified trait type to check and use to restrict contents of
+            the Container. If unspecified, trait types are not checked.
+
+        traits : Dictionary of trait types [ optional ]
+            A Python dictionary containing the types that are valid for
+            restricting the content of the Dict Container for certain keys.
 
         default_value : SequenceType [ optional ]
             The default value for the Dict.  Must be dict, tuple, or None, and
