@@ -1,10 +1,37 @@
 import sys
+import copy
 import inspect
 import warnings
 from contextlib import contextmanager
 
 #-----------------------------------------------------------------------------
-# Warning Types
+# General Utilities
+#-----------------------------------------------------------------------------
+
+def _last_module_name():
+    if __name__ == "__main__":
+        return __name__
+    else:
+        this = __name__
+        module = __name__
+        f = inspect.currentframe()
+        while module == this:
+            f = f.f_back
+            module = f.f_globals["__name__"]
+        return module
+
+def _filtered_modules_stack(modules):
+    out = []
+    for frame in [s[0] for s in inspect.stack()]:
+        name = frame.f_globals["__name__"]
+        if name in modules:
+            out.append(name)
+        if name == "__main__":
+            break
+    return out
+
+#-----------------------------------------------------------------------------
+# Warning Function and Warning Types
 #-----------------------------------------------------------------------------
 
 class LiabilityWarning(UserWarning): pass
@@ -28,10 +55,23 @@ class ProvisionalWarning(FutureWarning):
         *args : any
             Any other warning arguments.
         """
-        super(ProvisionalWarning, self).__init__(template % feature, *args)
+        super(ProvisionalWarning, self).__init__(self.template % feature, *args)
 
 # all warnings for provisional features raise by default
 warnings.simplefilter("error", category=ProvisionalWarning)
+
+def warn(feature, *args):
+    with warnings.catch_warnings():
+        for m in _filtered_modules_stack(_module_filters):
+            for name, warningfilter in _module_filters[m].items():
+                if warningfilter['action'] == 'error':
+                    block(**{name: warningfilter['priority']})
+                elif warningfilter['action'] == 'ignore':
+                    allow(**{name: warningfilter['priority']})
+                else:
+                    raise ValueError("unknown action '%s'"
+                        % warningfilter['priority'])
+        warnings.warn(ProvisionalWarning(feature, *args), stacklevel=2)
 
 #-----------------------------------------------------------------------------
 # Help Utility
@@ -75,8 +115,6 @@ def help(module=None):
 # Warning Filter Utilities
 #-----------------------------------------------------------------------------
 
-_active_filters = {}
-
 def allowed_features():
     """Get a list of features which are allowed in the current context"""
     return _public_filter_dict("ignore")
@@ -87,12 +125,23 @@ def blocked_features():
 
 def active_filters():
     """Get a dict defining the active provisional filters in this context"""
-    return {n: d.copy() for n, d in _active_filters.items()}
+    return {n: d.copy() for n, d in _global_filters.items()}
 
-def _public_flter_dict(action):
-    return list(n for n, d in
-        _active_filters.items()
-        if d["action"] == action)
+def _public_filter_dict(action):
+    return set(n for n, d in
+        _global_filters.items()
+        if d["action"] == action).union(
+        n for m in _filtered_modules_stack(_module_filters)
+        for n, d in _module_filters[m] if d["action"] == action)
+
+def _merge_non_priorities(names, priorities):
+    """merge feature names into priorities"""
+    for n in names:
+        if n in priorities:
+            raise ValueError("Conflicting feature "
+                "'%s' in *names and **priorities")
+        else:
+            priorities[n] = None
 
 def acknowledge_liability(cls):
     """Acknowledge responcibility to supresses ``LiabilityWarnings``"""
@@ -102,6 +151,87 @@ def acknowledge_liability(cls):
         "their provisional status has been revoked.")
     warnings.warn(user_acknowledges, LiabilityWarning)
     warnings.simplefilter("ignore", category=LiabilityWarning)
+
+def _liability_warning(features):
+    if len(features) == 0 or "ALL" in features:
+        fill = ("provisional features", "them", "their")
+    elif len(features) == 1:
+        fill = ("%r" % features[0], "it", "its")
+    elif len(features) == 2:
+        fill = ("%r and %r" % features, "them", "their")
+    else:
+        fill = (str(features[:-1])[1:-1] + ", and %r" % features[-1],)
+    user_acknowledges = ("By specifying that %s be enabled, the user acknowledges "
+        "that they have assumed all responsibility for supporting %s until %s "
+        "provisional status has been revoked." % fill)
+    warnings.warn(user_acknowledges, LiabilityWarning)
+
+#-----------------------------------------------------------------------------
+# Module Warning Filter Functions
+#-----------------------------------------------------------------------------
+
+_module_filters = {}
+
+def this_module_allows(*names, **priorities):
+    _merge_non_priorities(names, priorities)
+    _liability_warning(list(priorities.keys()))
+    _filter_module_features("ignore", priorities)
+
+def this_module_blocks(*names, **priorities):
+    _merge_non_priorities(names, priorities)
+    _liability_warning(list(priorities.keys()))
+    _filter_module_features("error", priorities)
+
+def _filter_module_features(action, features):
+    if not features or "ALL" in features:
+        _add_module_filter("ALL", features.get("ALL", None),
+            action=action, category=ProvisionalWarning)
+    else:
+        for name in features:
+            _add_module_filter(name, features[name], action=action,
+                message=("^(?:" + ProvisionalWarning.template
+                    % name + "|" + name + ")$"),
+                category=ProvisionalWarning)
+
+def _add_module_filter(name, priority, **kwargs):
+    """Add a new feature filter
+
+    If a filter for the feature already exists, the
+    new one only overrides it if the new one has a
+    higher priority the the preexisting one. If that
+    is True, warnings.filterwarnings is called with
+    **kwargs and the filter's action and prioritty is
+    stored in a global ``_module_filters`` dictionary
+    """
+    f = _last_module_name()
+    if f in _module_filters:
+        cache = _module_filters[f]
+    else:
+        cache = {}
+        _module_filters[f] = cache
+    if name in cache:
+        fdict = cache[name]
+        p = fdict["priority"]
+    else:
+        fdict = {}
+        cache[name] = fdict
+        p = None
+    if p is None or (p != 0 and p <= priority):
+        fdict.update(action=kwargs["action"],
+            priority=priority)
+
+#-----------------------------------------------------------------------------
+# Global / Contextual Warning Filter Functions
+#-----------------------------------------------------------------------------
+
+_global_filters = {}
+
+@contextmanager
+def _restore_global_filters():
+    global _global_filters
+    hold = copy.deepcopy(_global_filters)
+    yield
+    _global_filters = hold
 
 @contextmanager
 def allowed_context(*names, **priorities):
@@ -135,9 +265,10 @@ def allowed_context(*names, **priorities):
         A filter with a priority of ``None`` can always be
         overriden, even by another ``None`` priority filter
     """
-    with warnings.catch_warnings():
-        allow(*name, **priorities)
-        yield
+    with _restore_global_filters():
+        with warnings.catch_warnings():
+            allow(*names, **priorities)
+            yield
 
 def allow(*names, **priorities):
     """Allow the given prosivional features
@@ -164,9 +295,9 @@ def allow(*names, **priorities):
         A filter with a priority of ``None`` can always be
         overriden, even by another ``None`` priority filter
     """
-    _merge_non_priorities(name, priorities)
+    _merge_non_priorities(names, priorities)
     _liability_warning(list(priorities.keys()))
-    _filter_features("ignore", **features)
+    _filter_global_features("ignore", priorities)
 
 @contextmanager
 def blocked_context(*names, **priorities):
@@ -200,9 +331,10 @@ def blocked_context(*names, **priorities):
         A filter with a priority of ``None`` can always be
         overriden, even by another ``None`` priority filter
     """
-    with warnings.catch_warnings():
-        block(*name, **priorities)
-        yield
+    with _restore_global_filters():
+        with warnings.catch_warnings():
+            block(*names, **priorities)
+            yield
 
 def block(*names, **priorities):
     """Block the given prosivional features
@@ -229,30 +361,22 @@ def block(*names, **priorities):
         A filter with a priority of ``None`` can always be
         overriden, even by another ``None`` priority filter
     """
-    _merge_non_priorities(name, priorities)
-    _filter_features("error", **features)
+    _merge_non_priorities(names, priorities)
+    _liability_warning(list(priorities.keys()))
+    _filter_global_features("error", priorities)
 
-def _merge_non_priorities(name, priorities):
-    """merge feature names into priorities"""
-    for n in names:
-        if n in priorities:
-            raise ValueError("Conflicting feature "
-                "'%s' in *names and **priorities")
-        else:
-            priorities[n] = None
-
-def _filter_features(action, **features):
+def _filter_global_features(action, features):
     if not features or "ALL" in features:
-        _add_filter("ALL", features.get("ALL", None),
+        _add_global_filter("ALL", features.get("ALL", None),
             action=action, category=ProvisionalWarning)
     else:
         for name in features:
-            _add_filter("ALL", features[name], action=action,
+            _add_global_filter(name, features[name], action=action,
                 message=("^(?:" + ProvisionalWarning.template
                     % name + "|" + name + ")$"),
                 category=ProvisionalWarning)
 
-def _add_filter(name, priority, **kwargs):
+def _add_global_filter(name, priority, **kwargs):
     """Add a new feature filter
 
     If a filter for the feature already exists, the
@@ -260,31 +384,16 @@ def _add_filter(name, priority, **kwargs):
     higher priority the the preexisting one. If that
     is True, warnings.filterwarnings is called with
     **kwargs and the filter's action and prioritty is
-    stored in a global ``_active_filters`` dictionary
+    stored in a global ``_global_filters`` dictionary
     """
-    if name in _active_filters:
-        fdict = _active_filters[name]
+    if name in _global_filters:
+        fdict = _global_filters[name]
         p = fdict["priority"]
     else:
         fdict = {}
-        _active_filters[name] = fdict
+        _global_filters[name] = fdict
         p = None
     if p is None or (p != 0 and p <= priority):
         warnings.filterwarnings(**kwargs)
         fdict.update(action=kwargs["action"],
             priority=priority)
-
-@staticmethod
-def _liability_warning(features):
-    if len(features) == 0:
-        fill = "provisional features"
-    elif len(features) == 1:
-        fill = ("%r" % features[0],)
-    elif len(features) == 2:
-        fill = ("%r and %r" % features,)
-    else:
-        fill = (str(features[:-1])[1:-1] + ", and %r" % features[-1],)
-    user_acknowledges = ("By specifying that %s be enabled, the user acknowledges "
-        "that they have assumed all responsibility for supporting them until their "
-        "provisional status has been revoked." % fill)
-    warnings.warn(user_acknowledges, LiabilityWarning)
