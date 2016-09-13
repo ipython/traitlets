@@ -1018,6 +1018,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     def __getstate__(self):
         d = self.__dict__.copy()
+        d.pop('notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
@@ -1124,11 +1125,6 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 self.notify_change = notify_change
                 self._cross_validation_lock = False
 
-                if isinstance(notify_change, types.MethodType):
-                    # Presence of the notify_change method
-                    # on __dict__ can cause memory leaks
-                    # and prevents pickleability
-                    self.__dict__.pop('notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
