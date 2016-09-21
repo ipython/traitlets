@@ -1119,16 +1119,10 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 cache = {}
                 raise e
             finally:
-                # Reset the notify_change to original value, enable cross-validation
-                # and fire resulting change notifications.
-                self.notify_change = notify_change
                 self._cross_validation_lock = False
+                # Restore method retrieval from class
+                del self.notify_change
 
-                if isinstance(notify_change, types.MethodType):
-                    # Presence of the notify_change method
-                    # on __dict__ can cause memory leaks
-                    # and prevents pickleability
-                    self.__dict__.pop('notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
