@@ -404,7 +404,7 @@ class Application(SingletonConfigurable):
         self.print_options()
 
         if classes:
-            help_classes = self.classes
+            help_classes = self._classes_in_config_sample()
             if help_classes:
                 print("Class parameters")
                 print("----------------")
