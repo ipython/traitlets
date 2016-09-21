@@ -312,16 +312,26 @@ class Application(SingletonConfigurable):
                 classdict[c.__name__] = c
 
         for alias, longname in self.aliases.items():
-            classname, traitname = longname.split('.',1)
-            cls = classdict[classname]
+            try:
+                classname, traitname = longname.split('.',1)
+                cls = classdict[classname]
 
-            trait = cls.class_traits(config=True)[traitname]
-            help = cls.class_get_trait_help(trait).splitlines()
-            # reformat first line
-            help[0] = help[0].replace(longname, alias) + ' (%s)'%longname
-            if len(alias) == 1:
-                help[0] = help[0].replace('--%s='%alias, '-%s '%alias)
-            lines.extend(help)
+                trait = cls.class_traits(config=True)[traitname]
+                fhelp = cls.class_get_trait_help(trait).splitlines()
+
+                if not isinstance(alias, tuple):
+                    alias = (alias, )
+                alias = sorted(alias, key=len)
+                alias = ', '.join(('--%s' if len(m) > 1 else '-%s') % m
+                                  for m in alias)
+
+                # reformat first line
+                fhelp[0] = fhelp[0].replace(longname, alias)
+                lines.extend(fhelp)
+                lines.append(indent("Equivalent to: [%s]" % longname))
+            except Exception as ex:
+                self.log.error('Failed collecting help-message for aias %r, due to: %s',
+                               alias, ex, exc_info=1)
         # lines.append('')
         print(os.linesep.join(lines))
 
@@ -331,10 +341,23 @@ class Application(SingletonConfigurable):
             return
 
         lines = []
-        for m, (cfg,help) in self.flags.items():
-            prefix = '--' if len(m) > 1 else '-'
-            lines.append(prefix+m)
-            lines.append(indent(dedent(help.strip())))
+        for flags, (cfg, fhelp) in self.flags.items():
+            try:
+                if not isinstance(flags, tuple):
+                    flags = (flags, )
+                flags = sorted(flags, key=len)
+                flags = ', '.join(('--%s' if len(m) > 1 else '-%s') % m
+                              for m in flags)
+                lines.append(flags)
+                lines.append(indent(dedent(fhelp.strip())))
+                cfg_list = ' '.join('%s.%s=%s' %(clname, prop, val)
+                            for clname, props_dict
+                            in cfg.items() for prop, val in props_dict.items())
+                cfg_txt = "Equivalent to: [%s]" % cfg_list
+                lines.append(indent(dedent(cfg_txt)))
+            except Exception as ex:
+                self.log.error('Failed collecting help-message for flag %r, due to: %s',
+                               flags, ex, exc_info=1)
         # lines.append('')
         print(os.linesep.join(lines))
 
@@ -475,7 +498,10 @@ class Application(SingletonConfigurable):
             if len(children) == 1:
                 # exactly one descendent, promote alias
                 cls = children[0]
-            aliases[alias] = '.'.join([cls,trait])
+            if not isinstance(aliases, tuple):
+                alias = (alias, )
+            for al in alias:
+                aliases[al] = '.'.join([cls,trait])
 
         # flatten flags, which are of the form:
         # { 'key' : ({'Cls' : {'trait' : value}}, 'help')}
@@ -488,7 +514,10 @@ class Application(SingletonConfigurable):
                 if len(children) == 1:
                     cls = children[0]
                 newflag[cls] = subdict
-            flags[key] = (newflag, help)
+            if not isinstance(key, tuple):
+                key = (key, )
+            for k in key:
+                flags[k] = (newflag, help)
         return flags, aliases
 
     @catch_config_error
@@ -581,7 +610,7 @@ class Application(SingletonConfigurable):
                     yield config
                     loaded.append(config)
                     filenames.append(loader.full_filename)
-            
+
 
 
     @catch_config_error

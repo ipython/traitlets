@@ -6,6 +6,8 @@ Tests for traitlets.config.application.Application
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
+import contextlib
+import io
 import json
 import logging
 import os
@@ -34,7 +36,6 @@ from traitlets.traitlets import (
     Bool, Unicode, Integer, List, Dict
 )
 
-
 class Foo(Configurable):
 
     i = Integer(0, help="The integer i.").tag(config=True)
@@ -59,18 +60,23 @@ class MyApp(Application):
             help="Should print a warning if `MyApp.warn-typo=...` command is passed")
 
     aliases = Dict({
-                    'i' : 'Foo.i',
-                    'j' : 'Foo.j',
+                    ('fooi', 'i') : 'Foo.i',
+                    ('j', 'fooj') : 'Foo.j',
                     'name' : 'Foo.name',
                     'enabled' : 'Bar.enabled',
                     'log-level' : 'Application.log_level',
                 })
 
-    flags = Dict(dict(enable=({'Bar': {'enabled' : True}}, "Set Bar.enabled to True"),
-                  disable=({'Bar': {'enabled' : False}}, "Set Bar.enabled to False"),
-                  crit=({'Application' : {'log_level' : logging.CRITICAL}},
+    flags = Dict({('enable', 'e'):
+                        ({'Bar': {'enabled' : True}},
+                         "Set Bar.enabled to True"),
+                  ('d', 'disable'):
+                        ({'Bar': {'enabled' : False}},
+                         "Set Bar.enabled to False"),
+                  'crit':
+                        ({'Application' : {'log_level' : logging.CRITICAL}},
                         "set level=CRITICAL"),
-            ))
+            })
 
     def init_foo(self):
         self.foo = Foo(parent=self)
@@ -183,9 +189,32 @@ class TestApplication(TestCase):
         app.parse_command_line(["--disable"])
         app.init_bar()
         self.assertEqual(app.bar.enabled, False)
+
+        app = MyApp()
+        app.parse_command_line(["-d"])
+        app.init_bar()
+        self.assertEqual(app.bar.enabled, False)
+
+        app = MyApp()
         app.parse_command_line(["--enable"])
         app.init_bar()
         self.assertEqual(app.bar.enabled, True)
+
+        app = MyApp()
+        app.parse_command_line(["-e"])
+        app.init_bar()
+        self.assertEqual(app.bar.enabled, True)
+
+    def test_flags_help(self):
+        app = MyApp()
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            app.print_flag_help()
+        hmsg = stdout.getvalue()
+        self.assertIn("-e, --enable", hmsg)
+        self.assertIn("-d, --disable", hmsg)
+        self.assertIn("Equivalent to: [Bar.enabled=True]", hmsg)
+        self.assertIn("Equivalent to: [Bar.enabled=False]", hmsg)
 
     def test_aliases(self):
         app = MyApp()
@@ -194,6 +223,32 @@ class TestApplication(TestCase):
         self.assertEqual(app.foo.i, 5)
         app.init_foo()
         self.assertEqual(app.foo.j, 10)
+
+        app = MyApp()
+        app.parse_command_line(["-i=5", "-j=10"])
+        app.init_foo()
+        self.assertEqual(app.foo.i, 5)
+        app.init_foo()
+        self.assertEqual(app.foo.j, 10)
+
+        app = MyApp()
+        app.parse_command_line(["--fooi=5", "--fooj=10"])
+        app.init_foo()
+        self.assertEqual(app.foo.i, 5)
+        app.init_foo()
+        self.assertEqual(app.foo.j, 10)
+
+    def test_aliases_help(self):
+        app = MyApp()
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            app.print_alias_help()
+        hmsg = stdout.getvalue()
+        self.assertIn("-i, --fooi", hmsg)
+        self.assertIn("-j, --fooj", hmsg)
+        self.assertIn("Equivalent to: [Foo.i]", hmsg)
+        self.assertIn("Equivalent to: [Foo.j]", hmsg)
+        self.assertIn("Equivalent to: [Foo.name]", hmsg)
 
     def test_flag_clobber(self):
         """test that setting flags doesn't clobber existing settings"""
