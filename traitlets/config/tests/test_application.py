@@ -11,6 +11,7 @@ import io
 import json
 import logging
 import os
+import sys
 from io import StringIO
 from unittest import TestCase
 
@@ -205,7 +206,9 @@ class TestApplication(TestCase):
         app.init_bar()
         self.assertEqual(app.bar.enabled, True)
 
-    def test_flags_help(self):
+    @mark.skipif(sys.version_info < (3, 4),
+                 reason="Missing `contextlib.redirect_stdout` in python < 3.4!")
+    def test_flags_help_msg(self):
         app = MyApp()
         stdout = io.StringIO()
         with contextlib.redirect_stdout(stdout):
@@ -238,7 +241,9 @@ class TestApplication(TestCase):
         app.init_foo()
         self.assertEqual(app.foo.j, 10)
 
-    def test_aliases_help(self):
+    @mark.skipif(sys.version_info < (3, 4),
+                 reason="Missing `contextlib.redirect_stdout` in python < 3.4!")
+    def test_aliases_help_msg(self):
         app = MyApp()
         stdout = io.StringIO()
         with contextlib.redirect_stdout(stdout):
