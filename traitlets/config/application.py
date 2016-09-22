@@ -413,7 +413,7 @@ class Application(SingletonConfigurable):
         self.print_options()
 
         if classes:
-            help_classes = self._classes_in_config_sample()
+            help_classes = self._classes_with_config_traits()
             if help_classes:
                 print("Class parameters")
                 print("----------------")
@@ -636,7 +636,7 @@ class Application(SingletonConfigurable):
         self.update_config(new_config)
 
 
-    def _classes_in_config_sample(self):
+    def _classes_with_config_traits(self):
         """
         Yields only classes with own traits, and their subclasses.
 
@@ -672,7 +672,7 @@ class Application(SingletonConfigurable):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self._classes_in_config_sample():
+        for cls in self._classes_with_config_traits():
             lines.append(cls.class_config_section())
         return '\n'.join(lines)
 
