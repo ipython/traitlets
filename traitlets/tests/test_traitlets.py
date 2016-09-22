@@ -1074,6 +1074,8 @@ class TestThis(TestCase):
 class TraitTestBase(TestCase):
     """A best testing class for basic trait types."""
 
+    bad_value_raises = TraitError
+
     def assign(self, value):
         self.obj.value = value
 
@@ -1090,9 +1092,11 @@ class TraitTestBase(TestCase):
         if hasattr(self, '_bad_values'):
             for value in self._bad_values:
                 try:
-                    self.assertRaises(TraitError, self.assign, value)
+                    self.assertRaises(self.bad_value_raises, self.assign, value)
                 except AssertionError:
-                    assert False, value
+                    trait_type = self.obj.__class__.value.__class__.__name__
+                    assert False, ("Setting the bad value %r to a '%s' trait should have "
+                        "raised a %r" % (value, trait_type, self.bad_value_raises.__name__))
 
     def test_default_value(self):
         if hasattr(self, '_default_value'):
