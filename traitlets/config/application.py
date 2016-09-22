@@ -331,7 +331,9 @@ class Application(SingletonConfigurable):
                 lines.append(indent("Equivalent to: [%s]" % longname))
             except Exception as ex:
                 self.log.error('Failed collecting help-message for aias %r, due to: %s',
-                               alias, ex, exc_info=1)
+                               alias, ex)
+                raise
+
         # lines.append('')
         print(os.linesep.join(lines))
 
@@ -357,7 +359,9 @@ class Application(SingletonConfigurable):
                 lines.append(indent(dedent(cfg_txt)))
             except Exception as ex:
                 self.log.error('Failed collecting help-message for flag %r, due to: %s',
-                               flags, ex, exc_info=1)
+                               flags, ex)
+                raise
+
         # lines.append('')
         print(os.linesep.join(lines))
 
