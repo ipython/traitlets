@@ -1375,7 +1375,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if type(meta_eval) is not types.FunctionType:
+                if not callable(meta_eval):
                     meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
@@ -1425,7 +1425,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if type(meta_eval) is not types.FunctionType:
+                if not callable(meta_eval):
                     meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
