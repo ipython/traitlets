@@ -565,8 +565,10 @@ class Application(SingletonConfigurable):
 
         # flatten flags&aliases, so cl-args get appropriate priority:
         flags,aliases = self.flatten_flags()
+        classes = tuple(self._classes_with_config_traits())
         loader = KVArgParseConfigLoader(argv=argv, aliases=aliases,
-                                        flags=flags, log=self.log)
+                                        flags=flags, log=self.log,
+                                        classes=classes)
         self.cli_config = deepcopy(loader.load_config())
         self.update_config(self.cli_config)
         # store unparsed args in extra_args

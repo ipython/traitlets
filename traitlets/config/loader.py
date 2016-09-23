@@ -804,42 +804,55 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             classes = self.classes
         paa = self.parser.add_argument
 
+        ## Index of list/tuple traits collected,
+        #  for aliases not to re-collect them.
+        seq_trait_kwds = {}
         for cls in classes:
             for traitname, trait in cls.class_traits(config=True).items():
                 if isinstance(trait, (List, Tuple)):
-                    argname = '--%s.%s' % (cls.__name__, traitname)
+                    argname = '%s.%s' % (cls.__name__, traitname)
                     multiplicity = trait.metadata.get('multiplicity', 'append')
+                    argparse_kwds = {}
                     if multiplicity == 'append':
-                        paa(argname, type=text_type, action='append')
+                        argparse_kwds['action'] = multiplicity
                     else:
-                        paa(argname, type=text_type, nargs=multiplicity)
+                        argparse_kwds['nargs'] = multiplicity
+                    seq_trait_kwds[argname] = argparse_kwds
+                    paa('--'+argname, type=text_type, **argparse_kwds)
 
-        for keys,value in aliases.items():
+        for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):
                 keys = (keys, )
             for key in keys:
-                if key in flags:
-                    # flags
-                    nargs = '?'
+                argparse_kwds = {'type': text_type, 'dest': traitname}
+                ## Is alias for a sequence-trait?
+                #
+                if traitname in seq_trait_kwds:
+                    argparse_kwds.update(seq_trait_kwds[traitname])
+                    if 'action' in argparse_kwds:
+                        ## A flag+alias should have `nargs='?'` multiplicity,
+                        #  but base config-property had 'append' multiplicity!
+                        #
+                        if key in flags:
+                            raise ArgumentError(
+                                "The alias `%s` for the 'append' sequence "
+                                "config-trait `%s` cannot be also a flag!'"
+                                % (key, traitname))
                 else:
-                    nargs = None
-                if len(key) is 1:
-                    paa('-'+key, '--'+key, type=text_type, dest=value, nargs=nargs)
-                else:
-                    paa('--'+key, type=text_type, dest=value, nargs=nargs)
+                    if key in flags:
+                        argparse_kwds['nargs'] = '?'
+                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                paa(*keys, **argparse_kwds)
 
         for keys, (value, _) in flags.items():
             if not isinstance(keys, tuple):
                 keys = (keys, )
             for key in keys:
                 if key in self.aliases:
-                    #
                     self.alias_flags[self.aliases[key]] = value
                     continue
-                if len(key) is 1:
-                    paa('-'+key, '--'+key, action='append_const', dest='_flags', const=value)
-                else:
-                    paa('--'+key, action='append_const', dest='_flags', const=value)
+                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                paa(*keys, action='append_const', dest='_flags', const=value)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""

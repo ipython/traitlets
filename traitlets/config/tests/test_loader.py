@@ -328,9 +328,10 @@ class TestArgParseKVCL(TestKeyValueCL):
 
     def test_seq_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
-        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --CBase.c AA --CBase.c BB "
+        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --a3 AA --CBase.c BB "
                 "--CSub.d 1 --CSub.d BBB --CSub.e 1 a bcd").split()
-        config = cl.load_config(argv)
+        aliases = {'a3': 'CBase.c', 'a5': 'CSub.e'}
+        config = cl.load_config(argv, aliases=aliases)
         self.assertEqual(config.CBase.a, ['A', 2])
         self.assertEqual(config.CBase.b, [1, 2, 3])
         self.assertEqual(config.CBase.c, ['AA', 'BB'])
