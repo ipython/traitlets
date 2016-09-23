@@ -738,10 +738,6 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         self.clear()
         if argv is None:
             argv = self.argv
-        if aliases is None:
-            aliases = self.aliases
-        if flags is None:
-            flags = self.flags
         self._create_parser(aliases, flags)
         self._parse_args(argv)
         self._convert_to_config()
