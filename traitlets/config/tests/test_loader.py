@@ -5,7 +5,6 @@
 # Distributed under the terms of the Modified BSD License.
 
 import copy
-import logging
 import os
 import pickle
 import sys
@@ -24,6 +23,8 @@ from traitlets.config.loader import (
     KVArgParseConfigLoader,
     ConfigError,
 )
+from traitlets import (HasTraits, Union, List, Tuple, Int, Unicode)
+from traitlets.config import Configurable
 
 
 pyfile = """
@@ -121,14 +122,14 @@ class TestFileCL(TestCase):
         f = os.fdopen(fd, 'w')
         f.write('{}')
         f.close()
-        
+
         with JSONFileConfigLoader(fname, log=log) as config:
             config.A.b = 1
-        
+
         with self.assertRaises(TypeError):
             with JSONFileConfigLoader(fname, log=log) as config:
                 config.A.cant_json = lambda x: x
-        
+
         loader = JSONFileConfigLoader(fname, log=log)
         cfg = loader.load_config()
         assert cfg.A.b == 1
@@ -172,17 +173,24 @@ class TestFileCL(TestCase):
         with self.assertRaises(ValueError):
             cl.load_config()
 
+def _parse_int_or_str(v):
+    try:
+        return int(v)
+    except:
+        return str(v)
 
 class MyLoader1(ArgParseConfigLoader):
-    def _add_arguments(self, aliases=None, flags=None):
+    def _add_arguments(self, aliases=None, flags=None, classes=None):
         p = self.parser
         p.add_argument('-f', '--foo', dest='Global.foo', type=str)
         p.add_argument('-b', dest='MyClass.bar', type=int)
         p.add_argument('-n', dest='n', action='store_true')
         p.add_argument('Global.bam', type=str)
+        p.add_argument('--list1', action='append', type=_parse_int_or_str)
+        p.add_argument('--list2', nargs='+', type=int)
 
 class MyLoader2(ArgParseConfigLoader):
-    def _add_arguments(self, aliases=None, flags=None):
+    def _add_arguments(self, aliases=None, flags=None, classes=None):
         subparsers = self.parser.add_subparsers(dest='subparser_name')
         subparser1 = subparsers.add_parser('1')
         subparser1.add_argument('-x',dest='Global.x')
@@ -220,6 +228,14 @@ class TestArgParseCL(TestCase):
         self.assertEqual(config.n, True)
         self.assertEqual(config.Global.bam, 'wow')
 
+    def test_list_args(self):
+        cl = MyLoader1()
+        config = cl.load_config('--list1 1 wow --list2 1 2 3 --list1 B'.split())
+        self.assertEqual(list(config.Global.keys()), ['bam'])
+        self.assertEqual(config.Global.bam, 'wow')
+        self.assertEqual(config.list1, [1, 'B'])
+        self.assertEqual(config.list2, [1, 2, 3])
+
 
 class TestKeyValueCL(TestCase):
     klass = KeyValueConfigLoader
@@ -242,7 +258,7 @@ class TestKeyValueCL(TestCase):
         # non-literal expressions are not evaluated
         self.assertEqual(config.Foo.Bam.value, 'list(range(10))')
         self.assertEqual(config.D.C.value, 'hi there')
-    
+
     def test_expanduser(self):
         cl = self.klass(log=log)
         argv = ['--a=~/1/2/3', '--b=~', '--c=~/', '--d="~/"']
@@ -251,7 +267,7 @@ class TestKeyValueCL(TestCase):
         self.assertEqual(config.b, os.path.expanduser('~'))
         self.assertEqual(config.c, os.path.expanduser('~/'))
         self.assertEqual(config.d, '~/')
-    
+
     def test_extra_args(self):
         cl = self.klass(log=log)
         config = cl.load_config(['--a=5', 'b', '--c=10', 'd'])
@@ -260,30 +276,39 @@ class TestKeyValueCL(TestCase):
         self.assertEqual(config.c, 10)
         config = cl.load_config(['--', '--a=5', '--c=10'])
         self.assertEqual(cl.extra_args, ['--a=5', '--c=10'])
-    
+
     def test_unicode_args(self):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']
         config = cl.load_config(argv)
         self.assertEqual(config.a, u'épsîlön')
-    
+
     def test_unicode_bytes_args(self):
         uarg = u'--a=é'
         try:
             barg = uarg.encode(sys.stdin.encoding)
         except (TypeError, UnicodeEncodeError):
             raise skip("sys.stdin.encoding can't handle 'é'")
-        
+
         cl = self.klass(log=log)
         config = cl.load_config([barg])
         self.assertEqual(config.a, u'é')
-    
+
     def test_unicode_alias(self):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']
         config = cl.load_config(argv, aliases=dict(a='A.a'))
         self.assertEqual(config.A.a, u'épsîlön')
 
+
+class CBase(HasTraits):
+    a = List().tag(config=True)
+    b = List().tag(config=True, multiplicity='*')
+    c = List().tag(config=True, multiplicity='append')
+
+class CSub(CBase):
+    d = Tuple().tag(config=True)
+    e = Tuple().tag(config=True, multiplicity='+')
 
 class TestArgParseKVCL(TestKeyValueCL):
     klass = KVArgParseConfigLoader
@@ -294,13 +319,25 @@ class TestArgParseKVCL(TestKeyValueCL):
         config = cl.load_config(argv, aliases=dict(a='A.a', b='A.b'))
         self.assertEqual(config.A.a, os.path.expanduser('~/1/2/3'))
         self.assertEqual(config.A.b, '~/1/2/3')
-    
+
     def test_eval(self):
         cl = self.klass(log=log)
         argv = ['-c', 'a=5']
         config = cl.load_config(argv, aliases=dict(c='A.c'))
         self.assertEqual(config.A.c, u"a=5")
-    
+
+    def test_seq_traits(self):
+        cl = self.klass(log=log, classes=(CBase, CSub))
+        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --CBase.c AA --CBase.c BB "
+                "--CSub.d 1 --CSub.d BBB --CSub.e 1 a bcd").split()
+        config = cl.load_config(argv)
+        self.assertEqual(config.CBase.a, ['A', 2])
+        self.assertEqual(config.CBase.b, [1, 2, 3])
+        self.assertEqual(config.CBase.c, ['AA', 'BB'])
+
+        self.assertEqual(config.CSub.d, [1, 'BBB'])
+        self.assertEqual(config.CSub.e, [1, 'a', 'bcd'])
+
 
 class TestConfig(TestCase):
 
@@ -368,12 +405,12 @@ class TestConfig(TestCase):
     def test_builtin(self):
         c1 = Config()
         c1.format = "json"
-    
+
     def test_fromdict(self):
         c1 = Config({'Foo' : {'bar' : 1}})
         self.assertEqual(c1.Foo.__class__, Config)
         self.assertEqual(c1.Foo.bar, 1)
-    
+
     def test_fromdictmerge(self):
         c1 = Config()
         c2 = Config({'Foo' : {'bar' : 1}})
@@ -389,7 +426,7 @@ class TestConfig(TestCase):
         self.assertEqual(c1.Foo.bar, 1)
         self.assertEqual(c1.Foo.baz, 2)
         self.assertNotIn('baz', c2.Foo)
-    
+
     def test_contains(self):
         c1 = Config({'Foo' : {'baz' : 2}})
         c2 = Config({'Foo' : {'bar' : 1}})
@@ -397,14 +434,14 @@ class TestConfig(TestCase):
         self.assertIn('Foo.baz', c1)
         self.assertIn('Foo.bar', c2)
         self.assertNotIn('Foo.bar', c1)
-    
+
     def test_pickle_config(self):
         cfg = Config()
         cfg.Foo.bar = 1
         pcfg = pickle.dumps(cfg)
         cfg2 = pickle.loads(pcfg)
         self.assertEqual(cfg2, cfg)
-    
+
     def test_getattr_section(self):
         cfg = Config()
         self.assertNotIn('Foo', cfg)
@@ -440,7 +477,7 @@ class TestConfig(TestCase):
         foo = cfg['foo']
         assert isinstance(foo, LazyConfigValue)
         self.assertIn('foo', cfg)
-    
+
     def test_merge_no_copies(self):
         c = Config()
         c2 = Config()
