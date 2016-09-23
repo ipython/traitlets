@@ -76,10 +76,18 @@ When observers are methods of the class, a decorator syntax can be used.
             print(change['old'])
             print(change['new'])
 
-Validation
-----------
+Validation and Coercion
+-----------------------
 
-Custom validation logic on trait classes
+Custom Cross-Validation
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Each trait type (``Int``, ``Unicode``, ``Dict`` etc.) may have its own
+validation or coercion logic. In addition, we can register custom
+cross-validators that may depend on the state of other attributes.
+
+Basic Example: Validating the Parity of a Trait
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
@@ -111,12 +119,81 @@ Custom validation logic on trait classes
         parity_check.value = 1
         parity_check.parity = 1
 
-In the case where the a validation error occurs when
-``hold_trait_notifications`` context manager is released, changes are
-rolled back to the initial state.
+However, we recommend that custom cross-validators don't modify the state of
+the HasTraits instance.
 
--  Finally, trait type can have other events than trait changes. This
-   capability was added so as to enable notifications on change of
-   values in container classes. The items available in the dictionary
-   passed to the observer registered with ``observe`` depends on the
-   event type.
+Advanced Example: Validating the Schema
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``List`` and ``Dict`` trait types allow the validation of nested
+properties.
+
+.. code:: python
+
+    from traitlets import HasTraits, Dict, Bool, Unicode
+
+    class Nested(HasTraits):
+
+        value = Dict(traits={
+            'configuration': Dict(trait=Unicode()),
+            'flag': Bool()
+        })
+
+    n = Nested()
+    n.value = dict(flag=True, configuration={})  # OK
+    n.value = dict(flag=True, configuration='')  # raises a TraitError.
+
+
+However, for deeply nested properties it might be more appropriate to use an
+external validator:
+
+.. code:: python
+
+    import jsonschema
+
+    value_schema = {
+         'type' : 'object',
+         'properties' : {
+             'price' : { 'type' : 'number' },
+             'name' : { 'type' : 'string' },
+         },
+     }
+
+    from traitlets import HasTraits, Dict, TraitError, validate, default
+
+    class Schema(HasTraits):
+
+        value = Dict()
+
+        @default('value')
+        def _default_value(self):
+            return dict(name='', price=1)
+
+        @validate('value')
+        def _validate_value(self, proposal):
+            try:
+                jsonschema.validate(proposal['value'], value_schema)
+            except jsonschema.ValidationError as e:
+                raise TraitError(e)
+            return proposal['value']
+
+    s = Schema()
+    s.value = dict(name='', price='1')  # raises a TraitError
+
+
+Holding Trait Cross-Validation and Notifications
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes if may be impossible to transition from to valid states for a
+``HasTraits`` instance by change attributes one by one. The
+``hold_trait_notifications`` context manager can be used to hold the custom
+cross validation until the context manager is released. If a validation error
+occurs, changes are rolled back to the initial state.
+
+Custom Events
+-------------
+
+Finally, trait types can emit other events types than trait changes. This
+capability was added so as to enable notifications on change of values in
+container classes. The items available in the dictionary passed to the observer
+registered with ``observe`` depends on the event type.
