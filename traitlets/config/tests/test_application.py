@@ -50,6 +50,7 @@ class Bar(Configurable):
     enabled = Bool(True, help="Enable bar.").tag(config=True)
     tb = Tuple(()).tag(config=True, multiplicity='*')
     aset = Set().tag(config=True, multiplicity='+')
+    adict = Dict().tag(config=True)
 
 
 class MyApp(Application):
@@ -68,6 +69,7 @@ class MyApp(Application):
                     'name' : 'Foo.name',
                     'la': 'Foo.la',
                     'tb': 'Bar.tb',
+                    'D': 'Bar.adict',
                     'enabled' : 'Bar.enabled',
                     'log-level' : 'Application.log_level',
                 })
@@ -131,6 +133,16 @@ class TestApplication(TestCase):
         app.init_bar()
         self.assertEqual(app.bar.aset, {'S1', 'S2'})
         self.assertEqual(app.bar.tb, ('AB', 2))
+
+    def test_config_dict_args(self):
+        app = MyApp()
+        app.parse_command_line("--Bar.adict k=1 -D=a=b -D 22=33".split())
+        config = app.config
+        self.assertDictEqual(config.Bar.adict,
+                {'k': 1, 'a': 'b', '22': 33})
+        app.init_bar()
+        self.assertEqual(app.bar.adict,
+                {'k': 1, 'a': 'b', '22': 33})
 
     def test_config_propagation(self):
         app = MyApp()

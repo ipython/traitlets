@@ -6,7 +6,7 @@
 
 import argparse
 import copy
-import logging
+import functools as fnt
 import os
 import re
 import sys
@@ -17,7 +17,7 @@ from ipython_genutils.path import filefind
 from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
 from six import text_type
-from traitlets.traitlets import (HasTraits, List, Tuple, Any)
+from traitlets.traitlets import (HasTraits, Container, List, Dict, Any)
 
 #-----------------------------------------------------------------------------
 # Exceptions
@@ -509,7 +509,7 @@ class CommandLineConfigLoader(ConfigLoader):
             value = rhs
         return value
 
-    def _exec_config_str(self, lhs, rhs):
+    def _exec_config_str(self, lhs, rhs, trait=None):
         """execute self.config.<lhs> = <rhs>
 
         * expands ~ with expanduser
@@ -517,12 +517,15 @@ class CommandLineConfigLoader(ConfigLoader):
           allowing `--C.a=foobar` and `--C.a="foobar"` to be equivalent.  *Not*
           equivalent are `--C.a=4` and `--C.a='4'`.
         """
-        if isinstance(rhs, (list, tuple)):
+        if isinstance(trait, Dict):
+            value = {r[0]: self._parse_config_value(r[1])
+                                for r in rhs}
+        elif isinstance(rhs, (list, tuple)):
             value = [self._parse_config_value(r) for r in rhs]
         else:
             value = self._parse_config_value(rhs)
 
-        exec(u'self.config.%s = value' % lhs)
+        exec(u'self.config.%s = value' % lhs, None, locals())
 
     def _load_flag(self, cfg):
         """update self.config from a flag, which can be a dict or Config"""
@@ -787,6 +790,21 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         for k, v in vars(self.parsed_data).items():
             exec("self.config.%s = v"%k, locals(), globals())
 
+## For Dict traits, describes the cmd-line option as `key=value`
+_kv_opt_pattern = re.compile(r'^([^=]+)=(.*)$')
+
+def _kv_opt(traitname, opt_value):
+    """
+    Used as `type` when adding args into :meth:`ArgumentParser.add_argument()`
+    corresponding to config Dict-traits.
+    """
+    m = _kv_opt_pattern.match(opt_value)
+    if not m:
+        raise ArgumentError("Expecting <key>=<value> for Dict-trait '%s', got %r!"
+                            % (traitname, opt_value))
+    return m.groups()
+
+
 class KVArgParseConfigLoader(ArgParseConfigLoader):
     """A config loader that loads aliases and flags with argparse,
     but will use KVLoader for the rest.  This allows better parsing
@@ -804,12 +822,16 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             classes = self.classes
         paa = self.parser.add_argument
 
-        ## Index of list/tuple traits collected,
-        #  for aliases not to re-collect them.
-        seq_trait_kwds = {}
+        ## An index of all container traits collected::
+        #
+        #     { <traitname>: (<trait>, <argparse-kwds>) }
+        #
+        #  Used to add the correct type into the `config` tree.
+        #  Used also for aliases, not to re-collect them.
+        self.argparse_traits = argparse_traits = {}
         for cls in classes:
             for traitname, trait in cls.class_traits(config=True).items():
-                if isinstance(trait, (List, Tuple)):
+                if isinstance(trait, (Container, Dict)):
                     argname = '%s.%s' % (cls.__name__, traitname)
                     multiplicity = trait.metadata.get('multiplicity', 'append')
                     argparse_kwds = {}
@@ -817,8 +839,13 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                         argparse_kwds['action'] = multiplicity
                     else:
                         argparse_kwds['nargs'] = multiplicity
-                    seq_trait_kwds[argname] = argparse_kwds
-                    paa('--'+argname, type=text_type, **argparse_kwds)
+                    if isinstance(trait, Dict):
+                        argtype = fnt.partial(_kv_opt, traitname)
+                    else:
+                        argtype = text_type
+                    argparse_kwds['type'] = argtype
+                    argparse_traits[argname] = (trait, argparse_kwds)
+                    paa('--'+argname, **argparse_kwds)
 
         for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):
@@ -827,8 +854,8 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 argparse_kwds = {'type': text_type, 'dest': traitname}
                 ## Is alias for a sequence-trait?
                 #
-                if traitname in seq_trait_kwds:
-                    argparse_kwds.update(seq_trait_kwds[traitname])
+                if traitname in argparse_traits:
+                    argparse_kwds.update(argparse_traits[traitname][1])
                     if 'action' in argparse_kwds:
                         ## A flag+alias should have `nargs='?'` multiplicity,
                         #  but base config-property had 'append' multiplicity!
@@ -868,8 +895,11 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 # it was a flag that shares the name of an alias
                 subcs.append(self.alias_flags[k])
             else:
+                trait = self.argparse_traits.get(k)
+                if trait:
+                    trait = trait[0]
                 # eval the KV assignment
-                self._exec_config_str(k, v)
+                self._exec_config_str(k, v, trait=trait)
 
         for subc in subcs:
             self._load_flag(subc)

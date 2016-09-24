@@ -23,7 +23,7 @@ from traitlets.config.loader import (
     KVArgParseConfigLoader,
     ConfigError,
 )
-from traitlets import (HasTraits, Union, List, Tuple, Int, Unicode)
+from traitlets import (HasTraits, Union, List, Tuple, Dict, Int, Unicode)
 from traitlets.config import Configurable
 
 
@@ -305,10 +305,12 @@ class CBase(HasTraits):
     a = List().tag(config=True)
     b = List().tag(config=True, multiplicity='*')
     c = List().tag(config=True, multiplicity='append')
+    adict = Dict().tag(config=True)
 
 class CSub(CBase):
     d = Tuple().tag(config=True)
     e = Tuple().tag(config=True, multiplicity='+')
+    bdict = Dict().tag(config=True, multiplicity='*')
 
 class TestArgParseKVCL(TestKeyValueCL):
     klass = KVArgParseConfigLoader
@@ -328,9 +330,9 @@ class TestArgParseKVCL(TestKeyValueCL):
 
     def test_seq_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
+        aliases = {'a3': 'CBase.c', 'a5': 'CSub.e'}
         argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --a3 AA --CBase.c BB "
                 "--CSub.d 1 --CSub.d BBB --CSub.e 1 a bcd").split()
-        aliases = {'a3': 'CBase.c', 'a5': 'CSub.e'}
         config = cl.load_config(argv, aliases=aliases)
         self.assertEqual(config.CBase.a, ['A', 2])
         self.assertEqual(config.CBase.b, [1, 2, 3])
@@ -338,6 +340,16 @@ class TestArgParseKVCL(TestKeyValueCL):
 
         self.assertEqual(config.CSub.d, [1, 'BBB'])
         self.assertEqual(config.CSub.e, [1, 'a', 'bcd'])
+
+    def test_dict_traits(self):
+        cl = self.klass(log=log, classes=(CBase, CSub))
+        aliases = {'D': 'CBase.adict', 'E': 'CSub.bdict'}
+        argv = ["--CBase.adict", "k1=v1", "-D=k2=2", "-D", "k3=v 3", "-E", "k=v", "22=222"]
+        config = cl.load_config(argv, aliases=aliases)
+        self.assertDictEqual(config.CBase.adict,
+                {'k1': 'v1', 'k2': 2, 'k3': 'v 3'})
+        self.assertEqual(config.CSub.bdict,
+                {'k': 'v', '22': 222})
 
 
 class TestConfig(TestCase):
