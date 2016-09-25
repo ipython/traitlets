@@ -10,7 +10,15 @@ from copy import deepcopy
 import warnings
 
 from .loader import Config, LazyConfigValue, _is_section_key
-from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
+from traitlets.traitlets import (
+    HasTraits,
+    Instance,
+    Container,
+    Dict,
+    observe,
+    observe_compat,
+    default,
+)
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 
 
@@ -227,7 +235,20 @@ class Configurable(HasTraits):
         """
         assert inst is None or isinstance(inst, cls)
         lines = []
-        header = "--%s.%s=<%s>" % (cls.__name__, trait.name, trait.__class__.__name__)
+        header = "--%s.%s" % (cls.__name__, trait.name)
+        if isinstance(trait, (Container, Dict)):
+            multiplicity = trait.metadata.get('multiplicity', 'append')
+            if isinstance(trait, Dict):
+                sample_value = '<key-1>=<value-1>'
+            else:
+                sample_value = '<%s-item-1>' % trait.__class__.__name__.lower()
+            if multiplicity == 'append':
+                header = "%s=%s..." % (header, sample_value)
+            else:
+                header = "%s %s..." % (header, sample_value)
+        else:
+            header = '%s=<%s>' % (header, trait.__class__.__name__)
+        #header = "--%s.%s=<%s>" % (cls.__name__, trait.name, trait.__class__.__name__)
         lines.append(header)
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
