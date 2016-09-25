@@ -214,10 +214,10 @@ class TestApplication(TestCase):
         with contextlib.redirect_stdout(stdout):
             app.print_flag_help()
         hmsg = stdout.getvalue()
-        self.assertIn("-e, --enable", hmsg)
-        self.assertIn("-d, --disable", hmsg)
-        self.assertIn("Equivalent to: [Bar.enabled=True]", hmsg)
-        self.assertIn("Equivalent to: [Bar.enabled=False]", hmsg)
+        self.assertRegex(hmsg, "(?<!-)-e, --enable\\b")
+        self.assertRegex(hmsg, "(?<!-)-d, --disable\\b")
+        self.assertIn("Equivalent to: [--Bar.enabled=True]", hmsg)
+        self.assertIn("Equivalent to: [--Bar.enabled=False]", hmsg)
 
     def test_aliases(self):
         app = MyApp()
@@ -249,11 +249,11 @@ class TestApplication(TestCase):
         with contextlib.redirect_stdout(stdout):
             app.print_alias_help()
         hmsg = stdout.getvalue()
-        self.assertIn("-i, --fooi", hmsg)
-        self.assertIn("-j, --fooj", hmsg)
-        self.assertIn("Equivalent to: [Foo.i]", hmsg)
-        self.assertIn("Equivalent to: [Foo.j]", hmsg)
-        self.assertIn("Equivalent to: [Foo.name]", hmsg)
+        self.assertRegex(hmsg, "(?<!-)-i, --fooi\\b")
+        self.assertRegex(hmsg, "(?<!-)-j, --fooj\\b")
+        self.assertIn("Equivalent to: [--Foo.i]", hmsg)
+        self.assertIn("Equivalent to: [--Foo.j]", hmsg)
+        self.assertIn("Equivalent to: [--Foo.name]", hmsg)
 
     def test_flag_clobber(self):
         """test that setting flags doesn't clobber existing settings"""

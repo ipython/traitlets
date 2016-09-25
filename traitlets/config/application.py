@@ -326,11 +326,11 @@ class Application(SingletonConfigurable):
                                   for m in alias)
 
                 # reformat first line
-                fhelp[0] = fhelp[0].replace(longname, alias)
+                fhelp[0] = fhelp[0].replace('--'+longname, alias)
                 lines.extend(fhelp)
-                lines.append(indent("Equivalent to: [%s]" % longname))
+                lines.append(indent("Equivalent to: [--%s]" % longname))
             except Exception as ex:
-                self.log.error('Failed collecting help-message for aias %r, due to: %s',
+                self.log.error('Failed collecting help-message for alias %r, due to: %s',
                                alias, ex)
                 raise
 
@@ -352,7 +352,7 @@ class Application(SingletonConfigurable):
                               for m in flags)
                 lines.append(flags)
                 lines.append(indent(dedent(fhelp.strip())))
-                cfg_list = ' '.join('%s.%s=%s' %(clname, prop, val)
+                cfg_list = ' '.join('--%s.%s=%s' %(clname, prop, val)
                             for clname, props_dict
                             in cfg.items() for prop, val in props_dict.items())
                 cfg_txt = "Equivalent to: [%s]" % cfg_list
