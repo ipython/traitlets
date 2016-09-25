@@ -831,21 +831,18 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         self.argparse_traits = argparse_traits = {}
         for cls in classes:
             for traitname, trait in cls.class_traits(config=True).items():
+                argname = '%s.%s' % (cls.__name__, traitname)
+                argparse_kwds = {'type': text_type}
                 if isinstance(trait, (Container, Dict)):
-                    argname = '%s.%s' % (cls.__name__, traitname)
                     multiplicity = trait.metadata.get('multiplicity', 'append')
-                    argparse_kwds = {}
                     if multiplicity == 'append':
                         argparse_kwds['action'] = multiplicity
                     else:
                         argparse_kwds['nargs'] = multiplicity
                     if isinstance(trait, Dict):
-                        argtype = fnt.partial(_kv_opt, traitname)
-                    else:
-                        argtype = text_type
-                    argparse_kwds['type'] = argtype
-                    argparse_traits[argname] = (trait, argparse_kwds)
-                    paa('--'+argname, **argparse_kwds)
+                        argparse_kwds['type'] = fnt.partial(_kv_opt, traitname)
+                argparse_traits[argname] = (trait, argparse_kwds)
+                paa('--'+argname, **argparse_kwds)
 
         for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):

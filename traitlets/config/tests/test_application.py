@@ -13,7 +13,7 @@ import logging
 import os
 import sys
 from io import StringIO
-from unittest import TestCase
+from unittest import TestCase, skip
 
 try:
     from unittest import mock
@@ -43,6 +43,7 @@ class Foo(Configurable):
     j = Integer(1, help="The integer j.").tag(config=True)
     name = Unicode(u'Brian', help="First name.").tag(config=True)
     la = List([]).tag(config=True)
+    fdict = Dict().tag(config=True, multiplicity='+')
 
 class Bar(Configurable):
 
@@ -50,7 +51,7 @@ class Bar(Configurable):
     enabled = Bool(True, help="Enable bar.").tag(config=True)
     tb = Tuple(()).tag(config=True, multiplicity='*')
     aset = Set().tag(config=True, multiplicity='+')
-    adict = Dict().tag(config=True)
+    bdict = Dict().tag(config=True)
 
 
 class MyApp(Application):
@@ -69,7 +70,7 @@ class MyApp(Application):
                     'name' : 'Foo.name',
                     'la': 'Foo.la',
                     'tb': 'Bar.tb',
-                    'D': 'Bar.adict',
+                    'D': 'Bar.bdict',
                     'enabled' : 'Bar.enabled',
                     'log-level' : 'Application.log_level',
                 })
@@ -136,13 +137,19 @@ class TestApplication(TestCase):
 
     def test_config_dict_args(self):
         app = MyApp()
-        app.parse_command_line("--Bar.adict k=1 -D=a=b -D 22=33".split())
+        app.parse_command_line(
+            "--Foo.fdict a=1 b=b c=3 "
+            "--Bar.bdict k=1 -D=a=b -D 22=33 "
+            .split())
+        fdict = {'a': 1, 'b': 'b', 'c': 3}
+        bdict = {'k': 1, 'a': 'b', '22': 33}
         config = app.config
-        self.assertDictEqual(config.Bar.adict,
-                {'k': 1, 'a': 'b', '22': 33})
+        self.assertDictEqual(config.Foo.fdict, fdict)
+        self.assertDictEqual(config.Bar.bdict, bdict)
+        app.init_foo()
+        self.assertEqual(app.foo.fdict, fdict)
         app.init_bar()
-        self.assertEqual(app.bar.adict,
-                {'k': 1, 'a': 'b', '22': 33})
+        self.assertEqual(app.bar.bdict, bdict)
 
     def test_config_propagation(self):
         app = MyApp()
@@ -179,6 +186,7 @@ class TestApplication(TestCase):
             assert app.config.TestApp.value == 'cli'
             assert app.value == 'cli'
 
+    @skip('TO DEL? see https://github.com/ipython/traitlets/pull/322')
     def test_ipython_cli_priority(self):
         # this test is almost entirely redundant with above,
         # but we can keep it around in case of subtle issues creeping into
