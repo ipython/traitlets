@@ -186,7 +186,6 @@ class TestApplication(TestCase):
             assert app.config.TestApp.value == 'cli'
             assert app.value == 'cli'
 
-    @skip('TO DEL? see https://github.com/ipython/traitlets/pull/322')
     def test_ipython_cli_priority(self):
         # this test is almost entirely redundant with above,
         # but we can keep it around in case of subtle issues creeping into
