@@ -31,8 +31,8 @@ class MyConfigurable(Configurable):
     c = Unicode('no config')
 
 
-mc_help=u"""MyConfigurable options
-----------------------
+mc_help=u"""MyConfigurable(Configurable) options
+------------------------------------
 --MyConfigurable.a=<Integer>
     Default: 1
     The integer a.
@@ -40,8 +40,8 @@ mc_help=u"""MyConfigurable options
     Default: 1.0
     The integer b."""
 
-mc_help_inst=u"""MyConfigurable options
-----------------------
+mc_help_inst=u"""MyConfigurable(Configurable) options
+------------------------------------
 --MyConfigurable.a=<Integer>
     Current: 5
     The integer a.
@@ -89,7 +89,7 @@ class TestConfigurable(TestCase):
         self.assertTrue(c3.config is config)
         self.assertTrue(c1.config is c2.config)
         self.assertTrue(c2.config is c3.config)
-        
+
     def test_inheritance(self):
         config = Config()
         config.MyConfigurable.a = 2
@@ -179,7 +179,7 @@ class MyParent2(MyParent):
     pass
 
 class TestParentConfigurable(TestCase):
-    
+
     def test_parent_config(self):
         cfg = Config({
             'MyParent' : {
@@ -275,11 +275,11 @@ class Containers(Configurable):
     lis = List().tag(config=True)
     def _lis_default(self):
         return [-1]
-    
+
     s = Set().tag(config=True)
     def _s_default(self):
         return {'a'}
-    
+
     d = Dict().tag(config=True)
     def _d_default(self):
         return {'a' : 'b'}
@@ -346,22 +346,22 @@ class TestConfigContainers(TestCase):
         c.Containers.d.update({'e' : 'f'})
         obj = Containers(config=c)
         self.assertEqual(obj.d, {'a':'b', 'c':'d', 'e':'f'})
-    
+
     def test_update_twice(self):
         c = Config()
         c.MyConfigurable.a = 5
         m = MyConfigurable(config=c)
         self.assertEqual(m.a, 5)
-        
+
         c2 = Config()
         c2.MyConfigurable.a = 10
         m.update_config(c2)
         self.assertEqual(m.a, 10)
-        
+
         c2.MyConfigurable.a = 15
         m.update_config(c2)
         self.assertEqual(m.a, 15)
-    
+
     def test_update_self(self):
         """update_config with same config object still triggers config_changed"""
         c = Config()
@@ -371,7 +371,7 @@ class TestConfigContainers(TestCase):
         c.MyConfigurable.a = 10
         m.update_config(c)
         self.assertEqual(m.a, 10)
-    
+
     def test_config_default(self):
         class SomeSingleton(SingletonConfigurable):
             pass
@@ -388,9 +388,9 @@ class TestConfigContainers(TestCase):
 
         d1 = DefaultConfigurable()
         self.assertEqual(d1.a, 0)
-        
+
         single = SomeSingleton.instance(config=c)
-        
+
         d2 = DefaultConfigurable()
         self.assertIs(d2.config, single.config)
         self.assertEqual(d2.a, 5)
@@ -415,9 +415,9 @@ class TestConfigContainers(TestCase):
 
         d1 = DefaultConfigurable()
         self.assertEqual(d1.a, 0)
-        
+
         single = SomeSingleton.instance(config=c)
-        
+
         d2 = DefaultConfigurable()
         self.assertIs(d2.config, single.config)
         self.assertEqual(d2.a, 5)
@@ -429,14 +429,14 @@ class TestLogger(TestCase):
             foo = Integer(config=True)
             bar = Integer(config=True)
             baz = Integer(config=True)
-    
+
     @mark.skipif(not hasattr(TestCase, 'assertLogs'), reason='requires TestCase.assertLogs')
     def test_warn_match(self):
         logger = logging.getLogger('test_warn_match')
         cfg = Config({'A': {'bat': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
             a = TestLogger.A(config=cfg, log=logger)
-        
+
         output = '\n'.join(captured.output)
         self.assertIn('Did you mean one of: `bar, baz`?', output)
         self.assertIn('Config option `bat` not recognized by `A`.', output)
@@ -444,7 +444,7 @@ class TestLogger(TestCase):
         cfg = Config({'A': {'fool': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
             a = TestLogger.A(config=cfg, log=logger)
-        
+
         output = '\n'.join(captured.output)
         self.assertIn('Config option `fool` not recognized by `A`.', output)
         self.assertIn('Did you mean `foo`?', output)

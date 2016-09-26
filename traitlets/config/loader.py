@@ -786,25 +786,31 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         if flags is None:
             flags = self.flags
         paa = self.parser.add_argument
-        for key,value in aliases.items():
-            if key in flags:
-                # flags
-                nargs = '?'
-            else:
-                nargs = None
-            if len(key) is 1:
-                paa('-'+key, '--'+key, type=text_type, dest=value, nargs=nargs)
-            else:
-                paa('--'+key, type=text_type, dest=value, nargs=nargs)
-        for key, (value, help) in flags.items():
-            if key in self.aliases:
-                #
-                self.alias_flags[self.aliases[key]] = value
-                continue
-            if len(key) is 1:
-                paa('-'+key, '--'+key, action='append_const', dest='_flags', const=value)
-            else:
-                paa('--'+key, action='append_const', dest='_flags', const=value)
+        for keys,value in aliases.items():
+            if not isinstance(keys, tuple):
+                keys = (keys, )
+            for key in keys:
+                if key in flags:
+                    # flags
+                    nargs = '?'
+                else:
+                    nargs = None
+                if len(key) is 1:
+                    paa('-'+key, '--'+key, type=text_type, dest=value, nargs=nargs)
+                else:
+                    paa('--'+key, type=text_type, dest=value, nargs=nargs)
+        for keys, (value, help) in flags.items():
+            if not isinstance(keys, tuple):
+                keys = (keys, )
+            for key in keys:
+                if key in self.aliases:
+                    #
+                    self.alias_flags[self.aliases[key]] = value
+                    continue
+                if len(key) is 1:
+                    paa('-'+key, '--'+key, action='append_const', dest='_flags', const=value)
+                else:
+                    paa('--'+key, action='append_const', dest='_flags', const=value)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
