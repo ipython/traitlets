@@ -272,8 +272,13 @@ class Application(SingletonConfigurable):
         SingletonConfigurable.__init__(self, **kwargs)
         # Ensure my class is in self.classes, so my attributes appear in command line
         # options and config files.
-        if self.__class__ not in self.classes:
-            self.classes.insert(0, self.__class__)
+        cls = self.__class__
+        if cls not in self.classes:
+            if self.classes is cls.classes:
+                # class attr, assign instead of insert
+                cls.classes = [cls] + self.classes
+            else:
+                self.classes.insert(0, self.__class__)
 
     @observe('config')
     @observe_compat
