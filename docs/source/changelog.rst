@@ -4,6 +4,14 @@ Changes in Traitlets
 4.3
 ---
 
+4.3.1
+*****
+
+`4.3.1 on GitHub`_
+
+- Compatibility fix for Python 3.6a1
+- Fix bug in Application.classes getting extra entries when multiple Applications are instantiated in the same process.
+
 4.3.0
 *****
 
@@ -91,3 +99,4 @@ First release of traitlets as a standalone package.
 .. _`4.2.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.2.1
 .. _`4.2.2 on GitHub`: https://github.com/ipython/traitlets/milestones/4.2.2
 .. _`4.3.0 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3
+.. _`4.3.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.1
