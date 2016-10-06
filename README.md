@@ -1,7 +1,7 @@
 # Traitlets
 
 [![Build Status](https://travis-ci.org/ipython/traitlets.svg?branch=master)](https://travis-ci.org/ipython/traitlets)
-[![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](http://traitlets.readthedocs.org/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](https://traitlets.readthedocs.io/en/latest/?badge=latest)
 
 Traitlets is a pure Python library enabling:
 
