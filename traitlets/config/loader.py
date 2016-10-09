@@ -776,7 +776,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     """A config loader that loads aliases and flags with argparse,
     but will use KVLoader for the rest.  This allows better parsing
     of common args, such as `ipython -c 'print 5'`, but still gets
-    arbitrary config with `ipython --InteractiveShell.use_readline=False`"""
+    arbitrary config with `ipython --InteractiveShell.autoindent=False`"""
 
     def _add_arguments(self, aliases=None, flags=None):
         self.alias_flags = {}
