@@ -282,13 +282,13 @@ By default, values are assigned in much the same way as in a config file:
 
 .. code-block:: bash
 
-    $ ipython --InteractiveShell.use_readline=False --BaseIPythonApplication.profile='myprofile'
+    $ ipython --InteractiveShell.autoindent=False --BaseIPythonApplication.profile='myprofile'
 
 Is the same as adding:
 
 .. sourcecode:: python
 
-    c.InteractiveShell.use_readline=False
+    c.InteractiveShell.autoindent=False
     c.BaseIPythonApplication.profile='myprofile'
 
 to your configuration file. Key/Value arguments *always* take a value, separated by '='
