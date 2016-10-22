@@ -564,9 +564,9 @@ class TraitType(BaseDescriptor):
         try:
             # first check that old_value is not non, because comparison
             # to none is being depricated.
-            if old_value is none:
+            try:
                 silent = bool((old_value is none) and (new_value is none))
-            else:
+            except:
                 silent = bool(old_value == new_value)
         except:
             # if there is an error in comparing, default to notify
