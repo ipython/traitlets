@@ -426,6 +426,7 @@ class TraitType(BaseDescriptor):
         Extra metadata can be associated with the traitlet using the .tag() convenience method
         or by using the traitlet instance's .metadata dictionary.
         """
+        self._allows = []
         if default_value is not Undefined:
             self.default_value = default_value
         if allow_none:
@@ -587,6 +588,8 @@ class TraitType(BaseDescriptor):
             return value
         if hasattr(self, 'validate'):
             value = self.validate(obj, value)
+        for validator in self._allows:
+            value = validator(self, value)
         if obj._cross_validation_lock is False:
             value = self._cross_validate(obj, value)
         return value
@@ -660,6 +663,25 @@ class TraitType(BaseDescriptor):
 
         self.metadata.update(metadata)
         return self
+
+    def allows(self, *validators, **attributes):
+        for f in validators:
+            if f not in self._allows:
+                self._allows.append(f)
+        for k, v in attributes.items():
+            def has_valid_attr(trait, value):
+                try:
+                    attr = getattr(value, k)
+                except Exception as e:
+                    raise TraitError(e)
+                if attr != v:
+                    raise TraitError("The '%s' attribute of"
+                        " %s must be %s" % (k, value, v))
+                else:
+                    return value
+            self._allows.append(has_valid_attr)
+        return self
+
 
     def default_value_repr(self):
         return repr(self.default_value)

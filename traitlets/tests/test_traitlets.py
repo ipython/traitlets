@@ -97,6 +97,25 @@ class TestTraitType(TestCase):
             tt = MyIntTT('bad default')
         self.assertRaises(TraitError, B)
 
+    def test_allows(self):
+        class Z(object):
+            def __init__(self, x, y):
+                self.x, self.y = x, y
+
+        def test_x(trait, value):
+            if getattr(value, 'x', None) != 1:
+                raise TraitError("'x' must be 1")
+            return value
+
+        class A(HasTraits):
+            b = TraitType().allows(test_x, y=1)
+
+        a = A()
+        self.assertRaises(TraitError, setattr, a, 'b', Z(0, 1))
+        self.assertRaises(TraitError, setattr, a, 'b', Z(1, 0))
+        # should pass chained validators
+        a.b = Z(1, 1)
+
     def test_info(self):
         class A(HasTraits):
             tt = TraitType
