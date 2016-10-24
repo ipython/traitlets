@@ -116,6 +116,43 @@ class TestTraitType(TestCase):
         # should pass chained validators
         a.b = Z(1, 1)
 
+    def test_extend_allows(self):
+        def less_than(n):
+            def validator(trait, value):
+                if value < n:
+                    return value
+                else:
+                    raise TraitError("%s is not less than %s" % (value, n))
+            return validator
+
+        def greater_than(n):
+            def validator(trait, value):
+                if value > n:
+                    return value
+                else:
+                    raise TraitError("%s is not greater than %s" % (value, n))
+            return validator
+
+        class A(HasTraits):
+            i = Int(5).allows(less_than(10))
+
+        class B(A):
+            i = Int(5, extends='allows').allows(greater_than(0))
+
+        a = A()
+        self.assertRaises(TraitError, setattr, a, 'i', 15)
+
+        b = B()
+        self.assertRaises(TraitError, setattr, b, 'i', -5)
+        self.assertRaises(TraitError, setattr, b, 'i', 15)
+
+    def test_extend_tags(self):
+        class A(HasTraits):
+            i = Int().tag(x=1)
+        class B(A):
+            i = Int(extends='tags').tag(y=2)
+        self.assertEqual(B.i.metadata, {'x':1, 'y':2})
+
     def test_info(self):
         class A(HasTraits):
             tt = TraitType

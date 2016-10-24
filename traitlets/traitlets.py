@@ -416,7 +416,7 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
+    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, extends=None, **kwargs):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -434,6 +434,16 @@ class TraitType(BaseDescriptor):
         if read_only is not None:
             self.read_only = read_only
         self.help = help if help is not None else ''
+
+        if extends is None:
+            extends = ()
+        elif isinstance(extends, six.string_types):
+            extends = (extends,)
+        elif not isinstance(extends, tuple):
+            raise ValueError("'extends' must be a tuple or None" % extends)
+        if not set(extends).issubset({'tags', 'allows'}):
+            raise ValueError("Can only extends 'tags' or 'allows'")
+        self.extends = extends
 
         if len(kwargs) > 0:
             stacklevel = 1
@@ -462,6 +472,28 @@ class TraitType(BaseDescriptor):
         # code that looks for the help string there can find it.
         if help is not None:
             self.metadata['help'] = help
+
+    def class_init(self, cls, name):
+        super(TraitType, self).class_init(cls, name)
+        if self.extends:
+            self.init_extendables(cls)
+
+    def init_extendables(self, cls):
+        for c in self.this_class.mro()[1:]:
+            if issubclass(c, HasTraits) and hasattr(c, self.name):
+                tt = getattr(c, self.name)
+                if isinstance(tt, TraitType):
+                    self._init_extendables(tt)
+                    break
+
+    def _init_extendables(self, parent):
+        if 'tags' in self.extends:
+            new = parent.metadata.copy()
+            new.update(self.metadata)
+            self.metadata = new
+        if 'allows' in self.extends:
+            new = parent._allows + self._allows
+            self._allows = new
 
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
