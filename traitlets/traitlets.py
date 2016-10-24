@@ -505,6 +505,7 @@ class TraitType(BaseDescriptor):
     allow_none = False
     read_only = False
     info_text = 'any value'
+    _use_builtin_dynamic_default = True
 
     def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
         """Declare a traitlet.
@@ -598,8 +599,8 @@ class TraitType(BaseDescriptor):
                     method = getattr(obj, meth_name)
                     _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
                     return method
-
-        return getattr(self, 'make_dynamic_default', None)
+        if self._use_builtin_dynamic_default:
+            return getattr(self, 'make_dynamic_default', None)
 
     def instance_init(self, obj):
         # If no dynamic initialiser is present, and the trait implementation or
@@ -1743,6 +1744,10 @@ class MustBeInstance(ClassBasedTraitType):
 
     info_text = None
 
+    @property
+    def _use_builtin_dynamic_default(self):
+        return not (self.default_args is None and self.default_kwargs is None)
+
     def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
         if self._cast is None:
             self._cast = self.klass
@@ -1825,6 +1830,8 @@ class Instance(MustBeInstance):
     """
 
     klass = None
+
+    _use_builtin_dynamic_default = True
 
     def __init__(self, klass=None, args=None, kw=None, **kwargs):
         """Construct an Instance trait.
