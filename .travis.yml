@@ -9,7 +9,7 @@ python:
 sudo: false
 install:
     - pip install .
-    - pip install traitlets[test] pytest-cov codecov
+    - pip install traitlets[test] pytest-cov codecov pytest-warnings
 script:
     - py.test --cov traitlets -v traitlets
 after_success:
