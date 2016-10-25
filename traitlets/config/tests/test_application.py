@@ -13,7 +13,7 @@ import logging
 import os
 import sys
 from io import StringIO
-from unittest import TestCase
+from unittest import TestCase, skip
 
 try:
     from unittest import mock
@@ -34,7 +34,7 @@ from traitlets.config.application import (
 
 from ipython_genutils.tempdir import TemporaryDirectory
 from traitlets.traitlets import (
-    Bool, Unicode, Integer, List, Dict
+    Bool, Unicode, Integer, List, Tuple, Set, Dict
 )
 
 class Foo(Configurable):
@@ -42,12 +42,16 @@ class Foo(Configurable):
     i = Integer(0, help="The integer i.").tag(config=True)
     j = Integer(1, help="The integer j.").tag(config=True)
     name = Unicode(u'Brian', help="First name.").tag(config=True)
-
+    la = List([]).tag(config=True)
+    fdict = Dict().tag(config=True, multiplicity='+')
 
 class Bar(Configurable):
 
     b = Integer(0, help="The integer b.").tag(config=True)
     enabled = Bool(True, help="Enable bar.").tag(config=True)
+    tb = Tuple(()).tag(config=True, multiplicity='*')
+    aset = Set().tag(config=True, multiplicity='+')
+    bdict = Dict().tag(config=True)
 
 
 class MyApp(Application):
@@ -64,6 +68,9 @@ class MyApp(Application):
                     ('fooi', 'i') : 'Foo.i',
                     ('j', 'fooj') : 'Foo.j',
                     'name' : 'Foo.name',
+                    'la': 'Foo.la',
+                    'tb': 'Bar.tb',
+                    'D': 'Bar.bdict',
                     'enabled' : 'Bar.enabled',
                     'log-level' : 'Application.log_level',
                 })
@@ -114,6 +121,35 @@ class TestApplication(TestCase):
         self.assertEqual(config.Foo.j, 10)
         self.assertEqual(config.Bar.enabled, False)
         self.assertEqual(config.MyApp.log_level,50)
+
+    def test_config_seq_args(self):
+        app = MyApp()
+        app.parse_command_line("--la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 S2 S1".split())
+        config = app.config
+        self.assertEqual(config.Foo.la, [1, 'ab'])
+        self.assertEqual(config.Bar.tb, ['AB', 2])
+        self.assertEqual(config.Bar.aset, 'S1 S2 S1'.split())
+        app.init_foo()
+        self.assertEqual(app.foo.la, [1, 'ab'])
+        app.init_bar()
+        self.assertEqual(app.bar.aset, {'S1', 'S2'})
+        self.assertEqual(app.bar.tb, ('AB', 2))
+
+    def test_config_dict_args(self):
+        app = MyApp()
+        app.parse_command_line(
+            "--Foo.fdict a=1 b=b c=3 "
+            "--Bar.bdict k=1 -D=a=b -D 22=33 "
+            .split())
+        fdict = {'a': 1, 'b': 'b', 'c': 3}
+        bdict = {'k': 1, 'a': 'b', '22': 33}
+        config = app.config
+        self.assertDictEqual(config.Foo.fdict, fdict)
+        self.assertDictEqual(config.Bar.bdict, bdict)
+        app.init_foo()
+        self.assertEqual(app.foo.fdict, fdict)
+        app.init_bar()
+        self.assertEqual(app.bar.bdict, bdict)
 
     def test_config_propagation(self):
         app = MyApp()

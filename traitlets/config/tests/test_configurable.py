@@ -5,6 +5,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 import logging
+import sys
 from unittest import TestCase
 
 from pytest import mark
@@ -57,11 +58,44 @@ if PY3:
 class Foo(Configurable):
     a = Integer(0, help="The integer a.").tag(config=True)
     b = Unicode('nope').tag(config=True)
+    flist = List([]).tag(config=True)
+    fdict = Dict().tag(config=True)
 
 
 class Bar(Foo):
     b = Unicode('gotit', help="The string b.").tag(config=False)
     c = Float(help="The string c.").tag(config=True)
+    bset = Set([]).tag(config=True, multiplicity='+')
+    bdict = Dict().tag(config=True, multiplicity='+')
+
+foo_help=u"""Foo(Configurable) options
+-------------------------
+--Foo.a=<Int>
+    Default: 0
+    The integer a.
+--Foo.b=<Unicode>
+    Default: 'nope'
+--Foo.fdict=<key-1>=<value-1>...
+    Default: {}
+--Foo.flist=<list-item-1>...
+    Default: []"""
+
+bar_help=u"""Bar(Foo) options
+----------------
+--Bar.a=<Int>
+    Default: 0
+    The integer a.
+--Bar.bdict <key-1>=<value-1>...
+    Default: {}
+--Bar.bset <set-item-1>...
+    Default: set()
+--Bar.c=<Float>
+    Default: 0.0
+    The string c.
+--Bar.fdict=<key-1>=<value-1>...
+    Default: {}
+--Bar.flist=<list-item-1>...
+    Default: []"""
 
 
 class TestConfigurable(TestCase):
@@ -140,8 +174,12 @@ class TestConfigurable(TestCase):
         self.assertEqual(c.b, 'and')
         self.assertEqual(c.c, 20.0)
 
+    @mark.skipif(sys.version_info < (3, ),
+                 reason="Set, Int in py2 get printed as 'set([])', 'Integer'!'")
     def test_help(self):
         self.assertEqual(MyConfigurable.class_get_help(), mc_help)
+        self.assertEqual(Foo.class_get_help(), foo_help)
+        self.assertEqual(Bar.class_get_help(), bar_help)
 
     def test_help_inst(self):
         inst = MyConfigurable(a=5, b=4)
@@ -164,7 +202,6 @@ class TestSingletonConfigurable(TestCase):
         self.assertEqual(Bar.initialized(), False)
         self.assertEqual(Bam.initialized(), False)
         bam = Bam.instance()
-        bam == Bar.instance()
         self.assertEqual(Bar.initialized(), True)
         self.assertEqual(Bam.initialized(), True)
         self.assertEqual(bam, Bam._instance)
@@ -435,7 +472,7 @@ class TestLogger(TestCase):
         logger = logging.getLogger('test_warn_match')
         cfg = Config({'A': {'bat': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
-            a = TestLogger.A(config=cfg, log=logger)
+            TestLogger.A(config=cfg, log=logger)
 
         output = '\n'.join(captured.output)
         self.assertIn('Did you mean one of: `bar, baz`?', output)
@@ -443,7 +480,7 @@ class TestLogger(TestCase):
 
         cfg = Config({'A': {'fool': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
-            a = TestLogger.A(config=cfg, log=logger)
+            TestLogger.A(config=cfg, log=logger)
 
         output = '\n'.join(captured.output)
         self.assertIn('Config option `fool` not recognized by `A`.', output)
@@ -451,7 +488,7 @@ class TestLogger(TestCase):
 
         cfg = Config({'A': {'totally_wrong': 5}})
         with self.assertLogs(logger, logging.WARNING) as captured:
-            a = TestLogger.A(config=cfg, log=logger)
+            TestLogger.A(config=cfg, log=logger)
 
         output = '\n'.join(captured.output)
         self.assertIn('Config option `totally_wrong` not recognized by `A`.', output)
