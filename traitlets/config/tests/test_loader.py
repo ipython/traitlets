@@ -483,6 +483,20 @@ class TestConfig(TestCase):
             _ = cfg._repr_html_
         self.assertNotIn('_repr_html_', cfg)
         self.assertEqual(len(cfg), 0)
+    
+    def test_lazy_config_repr(self):
+        cfg = Config()
+        cfg.Class.lazy.append(1)
+        cfg_repr = repr(cfg)
+        assert '<LazyConfigValue' in cfg_repr
+        assert "extend" in cfg_repr
+        assert " [1]}>" in cfg_repr
+        assert 'value=' not in cfg_repr
+        cfg.Class.lazy.get_value([0])
+        repr2 = repr(cfg)
+        assert repr([0,1]) in repr2
+        assert 'value=' in repr2
+        
 
     def test_getitem_not_section(self):
         cfg = Config()
