@@ -16,8 +16,10 @@ from ast import literal_eval
 from ipython_genutils.path import filefind
 from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
-from six import text_type
-from traitlets.traitlets import (HasTraits, Container, List, Dict, Any)
+from six import text_type, string_types
+from traitlets.traitlets import (
+    HasTraits, Container, List, Dict, Any,
+)
 
 #-----------------------------------------------------------------------------
 # Exceptions
@@ -524,10 +526,35 @@ class CommandLineConfigLoader(ConfigLoader):
           equivalent are `--C.a=4` and `--C.a='4'`.
         """
         if isinstance(trait, Dict):
-            value = {r[0]: self._parse_config_value(r[1])
-                                for r in rhs}
+            if len(rhs) == 1 and isinstance(rhs[0], string_types):
+                # check for deprecated --Class.trait="{'a': 'b'}"
+                self.log.warning(
+                    "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
+                    "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
+                        lhs, rhs[0])
+                )
+                value = self._parse_config_value(rhs[0])
+            else:
+                value = {k: self._parse_config_value(v) for k,v in rhs}
+
         elif isinstance(rhs, (list, tuple)):
-            value = [self._parse_config_value(r) for r in rhs]
+            value = None
+            if len(rhs) == 1:
+                # check for deprecated --Class.trait="['a', 'b', 'c']"
+                r = rhs[0]
+                if (
+                    (r[0] == '[' and r[-1] == ']') or
+                    (r[0] == '(' and r[-1] == ')')
+                ):
+                    self.log.warning(
+                        "--{0}={1} for containers is deprecated in traitlets 5.0. "
+                        "You can pass --{0} item ... multiple times to add items to a list.".format(
+                            lhs, rhs)
+                    )
+                    value = self._parse_config_value(r)
+                
+            if value is None:
+                value = [self._parse_config_value(r) for r in rhs]
         else:
             value = self._parse_config_value(rhs)
 
@@ -804,6 +831,10 @@ def _kv_opt(traitname, opt_value):
     Used as `type` when adding args into :meth:`ArgumentParser.add_argument()`
     corresponding to config Dict-traits.
     """
+    if opt_value[0] == '{' and opt_value[-1] == '}' and ':' in opt_value:
+        # leave opt_value as a string for parsing later
+        return opt_value
+
     m = _kv_opt_pattern.match(opt_value)
     if not m:
         raise ArgumentError("Expecting <key>=<value> for Dict-trait '%s', got %r!"
