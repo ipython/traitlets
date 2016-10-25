@@ -146,6 +146,12 @@ class LazyConfigValue(HasTraits):
             d['inserts'] = self._inserts
         return d
 
+    def __repr__(self):
+        if self._value is not None:
+            return "<%s value=%r>" % (self.__class__.__name__, self._value)
+        else:
+            return "<%s %r>" % (self.__class__.__name__, self.to_dict())
+
 
 def _is_section_key(key):
     """Is a Config key a section name (does it start with a capital)?"""
