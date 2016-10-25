@@ -12,12 +12,15 @@ import re
 import sys
 import json
 from ast import literal_eval
+import warnings
 
 from ipython_genutils.path import filefind
 from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
 from six import text_type
-from traitlets.traitlets import (HasTraits, Container, List, Dict, Any)
+from traitlets.traitlets import (
+    HasTraits, Container, List, Dict, Tuple, Any, Unicode,
+)
 
 #-----------------------------------------------------------------------------
 # Exceptions
@@ -145,6 +148,9 @@ class LazyConfigValue(HasTraits):
         elif self._inserts:
             d['inserts'] = self._inserts
         return d
+
+    def __repr__(self):
+        return "<LazyConfigValue:  %r>" % self.to_dict()
 
 
 def _is_section_key(key):
@@ -811,6 +817,9 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     of common args, such as `ipython -c 'print 5'`, but still gets
     arbitrary config with `ipython --InteractiveShell.autoindent=False`"""
 
+    # whether argparse should be used for container traits:
+    argparse_container_traits = False
+
     def _add_arguments(self, aliases=None, flags=None, classes=None):
         self.alias_flags = {}
         # print aliases, flags
@@ -829,20 +838,21 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         #  Used to add the correct type into the `config` tree.
         #  Used also for aliases, not to re-collect them.
         self.argparse_traits = argparse_traits = {}
-        for cls in classes:
-            for traitname, trait in cls.class_traits(config=True).items():
-                argname = '%s.%s' % (cls.__name__, traitname)
-                argparse_kwds = {'type': text_type}
-                if isinstance(trait, (Container, Dict)):
-                    multiplicity = trait.metadata.get('multiplicity', 'append')
-                    if multiplicity == 'append':
-                        argparse_kwds['action'] = multiplicity
-                    else:
-                        argparse_kwds['nargs'] = multiplicity
-                    if isinstance(trait, Dict):
-                        argparse_kwds['type'] = fnt.partial(_kv_opt, traitname)
-                argparse_traits[argname] = (trait, argparse_kwds)
-                paa('--'+argname, **argparse_kwds)
+        if self.argparse_container_traits:
+            for cls in classes:
+                for traitname, trait in cls.class_traits(config=True).items():
+                    argname = '%s.%s' % (cls.__name__, traitname)
+                    argparse_kwds = {'type': text_type}
+                    if isinstance(trait, (Container, Dict)):
+                        multiplicity = trait.metadata.get('multiplicity', 'append')
+                        if multiplicity == 'append':
+                            argparse_kwds['action'] = multiplicity
+                        else:
+                            argparse_kwds['nargs'] = multiplicity
+                        if isinstance(trait, Dict):
+                            argparse_kwds['type'] = fnt.partial(_kv_opt, traitname)
+                    argparse_traits[argname] = (trait, argparse_kwds)
+                    paa('--'+argname, **argparse_kwds)
 
         for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):
@@ -906,6 +916,20 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             sub_parser.load_config(self.extra_args)
             self.config.merge(sub_parser.config)
             self.extra_args = sub_parser.extra_args
+
+
+class KVArgParseCLIConfigLoader(KVArgParseConfigLoader):
+    """KVArgParseConfigLoader with support for argparse's multi-arg methods.
+    
+    Allows `--list-trait=foo --list-trait=bar`
+    
+    and
+    
+    `--dict-trait a=b --dict-trait c=d`
+    
+    .. versionadded:: 5.0
+    """
+    argparse_container_traits = True
 
 
 def load_pyconfig_files(config_files, path):
