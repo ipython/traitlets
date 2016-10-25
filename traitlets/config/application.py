@@ -18,11 +18,13 @@ from decorator import decorator
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
-    KVArgParseConfigLoader, PyFileConfigLoader, Config, ArgumentError, ConfigFileNotFound, JSONFileConfigLoader
+    KVArgParseConfigLoader, PyFileConfigLoader, Config, ArgumentError, ConfigFileNotFound, JSONFileConfigLoader,
+    KVArgParseCLIConfigLoader,
 )
 
 from traitlets.traitlets import (
     Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
+    Any,
 )
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
@@ -258,6 +260,17 @@ class Application(SingletonConfigurable):
 
     # extra command-line arguments that don't set config values
     extra_args = List(Unicode())
+
+    # override in subclasses to opt-in to new argparse container CLI
+    use_argparse_container_cli = bool(os.environ.get('TRAITLETS_ARGPARSE_CLI'))
+
+    cli_parser_class = Any()
+    @default('cli_parser_class')
+    def _cli_parser_class_default(self):
+        if self.use_argparse_container_cli:
+            return KVArgParseConfigLoader
+        else:
+            return KVArgParseCLIConfigLoader
 
     cli_config = Instance(Config, (), {},
         help="""The subset of our configuration that came from the command-line
@@ -566,7 +579,7 @@ class Application(SingletonConfigurable):
         # flatten flags&aliases, so cl-args get appropriate priority:
         flags,aliases = self.flatten_flags()
         classes = tuple(self._classes_with_config_traits())
-        loader = KVArgParseConfigLoader(argv=argv, aliases=aliases,
+        loader = self.cli_parser_class(argv=argv, aliases=aliases,
                                         flags=flags, log=self.log,
                                         classes=classes)
         self.cli_config = deepcopy(loader.load_config())
