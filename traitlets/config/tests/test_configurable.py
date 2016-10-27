@@ -402,7 +402,7 @@ class TestConfigContainers(TestCase):
 
         # reset deprecation limiter
         _deprecations_shown.clear()
-        with expected_warnings(['metadata should be set using the \.tag\(\) method']):
+        with expected_warnings(['metadata should be set using the \.tag\(\) method', "use @default decorator instead\\."]):
             class DefaultConfigurable(Configurable):
                 a = Integer(config=True)
                 def _config_default(self):
