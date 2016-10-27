@@ -416,7 +416,7 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
+    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, extends=None, **kwargs):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
@@ -426,6 +426,7 @@ class TraitType(BaseDescriptor):
         Extra metadata can be associated with the traitlet using the .tag() convenience method
         or by using the traitlet instance's .metadata dictionary.
         """
+        self._allows = []
         if default_value is not Undefined:
             self.default_value = default_value
         if allow_none:
@@ -433,6 +434,16 @@ class TraitType(BaseDescriptor):
         if read_only is not None:
             self.read_only = read_only
         self.help = help if help is not None else ''
+
+        if extends is None:
+            extends = ()
+        elif isinstance(extends, six.string_types):
+            extends = (extends,)
+        elif not isinstance(extends, tuple):
+            raise ValueError("'extends' must be a tuple or None" % extends)
+        if not set(extends).issubset({'tags', 'allows'}):
+            raise ValueError("Can only extends 'tags' or 'allows'")
+        self.extends = extends
 
         if len(kwargs) > 0:
             stacklevel = 1
@@ -461,6 +472,28 @@ class TraitType(BaseDescriptor):
         # code that looks for the help string there can find it.
         if help is not None:
             self.metadata['help'] = help
+
+    def class_init(self, cls, name):
+        super(TraitType, self).class_init(cls, name)
+        if self.extends:
+            self.init_extendables(cls)
+
+    def init_extendables(self, cls):
+        for c in self.this_class.mro()[1:]:
+            if issubclass(c, HasTraits) and hasattr(c, self.name):
+                tt = getattr(c, self.name)
+                if isinstance(tt, TraitType):
+                    self._init_extendables(tt)
+                    break
+
+    def _init_extendables(self, parent):
+        if 'tags' in self.extends:
+            new = parent.metadata.copy()
+            new.update(self.metadata)
+            self.metadata = new
+        if 'allows' in self.extends:
+            new = parent._allows + self._allows
+            self._allows = new
 
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
@@ -587,6 +620,8 @@ class TraitType(BaseDescriptor):
             return value
         if hasattr(self, 'validate'):
             value = self.validate(obj, value)
+        for validator in self._allows:
+            value = validator(self, value)
         if obj._cross_validation_lock is False:
             value = self._cross_validate(obj, value)
         return value
@@ -660,6 +695,25 @@ class TraitType(BaseDescriptor):
 
         self.metadata.update(metadata)
         return self
+
+    def allows(self, *validators, **attributes):
+        for f in validators:
+            if f not in self._allows:
+                self._allows.append(f)
+        for k, v in attributes.items():
+            def has_valid_attr(trait, value):
+                try:
+                    attr = getattr(value, k)
+                except Exception as e:
+                    raise TraitError(e)
+                if attr != v:
+                    raise TraitError("The '%s' attribute of"
+                        " %s must be %s" % (k, value, v))
+                else:
+                    return value
+            self._allows.append(has_valid_attr)
+        return self
+
 
     def default_value_repr(self):
         return repr(self.default_value)
