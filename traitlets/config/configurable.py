@@ -120,7 +120,7 @@ class Configurable(HasTraits):
         If I am Bar and my parent is Foo, and their parent is Tim,
         this will return merge following config sections, in this order::
 
-            [Bar, Foo.bar, Tim.Foo.Bar]
+            [Bar, Foo.Bar, Tim.Foo.Bar]
 
         With the last item being the highest priority.
         """
