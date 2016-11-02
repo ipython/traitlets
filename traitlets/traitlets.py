@@ -60,6 +60,7 @@ from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
 from .utils.bunch import Bunch
+from .utils.spectate import watched_type
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -220,6 +221,17 @@ class _SimpleTest:
     def __str__(self):
         return self.__repr__()
 
+def equivalent(x, y):
+    """Check the equivalence of x and y
+
+    Returns
+    -------
+    bool(x == y) or False if bool coersion fails
+    """
+    try:
+        return bool(x == y)
+    except:
+        return False
 
 def getmembers(object, predicate=None):
     """A safe version of inspect.getmembers that handles missing attributes.
@@ -548,12 +560,8 @@ class TraitType(BaseDescriptor):
             old_value = self.default_value
 
         obj._trait_values[self.name] = new_value
-        try:
-            silent = bool(old_value == new_value)
-        except:
-            # if there is an error in comparing, default to notify
-            silent = False
-        if silent is not True:
+
+        if not equivalent(old_value, new_value):
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
@@ -914,10 +922,13 @@ class ObserveHandler(EventHandler):
 
     def __init__(self, names, type):
         self.trait_names = names
+        if not isinstance(type, (list, tuple)):
+            type = (type,)
         self.type = type
 
     def instance_init(self, inst):
-        inst.observe(self, self.trait_names, type=self.type)
+        for t in self.type:
+            inst.observe(self, self.trait_names, type=t)
 
 
 class ValidateHandler(EventHandler):
