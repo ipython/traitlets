@@ -39,42 +39,61 @@ def test_method_spectator():
 	assert (inspect.getargspec(Thing().func) ==
 		inspect.getargspec(WatchedThing().func))
 
-def expected_answer(func, *args, **kwargs):
-	name = func.__name__
-	inspect.getargspec(func)
 
+class Thing(object):
+	def func(self, a, b, c=None, d=None, *e, **f):
+		return self, a, b, c, d, e, f
 
-def test_spectator():
-	hold = []
-	def beforeback(inst, call):
-		return call
-	def afterback(inst, answer):
-		hold.append(answer)
-
-	class Thing(object):
-		def func(self, a, b, c=None, d=None, *e, **f):
-			return self, a, b, c, d, e, f
-
-	condense = lambda *a, **kw: (a, kw)
-
-	def verify_answer(inst, name, a, b, c=None, d=None, *e, **f):
-		getattr(inst, name)(a, b, c, d, *e, **f)
-		args, kwargs = condense(inst, a, b, c, d, *e, **f)
-		assert hold[-1] == Bunch(
+def check_answer(checklist, inst, name, a, b, c=None, d=None, *e, **f):
+	args, kwargs = condense(inst, a, b, c, d, *e, **f)
+	checklist.append(Bunch(
+		name=name,
+		value=(inst, a, b, c, d, e, f),
+		before=Bunch(
 			name=name,
-			value=(inst, a, b, c, d, e, f),
-			before=Bunch(
-				name=name,
-				args=args,
-				kwargs=kwargs))
+			args=args,
+			kwargs=kwargs))
+	)
+	getattr(inst, name)(a, b, c, d, *e, **f)
+
+condense = lambda *a, **kw: (a, kw)
+
+
+def test_beforeback_afterback():
+	checklist = []
 
 	WatchedThing = watched_type('WatchedThing', Thing, 'func')
 	wt = WatchedThing()
 
+	# callback stores call information
+	def beforeback(inst, call):
+		return call
+	def afterback(inst, answer):
+		assert checklist[-1] == answer
+
 	wt.instance_spectator.callback('func',
 		before=beforeback, after=afterback)
 
-	verify_answer(wt, 'func', 1, 2, c=3)
-	verify_answer(wt, 'func', 1, 2, d=3)
-	verify_answer(wt, 'func', 1, 2, 3, 4, 5)
-	verify_answer(wt, 'func', 1, 2, d=3, f=4)
+	check_answer(checklist, wt, 'func', 1, 2, c=3)
+	check_answer(checklist, wt, 'func', 1, 2, d=3)
+	check_answer(checklist, wt, 'func', 1, 2, 3, 4, 5)
+	check_answer(checklist, wt, 'func', 1, 2, d=3, f=4)
+
+def test_callback_closure():
+	checklist = []
+
+	WatchedThing = watched_type('WatchedThing', Thing, 'func')
+	wt = WatchedThing()
+
+	def callback(inst, call):
+		def closure(value):
+			assert (checklist[-1] == Bunch(
+				name=call.name, value=value,
+				before=call))
+
+	wt.instance_spectator.callback('func', callback)
+
+	check_answer(checklist, wt, 'func', 1, 2, c=3)
+	check_answer(checklist, wt, 'func', 1, 2, d=3)
+	check_answer(checklist, wt, 'func', 1, 2, 3, 4, 5)
+	check_answer(checklist, wt, 'func', 1, 2, d=3, f=4)
