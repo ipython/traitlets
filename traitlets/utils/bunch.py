@@ -23,3 +23,6 @@ class Bunch(dict):
         names.extend(self.keys())
         return names
 
+    def copy(self):
+        return Bunch(self)
+
