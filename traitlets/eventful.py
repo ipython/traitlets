@@ -160,8 +160,14 @@ class Eventful(TraitType):
 
     def class_init(self, cls, name):
         super(Eventful, self).class_init(cls, name)
-        self.watched_type = watched_type(self.type_name,
-            self.klass, *(e[1] for e in self._active_events))
+        if getattr(self, 'klass', None) is not None:
+            self.watched_type = watched_type(self.type_name,
+                self.klass, *(e[1] for e in self._active_events))
+        else:
+            def dynamic_watched_type(value):
+                new = watched_type(self.type_name, type(value),
+                    *(e[1] for e in self._active_events))
+                return new(value)
 
 
 class EDict(Eventful, Dict):
