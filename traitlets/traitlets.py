@@ -1838,6 +1838,7 @@ class Union(TraitType):
 class Any(TraitType):
     """A trait which allows any value."""
     default_value = None
+    allow_none = True
     info_text = 'any value'
 
 
