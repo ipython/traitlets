@@ -1787,17 +1787,19 @@ class Union(TraitType):
         Union([Float(), Bool(), Int()]) attempts to validate the provided values
         with the validation function of Float, then Bool, and finally Int.
         """
-        self.trait_types = trait_types
+        self.trait_types = list(trait_types)
         self.info_text = " or ".join([tt.info() for tt in self.trait_types])
         super(Union, self).__init__(**kwargs)
 
     def class_init(self, cls, name):
         for trait_type in self.trait_types:
+            # enfore priority of the first given traitytype
             trait_type.class_init(cls, None)
         super(Union, self).class_init(cls, name)
 
     def instance_init(self, obj):
         for trait_type in self.trait_types:
+            # enfore priority of the first given traitytype
             trait_type.instance_init(obj)
         super(Union, self).instance_init(obj)
 
@@ -1819,15 +1821,6 @@ class Union(TraitType):
             return Union(self.trait_types + other.trait_types)
         else:
             return Union(self.trait_types + [other])
-
-    def make_dynamic_default(self):
-        if self.default_value is not Undefined:
-            return self.default_value
-        for trait_type in self.trait_types:
-            if trait_type.default_value is not Undefined:
-                return trait_type.default_value
-            elif hasattr(trait_type, 'make_dynamic_default'):
-                return trait_type.make_dynamic_default()
 
 
 #-----------------------------------------------------------------------------

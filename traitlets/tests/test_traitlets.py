@@ -1488,7 +1488,7 @@ class UnionListTrait(HasTraits):
 
     value = List(Int() | Bool())
 
-class TestUnionListTrait(HasTraits):
+class TestUnionListTrait(TraitTestBase):
 
     obj = UnionListTrait()
 
