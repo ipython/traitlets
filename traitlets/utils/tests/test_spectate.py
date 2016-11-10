@@ -1,5 +1,4 @@
 import inspect
-from unittest import TestCase
 from ..spectate import watched_type, WatchedType, MethodSpectator, Spectator, Bunch
 
 def test_watched_type():
@@ -41,8 +40,8 @@ def test_method_spectator():
 
 
 class Thing(object):
-	def func(self, a, b, c=None, d=None, *e, **f):
-		return self, a, b, c, d, e, f
+	def func(inst, a, b, c=None, d=None, *e, **f):
+		return inst,  a, b, c, d, e, f
 
 def check_answer(checklist, inst, name, a, b, c=None, d=None, *e, **f):
 	args, kwargs = condense(inst, a, b, c, d, *e, **f)

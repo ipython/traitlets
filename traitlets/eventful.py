@@ -1,14 +1,13 @@
 from .utils.bunch import Bunch
 from contextlib import contextmanager
 from .utils.spectate import watched_type
-from traitlets import (TraitType, Dict,
+from .traitlets import (TraitType, Dict,
     List, Undefined, equivalent, Set)
 
 class Beforeback(object):
 
-    def __init__(self, trait, obj, etype, before):
+    def __init__(self, trait, etype, before):
         self.trait = trait
-        self.obj = obj
         self.etype = etype
         self.before = before
 
@@ -16,15 +15,14 @@ class Beforeback(object):
         call = call.copy()
         call.update(
             trait=self.trait,
-            owner=self.obj,
+            owner=inst,
             type=self.etype)
         return self.before(inst, call)
 
 class Afterback(object):
 
-    def __init__(self, trait, obj, etype, after):
+    def __init__(self, trait, etype, after):
         self.trait = trait
-        self.obj = obj
         self.etype = etype
         self.after = after
         self._notify = True
@@ -47,13 +45,14 @@ class Afterback(object):
             event = (result(answer.value) if
                 callable(result) else result)
         else:
-            event = after(inst, answer)
+            origin = self.etype
+            event = self.after(inst, answer)
 
         if event is not None and self._notify:
-            self.obj.notify_change(Bunch(
+            inst.notify_change(Bunch(
                 type=origin, event=event,
                 name=self.trait.name,
-                owner=self.obj))
+                owner=inst))
         return event
 
 class Redirect(object):
@@ -115,12 +114,12 @@ class Eventful(TraitType):
                     self.event(type=name, on=method,
                         before=before, after=after)
 
-    def _register_defined_events(self, obj, value):
+    def _register_defined_events(self, value):
         for e in self._active_events:
             etype, on, before, after = e
             value.instance_spectator.callback(on,
-                before=Beforeback(self, obj, etype, before),
-                after=Afterback(self, obj, etype, after))
+                before=Beforeback(self, etype, before),
+                after=Afterback(self, etype, after))
 
     def _validate(self, obj, value):
         try:
@@ -130,7 +129,7 @@ class Eventful(TraitType):
         value = super(Eventful, self)._validate(obj, value)
         if value is not None:
             value = self.watched_type(value)
-            self._register_defined_events(obj, value)
+            self._register_defined_events(value)
         return value
 
     def redirect_once(self, origin, target, inst, args=(), kwargs={}):
