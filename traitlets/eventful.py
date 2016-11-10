@@ -59,12 +59,11 @@ class Redirect(object):
 
     def __init__(self, inst, origin, target, args, kwargs):
         self.origin = origin
-        spectator = inst.instance_spectator
-        registry = spectator._callback_registry
-        beforebacks, afterbacks = zip(
-            *registry.get(target, []))
+        registry = inst.instance_spectator._callback_registry
+        beforebacks, afterbacks = zip(*registry.get(target, []))
 
         hold = []
+        # trigger beforebacks
         for b in beforebacks:
             if b is not None:
                 call = Bunch(name=target,
@@ -75,16 +74,23 @@ class Redirect(object):
                 bval = None
             hold.append(bval)
 
+        # closure to trigger afterbacks
         def event_trigger(value):
+            out = []
             for afterback, bval in zip(afterbacks, hold):
                 if afterback is not None:
-                    return (afterback.silent_call if
-                        isinstance(afterback, Afterback)
-                        else afterback)(inst, Bunch(
-                        before=bval, name=target, value=value))
+                    if isinstance(afterback, Afterback):
+                        afterback = afterback.silent_call
+                    return out.append(afterback(inst, Bunch(
+                        before=bval, name=target, value=value)))
+                elif callable(bval):
+                    out.append(bval(value))
+            return out
+                    
         self.trigger = event_trigger
 
     def __call__(self, value):
+        # trigger afterbacks
         return self.trigger(value)
 
 
