@@ -393,6 +393,9 @@ class BaseDescriptor(object):
         self.this_class = cls
         self.name = name
 
+    def subclass_init(self, cls):
+        pass
+
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
         HasDescriptors instance.
@@ -415,6 +418,23 @@ class TraitType(BaseDescriptor):
     allow_none = False
     read_only = False
     info_text = 'any value'
+
+    def class_init(self, cls, name):
+        super(TraitType, self).class_init(cls, name)
+        if self.name not in cls._trait_default_generators:
+            if hasattr(self, 'make_dynamic_default'):
+                cls._trait_default_generators[self.name] = (
+                    lambda obj: self.make_dynamic_default())
+            elif self.default_value is not Undefined:
+                cls._trait_default_generators[self.name] = (
+                    lambda obj : self.default_value)
+
+    def subclass_init(self, cls):
+        if '_%s_default' % self.name in cls.__dict__:
+            method = getattr(cls, '_%s_default' % self.name)
+            _deprecated_method(method, cls, '_%s_default' % self.name,
+                "use @default decorator instead.")
+            cls._trait_default_generators[self.name] = method
 
     def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
         """Declare a traitlet.
@@ -480,57 +500,18 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = value
         return value
 
-    def _dynamic_default_callable(self, obj):
-        """Retrieve a callable to calculate the default for this traitlet.
-
-        This looks for:
-
-        * default generators registered with the @default descriptor.
-        * obj._{name}_default() on the class with the traitlet, or a subclass
-          that obj belongs to.
-        * trait.make_dynamic_default, which is defined by Instance
-
-        If neither exist, it returns None
-        """
-        # Traitlets without a name are not on the instance, e.g. in List or Union
-        if self.name:
-
-            # Only look for default handlers in classes derived from self.this_class.
-            mro = type(obj).mro()
-            meth_name = '_%s_default' % self.name
-            for cls in mro[:mro.index(self.this_class) + 1]:
-                if hasattr(cls, '_trait_default_generators'):
-                    default_handler = cls._trait_default_generators.get(self.name)
-                    if default_handler is not None and default_handler.this_class == cls:
-                        return types.MethodType(default_handler.func, obj)
-
-                if meth_name in cls.__dict__:
-                    method = getattr(obj, meth_name)
-                    _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
-                    return method
-
-        return getattr(self, 'make_dynamic_default', None)
-
-    def instance_init(self, obj):
-        # If no dynamic initialiser is present, and the trait implementation or
-        # use provides a static default, transfer that to obj._trait_values.
-        with obj.cross_validation_lock:
-            if (self._dynamic_default_callable(obj) is None) \
-                    and (self.default_value is not Undefined):
-                v = self._validate(obj, self.default_value)
-                if self.name is not None:
-                    obj._trait_values[self.name] = v
-
     def get(self, obj, cls=None):
         try:
             value = obj._trait_values[self.name]
         except KeyError:
             # Check for a dynamic initializer.
-            dynamic_default = self._dynamic_default_callable(obj)
-            if dynamic_default is None:
-                raise TraitError("No default value found for %s trait of %r"
-                                 % (self.name, obj))
-            value = self._validate(obj, dynamic_default())
+            try:
+                dgen = cls._trait_default_generators[self.name]
+            except:
+                raise TraitError("No default value found for "
+                    "the '%s' trait named '%s' of %r" % (
+                    type(self).__name__, self.name, obj))
+            value = self._validate(obj, dgen(obj))
             obj._trait_values[self.name] = value
             return value
         except Exception:
@@ -748,6 +729,10 @@ class MetaHasDescriptors(type):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
 
+        for k, v in getmembers(cls):
+            if isinstance(v, BaseDescriptor):
+                v.subclass_init(cls)
+
 
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
@@ -755,6 +740,13 @@ class MetaHasTraits(MetaHasDescriptors):
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
         super(MetaHasTraits, cls).setup_class(classdict)
+        new = {}
+        for c in reversed(cls.mro()):
+            if hasattr(c, "_trait_default_generators"):
+                new.update(c._trait_default_generators)
+        cls._trait_default_generators = new
+
+
 
 
 def observe(*names, **kwargs):
@@ -1119,16 +1111,10 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 cache = {}
                 raise e
             finally:
-                # Reset the notify_change to original value, enable cross-validation
-                # and fire resulting change notifications.
-                self.notify_change = notify_change
                 self._cross_validation_lock = False
+                # Restore method retrieval from class
+                del self.notify_change
 
-                if isinstance(notify_change, types.MethodType):
-                    # Presence of the notify_change method
-                    # on __dict__ can cause memory leaks
-                    # and prevents pickleability
-                    self.__dict__.pop('notify_change')
                 # trigger delayed notifications
                 for changes in cache.values():
                     for change in changes:
@@ -1381,7 +1367,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if type(meta_eval) is not types.FunctionType:
+                if not callable(meta_eval):
                     meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
@@ -1403,6 +1389,28 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def has_trait(self, name):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
+
+    def trait_defaults(self, *names, **metadata):
+        """Return a trait's default value or a dictionary of them
+
+        Notes
+        -----
+        Dynamically generated default values may
+        depend on the current state of the object."""
+        if len(names) == 1 and len(metadata) == 0:
+            return self._trait_default_generators[names[0]](self)
+
+        for n in names:
+            if not has_trait(self, n):
+                raise TraitError("'%s' is not a trait of '%s' "
+                    "instances" % (n, type(self).__name__))
+        trait_names = self.trait_names(**metadata)
+        trait_names.extend(names)
+
+        defaults = {}
+        for n in trait_names:
+            defaults[n] = self._trait_default_generators[n](self)
+        return defaults
 
     def trait_names(self, **metadata):
         """Get a list of all the names of this class' traits."""
@@ -1431,7 +1439,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         result = {}
         for name, trait in traits.items():
             for meta_name, meta_eval in metadata.items():
-                if type(meta_eval) is not types.FunctionType:
+                if not callable(meta_eval):
                     meta_eval = _SimpleTest(meta_eval)
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
@@ -1830,6 +1838,7 @@ class Union(TraitType):
 class Any(TraitType):
     """A trait which allows any value."""
     default_value = None
+    allow_none = True
     info_text = 'any value'
 
 
@@ -2472,23 +2481,25 @@ class Dict(Instance):
 
     def __init__(self, trait=None, key_trait=None, traits=None, default_value=Undefined,
                  **kwargs):
-        """Create a dict trait type from a dict.
+        """Create a dict trait type from a Python dict.
 
         The default value is created by doing ``dict(default_value)``,
         which creates a copy of the ``default_value``.
 
+        Parameters
+        ----------
+
         trait : TraitType [ optional ]
-            The type for restricting the values of the container. If
-            unspecified, types are not checked.
+            The specified trait type to check and use to restrict contents of
+            the Container. If unspecified, trait types are not checked.
 
         key_trait : TraitType [ optional ]
             The type for restricting the keys of the container. If
-            unspecified, types are not checked.
+            unspecified, the types of the keys are not checked.
 
-        traits : Dictionary of trait types [optional]
-            Override `trait` for certain keys of the container.
-            Additionally, when `traits` is given, the keys of `traits` are
-            required to be present in the container.
+        traits : Dictionary of trait types [ optional ]
+            A Python dictionary containing the types that are valid for
+            restricting the content of the Dict Container for certain keys.
 
         default_value : SequenceType [ optional ]
             The default value for the Dict.  Must be dict, tuple, or None, and
@@ -2712,3 +2723,19 @@ class UseEnum(TraitType):
         if self.allow_none:
             return result + " or None"
         return result
+
+class Callable(TraitType):
+    """A trait which is callable.
+
+    Notes
+    -----
+    Classes are callable, as are instances
+    with a __call__() method."""
+
+    info_text = 'a callable'
+
+    def validate(self, obj, value):
+        if six.callable(value):
+            return value
+        else:
+            self.error(obj, value)

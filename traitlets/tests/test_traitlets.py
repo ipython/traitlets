@@ -95,7 +95,7 @@ class TestTraitType(TestCase):
         # Defaults are validated when the HasTraits is instantiated
         class B(HasTraits):
             tt = MyIntTT('bad default')
-        self.assertRaises(TraitError, B)
+        self.assertRaises(TraitError, getattr, B(), 'tt')
 
     def test_info(self):
         class A(HasTraits):
@@ -896,7 +896,7 @@ class TestType(TestCase):
         class C(HasTraits):
             klass = Type(None, B)
 
-        self.assertRaises(TraitError, C)
+        self.assertRaises(TraitError, getattr, C(), 'klass')
 
     def test_str_klass(self):
 

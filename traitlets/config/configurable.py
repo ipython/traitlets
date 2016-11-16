@@ -10,7 +10,15 @@ from copy import deepcopy
 import warnings
 
 from .loader import Config, LazyConfigValue, _is_section_key
-from traitlets.traitlets import HasTraits, Instance, observe, observe_compat, default
+from traitlets.traitlets import (
+    HasTraits,
+    Instance,
+    Container,
+    Dict,
+    observe,
+    observe_compat,
+    default,
+)
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 
 
@@ -112,7 +120,7 @@ class Configurable(HasTraits):
         If I am Bar and my parent is Foo, and their parent is Tim,
         this will return merge following config sections, in this order::
 
-            [Bar, Foo.bar, Tim.Foo.Bar]
+            [Bar, Foo.Bar, Tim.Foo.Bar]
 
         With the last item being the highest priority.
         """
@@ -210,7 +218,8 @@ class Configurable(HasTraits):
         """
         assert inst is None or isinstance(inst, cls)
         final_help = []
-        final_help.append(u'%s options' % cls.__name__)
+        base_classes = ','.join(p.__name__ for p in cls.__bases__)
+        final_help.append(u'%s(%s) options' % (cls.__name__, base_classes))
         final_help.append(len(final_help[0])*u'-')
         for k, v in sorted(cls.class_traits(config=True).items()):
             help = cls.class_get_trait_help(v, inst)
@@ -226,7 +235,20 @@ class Configurable(HasTraits):
         """
         assert inst is None or isinstance(inst, cls)
         lines = []
-        header = "--%s.%s=<%s>" % (cls.__name__, trait.name, trait.__class__.__name__)
+        header = "--%s.%s" % (cls.__name__, trait.name)
+        if isinstance(trait, (Container, Dict)):
+            multiplicity = trait.metadata.get('multiplicity', 'append')
+            if isinstance(trait, Dict):
+                sample_value = '<key-1>=<value-1>'
+            else:
+                sample_value = '<%s-item-1>' % trait.__class__.__name__.lower()
+            if multiplicity == 'append':
+                header = "%s=%s..." % (header, sample_value)
+            else:
+                header = "%s %s..." % (header, sample_value)
+        else:
+            header = '%s=<%s>' % (header, trait.__class__.__name__)
+        #header = "--%s.%s=<%s>" % (cls.__name__, trait.name, trait.__class__.__name__)
         lines.append(header)
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))

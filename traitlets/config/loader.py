@@ -6,7 +6,7 @@
 
 import argparse
 import copy
-import logging
+import functools as fnt
 import os
 import re
 import sys
@@ -17,7 +17,7 @@ from ipython_genutils.path import filefind
 from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
 from six import text_type
-from traitlets.traitlets import HasTraits, List, Any
+from traitlets.traitlets import (HasTraits, Container, List, Dict, Any)
 
 #-----------------------------------------------------------------------------
 # Exceptions
@@ -62,36 +62,36 @@ class ArgumentParser(argparse.ArgumentParser):
 
 class LazyConfigValue(HasTraits):
     """Proxy object for exposing methods on configurable containers
-    
+
     Exposes:
-    
+
     - append, extend, insert on lists
     - update on dicts
     - update, add on sets
     """
-    
+
     _value = None
-    
+
     # list methods
     _extend = List()
     _prepend = List()
-    
+
     def append(self, obj):
         self._extend.append(obj)
-    
+
     def extend(self, other):
         self._extend.extend(other)
-    
+
     def prepend(self, other):
         """like list.extend, but for the front"""
         self._prepend[:0] = other
-    
+
     _inserts = List()
     def insert(self, index, other):
         if not isinstance(index, int):
             raise TypeError("An integer is required")
         self._inserts.append((index, other))
-    
+
     # dict methods
     # update is used for both dict and set
     _update = Any()
@@ -102,14 +102,14 @@ class LazyConfigValue(HasTraits):
             else:
                 self._update = set()
         self._update.update(other)
-    
+
     # set methods
     def add(self, obj):
         self.update({obj})
-    
+
     def get_value(self, initial):
         """construct the value from the initial one
-        
+
         after applying any insert / extend / update changes
         """
         if self._value is not None:
@@ -120,7 +120,7 @@ class LazyConfigValue(HasTraits):
                 value.insert(idx, obj)
             value[:0] = self._prepend
             value.extend(self._extend)
-        
+
         elif isinstance(value, dict):
             if self._update:
                 value.update(self._update)
@@ -129,10 +129,10 @@ class LazyConfigValue(HasTraits):
                 value.update(self._update)
         self._value = value
         return value
-    
+
     def to_dict(self):
         """return JSONable dict form of my data
-        
+
         Currently update as dict or set, extend, prepend as lists, and inserts as list of tuples.
         """
         d = {}
@@ -145,6 +145,12 @@ class LazyConfigValue(HasTraits):
         elif self._inserts:
             d['inserts'] = self._inserts
         return d
+
+    def __repr__(self):
+        if self._value is not None:
+            return "<%s value=%r>" % (self.__class__.__name__, self._value)
+        else:
+            return "<%s %r>" % (self.__class__.__name__, self.to_dict())
 
 
 def _is_section_key(key):
@@ -161,10 +167,10 @@ class Config(dict):
     def __init__(self, *args, **kwds):
         dict.__init__(self, *args, **kwds)
         self._ensure_subconfig()
-    
+
     def _ensure_subconfig(self):
         """ensure that sub-dicts that should be Config objects are
-        
+
         casts dicts that are under section keys to Config objects,
         which is necessary for constructing Config objects from dict literals.
         """
@@ -174,11 +180,11 @@ class Config(dict):
                     and isinstance(obj, dict) \
                     and not isinstance(obj, Config):
                 setattr(self, key, Config(obj))
-    
+
     def _merge(self, other):
         """deprecated alias, use Config.merge()"""
         self.merge(other)
-    
+
     def merge(self, other):
         """merge another config object into this one"""
         to_update = {}
@@ -194,13 +200,13 @@ class Config(dict):
                     to_update[k] = v
 
         self.update(to_update)
-    
+
     def collisions(self, other):
         """Check for collisions between two config objects.
-        
+
         Returns a dict of the form {"Class": {"trait": "collision message"}}`,
         indicating which values have been ignored.
-        
+
         An empty dict indicates no collisions.
         """
         collisions = {}
@@ -214,7 +220,7 @@ class Config(dict):
                     collisions.setdefault(section, {})
                     collisions[section][key] = "%r ignored, using %r" % (mine[key], theirs[key])
         return collisions
-    
+
     def __contains__(self, key):
         # allow nested contains of the form `"Section.key" in config`
         if '.' in key:
@@ -222,15 +228,15 @@ class Config(dict):
             if first not in self:
                 return False
             return remainder in self[first]
-        
+
         return super(Config, self).__contains__(key)
-    
+
     # .has_key is deprecated for dictionaries.
     has_key = __contains__
-    
+
     def _has_section(self, key):
         return _is_section_key(key) and key in self
-    
+
     def copy(self):
         return type(self)(dict.copy(self))
 
@@ -248,7 +254,7 @@ class Config(dict):
                 value = copy.copy(value)
             new_config[key] = value
         return new_config
-    
+
     def __getitem__(self, key):
         try:
             return dict.__getitem__(self, key)
@@ -456,12 +462,12 @@ class PyFileConfigLoader(FileConfigLoader):
             raise ConfigFileNotFound(str(e))
         self._read_file_as_dict()
         return self.config
-    
+
     def load_subconfig(self, fname, path=None):
         """Injected into config file namespace as load_subconfig"""
         if path is None:
             path = self.path
-        
+
         loader = self.__class__(fname, path)
         try:
             sub_config = loader.load_config()
@@ -471,13 +477,13 @@ class PyFileConfigLoader(FileConfigLoader):
             pass
         else:
             self.config.merge(sub_config)
-    
+
     def _read_file_as_dict(self):
         """Load the config file into self.config, with recursive loading."""
         def get_config():
             """Unnecessary now, but a deprecation warning is more trouble than it's worth."""
             return self.config
-        
+
         namespace = dict(
             c=self.config,
             load_subconfig=self.load_subconfig,
@@ -496,14 +502,8 @@ class CommandLineConfigLoader(ConfigLoader):
     here.
     """
 
-    def _exec_config_str(self, lhs, rhs):
-        """execute self.config.<lhs> = <rhs>
-        
-        * expands ~ with expanduser
-        * tries to assign with literal_eval, otherwise assigns with just the string,
-          allowing `--C.a=foobar` and `--C.a="foobar"` to be equivalent.  *Not*
-          equivalent are `--C.a=4` and `--C.a='4'`.
-        """
+    def _parse_config_value(self, rhs):
+        """Python-evaluates any cmd-line argument values."""
         rhs = os.path.expanduser(rhs)
         try:
             # Try to see if regular Python syntax will work. This
@@ -513,8 +513,25 @@ class CommandLineConfigLoader(ConfigLoader):
         except (NameError, SyntaxError, ValueError):
             # This case happens if the rhs is a string.
             value = rhs
+        return value
 
-        exec(u'self.config.%s = value' % lhs)
+    def _exec_config_str(self, lhs, rhs, trait=None):
+        """execute self.config.<lhs> = <rhs>
+
+        * expands ~ with expanduser
+        * tries to assign with literal_eval, otherwise assigns with just the string,
+          allowing `--C.a=foobar` and `--C.a="foobar"` to be equivalent.  *Not*
+          equivalent are `--C.a=4` and `--C.a='4'`.
+        """
+        if isinstance(trait, Dict):
+            value = {r[0]: self._parse_config_value(r[1])
+                                for r in rhs}
+        elif isinstance(rhs, (list, tuple)):
+            value = [self._parse_config_value(r) for r in rhs]
+        else:
+            value = self._parse_config_value(rhs)
+
+        exec(u'self.config.%s = value' % lhs, None, locals())
 
     def _load_flag(self, cfg):
         """update self.config from a flag, which can be a dict or Config"""
@@ -688,11 +705,16 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
 class ArgParseConfigLoader(CommandLineConfigLoader):
     """A loader that uses the argparse module to load from the command line."""
 
-    def __init__(self, argv=None, aliases=None, flags=None, log=None,  *parser_args, **parser_kw):
+    def __init__(self, argv=None, aliases=None, flags=None, log=None, classes=None,
+                 *parser_args, **parser_kw):
         """Create a config loader for use with argparse.
 
         Parameters
         ----------
+
+        classes : optional, list
+          The classes to scan for *container* config-traits and decide
+          for their "multiplicity" when adding them as *argparse* arguments.
 
         argv : optional, list
           If given, used to read command-line arguments from, otherwise
@@ -718,6 +740,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         self.argv = argv
         self.aliases = aliases or {}
         self.flags = flags or {}
+        self.classes = classes or ()
 
         self.parser_args = parser_args
         self.version = parser_kw.pop("version", None)
@@ -725,7 +748,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         kwargs.update(parser_kw)
         self.parser_kw = kwargs
 
-    def load_config(self, argv=None, aliases=None, flags=None):
+    def load_config(self, argv=None, aliases=None, flags=None, classes=None):
         """Parse command line arguments and return as a Config object.
 
         Parameters
@@ -738,11 +761,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         self.clear()
         if argv is None:
             argv = self.argv
-        if aliases is None:
-            aliases = self.aliases
-        if flags is None:
-            flags = self.flags
-        self._create_parser(aliases, flags)
+        self._create_parser(aliases, flags, classes)
         self._parse_args(argv)
         self._convert_to_config()
         return self.config
@@ -753,11 +772,16 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         else:
             return []
 
-    def _create_parser(self, aliases=None, flags=None):
+    def _create_parser(self, aliases=None, flags=None, classes=None):
         self.parser = ArgumentParser(*self.parser_args, **self.parser_kw)
-        self._add_arguments(aliases, flags)
+        self._add_arguments(aliases, flags, classes)
 
-    def _add_arguments(self, aliases=None, flags=None):
+    def _parse_config_traits(self):
+        for cls in self.classes:
+            for trait, traitname in cls.class_traits(config=True).items():
+                yield ()
+
+    def _add_arguments(self, aliases=None, flags=None, classes=None):
         raise NotImplementedError("subclasses must implement _add_arguments")
 
     def _parse_args(self, args):
@@ -772,39 +796,93 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         for k, v in vars(self.parsed_data).items():
             exec("self.config.%s = v"%k, locals(), globals())
 
+## For Dict traits, describes the cmd-line option as `key=value`
+_kv_opt_pattern = re.compile(r'^([^=]+)=(.*)$')
+
+def _kv_opt(traitname, opt_value):
+    """
+    Used as `type` when adding args into :meth:`ArgumentParser.add_argument()`
+    corresponding to config Dict-traits.
+    """
+    m = _kv_opt_pattern.match(opt_value)
+    if not m:
+        raise ArgumentError("Expecting <key>=<value> for Dict-trait '%s', got %r!"
+                            % (traitname, opt_value))
+    return m.groups()
+
+
 class KVArgParseConfigLoader(ArgParseConfigLoader):
     """A config loader that loads aliases and flags with argparse,
     but will use KVLoader for the rest.  This allows better parsing
     of common args, such as `ipython -c 'print 5'`, but still gets
-    arbitrary config with `ipython --InteractiveShell.use_readline=False`"""
+    arbitrary config with `ipython --InteractiveShell.autoindent=False`"""
 
-    def _add_arguments(self, aliases=None, flags=None):
+    def _add_arguments(self, aliases=None, flags=None, classes=None):
         self.alias_flags = {}
         # print aliases, flags
         if aliases is None:
             aliases = self.aliases
         if flags is None:
             flags = self.flags
+        if classes is None:
+            classes = self.classes
         paa = self.parser.add_argument
-        for key,value in aliases.items():
-            if key in flags:
-                # flags
-                nargs = '?'
-            else:
-                nargs = None
-            if len(key) is 1:
-                paa('-'+key, '--'+key, type=text_type, dest=value, nargs=nargs)
-            else:
-                paa('--'+key, type=text_type, dest=value, nargs=nargs)
-        for key, (value, help) in flags.items():
-            if key in self.aliases:
+
+        ## An index of all container traits collected::
+        #
+        #     { <traitname>: (<trait>, <argparse-kwds>) }
+        #
+        #  Used to add the correct type into the `config` tree.
+        #  Used also for aliases, not to re-collect them.
+        self.argparse_traits = argparse_traits = {}
+        for cls in classes:
+            for traitname, trait in cls.class_traits(config=True).items():
+                argname = '%s.%s' % (cls.__name__, traitname)
+                argparse_kwds = {'type': text_type}
+                if isinstance(trait, (Container, Dict)):
+                    multiplicity = trait.metadata.get('multiplicity', 'append')
+                    if multiplicity == 'append':
+                        argparse_kwds['action'] = multiplicity
+                    else:
+                        argparse_kwds['nargs'] = multiplicity
+                    if isinstance(trait, Dict):
+                        argparse_kwds['type'] = fnt.partial(_kv_opt, traitname)
+                argparse_traits[argname] = (trait, argparse_kwds)
+                paa('--'+argname, **argparse_kwds)
+
+        for keys, traitname in aliases.items():
+            if not isinstance(keys, tuple):
+                keys = (keys, )
+            for key in keys:
+                argparse_kwds = {'type': text_type, 'dest': traitname}
+                ## Is alias for a sequence-trait?
                 #
-                self.alias_flags[self.aliases[key]] = value
-                continue
-            if len(key) is 1:
-                paa('-'+key, '--'+key, action='append_const', dest='_flags', const=value)
-            else:
-                paa('--'+key, action='append_const', dest='_flags', const=value)
+                if traitname in argparse_traits:
+                    argparse_kwds.update(argparse_traits[traitname][1])
+                    if 'action' in argparse_kwds:
+                        ## A flag+alias should have `nargs='?'` multiplicity,
+                        #  but base config-property had 'append' multiplicity!
+                        #
+                        if key in flags:
+                            raise ArgumentError(
+                                "The alias `%s` for the 'append' sequence "
+                                "config-trait `%s` cannot be also a flag!'"
+                                % (key, traitname))
+                else:
+                    if key in flags:
+                        argparse_kwds['nargs'] = '?'
+                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                paa(*keys, **argparse_kwds)
+
+        for keys, (value, _) in flags.items():
+            if not isinstance(keys, tuple):
+                keys = (keys, )
+            for key in keys:
+                if key in self.aliases:
+                    self.alias_flags[self.aliases[key]] = value
+                    continue
+                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                paa(*keys, action='append_const', dest='_flags', const=value)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
@@ -820,8 +898,11 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 # it was a flag that shares the name of an alias
                 subcs.append(self.alias_flags[k])
             else:
+                trait = self.argparse_traits.get(k)
+                if trait:
+                    trait = trait[0]
                 # eval the KV assignment
-                self._exec_config_str(k, v)
+                self._exec_config_str(k, v, trait=trait)
 
         for subc in subcs:
             self._load_flag(subc)

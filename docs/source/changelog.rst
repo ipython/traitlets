@@ -4,46 +4,54 @@ Changes in Traitlets
 4.3
 ---
 
+4.3.1
+*****
+
+`4.3.1 on GitHub`_
+
+- Compatibility fix for Python 3.6a1
+- Fix bug in Application.classes getting extra entries when multiple Applications are instantiated in the same process.
+
 4.3.0
 *****
 
-`4.3.0 on GitHub <https://github.com/ipython/traitlets/milestones/4.3>`__
+`4.3.0 on GitHub`_
 
-- Improvements to generated config file output.
+- Improve the generated config file output.
 - Allow TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR env to override :attr:`Application.raise_config_file_errors`,
   so that config file errors can result in exiting immediately.
-- Avoid using root logger. If no application logger is registers,
-  the ``'traitlets'`` logger will be used instead of root.
+- Avoid using root logger. If no application logger is registered,
+  the ``'traitlets'`` logger will be used instead of the root logger.
 - Change/Validation arguments are now Bunch objects, allowing attribute-access,
   in addition to dictionary access.
 - Reduce number of common deprecation messages in certain cases.
 - Ensure command-line options always have higher priority than config files.
 - Add bounds on numeric traits.
-- Improved various error messages.
+- Improves various error messages.
 
 
 4.2
 ---
 
-4.2.2
-*****
+4.2.2 - 2016-07-01
+******************
 
-`4.2.2 on GitHub <https://github.com/ipython/traitlets/milestones/4.2.2>`__
+`4.2.2 on GitHub`_
 
 Partially revert a change in 4.1 that prevented IPython's command-line options from taking priority over config files.
 
 
-4.2.1
-*****
+4.2.1 - 2016-03-14
+******************
 
-`4.2.1 on GitHub <https://github.com/ipython/traitlets/milestones/4.2.1>`__
+`4.2.1 on GitHub`_
 
 Demotes warning about unused arguments in ``HasTraits.__init__`` introduced in 4.2.0 to DeprecationWarning.
 
-4.2.0
-*****
+4.2.0 - 2016-03-14
+******************
 
-`4.2 on GitHub <https://github.com/ipython/traitlets/milestones/4.2>`__
+`4.2 on GitHub`_
 
 - :class:`JSONFileConfigLoader` can be used as a context manager for updating configuration.
 - If a value in config does not map onto a configurable trait,
@@ -56,10 +64,10 @@ Demotes warning about unused arguments in ``HasTraits.__init__`` introduced in 4
   instead of the default of logging the failures.
 
 
-4.1
----
+4.1 - 2016-01-15
+----------------
 
-`4.1 on GitHub <https://github.com/ipython/traitlets/milestones/4.1>`__
+`4.1 on GitHub`_
 
 Traitlets 4.1 introduces a totally new decorator-based API for configuring traitlets.
 Highlights:
@@ -76,9 +84,19 @@ Other changes:
 - Warn on unrecognized traits that aren't configurable, to avoid silently ignoring mistyped config.
 
 
-4.0
----
+4.0 - 2015-06-19
+----------------
 
-`4.0 on GitHub <https://github.com/ipython/traitlets/milestones/4.0>`__
+`4.0 on GitHub`_
 
 First release of traitlets as a standalone package.
+
+
+
+.. _`4.0 on GitHub`: https://github.com/ipython/traitlets/milestones/4.0
+.. _`4.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.1
+.. _`4.2 on GitHub`: https://github.com/ipython/traitlets/milestones/4.2
+.. _`4.2.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.2.1
+.. _`4.2.2 on GitHub`: https://github.com/ipython/traitlets/milestones/4.2.2
+.. _`4.3.0 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3
+.. _`4.3.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.1

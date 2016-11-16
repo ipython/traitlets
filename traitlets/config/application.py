@@ -272,8 +272,13 @@ class Application(SingletonConfigurable):
         SingletonConfigurable.__init__(self, **kwargs)
         # Ensure my class is in self.classes, so my attributes appear in command line
         # options and config files.
-        if self.__class__ not in self.classes:
-            self.classes.insert(0, self.__class__)
+        cls = self.__class__
+        if cls not in self.classes:
+            if self.classes is cls.classes:
+                # class attr, assign instead of insert
+                cls.classes = [cls] + self.classes
+            else:
+                self.classes.insert(0, self.__class__)
 
     @observe('config')
     @observe_compat
@@ -312,16 +317,28 @@ class Application(SingletonConfigurable):
                 classdict[c.__name__] = c
 
         for alias, longname in self.aliases.items():
-            classname, traitname = longname.split('.',1)
-            cls = classdict[classname]
+            try:
+                classname, traitname = longname.split('.',1)
+                cls = classdict[classname]
 
-            trait = cls.class_traits(config=True)[traitname]
-            help = cls.class_get_trait_help(trait).splitlines()
-            # reformat first line
-            help[0] = help[0].replace(longname, alias) + ' (%s)'%longname
-            if len(alias) == 1:
-                help[0] = help[0].replace('--%s='%alias, '-%s '%alias)
-            lines.extend(help)
+                trait = cls.class_traits(config=True)[traitname]
+                fhelp = cls.class_get_trait_help(trait).splitlines()
+
+                if not isinstance(alias, tuple):
+                    alias = (alias, )
+                alias = sorted(alias, key=len)
+                alias = ', '.join(('--%s' if len(m) > 1 else '-%s') % m
+                                  for m in alias)
+
+                # reformat first line
+                fhelp[0] = fhelp[0].replace('--'+longname, alias)
+                lines.extend(fhelp)
+                lines.append(indent("Equivalent to: [--%s]" % longname))
+            except Exception as ex:
+                self.log.error('Failed collecting help-message for alias %r, due to: %s',
+                               alias, ex)
+                raise
+
         # lines.append('')
         print(os.linesep.join(lines))
 
@@ -331,10 +348,25 @@ class Application(SingletonConfigurable):
             return
 
         lines = []
-        for m, (cfg,help) in self.flags.items():
-            prefix = '--' if len(m) > 1 else '-'
-            lines.append(prefix+m)
-            lines.append(indent(dedent(help.strip())))
+        for flags, (cfg, fhelp) in self.flags.items():
+            try:
+                if not isinstance(flags, tuple):
+                    flags = (flags, )
+                flags = sorted(flags, key=len)
+                flags = ', '.join(('--%s' if len(m) > 1 else '-%s') % m
+                              for m in flags)
+                lines.append(flags)
+                lines.append(indent(dedent(fhelp.strip())))
+                cfg_list = ' '.join('--%s.%s=%s' %(clname, prop, val)
+                            for clname, props_dict
+                            in cfg.items() for prop, val in props_dict.items())
+                cfg_txt = "Equivalent to: [%s]" % cfg_list
+                lines.append(indent(dedent(cfg_txt)))
+            except Exception as ex:
+                self.log.error('Failed collecting help-message for flag %r, due to: %s',
+                               flags, ex)
+                raise
+
         # lines.append('')
         print(os.linesep.join(lines))
 
@@ -381,7 +413,7 @@ class Application(SingletonConfigurable):
         self.print_options()
 
         if classes:
-            help_classes = self.classes
+            help_classes = self._classes_with_config_traits()
             if help_classes:
                 print("Class parameters")
                 print("----------------")
@@ -475,7 +507,10 @@ class Application(SingletonConfigurable):
             if len(children) == 1:
                 # exactly one descendent, promote alias
                 cls = children[0]
-            aliases[alias] = '.'.join([cls,trait])
+            if not isinstance(aliases, tuple):
+                alias = (alias, )
+            for al in alias:
+                aliases[al] = '.'.join([cls,trait])
 
         # flatten flags, which are of the form:
         # { 'key' : ({'Cls' : {'trait' : value}}, 'help')}
@@ -488,7 +523,10 @@ class Application(SingletonConfigurable):
                 if len(children) == 1:
                     cls = children[0]
                 newflag[cls] = subdict
-            flags[key] = (newflag, help)
+            if not isinstance(key, tuple):
+                key = (key, )
+            for k in key:
+                flags[k] = (newflag, help)
         return flags, aliases
 
     @catch_config_error
@@ -527,8 +565,10 @@ class Application(SingletonConfigurable):
 
         # flatten flags&aliases, so cl-args get appropriate priority:
         flags,aliases = self.flatten_flags()
+        classes = tuple(self._classes_with_config_traits())
         loader = KVArgParseConfigLoader(argv=argv, aliases=aliases,
-                                        flags=flags, log=self.log)
+                                        flags=flags, log=self.log,
+                                        classes=classes)
         self.cli_config = deepcopy(loader.load_config())
         self.update_config(self.cli_config)
         # store unparsed args in extra_args
@@ -547,7 +587,7 @@ class Application(SingletonConfigurable):
             # path list is in descending priority order, so load files backwards:
             pyloader = cls.python_config_loader_class(basefilename+'.py', path=path, log=log)
             if log:
-                log.debug("Looking for %s in %s", basefilename, path)
+                log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
             jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
             config = None
             loaded = []
@@ -581,7 +621,7 @@ class Application(SingletonConfigurable):
                     yield config
                     loaded.append(config)
                     filenames.append(loader.full_filename)
-            
+
 
 
     @catch_config_error
@@ -598,7 +638,7 @@ class Application(SingletonConfigurable):
         self.update_config(new_config)
 
 
-    def _classes_in_config_sample(self):
+    def _classes_with_config_traits(self):
         """
         Yields only classes with own traits, and their subclasses.
 
@@ -634,7 +674,7 @@ class Application(SingletonConfigurable):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self._classes_in_config_sample():
+        for cls in self._classes_with_config_traits():
             lines.append(cls.class_config_section())
         return '\n'.join(lines)
 

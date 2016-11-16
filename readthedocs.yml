@@ -2,8 +2,7 @@ conda:
     file: docs/environment.yml
 python:
     version: 3
-    setup_py_install: true
-    pip install: true
+    pip_install: true
 formats:
     - epub
     - pdf

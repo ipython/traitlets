@@ -1,4 +1,4 @@
-ipython-genutils
+ipython_genutils
 Sphinx
-sphinx-rtd-theme
+sphinx_rtd_theme
 -e ../.
