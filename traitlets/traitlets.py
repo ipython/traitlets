@@ -2519,7 +2519,8 @@ class Dict(Instance):
                 warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                      " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
-            self._trait = trait() if isinstance(trait, type) else trait
+                trait = trait()
+            self._trait = trait
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
@@ -2528,7 +2529,8 @@ class Dict(Instance):
                 warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                      " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
-            self._key_trait = key_trait() if isinstance(key_trait, type) else key_trait
+                key_trait = key_trait()
+            self._key_trait = key_trait
         elif key_trait is not None:
             raise TypeError("`key_trait` must be a Trait or None, got %s" % repr_type(key_trait))
 
@@ -2552,7 +2554,7 @@ class Dict(Instance):
         use_dict = bool(self._traits)
         key_trait = self._key_trait
         default_to = (self._trait or Any())
-        if not use_dict and isinstance(default_to, Any):
+        if not use_dict and isinstance(default_to, Any) and not key_trait:
             return value
 
         validated = {}
