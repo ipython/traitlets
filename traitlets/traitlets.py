@@ -2562,31 +2562,27 @@ class Dict(Instance):
         return value
 
     def validate_elements(self, obj, value):
-        use_dict = bool(self._traits)
+        per_key_override = self._traits or {}
         key_trait = self._key_trait
-        default_to = (self._trait or Any())
-        if not use_dict and isinstance(default_to, Any) and not key_trait:
+        value_trait = self._trait
+        if not (key_trait or value_trait or per_key_override):
             return value
 
         validated = {}
         for key in value:
+            v = value[key]
             if key_trait:
                 try:
                     key = key_trait._validate(obj, key)
                 except TraitError:
                     self.element_error(obj, key, key_trait, 'Keys')
-            if use_dict and key in self._traits:
-                validate_with = self._traits[key]
-            else:
-                validate_with = default_to
-            try:
-                v = value[key]
-                if not isinstance(validate_with, Any):
-                    v = validate_with._validate(obj, v)
-            except TraitError:
-                self.element_error(obj, v, validate_with, 'Values')
-            else:
-                validated[key] = v
+            active_value_trait = per_key_override.get(key, value_trait)
+            if active_value_trait:
+                try:
+                    v = active_value_trait._validate(obj, v)
+                except TraitError:
+                    self.element_error(obj, v, active_value_trait, 'Values')
+            validated[key] = v
 
         return self.klass(validated)
 
