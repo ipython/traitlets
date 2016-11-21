@@ -212,6 +212,14 @@ class TestTraitType(TestCase):
         foo = Foo()
         self.assertEqual(foo.bar, 1)
 
+    def test_union_validation_priority(self):
+        class Foo(HasTraits):
+            bar = Union([CInt(), Unicode()])
+        foo = Foo()
+        foo.bar = '1'
+        # validation in order of the TraitTypes given
+        self.assertEqual(foo.bar, 1)
+
     def test_union_trait_default_value(self):
         class Foo(HasTraits):
             bar = Union([Dict(), Int()])
