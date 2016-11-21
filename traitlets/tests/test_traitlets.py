@@ -212,6 +212,11 @@ class TestTraitType(TestCase):
         foo = Foo()
         self.assertEqual(foo.bar, 1)
 
+    def test_union_trait_default_value(self):
+        class Foo(HasTraits):
+            bar = Union([Dict(), Int()])
+        self.assertEqual(Foo().bar, {})
+
     def test_deprecated_metadata_access(self):
         class MyIntTT(TraitType):
             metadata = {'a': 1, 'b': 2}
@@ -1488,7 +1493,7 @@ class UnionListTrait(HasTraits):
 
     value = List(Int() | Bool())
 
-class TestUnionListTrait(HasTraits):
+class TestUnionListTrait(TraitTestBase):
 
     obj = UnionListTrait()
 
