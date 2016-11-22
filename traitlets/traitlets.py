@@ -2481,7 +2481,19 @@ class Tuple(Container):
 
 
 class Dict(Instance):
-    """An instance of a Python dict."""
+    """An instance of a Python dict.
+
+    One or more traits can be passed to the constructor
+    to validate the keys and/or values of the dict.
+    If you need more detailed validation,
+    you may use a custom validator method.
+
+    .. versionchanged:: 5.0
+        Added key_trait for validating dict keys.
+
+    .. versionchanged:: 5.0
+        Deprecated ambiguous ``trait``, ``traits`` args in favor of ``value_trait``, ``per_key_traits``.
+    """
     _value_trait = None
     _key_trait = None
 
@@ -2496,36 +2508,51 @@ class Dict(Instance):
         ----------
 
         value_trait : TraitType [ optional ]
-            The specified trait type to check and use to restrict contents of
-            the Container. If unspecified, trait types are not checked.
+            The specified trait type to check and use to restrict the values of
+            the dict. If unspecified, values are not checked.
 
-        per_key_traits : Dictionary of trait types [ optional ]
+        per_key_traits : Dictionary of {keys:trait types} [ optional, keyword-only ]
             A Python dictionary containing the types that are valid for
-            restricting the content of the Dict Container for certain keys.
+            restricting the values of the dict on a per-key basis.
+            Each value in this dict should be a Trait for validating
 
-        key_trait : TraitType [ optional ]
-            The type for restricting the keys of the container. If
+        key_trait : TraitType [ optional, keyword-only ]
+            The type for restricting the keys of the dict. If
             unspecified, the types of the keys are not checked.
 
-        default_value : SequenceType [ optional ]
+        default_value : SequenceType [ optional, keyword-only ]
             The default value for the Dict.  Must be dict, tuple, or None, and
-            will be cast to a dict if not None. If `trait` is specified, the
-            `default_value` must conform to the constraints it specifies.
+            will be cast to a dict if not None. If any key or value traits are specified,
+            the `default_value` must conform to the constraints.
+
+        Examples
+        --------
+
+        >>> d = Dict(Unicode())
+        a dict whose values must be text
+
+        >>> d2 = Dict(per_key_traits={'n': Integer(), 's': Unicode()})
+        d2['n'] must be an integer
+        d2['s'] must be text
+
+        >>> d3 = Dict(value_trait=Integer(), key_trait=Unicode())
+        d3's keys must be text
+        d3's values must be integers
         """
 
         # handle deprecated keywords
         trait = kwargs.pop('trait', None)
         if trait is not None:
             if value_trait is not None:
-                raise TypeError("Found a value for both `value_trait` and it's deprecated alias `trait`.")
+                raise TypeError("Found a value for both `value_trait` and its deprecated alias `trait`.")
             value_trait = trait
-            warn("Keyword `trait` is deprecated, use `value_trait` instead", DeprecationWarning)
+            warn("Keyword `trait` is deprecated in traitlets 5.0, use `value_trait` instead", DeprecationWarning)
         traits = kwargs.pop('traits', None)
         if traits is not None:
             if per_key_traits is not None:
-                raise TypeError("Found a value for both `per_key_traits` and it's deprecated alias `traits`.")
+                raise TypeError("Found a value for both `per_key_traits` and its deprecated alias `traits`.")
             per_key_traits = traits
-            warn("Keyword `traits` is deprecated, use `per_key_traits` instead", DeprecationWarning)
+            warn("Keyword `traits` is deprecated in traitlets 5.0, use `per_key_traits` instead", DeprecationWarning)
 
         # Handling positional arguments
         if default_value is Undefined and value_trait is not None:
