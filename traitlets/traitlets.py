@@ -2476,10 +2476,10 @@ class Tuple(Container):
 
 class Dict(Instance):
     """An instance of a Python dict."""
-    _trait = None
+    _value_trait = None
     _key_trait = None
 
-    def __init__(self, trait=None, key_trait=None, traits=None, default_value=Undefined,
+    def __init__(self, value_trait=None, per_key_traits=None, key_trait=None, default_value=Undefined,
                  **kwargs):
         """Create a dict trait type from a Python dict.
 
@@ -2489,28 +2489,48 @@ class Dict(Instance):
         Parameters
         ----------
 
-        trait : TraitType [ optional ]
+        value_trait : TraitType [ optional ]
             The specified trait type to check and use to restrict contents of
             the Container. If unspecified, trait types are not checked.
+
+        per_key_traits : Dictionary of trait types [ optional ]
+            A Python dictionary containing the types that are valid for
+            restricting the content of the Dict Container for certain keys.
 
         key_trait : TraitType [ optional ]
             The type for restricting the keys of the container. If
             unspecified, the types of the keys are not checked.
-
-        traits : Dictionary of trait types [ optional ]
-            A Python dictionary containing the types that are valid for
-            restricting the content of the Dict Container for certain keys.
 
         default_value : SequenceType [ optional ]
             The default value for the Dict.  Must be dict, tuple, or None, and
             will be cast to a dict if not None. If `trait` is specified, the
             `default_value` must conform to the constraints it specifies.
         """
+
+        # handle deprecated keywords
+        trait = kwargs.pop('trait', None)
+        if trait is not None:
+            if value_trait is not None:
+                raise TypeError("Found a value for both `value_trait` and it's deprecated alias `trait`.")
+            value_trait = trait
+            warn("Keyword `trait` is deprecated, use `value_trait` instead", DeprecationWarning)
+        traits = kwargs.pop('traits', None)
+        if traits is not None:
+            if per_key_traits is not None:
+                raise TypeError("Found a value for both `per_key_traits` and it's deprecated alias `traits`.")
+            per_key_traits = traits
+            warn("Keyword `traits` is deprecated, use `per_key_traits` instead", DeprecationWarning)
+
         # Handling positional arguments
-        if default_value is Undefined and trait is not None:
-            if not is_trait(trait):
-                default_value = trait
-                trait = None
+        if default_value is Undefined and value_trait is not None:
+            if not is_trait(value_trait):
+                default_value = value_trait
+                value_trait = None
+
+        if key_trait is None and per_key_traits is not None:
+            if is_trait(per_key_traits):
+                key_trait = per_key_traits
+                per_key_traits = None
 
         # Handling default value
         if default_value is Undefined:
@@ -2525,15 +2545,15 @@ class Dict(Instance):
             raise TypeError('default value of Dict was %s' % default_value)
 
         # Case where a type of TraitType is provided rather than an instance
-        if is_trait(trait):
-            if isinstance(trait, type):
+        if is_trait(value_trait):
+            if isinstance(value_trait, type):
                 warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                      " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
-                trait = trait()
-            self._trait = trait
-        elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
+                value_trait = value_trait()
+            self._value_trait = value_trait
+        elif value_trait is not None:
+            raise TypeError("`value_trait` must be a Trait or None, got %s" % repr_type(value_trait))
 
         if is_trait(key_trait):
             if isinstance(key_trait, type):
@@ -2545,7 +2565,7 @@ class Dict(Instance):
         elif key_trait is not None:
             raise TypeError("`key_trait` must be a Trait or None, got %s" % repr_type(key_trait))
 
-        self._traits = traits
+        self._per_key_traits = per_key_traits
 
         super(Dict, self).__init__(klass=dict, args=args, **kwargs)
 
@@ -2562,9 +2582,9 @@ class Dict(Instance):
         return value
 
     def validate_elements(self, obj, value):
-        per_key_override = self._traits or {}
+        per_key_override = self._per_key_traits or {}
         key_trait = self._key_trait
-        value_trait = self._trait
+        value_trait = self._value_trait
         if not (key_trait or value_trait or per_key_override):
             return value
 
@@ -2587,18 +2607,18 @@ class Dict(Instance):
         return self.klass(validated)
 
     def class_init(self, cls, name):
-        if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, None)
-        if self._traits is not None:
-            for trait in self._traits.values():
+        if isinstance(self._value_trait, TraitType):
+            self._value_trait.class_init(cls, None)
+        if self._per_key_traits is not None:
+            for trait in self._per_key_traits.values():
                 trait.class_init(cls, None)
         super(Dict, self).class_init(cls, name)
 
     def instance_init(self, obj):
-        if isinstance(self._trait, TraitType):
-            self._trait.instance_init(obj)
-        if self._traits is not None:
-            for trait in self._traits.values():
+        if isinstance(self._value_trait, TraitType):
+            self._value_trait.instance_init(obj)
+        if self._per_key_traits is not None:
+            for trait in self._per_key_traits.values():
                 trait.instance_init(obj)
         super(Dict, self).instance_init(obj)
 
