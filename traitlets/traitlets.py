@@ -2609,6 +2609,8 @@ class Dict(Instance):
     def class_init(self, cls, name):
         if isinstance(self._value_trait, TraitType):
             self._value_trait.class_init(cls, None)
+        if isinstance(self._key_trait, TraitType):
+            self._key_trait.class_init(cls, None)
         if self._per_key_traits is not None:
             for trait in self._per_key_traits.values():
                 trait.class_init(cls, None)
@@ -2617,6 +2619,8 @@ class Dict(Instance):
     def instance_init(self, obj):
         if isinstance(self._value_trait, TraitType):
             self._value_trait.instance_init(obj)
+        if isinstance(self._key_trait, TraitType):
+            self._key_trait.instance_init(obj)
         if self._per_key_traits is not None:
             for trait in self._per_key_traits.values():
                 trait.instance_init(obj)
