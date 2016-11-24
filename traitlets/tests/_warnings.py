@@ -4,10 +4,15 @@
 __all__ = ['all_warnings', 'expected_warnings']
 
 from contextlib import contextmanager
+import inspect
+import os
+import re
 import sys
 import warnings
-import inspect
-import re
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 
 @contextmanager
@@ -55,7 +60,8 @@ def all_warnings():
         except AttributeError:
             pass
 
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as w, \
+            mock.patch.dict(os.environ, {'TRAITLETS_ALL_DEPRECATIONS': '1'}):
         warnings.simplefilter("always")
         yield w
 
