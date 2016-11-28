@@ -1603,39 +1603,55 @@ def test_dict_assignment():
     assert c.value is d
 
 
-class UniformlyValidatedDictTrait(HasTraits):
+class UniformlyValueValidatedDictTrait(HasTraits):
 
     value = Dict(trait=Unicode(),
                  default_value={'foo': '1'})
 
 
-class TestInstanceUniformlyValidatedDict(TraitTestBase):
+class TestInstanceUniformlyValueValidatedDict(TraitTestBase):
 
-    obj = UniformlyValidatedDictTrait()
+    obj = UniformlyValueValidatedDictTrait()
 
     _default_value = {'foo': '1'}
     _good_values = [{'foo': '0', 'bar': '1'}]
     _bad_values = [{'foo': 0, 'bar': '1'}]
 
 
-class KeyValidatedDictTrait(HasTraits):
+class NonuniformlyValueValidatedDictTrait(HasTraits):
 
     value = Dict(traits={'foo': Int()},
                  default_value={'foo': 1})
 
 
-class TestInstanceKeyValidatedDict(TraitTestBase):
+class TestInstanceNonuniformlyValueValidatedDict(TraitTestBase):
 
-    obj = KeyValidatedDictTrait()
+    obj = NonuniformlyValueValidatedDictTrait()
 
     _default_value = {'foo': 1}
     _good_values = [{'foo': 0, 'bar': '1'}, {'foo': 0, 'bar': 1}]
     _bad_values = [{'foo': '0', 'bar': '1'}]
 
 
+class KeyValidatedDictTrait(HasTraits):
+
+    value = Dict(key_trait=Unicode(),
+                 default_value={'foo': '1'})
+
+
+class TestInstanceKeyValidatedDict(TraitTestBase):
+
+    obj = KeyValidatedDictTrait()
+
+    _default_value = {'foo': '1'}
+    _good_values = [{'foo': '0', 'bar': '1'}]
+    _bad_values = [{'foo': '0', 0: '1'}]
+
+
 class FullyValidatedDictTrait(HasTraits):
 
     value = Dict(trait=Unicode(),
+                 key_trait=Unicode(),
                  traits={'foo': Int()},
                  default_value={'foo': 1})
 
@@ -1646,7 +1662,7 @@ class TestInstanceFullyValidatedDict(TraitTestBase):
 
     _default_value = {'foo': 1}
     _good_values = [{'foo': 0, 'bar': '1'}, {'foo': 1, 'bar': '2'}]
-    _bad_values = [{'foo': 0, 'bar': 1}, {'foo': '0', 'bar': '1'}]
+    _bad_values = [{'foo': 0, 'bar': 1}, {'foo': '0', 'bar': '1'}, {'foo': 0, 0: '1'}]
 
 
 def test_dict_default_value():
