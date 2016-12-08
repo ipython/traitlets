@@ -1,6 +1,6 @@
+from subprocess import Popen, PIPE
 import sys
 
-from subprocess import Popen, PIPE
 
 def get_output_error_code(cmd):
     """Get stdout, stderr, and exit code from running a command"""
@@ -35,5 +35,5 @@ def check_help_all_output(pkg, subcommand=None):
     assert rc == 0, err
     assert "Traceback" not in err
     assert "Options" in out
-    assert "Class parameters" in out
+    assert "Class options" in out
     return out, err

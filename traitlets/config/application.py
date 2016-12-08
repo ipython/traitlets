@@ -33,15 +33,15 @@ import six
 #-----------------------------------------------------------------------------
 # merge flags&aliases into options
 option_description = """
-The options below are convenience aliases to configurable class parameters, 
-as listed in the "Equivalent to" line for each option, below.
-Use '--help-all' to see all configurable class-parameters for some command.
-""".strip() # trim newlines of front and back
+The options below are convenience aliases to configurable class-options,
+as listed in the "Equivalent to" description-line of the aliases.
+To see all configurable class-options for some <cmd>, use:
+    <cmd> --help-all
+""".strip()  # trim newlines of front and back
 
 keyvalue_description = """
-To set the configurable class parameters listed in the sections below, 
-use command-line arguments like this: 
-    --Class.trait=value
+The command-line option below sets the respective configurable class-parameter:
+    --Class.parameter=value
 This line is evaluated in Python, so simple expressions are allowed.
 For instance, to set `C.a=[0,1,2]`, you may type this:
     --C.a='range(3)' 
@@ -374,7 +374,6 @@ class Application(SingletonConfigurable):
             return
         lines = ['Options']
         lines.append('=' * len(lines[0]))
-        lines.append('')
         for p in wrap_paragraphs(self.option_description):
             lines.append(p)
             lines.append('')
@@ -390,7 +389,6 @@ class Application(SingletonConfigurable):
 
         lines = ["Subcommands"]
         lines.append('=' * len(lines[0]))
-        lines.append('')
         for p in wrap_paragraphs(self.subcommand_description.format(
                     app=self.name)):
             lines.append(p)
@@ -414,8 +412,8 @@ class Application(SingletonConfigurable):
         if classes:
             help_classes = self._classes_with_config_traits()
             if help_classes:
-                print("Class parameters")
-                print("================")
+                print("Class options")
+                print("=============")
                 for p in wrap_paragraphs(self.keyvalue_description):
                     print(p)
                     print()
