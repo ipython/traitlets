@@ -44,7 +44,7 @@ The command-line option below sets the respective configurable class-parameter:
     --Class.parameter=value
 This line is evaluated in Python, so simple expressions are allowed.
 For instance, to set `C.a=[0,1,2]`, you may type this:
-    --C.a='range(3)' 
+    --C.a='range(3)'
 """.strip() # trim newlines of front and back
 
 # sys.argv can be missing, for example when python is embedded. See the docs
@@ -438,7 +438,7 @@ class Application(SingletonConfigurable):
 
     def print_description(self):
         """Print the application description."""
-        for p in wrap_paragraphs(self.description):
+        for p in wrap_paragraphs(self.description or self.__doc__):
             print(p)
             print()
 
