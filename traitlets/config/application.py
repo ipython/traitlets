@@ -6,46 +6,45 @@
 
 from __future__ import print_function
 
+from collections import defaultdict, OrderedDict
 from copy import deepcopy
 import json
 import logging
 import os
 import re
 import sys
-from collections import defaultdict, OrderedDict
-
-from decorator import decorator
-
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
     KVArgParseConfigLoader, PyFileConfigLoader, Config, ArgumentError, ConfigFileNotFound, JSONFileConfigLoader
 )
-
 from traitlets.traitlets import (
     Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
+
+from decorator import decorator
+from ipython_genutils import py3compat
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
-from ipython_genutils import py3compat
-
 import six
+
 
 #-----------------------------------------------------------------------------
 # Descriptions for the various sections
 #-----------------------------------------------------------------------------
-
 # merge flags&aliases into options
 option_description = """
-Arguments that take values are actually convenience aliases to full
-Configurables, whose aliases are listed on the help line. For more information
-on full configurables, see '--help-all'.
+The options below are convenience aliases to configurable class parameters, 
+as listed in the "Equivalent to" line for each option, below.
+Use '--help-all' to see all configurable class-parameters for some command.
 """.strip() # trim newlines of front and back
 
 keyvalue_description = """
-Parameters are set from command-line arguments of the form:
-`--Class.trait=value`.
-This line is evaluated in Python, so simple expressions are allowed, e.g.::
-`--C.a='range(3)'` For setting C.a=[0,1,2].
+To set the configurable class parameters listed in the sections below, 
+use command-line arguments like this: 
+    --Class.trait=value
+This line is evaluated in Python, so simple expressions are allowed.
+For instance, to set `C.a=[0,1,2]`, you may type this:
+    --C.a='range(3)' 
 """.strip() # trim newlines of front and back
 
 # sys.argv can be missing, for example when python is embedded. See the docs
@@ -374,7 +373,7 @@ class Application(SingletonConfigurable):
         if not self.flags and not self.aliases:
             return
         lines = ['Options']
-        lines.append('-'*len(lines[0]))
+        lines.append('=' * len(lines[0]))
         lines.append('')
         for p in wrap_paragraphs(self.option_description):
             lines.append(p)
@@ -390,7 +389,7 @@ class Application(SingletonConfigurable):
             return
 
         lines = ["Subcommands"]
-        lines.append('-'*len(lines[0]))
+        lines.append('=' * len(lines[0]))
         lines.append('')
         for p in wrap_paragraphs(self.subcommand_description.format(
                     app=self.name)):
@@ -416,8 +415,7 @@ class Application(SingletonConfigurable):
             help_classes = self._classes_with_config_traits()
             if help_classes:
                 print("Class parameters")
-                print("----------------")
-                print()
+                print("================")
                 for p in wrap_paragraphs(self.keyvalue_description):
                     print(p)
                     print()
