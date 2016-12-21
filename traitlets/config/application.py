@@ -248,21 +248,21 @@ class Application(SingletonConfigurable):
     # this must be a dict of two-tuples, the first element being the Config/dict
     # and the second being the help string for the flag
     flags = {
-        'debug': {
+        'debug': ({
             'Application': {
                 'log_level': logging.DEBUG,
             },
-        },
-        'show-config': {
+        }, "Set log-level to debug, for the most verbose logging."),
+        'show-config': ({
             'Application': {
                 'show_config': True,
             },
-        },
-        'show-config-json': {
+        }, "Show the application's configuration (human-readable format)"),
+        'show-config-json': ({
             'Application': {
                 'show_config_json': True,
             },
-        },
+        }, "Show the application's configuration (json format)"),
     }
 
     # subcommands for launching other applications
@@ -346,6 +346,8 @@ class Application(SingletonConfigurable):
         if self.show_config_json:
             json.dump(self.config, sys.stdout,
                       indent=1, sort_keys=True, default=repr)
+            # add trailing newline
+            sys.stdout.write('\n')
             return
 
         if self._loaded_config_files:
