@@ -522,7 +522,12 @@ class Application(SingletonConfigurable):
                 # exactly one descendent, promote flag section
                 if len(children) == 1:
                     cls = children[0]
-                newflag[cls] = subdict
+
+                if cls in newflag:
+                    newflag[cls].update(subdict)
+                else:
+                    newflag[cls] = subdict
+
             if not isinstance(key, tuple):
                 key = (key, )
             for k in key:

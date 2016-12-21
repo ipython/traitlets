@@ -414,26 +414,22 @@ class TraitType(BaseDescriptor):
     """
 
     metadata = {}
-    default_value = Undefined
     allow_none = False
     read_only = False
     info_text = 'any value'
+    default_value = Undefined
 
     def class_init(self, cls, name):
         super(TraitType, self).class_init(cls, name)
-        if self.name not in cls._trait_default_generators:
-            if hasattr(self, 'make_dynamic_default'):
-                cls._trait_default_generators[self.name] = (
-                    lambda obj: self.make_dynamic_default())
-            elif self.default_value is not Undefined:
-                cls._trait_default_generators[self.name] = (
-                    lambda obj : self.default_value)
+        if self.name is not None and self.name not in cls._trait_default_generators:
+            cls._trait_default_generators[self.name] = self.default
 
     def subclass_init(self, cls):
         if '_%s_default' % self.name in cls.__dict__:
             method = getattr(cls, '_%s_default' % self.name)
-            _deprecated_method(method, cls, '_%s_default' % self.name,
-                "use @default decorator instead.")
+            if not isinstance(method, EventHandler):
+                _deprecated_method(method, cls, '_%s_default' % self.name,
+                    "use @default decorator instead.")
             cls._trait_default_generators[self.name] = method
 
     def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
@@ -482,9 +478,21 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
+    def default(self, obj=None):
+        """The default generator for this trait
+
+        Notes
+        -----
+        This method is registered to HasTraits classes during ``class_init``
+        in the same way that dynamic defaults defined by ``@default`` are.
+        """
+        if hasattr(self, 'make_dynamic_default'):
+            return self.make_dynamic_default()
+        else:
+            return self.default_value
+
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
-
         Use self.default_value instead
         """
         warn("get_default_value is deprecated in traitlets 4.0: use the .default_value attribute", DeprecationWarning,
@@ -505,13 +513,12 @@ class TraitType(BaseDescriptor):
             value = obj._trait_values[self.name]
         except KeyError:
             # Check for a dynamic initializer.
-            try:
-                dgen = cls._trait_default_generators[self.name]
-            except:
+            default = cls._trait_default_generators[self.name](obj)
+            if default is Undefined:
                 raise TraitError("No default value found for "
                     "the '%s' trait named '%s' of %r" % (
                     type(self).__name__, self.name, obj))
-            value = self._validate(obj, dgen(obj))
+            value = self._validate(obj, default)
             obj._trait_values[self.name] = value
             return value
         except Exception:
@@ -1787,9 +1794,18 @@ class Union(TraitType):
         Union([Float(), Bool(), Int()]) attempts to validate the provided values
         with the validation function of Float, then Bool, and finally Int.
         """
-        self.trait_types = trait_types
+        self.trait_types = list(trait_types)
         self.info_text = " or ".join([tt.info() for tt in self.trait_types])
         super(Union, self).__init__(**kwargs)
+
+    def default(self, obj=None):
+        default = super(Union, self).default(obj)
+        for t in self.trait_types:
+            if default is Undefined:
+                default = t.default(obj)
+            else:
+                break
+        return default
 
     def class_init(self, cls, name):
         for trait_type in reversed(self.trait_types):
@@ -1819,15 +1835,6 @@ class Union(TraitType):
             return Union(self.trait_types + other.trait_types)
         else:
             return Union(self.trait_types + [other])
-
-    def make_dynamic_default(self):
-        if self.default_value is not Undefined:
-            return self.default_value
-        for trait_type in self.trait_types:
-            if trait_type.default_value is not Undefined:
-                return trait_type.default_value
-            elif hasattr(trait_type, 'make_dynamic_default'):
-                return trait_type.make_dynamic_default()
 
 
 #-----------------------------------------------------------------------------
@@ -2475,10 +2482,23 @@ class Tuple(Container):
 
 
 class Dict(Instance):
-    """An instance of a Python dict."""
-    _trait = None
+    """An instance of a Python dict.
 
-    def __init__(self, trait=None, traits=None, default_value=Undefined,
+    One or more traits can be passed to the constructor
+    to validate the keys and/or values of the dict.
+    If you need more detailed validation,
+    you may use a custom validator method.
+
+    .. versionchanged:: 5.0
+        Added key_trait for validating dict keys.
+
+    .. versionchanged:: 5.0
+        Deprecated ambiguous ``trait``, ``traits`` args in favor of ``value_trait``, ``per_key_traits``.
+    """
+    _value_trait = None
+    _key_trait = None
+
+    def __init__(self, value_trait=None, per_key_traits=None, key_trait=None, default_value=Undefined,
                  **kwargs):
         """Create a dict trait type from a Python dict.
 
@@ -2488,24 +2508,63 @@ class Dict(Instance):
         Parameters
         ----------
 
-        trait : TraitType [ optional ]
-            The specified trait type to check and use to restrict contents of
-            the Container. If unspecified, trait types are not checked.
+        value_trait : TraitType [ optional ]
+            The specified trait type to check and use to restrict the values of
+            the dict. If unspecified, values are not checked.
 
-        traits : Dictionary of trait types [ optional ]
+        per_key_traits : Dictionary of {keys:trait types} [ optional, keyword-only ]
             A Python dictionary containing the types that are valid for
-            restricting the content of the Dict Container for certain keys.
+            restricting the values of the dict on a per-key basis.
+            Each value in this dict should be a Trait for validating
 
-        default_value : SequenceType [ optional ]
+        key_trait : TraitType [ optional, keyword-only ]
+            The type for restricting the keys of the dict. If
+            unspecified, the types of the keys are not checked.
+
+        default_value : SequenceType [ optional, keyword-only ]
             The default value for the Dict.  Must be dict, tuple, or None, and
-            will be cast to a dict if not None. If `trait` is specified, the
-            `default_value` must conform to the constraints it specifies.
+            will be cast to a dict if not None. If any key or value traits are specified,
+            the `default_value` must conform to the constraints.
+
+        Examples
+        --------
+
+        >>> d = Dict(Unicode())
+        a dict whose values must be text
+
+        >>> d2 = Dict(per_key_traits={'n': Integer(), 's': Unicode()})
+        d2['n'] must be an integer
+        d2['s'] must be text
+
+        >>> d3 = Dict(value_trait=Integer(), key_trait=Unicode())
+        d3's keys must be text
+        d3's values must be integers
         """
+
+        # handle deprecated keywords
+        trait = kwargs.pop('trait', None)
+        if trait is not None:
+            if value_trait is not None:
+                raise TypeError("Found a value for both `value_trait` and its deprecated alias `trait`.")
+            value_trait = trait
+            warn("Keyword `trait` is deprecated in traitlets 5.0, use `value_trait` instead", DeprecationWarning)
+        traits = kwargs.pop('traits', None)
+        if traits is not None:
+            if per_key_traits is not None:
+                raise TypeError("Found a value for both `per_key_traits` and its deprecated alias `traits`.")
+            per_key_traits = traits
+            warn("Keyword `traits` is deprecated in traitlets 5.0, use `per_key_traits` instead", DeprecationWarning)
+
         # Handling positional arguments
-        if default_value is Undefined and trait is not None:
-            if not is_trait(trait):
-                default_value = trait
-                trait = None
+        if default_value is Undefined and value_trait is not None:
+            if not is_trait(value_trait):
+                default_value = value_trait
+                value_trait = None
+
+        if key_trait is None and per_key_traits is not None:
+            if is_trait(per_key_traits):
+                key_trait = per_key_traits
+                per_key_traits = None
 
         # Handling default value
         if default_value is Undefined:
@@ -2520,21 +2579,32 @@ class Dict(Instance):
             raise TypeError('default value of Dict was %s' % default_value)
 
         # Case where a type of TraitType is provided rather than an instance
-        if is_trait(trait):
-            if isinstance(trait, type):
+        if is_trait(value_trait):
+            if isinstance(value_trait, type):
                 warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                      " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
-            self._trait = trait() if isinstance(trait, type) else trait
-        elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
+                value_trait = value_trait()
+            self._value_trait = value_trait
+        elif value_trait is not None:
+            raise TypeError("`value_trait` must be a Trait or None, got %s" % repr_type(value_trait))
 
-        self._traits = traits
+        if is_trait(key_trait):
+            if isinstance(key_trait, type):
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                     " Passing types is deprecated in traitlets 4.1.",
+                     DeprecationWarning, stacklevel=2)
+                key_trait = key_trait()
+            self._key_trait = key_trait
+        elif key_trait is not None:
+            raise TypeError("`key_trait` must be a Trait or None, got %s" % repr_type(key_trait))
+
+        self._per_key_traits = per_key_traits
 
         super(Dict, self).__init__(klass=dict, args=args, **kwargs)
 
-    def element_error(self, obj, element, validator):
-        e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
+    def element_error(self, obj, element, validator, side='Values'):
+        e = side + " of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
             % (self.name, class_of(obj), validator.info(), repr_type(element))
         raise TraitError(e)
 
@@ -2546,41 +2616,47 @@ class Dict(Instance):
         return value
 
     def validate_elements(self, obj, value):
-        use_dict = bool(self._traits)
-        default_to = (self._trait or Any())
-        if not use_dict and isinstance(default_to, Any):
+        per_key_override = self._per_key_traits or {}
+        key_trait = self._key_trait
+        value_trait = self._value_trait
+        if not (key_trait or value_trait or per_key_override):
             return value
 
         validated = {}
         for key in value:
-            if use_dict and key in self._traits:
-                validate_with = self._traits[key]
-            else:
-                validate_with = default_to
-            try:
-                v = value[key]
-                if not isinstance(validate_with, Any):
-                    v = validate_with._validate(obj, v)
-            except TraitError:
-                self.element_error(obj, v, validate_with)
-            else:
-                validated[key] = v
+            v = value[key]
+            if key_trait:
+                try:
+                    key = key_trait._validate(obj, key)
+                except TraitError:
+                    self.element_error(obj, key, key_trait, 'Keys')
+            active_value_trait = per_key_override.get(key, value_trait)
+            if active_value_trait:
+                try:
+                    v = active_value_trait._validate(obj, v)
+                except TraitError:
+                    self.element_error(obj, v, active_value_trait, 'Values')
+            validated[key] = v
 
         return self.klass(validated)
 
     def class_init(self, cls, name):
-        if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, None)
-        if self._traits is not None:
-            for trait in self._traits.values():
+        if isinstance(self._value_trait, TraitType):
+            self._value_trait.class_init(cls, None)
+        if isinstance(self._key_trait, TraitType):
+            self._key_trait.class_init(cls, None)
+        if self._per_key_traits is not None:
+            for trait in self._per_key_traits.values():
                 trait.class_init(cls, None)
         super(Dict, self).class_init(cls, name)
 
     def instance_init(self, obj):
-        if isinstance(self._trait, TraitType):
-            self._trait.instance_init(obj)
-        if self._traits is not None:
-            for trait in self._traits.values():
+        if isinstance(self._value_trait, TraitType):
+            self._value_trait.instance_init(obj)
+        if isinstance(self._key_trait, TraitType):
+            self._key_trait.instance_init(obj)
+        if self._per_key_traits is not None:
+            for trait in self._per_key_traits.values():
                 trait.instance_init(obj)
         super(Dict, self).instance_init(obj)
 

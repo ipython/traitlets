@@ -139,6 +139,46 @@ class TestTraitType(TestCase):
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
 
+    def test_deprecated_method_warnings(self):
+
+        with expected_warnings([]):
+            class ShouldntWarn(HasTraits):
+                x = Integer()
+                @default('x')
+                def _x_default(self):
+                    return 10
+
+                @validate('x')
+                def _x_validate(self, proposal):
+                    return proposal.value
+
+                @observe('x')
+                def _x_changed(self, change):
+                    pass
+
+            obj = ShouldntWarn()
+            obj.x = 5
+
+        assert obj.x == 5
+
+        with expected_warnings(['@default', '@validate', '@observe']) as w:
+            class ShouldWarn(HasTraits):
+                x = Integer()
+
+                def _x_default(self):
+                    return 10
+
+                def _x_validate(self, value, _):
+                    return value
+
+                def _x_changed(self):
+                    pass
+
+            obj = ShouldWarn()
+            obj.x = 5
+
+        assert obj.x == 5
+
     def test_dynamic_initializer(self):
 
         class A(HasTraits):
@@ -1495,7 +1535,7 @@ class UnionListTrait(HasTraits):
 
     value = List(Int() | Bool())
 
-class TestUnionListTrait(HasTraits):
+class TestUnionListTrait(TraitTestBase):
 
     obj = UnionListTrait()
 
@@ -1605,39 +1645,55 @@ def test_dict_assignment():
     assert c.value is d
 
 
-class UniformlyValidatedDictTrait(HasTraits):
+class UniformlyValueValidatedDictTrait(HasTraits):
 
     value = Dict(trait=Unicode(),
                  default_value={'foo': '1'})
 
 
-class TestInstanceUniformlyValidatedDict(TraitTestBase):
+class TestInstanceUniformlyValueValidatedDict(TraitTestBase):
 
-    obj = UniformlyValidatedDictTrait()
+    obj = UniformlyValueValidatedDictTrait()
 
     _default_value = {'foo': '1'}
     _good_values = [{'foo': '0', 'bar': '1'}]
     _bad_values = [{'foo': 0, 'bar': '1'}]
 
 
-class KeyValidatedDictTrait(HasTraits):
+class NonuniformlyValueValidatedDictTrait(HasTraits):
 
     value = Dict(traits={'foo': Int()},
                  default_value={'foo': 1})
 
 
-class TestInstanceKeyValidatedDict(TraitTestBase):
+class TestInstanceNonuniformlyValueValidatedDict(TraitTestBase):
 
-    obj = KeyValidatedDictTrait()
+    obj = NonuniformlyValueValidatedDictTrait()
 
     _default_value = {'foo': 1}
     _good_values = [{'foo': 0, 'bar': '1'}, {'foo': 0, 'bar': 1}]
     _bad_values = [{'foo': '0', 'bar': '1'}]
 
 
+class KeyValidatedDictTrait(HasTraits):
+
+    value = Dict(key_trait=Unicode(),
+                 default_value={'foo': '1'})
+
+
+class TestInstanceKeyValidatedDict(TraitTestBase):
+
+    obj = KeyValidatedDictTrait()
+
+    _default_value = {'foo': '1'}
+    _good_values = [{'foo': '0', 'bar': '1'}]
+    _bad_values = [{'foo': '0', 0: '1'}]
+
+
 class FullyValidatedDictTrait(HasTraits):
 
     value = Dict(trait=Unicode(),
+                 key_trait=Unicode(),
                  traits={'foo': Int()},
                  default_value={'foo': 1})
 
@@ -1648,7 +1704,7 @@ class TestInstanceFullyValidatedDict(TraitTestBase):
 
     _default_value = {'foo': 1}
     _good_values = [{'foo': 0, 'bar': '1'}, {'foo': 1, 'bar': '2'}]
-    _bad_values = [{'foo': 0, 'bar': 1}, {'foo': '0', 'bar': '1'}]
+    _bad_values = [{'foo': 0, 'bar': 1}, {'foo': '0', 'bar': '1'}, {'foo': 0, 0: '1'}]
 
 
 def test_dict_default_value():
