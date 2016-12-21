@@ -427,8 +427,9 @@ class TraitType(BaseDescriptor):
     def subclass_init(self, cls):
         if '_%s_default' % self.name in cls.__dict__:
             method = getattr(cls, '_%s_default' % self.name)
-            _deprecated_method(method, cls, '_%s_default' % self.name,
-                "use @default decorator instead.")
+            if not isinstance(method, EventHandler):
+                _deprecated_method(method, cls, '_%s_default' % self.name,
+                    "use @default decorator instead.")
             cls._trait_default_generators[self.name] = method
 
     def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):

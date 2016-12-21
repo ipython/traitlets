@@ -139,6 +139,46 @@ class TestTraitType(TestCase):
         self.assertEqual(a.x, 11)
         self.assertEqual(a._trait_values, {'x': 11})
 
+    def test_deprecated_method_warnings(self):
+
+        with expected_warnings([]):
+            class ShouldntWarn(HasTraits):
+                x = Integer()
+                @default('x')
+                def _x_default(self):
+                    return 10
+
+                @validate('x')
+                def _x_validate(self, proposal):
+                    return proposal.value
+
+                @observe('x')
+                def _x_changed(self, change):
+                    pass
+
+            obj = ShouldntWarn()
+            obj.x = 5
+
+        assert obj.x == 5
+
+        with expected_warnings(['@default', '@validate', '@observe']) as w:
+            class ShouldWarn(HasTraits):
+                x = Integer()
+
+                def _x_default(self):
+                    return 10
+
+                def _x_validate(self, value, _):
+                    return value
+
+                def _x_changed(self):
+                    pass
+
+            obj = ShouldWarn()
+            obj.x = 5
+
+        assert obj.x == 5
+
     def test_dynamic_initializer(self):
 
         class A(HasTraits):
