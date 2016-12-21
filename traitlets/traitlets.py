@@ -1808,12 +1808,12 @@ class Union(TraitType):
         return default
 
     def class_init(self, cls, name):
-        for trait_type in self.trait_types:
+        for trait_type in reversed(self.trait_types):
             trait_type.class_init(cls, None)
         super(Union, self).class_init(cls, name)
 
     def instance_init(self, obj):
-        for trait_type in self.trait_types:
+        for trait_type in reversed(self.trait_types):
             trait_type.instance_init(obj)
         super(Union, self).instance_init(obj)
 
