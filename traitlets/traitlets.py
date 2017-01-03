@@ -944,7 +944,11 @@ class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
     """The base class for all classes that have descriptors.
     """
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(*args, **kwargs):
+        # Pass cls as args[0] to allow "cls" as keyword argument
+        cls = args[0]
+        args = args[1:]
+
         # This is needed because object.__new__ only accepts
         # the cls argument.
         new_meth = super(HasDescriptors, cls).__new__
@@ -955,10 +959,14 @@ class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
         inst.setup_instance(*args, **kwargs)
         return inst
 
-    def setup_instance(self, *args, **kwargs):
+    def setup_instance(*args, **kwargs):
         """
         This is called **before** self.__init__ is called.
         """
+        # Pass self as args[0] to allow "self" as keyword argument
+        self = args[0]
+        args = args[1:]
+
         self._cross_validation_lock = False
         cls = self.__class__
         for key in dir(cls):
@@ -976,7 +984,11 @@ class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
 
 class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
-    def setup_instance(self, *args, **kwargs):
+    def setup_instance(*args, **kwargs):
+        # Pass self as args[0] to allow "self" as keyword argument
+        self = args[0]
+        args = args[1:]
+
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}

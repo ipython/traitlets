@@ -2486,3 +2486,11 @@ def test_super_bad_args():
         obj = SuperHasTraits(a=1, b=2)
     assert obj.a ==  1 
     assert not hasattr(obj, 'b')
+
+
+def test_cls_self_argument():
+    class X(HasTraits):
+        def __init__(__self, cls, self):
+            pass
+
+    x = X(cls=None, self=None)
