@@ -530,6 +530,10 @@ class Application(SingletonConfigurable):
                 flags[k] = (newflag, help)
         return flags, aliases
 
+    def _create_loader(self, argv, aliases, flags, classes):
+        return KVArgParseConfigLoader(argv, aliases, flags, classes=classes,
+                                      log=self.log)
+
     @catch_config_error
     def parse_command_line(self, argv=None):
         """Parse the command line arguments."""
@@ -567,9 +571,7 @@ class Application(SingletonConfigurable):
         # flatten flags&aliases, so cl-args get appropriate priority:
         flags,aliases = self.flatten_flags()
         classes = tuple(self._classes_with_config_traits())
-        loader = KVArgParseConfigLoader(argv=argv, aliases=aliases,
-                                        flags=flags, log=self.log,
-                                        classes=classes)
+        loader = self._create_loader(argv, aliases, flags, classes=classes)
         self.cli_config = deepcopy(loader.load_config())
         self.update_config(self.cli_config)
         # store unparsed args in extra_args

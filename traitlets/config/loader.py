@@ -552,7 +552,7 @@ class CommandLineConfigLoader(ConfigLoader):
                             lhs, rhs)
                     )
                     value = self._parse_config_value(r)
-                
+
             if value is None:
                 value = [self._parse_config_value(r) for r in rhs]
         else:
@@ -732,7 +732,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
 class ArgParseConfigLoader(CommandLineConfigLoader):
     """A loader that uses the argparse module to load from the command line."""
 
-    def __init__(self, argv=None, aliases=None, flags=None, log=None, classes=None,
+    def __init__(self, argv=None, aliases=None, flags=None, log=None, classes=(),
                  *parser_args, **parser_kw):
         """Create a config loader for use with argparse.
 
@@ -767,7 +767,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         self.argv = argv
         self.aliases = aliases or {}
         self.flags = flags or {}
-        self.classes = classes or ()
+        self.classes = classes
 
         self.parser_args = parser_args
         self.version = parser_kw.pop("version", None)
