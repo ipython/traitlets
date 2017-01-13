@@ -324,6 +324,10 @@ that are single characters, in which case they can be specified with a single ``
 Flags and aliases are declared by specifying ``flags`` and ``aliases``
 attributes as dictionaries on subclasses of :class:`~traitlets.config.Application`.
 
+A key in both those dictionaries might be a string or tuple of strings.
+One-character strings are converted into "short" options (like ``-v``); longer strings
+are "long" options (like ``--verbose``).
+
 Aliases
 *******
 
@@ -337,6 +341,9 @@ to specify the whole class name:
     $ ipython --profile='myprofile'
     # are equivalent to
     $ ipython --BaseIPythonApplication.profile='myprofile'
+
+When specifying ``alias`` dictionary in code, the values might be the strings
+like ``'Class.trait'`` or two-tuples like ``('Class.trait', "Some help message")``.
 
 Flags
 *****
@@ -373,7 +380,7 @@ after :command:`git`, and are called with the form :command:`command subcommand
     $ ipython qtconsole --profile myprofile
 
 Subcommands are specified as a dictionary on :class:`~traitlets.config.Application`
-instances, mapping subcommand names to 2-tuples containing:
+instances, mapping subcommand names to two-tuples containing:
 
 1. The application class for the subcommand, or a string which can be imported
    to give this.

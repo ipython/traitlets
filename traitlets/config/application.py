@@ -227,7 +227,9 @@ class Application(SingletonConfigurable):
         log.addHandler(_log_handler)
         return log
 
-    # the alias map for configurables
+    #: the alias map for configurables
+    #: Keys might strings or tuples for additional options; single-letter alias accessed like `-v`.
+    #: Values might be like "Class.trait" strings of two-tuples: (Class.trait, help-text).
     aliases = Dict({'log-level' : 'Application.log_level'})
 
     # flags for loading Configurables or store_const style flags
@@ -317,11 +319,15 @@ class Application(SingletonConfigurable):
 
         for alias, longname in self.aliases.items():
             try:
-                classname, traitname = longname.split('.',1)
+                if isinstance(longname, tuple):
+                    longname, fhelp = longname
+                else:
+                    fhelp = None
+                classname, traitname = longname.split('.', 1)
                 cls = classdict[classname]
 
                 trait = cls.class_traits(config=True)[traitname]
-                fhelp = cls.class_get_trait_help(trait).splitlines()
+                fhelp = cls.class_get_trait_help(trait, helptext=fhelp).splitlines()
 
                 if not isinstance(alias, tuple):
                     alias = (alias, )
@@ -330,7 +336,7 @@ class Application(SingletonConfigurable):
                                   for m in alias)
 
                 # reformat first line
-                fhelp[0] = fhelp[0].replace('--'+longname, alias)
+                fhelp[0] = fhelp[0].replace('--' + longname, alias)
                 lines.extend(fhelp)
                 lines.append(indent("Equivalent to: [--%s]" % longname))
             except Exception as ex:
@@ -475,11 +481,12 @@ class Application(SingletonConfigurable):
         self.subapp.initialize(argv)
 
     def flatten_flags(self):
-        """flatten flags and aliases, so cl-args override as expected.
+        """Flatten flags and aliases for loaders, so cl-args override as expected.
 
         This prevents issues such as an alias pointing to InteractiveShell,
         but a config file setting the same trait in TerminalInteraciveShell
         getting inappropriate priority over the command-line arg.
+        Also, loaders expect ``(key: longname)`` and not ````key: (longname, help)`` items.
 
         Only aliases with exactly one descendent in the class list
         will be promoted.
@@ -497,8 +504,10 @@ class Application(SingletonConfigurable):
         # flatten aliases, which have the form:
         # { 'alias' : 'Class.trait' }
         aliases = {}
-        for alias, cls_trait in self.aliases.items():
-            cls,trait = cls_trait.split('.',1)
+        for alias, longname in self.aliases.items():
+            if isinstance(longname, tuple):
+                longname, _ = longname
+            cls, trait = longname.split('.', 1)
             children = mro_tree[cls]
             if len(children) == 1:
                 # exactly one descendent, promote alias
