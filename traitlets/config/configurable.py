@@ -253,6 +253,13 @@ class Configurable(HasTraits):
             header = '%s=<%s>' % (header, trait.__class__.__name__)
         #header = "--%s.%s=<%s>" % (cls.__name__, trait.name, trait.__class__.__name__)
         lines.append(header)
+
+        if helptext is None:
+            helptext = trait.help
+        if helptext != '':
+            helptext = '\n'.join(wrap_paragraphs(helptext, 76))
+            lines.append(indent(helptext, 4))
+
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
@@ -268,11 +275,6 @@ class Configurable(HasTraits):
             # include Enum choices
             lines.append(indent('Choices: %r' % (trait.values,)))
 
-        if helptext is None:
-            helptext = trait.help
-        if helptext != '':
-            helptext = '\n'.join(wrap_paragraphs(helptext, 76))
-            lines.append(indent(helptext, 4))
         return '\n'.join(lines)
 
     @classmethod

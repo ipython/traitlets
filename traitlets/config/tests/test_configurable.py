@@ -35,20 +35,20 @@ class MyConfigurable(Configurable):
 mc_help=u"""MyConfigurable(Configurable) options
 ------------------------------------
 --MyConfigurable.a=<Integer>
-    Default: 1
     The integer a.
+    Default: 1
 --MyConfigurable.b=<Float>
-    Default: 1.0
-    The integer b."""
+    The integer b.
+    Default: 1.0"""
 
 mc_help_inst=u"""MyConfigurable(Configurable) options
 ------------------------------------
 --MyConfigurable.a=<Integer>
-    Current: 5
     The integer a.
+    Current: 5
 --MyConfigurable.b=<Float>
-    Current: 4.0
-    The integer b."""
+    The integer b.
+    Current: 4.0"""
 
 # On Python 3, the Integer trait is a synonym for Int
 if PY3:
@@ -71,8 +71,8 @@ class Bar(Foo):
 foo_help=u"""Foo(Configurable) options
 -------------------------
 --Foo.a=<Int>
-    Default: 0
     The integer a.
+    Default: 0
 --Foo.b=<Unicode>
     Default: 'nope'
 --Foo.fdict=<key-1>=<value-1>...
@@ -83,15 +83,15 @@ foo_help=u"""Foo(Configurable) options
 bar_help=u"""Bar(Foo) options
 ----------------
 --Bar.a=<Int>
-    Default: 0
     The integer a.
+    Default: 0
 --Bar.bdict <key-1>=<value-1>...
     Default: {}
 --Bar.bset <set-item-1>...
     Default: set()
 --Bar.c=<Float>
-    Default: 0.0
     The string c.
+    Default: 0.0
 --Bar.fdict=<key-1>=<value-1>...
     Default: {}
 --Bar.flist=<list-item-1>...
