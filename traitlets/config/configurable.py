@@ -289,7 +289,7 @@ class Configurable(HasTraits):
         breaker = '#' + '-'*78
         parent_classes = ','.join(p.__name__ for p in cls.__bases__)
         s = "# %s(%s) configuration" % (cls.__name__, parent_classes)
-        lines = [breaker, s, breaker, '']
+        lines = [breaker, s, breaker]
         # get the description trait
         desc = cls.class_traits().get('description')
         if desc:
