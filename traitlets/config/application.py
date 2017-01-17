@@ -472,6 +472,8 @@ class Application(SingletonConfigurable):
 
         if isinstance(subapp, six.string_types):
             subapp = import_item(subapp)
+        elif isinstance(subapp, callable):
+            subapp = subapp()
 
         # clear existing instances
         self.__class__.clear_instance()
