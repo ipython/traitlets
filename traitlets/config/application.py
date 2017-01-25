@@ -483,7 +483,7 @@ class Application(SingletonConfigurable):
             # or ask factory to create it...
             self.subapp = subapp(self)
         else:
-            raise AssertionError('Invalid mappings for subcommand %s!' % subc)
+            raise AssertionError("Invalid mappings for subcommand '%s'!" % subc)
 
         # ... and finally initialize subapp.
         self.subapp.initialize(argv)
