@@ -227,11 +227,14 @@ class Configurable(HasTraits):
         return '\n'.join(final_help)
 
     @classmethod
-    def class_get_trait_help(cls, trait, inst=None):
-        """Get the help string for a single trait.
+    def class_get_trait_help(cls, trait, inst=None, helptext=None):
+        """Get the helptext string for a single trait.
 
-        If `inst` is given, it's current trait values will be used in place of
-        the class default.
+        :param inst:
+            If given, it's current trait values will be used in place of
+            the class default.
+        :param helptext:
+            If not given, uses the `help` attribute of the current trait.
         """
         assert inst is None or isinstance(inst, cls)
         lines = []
@@ -250,6 +253,13 @@ class Configurable(HasTraits):
             header = '%s=<%s>' % (header, trait.__class__.__name__)
         #header = "--%s.%s=<%s>" % (cls.__name__, trait.name, trait.__class__.__name__)
         lines.append(header)
+
+        if helptext is None:
+            helptext = trait.help
+        if helptext != '':
+            helptext = '\n'.join(wrap_paragraphs(helptext, 76))
+            lines.append(indent(helptext, 4))
+
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
@@ -265,10 +275,6 @@ class Configurable(HasTraits):
             # include Enum choices
             lines.append(indent('Choices: %r' % (trait.values,)))
 
-        help = trait.help
-        if help != '':
-            help = '\n'.join(wrap_paragraphs(help, 76))
-            lines.append(indent(help, 4))
         return '\n'.join(lines)
 
     @classmethod

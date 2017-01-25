@@ -66,7 +66,7 @@ class MyApp(Application):
 
     aliases = Dict({
                     ('fooi', 'i') : 'Foo.i',
-                    ('j', 'fooj') : 'Foo.j',
+                    ('j', 'fooj') : ('Foo.j', "`j` terse help msg"),
                     'name' : 'Foo.name',
                     'la': 'Foo.la',
                     'tb': 'Bar.tb',
@@ -194,7 +194,7 @@ class TestApplication(TestCase):
         class TestApp(Application):
             value = Unicode().tag(config=True)
             config_file_loaded = Bool().tag(config=True)
-            aliases = {'v': 'TestApp.value'}
+            aliases = {'v': ('TestApp.value', 'some help')}
         app = TestApp()
         with TemporaryDirectory() as td:
             config_file = pjoin(td, name)
