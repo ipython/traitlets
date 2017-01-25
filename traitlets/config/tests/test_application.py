@@ -445,6 +445,59 @@ class TestApplication(TestCase):
             with self.assertRaises(SyntaxError):
                 app.load_config_file(name, path=[td])
 
+    def test_subcommands_instanciation(self):
+        """Try all ways to specify how to create sub-apps."""
+        app = Root.instance()
+        app.parse_command_line(['sub1'])
+
+        self.assertIsInstance(app.subapp, Sub1)
+        ## Check parent hierarchy.
+        self.assertIs(app.subapp.parent, app)
+
+        Root.clear_instance()
+        Sub1.clear_instance()  # Otherwise, replaced spuriously and hierarchy check fails.
+        app = Root.instance()
+
+        app.parse_command_line(['sub1', 'sub2'])
+        self.assertIsInstance(app.subapp, Sub1)
+        self.assertIsInstance(app.subapp.subapp, Sub2)
+        ## Check parent hierarchy.
+        self.assertIs(app.subapp.parent, app)
+        self.assertIs(app.subapp.subapp.parent, app.subapp)
+
+        Root.clear_instance()
+        Sub1.clear_instance()  # Otherwise, replaced spuriously and hierarchy check fails.
+        app = Root.instance()
+
+        app.parse_command_line(['sub1', 'sub3'])
+        self.assertIsInstance(app.subapp, Sub1)
+        self.assertIsInstance(app.subapp.subapp, Sub3)
+        self.assertTrue(app.subapp.subapp.flag)               # Set by factory.
+        ## Check parent hierarchy.
+#        self.assertIs(app.subapp.parent, app)
+#        self.assertIs(app.subapp.subapp.parent, app.subapp)     # Set by factory.
+
+
+class Root(Application):
+    subcommands = {
+        'sub1': ('traitlets.config.tests.test_application.Sub1', 'import string'),
+    }
+
+
+class Sub3(Application):
+    flag = Bool(False)
+
+
+class Sub2(Application):
+    pass
+
+
+class Sub1(Application):
+    subcommands = {
+        'sub2': (Sub2, 'Application class'),
+        'sub3': (lambda root: Sub3(parent=root, flag=True), 'factory'),
+    }
+
 
 class DeprecatedApp(Application):
     override_called = False
