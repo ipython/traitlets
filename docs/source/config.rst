@@ -379,11 +379,29 @@ after :command:`git`, and are called with the form :command:`command subcommand
 
     $ ipython qtconsole --profile myprofile
 
-Subcommands are specified as a dictionary on :class:`~traitlets.config.Application`
-instances, mapping subcommand names to two-tuples containing:
 
-1. The application class for the subcommand, or a string which can be imported
-   to give this.
+.. currentmodule::  traitlets.config
+
+Subcommands are specified as a dictionary on :class:`~traitlets.config.Application`
+instances, mapping *subcommand names* to two-tuples containing these:
+
+1. A subclass of :class:`Application` to handle the subcommand.
+   This can be specified as:
+   - simply as a class, where its :meth:`SingletonConfigurable.instance()`
+     will be invoked (straight-forward, but loads subclasses on import time);
+   - as a string which can be imported to produce the above class;
+   - as a factory function accepting a single argument like that::
+
+       app_factory(parent_app: Application) -> Application
+
+     .. note::
+        The return value of the facory above is an *instance*, not a class,
+        son the :meth:`SingletonConfigurable.instance()` is not invoked
+        in this case.
+
+   In all cases, the instanciated app is stored in :attr:`Application.subapp`
+   and its :meth:`Application.initialize()` is invoked.
+
 2. A short description of the subcommand for use in help output.
 
 To see a list of the available aliases, flags, and subcommands for a configurable

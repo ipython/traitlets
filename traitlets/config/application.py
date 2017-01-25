@@ -468,16 +468,24 @@ class Application(SingletonConfigurable):
     @catch_config_error
     def initialize_subcommand(self, subc, argv=None):
         """Initialize a subcommand with argv."""
-        subapp,help = self.subcommands.get(subc)
+        subapp, _ = self.subcommands.get(subc)
 
         if isinstance(subapp, six.string_types):
             subapp = import_item(subapp)
 
-        # clear existing instances
-        self.__class__.clear_instance()
-        # instantiate
-        self.subapp = subapp.instance(parent=self)
-        # and initialize subapp
+        ## Cannot issubclass() on a non-type (SOhttp://stackoverflow.com/questions/8692430)
+        if isinstance(subapp, type) and issubclass(subapp, Application):
+            # Clear existing instances before...
+            self.__class__.clear_instance()
+            # instantiating subapp...
+            self.subapp = subapp.instance(parent=self)
+        elif callable(subapp):
+            # or ask factory to create it...
+            self.subapp = subapp(self)
+        else:
+            raise AssertionError('Invalid mappings for subcommand %s!' % subc)
+
+        # ... and finally initialize subapp.
         self.subapp.initialize(argv)
 
     def flatten_flags(self):
