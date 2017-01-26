@@ -687,16 +687,21 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
 
         # ensure argv is a list of unicode strings:
         uargv = self._decode_argv(argv)
-        for idx,raw in enumerate(uargv):
+        for idx, raw in enumerate(uargv):
+            if raw == '--':
+                # Don't parse arguments after '--'.
+                # This is useful for relaying arguments to scripts, e.g.:
+                #     ipython -i foo.py --matplotlib=qt -- args after '--' go-to-foo.py
+                self.extra_args.extend(uargv[idx+1:])
+                break
+
             # strip leading '-'
             item = raw.lstrip('-')
 
-            if raw == '--':
-                # don't parse arguments after '--'
-                # this is useful for relaying arguments to scripts, e.g.
-                # ipython -i foo.py --matplotlib=qt -- args after '--' go-to-foo.py
-                self.extra_args.extend(uargv[idx+1:])
-                break
+            if not item:
+                # I.e. it was a lone '-' used for denoting STDIN, or '---'.
+                self.extra_args.append('-')
+                continue
 
             if not item:
                 # I.e. it was a lone '-' used for denoting STDIN, or '---'.
