@@ -698,6 +698,11 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                 self.extra_args.extend(uargv[idx+1:])
                 break
 
+            if not item:
+                # I.e. it was a lone '-' used for denoting STDIN, or '---'.
+                self.extra_args.append('-')
+                continue
+
             if kv_pattern.match(raw):
                 lhs,rhs = item.split('=',1)
                 # Substitute longnames for aliases.
