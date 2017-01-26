@@ -692,7 +692,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                 # Don't parse arguments after '--'.
                 # This is useful for relaying arguments to scripts, e.g.:
                 #     ipython -i foo.py --matplotlib=qt -- args after '--' go-to-foo.py
-                self.extra_args.extend(uargv[idx+1:])
+                self.extra_args.extend(uargv[idx + 1:])
                 break
 
             # strip leading '-'
@@ -709,7 +709,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                 continue
 
             if kv_pattern.match(raw):
-                lhs,rhs = item.split('=',1)
+                lhs, rhs = item.split('=', 1)
                 # Substitute longnames for aliases.
                 if lhs in aliases:
                     lhs = aliases[lhs]
@@ -723,21 +723,22 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
 
             elif flag_pattern.match(raw):
                 if item in flags:
-                    cfg,help = flags[item]
+                    cfg, _ = flags[item]
                     self._load_flag(cfg)
                 else:
-                    raise ArgumentError("Unrecognized flag: '%s'"%raw)
+                    raise ArgumentError("Unrecognized flag: '%s'" % raw)
             elif raw.startswith('-'):
-                kv = '--'+item
+                kv = '--' + item
                 if kv_pattern.match(kv):
-                    raise ArgumentError("Invalid argument: '%s', did you mean '%s'?"%(raw, kv))
+                    raise ArgumentError("Invalid argument: '%s', did you mean '%s'?" % (raw, kv))
                 else:
-                    raise ArgumentError("Invalid argument: '%s'"%raw)
+                    raise ArgumentError("Invalid argument: '%s'" % raw)
             else:
                 # keep all args that aren't valid in a list,
                 # in case our parent knows what to do with them.
                 self.extra_args.append(item)
         return self.config
+
 
 class ArgParseConfigLoader(CommandLineConfigLoader):
     """A loader that uses the argparse module to load from the command line."""
