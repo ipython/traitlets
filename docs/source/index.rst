@@ -1,8 +1,12 @@
 Traitlets
 =========
 
-:Release: |release|
-:Date: |today|
+:Release:       |release|
+:Date:          |today|
+:home:          https://github.com/ipython/traitlets
+:pypi-repo:     https://pypi.org/project/traitlets/
+:docs:          https://traitlets.readthedocs.io/
+:license:       Modified BSD License
 
 Traitlets is a framework that lets Python classes have attributes with type
 checking, dynamically calculated default values, and 'on change' callbacks.
