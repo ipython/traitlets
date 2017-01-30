@@ -486,9 +486,12 @@ class TraitType(BaseDescriptor):
         This method is registered to HasTraits classes during ``class_init``
         in the same way that dynamic defaults defined by ``@default`` are.
         """
-        if hasattr(self, 'make_dynamic_default'):
+        if self.default_value is not Undefined:
+            return self.default_value
+        elif hasattr(self, 'make_dynamic_default'):
             return self.make_dynamic_default()
         else:
+            # Undefined will raise in TraitType.get
             return self.default_value
 
     def get_default_value(self):
