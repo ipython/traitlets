@@ -699,13 +699,9 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
             item = raw.lstrip('-')
 
             if not item:
-                # I.e. it was a lone '-' used for denoting STDIN, or '---'.
-                self.extra_args.append('-')
-                continue
-
-            if not item:
-                # I.e. it was a lone '-' used for denoting STDIN, or '---'.
-                self.extra_args.append('-')
+                ## It was either a lone '-' (i.e. denoting STDIN),
+                #  or more than 3 '---'; append it as is.
+                self.extra_args.append(raw)
                 continue
 
             if kv_pattern.match(raw):
