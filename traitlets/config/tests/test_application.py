@@ -474,8 +474,8 @@ class TestApplication(TestCase):
         self.assertIsInstance(app.subapp.subapp, Sub3)
         self.assertTrue(app.subapp.subapp.flag)               # Set by factory.
         ## Check parent hierarchy.
-#        self.assertIs(app.subapp.parent, app)
-#        self.assertIs(app.subapp.subapp.parent, app.subapp)     # Set by factory.
+        self.assertIs(app.subapp.parent, app)
+        self.assertIs(app.subapp.subapp.parent, app.subapp)     # Set by factory.
 
 
 class Root(Application):
