@@ -341,18 +341,24 @@ class TestApplication(TestCase):
         self.assertEqual(app.config.MyApp.log_level, "CRITICAL")
 
     def test_extra_args(self):
+
         app = MyApp()
         app.parse_command_line(["--Bar.b=5", 'extra', "--disable", 'args'])
         app.init_bar()
         self.assertEqual(app.bar.enabled, False)
         self.assertEqual(app.bar.b, 5)
         self.assertEqual(app.extra_args, ['extra', 'args'])
+
         app = MyApp()
         app.parse_command_line(["--Bar.b=5", '--', 'extra', "--disable", 'args'])
         app.init_bar()
         self.assertEqual(app.bar.enabled, True)
         self.assertEqual(app.bar.b, 5)
         self.assertEqual(app.extra_args, ['extra', '--disable', 'args'])
+
+        app = MyApp()
+        app.parse_command_line(['-', '--disable', '--Bar.b=1', '-', 'extra'])
+        self.assertEqual(app.extra_args, ['-', '-', 'extra'])
 
     def test_unicode_argv(self):
         app = MyApp()

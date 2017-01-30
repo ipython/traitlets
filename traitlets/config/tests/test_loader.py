@@ -277,6 +277,10 @@ class TestKeyValueCL(TestCase):
         config = cl.load_config(['--', '--a=5', '--c=10'])
         self.assertEqual(cl.extra_args, ['--a=5', '--c=10'])
 
+        cl = self.klass(log=log)
+        config = cl.load_config(['-', 'extra', '--a=2', '--c=1', '-'])
+        self.assertEqual(cl.extra_args, ['-', 'extra', '-'])
+
     def test_unicode_args(self):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']
@@ -483,7 +487,7 @@ class TestConfig(TestCase):
             _ = cfg._repr_html_
         self.assertNotIn('_repr_html_', cfg)
         self.assertEqual(len(cfg), 0)
-    
+
     def test_lazy_config_repr(self):
         cfg = Config()
         cfg.Class.lazy.append(1)
@@ -496,7 +500,7 @@ class TestConfig(TestCase):
         repr2 = repr(cfg)
         assert repr([0,1]) in repr2
         assert 'value=' in repr2
-        
+
 
     def test_getitem_not_section(self):
         cfg = Config()
