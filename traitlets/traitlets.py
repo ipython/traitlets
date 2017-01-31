@@ -2203,6 +2203,43 @@ class CaselessStrEnum(Enum):
                 return v
         self.error(obj, value)
 
+
+class FuzzyEnum(Enum):
+    """An case-ignoring enum matching choices by unique prefixes/substrings."""
+
+    case_sensitive = False
+    #: If True, choices match anywhere in the string, otherwise match prefixes.
+    substring_matching = False
+
+    def __init__(self, values, default_value=Undefined,
+                 case_sensitive=False, substring_matching=False, **kwargs):
+        self.case_sensitive = case_sensitive
+        self.substring_matching = substring_matching
+        values = [cast_unicode_py2(value) for value in values]
+        super(FuzzyEnum, self).__init__(values, default_value=default_value, **kwargs)
+
+    def validate(self, obj, value):
+        if isinstance(value, str):
+            value = cast_unicode_py2(value)
+        if not isinstance(value, six.string_types):
+            self.error(obj, value)
+
+        conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
+        substring_matching = self.substring_matching
+        match_func = ((lambda v, c: v in c)
+                      if substring_matching
+                      else (lambda v, c: c.startswith(v)))
+        value = conv_func(value)
+        choices = self.values
+        matches = [match_func(value, conv_func(c)) for c in choices]
+        if sum(matches) == 1:
+            for v, m in zip(choices, matches):
+                if m:
+                    return v
+
+        self.error(obj, value)
+
+
 class Container(Instance):
     """An instance of a container (list, set, etc.)
 
