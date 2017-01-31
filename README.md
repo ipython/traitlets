@@ -3,16 +3,28 @@
 [![Build Status](https://travis-ci.org/ipython/traitlets.svg?branch=master)](https://travis-ci.org/ipython/traitlets)
 [![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](https://traitlets.readthedocs.io/en/latest/?badge=latest)
 
+|               |                                        |
+|---------------|----------------------------------------|
+| **home**      |   https://github.com/ipython/traitlets |
+| **pypi-repo** |   https://pypi.org/project/traitlets/  |
+| **docs**      |   https://traitlets.readthedocs.io/    |
+| **license**   |   Modified BSD License                 |
+
 Traitlets is a pure Python library enabling:
 
- - the enforcement of strong typing for attributes of Python objects
-   (typed attributes are called "traits"),
- - notifications on changes of trait attributes,
- - automatic validation and coercion of trait attributes when attempting a
-   change.
+- the enforcement of strong typing for attributes of Python objects
+ (typed attributes are called *"traits"*);
+- dynamically calculated default values;
+- automatic validation and coercion of trait attributes when attempting a
+  change;
+- registering for receiving notifications when trait values change;
+- reading configuring values from files or from command line
+  arguments - a distinct layer on top of traitlets, so you may use
+  traitlets without the configuration machinery.
 
 Its implementation relies on the [descriptor](https://docs.python.org/howto/descriptor.html)
-pattern. 
+pattern, and it is a lightweight pure-python alternative of the
+[*traits* library](http://code.enthought.com/projects/traits/).
 
 Traitlets powers the configuration system of IPython and Jupyter
 and the declarative API of IPython interactive widgets.
@@ -71,10 +83,10 @@ class Identity(HasTraits):
 ### Callbacks when a trait attribute changes
 
 When a trait changes, an application can follow this trait change with
-additional actions. 
+additional actions.
 
 To do something when a trait attribute is changed, decorate a method with
-[`traitlets.observe()`](https://traitlets.readthedocs.io/en/latest/api.html?highlight=observe#traitlets.observe). 
+[`traitlets.observe()`](https://traitlets.readthedocs.io/en/latest/api.html?highlight=observe#traitlets.observe).
 The method will be called with a single argument, a dictionary which contains
 an owner, new value, old value, name of the changed trait, and the event type.
 
