@@ -562,6 +562,13 @@ class TraitType(BaseDescriptor):
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
 
+    @staticmethod
+    def rollback(change):
+        if change.old is not Undefined:
+            change.owner.set_trait(change.name, change.old)
+        else:
+            change.owner._trait_values.pop(change.name)
+
     def __set__(self, obj, value):
         """Set the value of the trait by self.name for the instance.
 
@@ -1124,12 +1131,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 self.notify_change = lambda x: None
                 for name, changes in cache.items():
                     for change in changes[::-1]:
-                        # TODO: Separate in a rollback function per notification type.
-                        if change.type == 'change':
-                            if change.old is not Undefined:
-                                self.set_trait(name, change.old)
-                            else:
-                                self._trait_values.pop(name)
+                        if 'rollback' in change:
+                            change.rollback(change)
                 cache = {}
                 raise e
             finally:
@@ -1148,6 +1151,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             old=old_value,
             new=new_value,
             owner=self,
+            rollback=TraitType.rollback,
             type='change',
         ))
 
