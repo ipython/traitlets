@@ -1,9 +1,6 @@
 import six
 import types
 import inspect
-from .bunch import Bunch
-
-
 
 def getargspec(func):
     if isinstance(func, types.FunctionType) or isinstance(func, types.MethodType):
@@ -12,10 +9,33 @@ def getargspec(func):
         # no signature introspection is available for this type
         return inspect.ArgSpec(None, 'args', 'kwargs', None)
 
-
 class WatchedType(object):
     """An eventful base class purely for introspection"""
     pass
+
+
+class Bunch(dict):
+    # Copyright (c) Jupyter Development Team.
+    # Distributed under the terms of the Modified BSD License.
+
+    """A dict with attribute-access"""
+    def __getattr__(self, key):
+        try:
+            return self.__getitem__(key)
+        except KeyError:
+            raise AttributeError(key)
+    
+    def __setattr__(self, key, value):
+        self.__setitem__(key, value)
+    
+    def __dir__(self):
+        # py2-compat: can't use super because dict doesn't have __dir__
+        names = dir({})
+        names.extend(self.keys())
+        return names
+
+    def copy(self):
+        return Bunch(self)
 
 
 class Spectator(object):
@@ -26,20 +46,21 @@ class Spectator(object):
         self._callback_registry = {}
 
     def callback(self, name, before=None, after=None):
-        if not isinstance(getattr(self.subclass, name), MethodSpectator):
-            raise ValueError("No method specator for '%s'" % name)
-        if before is None and after is None:
-            raise ValueError("No pre or post '%s' callbacks were given" % name)
-        elif ((before is not None and not callable(before))
-            or (after is not None and not callable(after))):
-            raise ValueError("Expected a callables")
+        for name in (name if isinstance(name, (list, tuple)) else (name,)):
+            if not isinstance(getattr(self.subclass, name), MethodSpectator):
+                raise ValueError("No method specator for '%s'" % name)
+            if before is None and after is None:
+                raise ValueError("No pre or post '%s' callbacks were given" % name)
+            elif ((before is not None and not callable(before))
+                or (after is not None and not callable(after))):
+                raise ValueError("Expected a callables")
 
-        if name in self._callback_registry:
-            l = self._callback_registry[name]
-        else:
-            l = []
-            self._callback_registry[name] = l
-        l.append((before, after))
+            if name in self._callback_registry:
+                l = self._callback_registry[name]
+            else:
+                l = []
+                self._callback_registry[name] = l
+            l.append((before, after))
 
     def remove_callback(self, name, before=None, after=None):
         if name in self._callback_registry:
@@ -69,7 +90,7 @@ class Spectator(object):
                 if b is not None:
                     call = Bunch(name=name,
                         kwargs=kwargs.copy(),
-                        args=args[:])
+                        args=args[1:])
                     v = b(args[0], call)
                 else:
                     v = None
@@ -103,7 +124,7 @@ class MethodSpectator(object):
         self.base, self.name = base, name
         aspec = getargspec(self.basemethod)
         self.defaults = aspec.defaults
-        self.code, self.defaults = self._code(aspec)
+        self.code = self._code(aspec)
 
     @property
     def basemethod(self):
@@ -126,7 +147,7 @@ class MethodSpectator(object):
         filename = "watched-method-gen-%d" % self._compile_count
         code = compile(src, filename, 'single')
         MethodSpectator._compile_count += 1
-        return code, aspec.defaults
+        return code
 
     def new_wrapper(self, inst):
         evaldict = {}

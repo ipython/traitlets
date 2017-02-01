@@ -1,40 +1,34 @@
 from .utils.bunch import Bunch
 from contextlib import contextmanager
 from .utils.spectate import watched_type
-from .traitlets import (TraitType, Dict,
-    List, Undefined, equivalent, Set)
+from .traitlets import (TraitType, Dict, List,
+    Undefined, equivalent, Set, TraitError)
 
-class Beforeback(object):
 
-    def __init__(self, trait, etype, before):
+class Callback(object):
+
+    def __init__(self, owner, trait, etype, callback):
+        self.owner = owner
         self.trait = trait
         self.etype = etype
-        self.before = before
+        self.func = callback
+
+
+class Beforeback(Callback):
 
     def __call__(self, inst, call):
         call = call.copy()
         call.update(
             trait=self.trait,
-            owner=inst,
+            owner=self.owner,
             type=self.etype)
-        return self.before(inst, call)
+        return self.func(inst, call)
 
-class Afterback(object):
 
-    def __init__(self, trait, etype, after):
-        self.trait = trait
-        self.etype = etype
-        self.after = after
-        self._notify = True
-
-    def silent_call(self, inst, answer):
-        self._notify = False
-        out = self(inst, answer)
-        self._notify = True
-        return out
+class Afterback(Callback):
 
     def __call__(self, inst, answer):
-        if self.after is None:
+        if self.func is None:
             result = answer['before']
             if (isinstance(result, Redirect)
                 and result.origin is not None):
@@ -46,72 +40,67 @@ class Afterback(object):
                 callable(result) else result)
         else:
             origin = self.etype
-            event = self.after(inst, answer)
-
-        if event is not None and self._notify:
-            inst.notify_change(Bunch(
+            event = self.func(inst, answer)
+        if None not in (origin, event):
+            self.owner.notify_change(Bunch(
                 type=origin, event=event,
                 name=self.trait.name,
-                owner=inst))
+                owner=self.owner))
         return event
+
 
 class Redirect(object):
 
-    def __init__(self, inst, origin, target, args, kwargs):
+    def __init__(self, origin, target, inst, args, kwargs):
         self.origin = origin
         registry = inst.instance_spectator._callback_registry
-        beforebacks, afterbacks = zip(*registry.get(target, []))
+        # Eventful._setup_events registers first
+        b, a = registry.get(target, [(None, None)])[0]
 
-        hold = []
-        # trigger beforebacks
-        for b in beforebacks:
-            if b is not None:
-                call = Bunch(name=target,
-                    kwargs=kwargs.copy(),
-                    args=args[:])
-                bval = b(inst, call)
-            else:
-                bval = None
-            hold.append(bval)
+        if b is not None:
+            call = Bunch(name=target,
+                kwargs=kwargs.copy(),
+                args=args[:])
+            bval = b(inst, call)
+        else:
+            bval = None
 
-        # closure to trigger afterbacks
-        def event_trigger(value):
-            out = []
-            for afterback, bval in zip(afterbacks, hold):
-                if afterback is not None:
-                    if isinstance(afterback, Afterback):
-                        afterback = afterback.silent_call
-                    return out.append(afterback(inst, Bunch(
-                        before=bval, name=target, value=value)))
-                elif callable(bval):
-                    out.append(bval(value))
-            return out
-                    
-        self.trigger = event_trigger
+        if a is not None:
+            self.trigger = lambda value: a(inst, Bunch(
+                before=bval, name=target, value=value))
+        elif callable(bval):
+            self.trigger = bval
 
     def __call__(self, value):
         # trigger afterbacks
         return self.trigger(value)
 
+    @staticmethod
+    def trigger(value):
+        pass
+
 
 class Eventful(TraitType):
 
+    read_only = True
     event_map = {}
     type_name = 'WatchedType'
 
-    def __init__(self, *args, **kwargs):
-        super(Eventful, self).__init__(*args, **kwargs)
+    def __new__(cls, default_value, *args, **kwargs):
+        new = super(Eventful, cls).__new__
+        if new is object.__new__:
+            self = new(cls)
+        else:
+            self = new(cls, default_value, *args, **kwargs)
+        if getattr(self, 'klass', None) is None:
+            self.klass = type(default_value)
         self._active_events = []
-        self.setup_events()
-
-    def event(self, type, on, before=None, after=None):
-        if before is None and after is None:
-            raise ValueError("No callbacks were provided for the event")
-        for method in (on if isinstance(on, (list, tuple)) else (on,)):
-            self._active_events.append((type, method, before, after))
+        # register builtin events before
+        # returning object to the user
+        self._setup_events()
         return self
 
-    def setup_events(self):
+    def _setup_events(self):
         for name, on in self.event_map.items():
             for method in (on if isinstance(on, (tuple, list)) else (on,)):
                 before = getattr(self, "_before_"+name, None)
@@ -120,28 +109,42 @@ class Eventful(TraitType):
                     self.event(type=name, on=method,
                         before=before, after=after)
 
-    def _register_defined_events(self, value):
+    def event(self, type, on, before=None, after=None):
+        if before is None and after is None:
+            raise ValueError("No callbacks were provided for the event")
+        for method in (on if isinstance(on, (list, tuple)) else (on,)):
+            self._active_events.append((type, method, before, after))
+        return self
+
+    def class_init(self, cls, name):
+        super(Eventful, self).class_init(cls, name)
+        if self.klass is None:
+            raise TypeError("Eventful types must have a 'klass' attribute")
+        self.watched_type = watched_type(self.type_name,
+            self.klass, *(e[1] for e in self._active_events))
+
+    def _validate(self, owner, value):
+        try:
+            owner._trait_values[self.name].instance_spectator = None
+        except KeyError:
+            pass
+        value = super(Eventful, self)._validate(owner, value)
+        if value is not None:
+            value = self.watched_type(value)
+            self._register_defined_events(owner, value)
+        return value
+
+    def _register_defined_events(self, owner, value):
         for e in self._active_events:
             etype, on, before, after = e
             value.instance_spectator.callback(on,
-                before=Beforeback(self, etype, before),
-                after=Afterback(self, etype, after))
-
-    def _validate(self, obj, value):
-        try:
-            getattr(obj, self.name).instance_spectator = None
-        except:
-            pass
-        value = super(Eventful, self)._validate(obj, value)
-        if value is not None:
-            value = self.watched_type(value)
-            self._register_defined_events(value)
-        return value
+                before=Beforeback(owner, self, etype, before),
+                after=Afterback(owner, self, etype, after))
 
     def redirect_once(self, origin, target, inst, args=(), kwargs={}):
         value = self.event_map[target]
         target = value[0] if isinstance(value, (list, tuple)) else value
-        return Redirect(inst, origin, target, args, kwargs)
+        return Redirect(origin, target, inst, args, kwargs)
 
     def redirect(self, origin, target, inst, args=None, kwargs=None):
         value = self.event_map[target]
@@ -154,25 +157,14 @@ class Eventful(TraitType):
         if len(args) != len(kwargs):
             raise ValueError("Uneven args (%s) and kwargs (%s) lists")
 
-        redirects = [Redirect(inst, origin, target, a, kw)
+        redirects = [Redirect(origin, target, inst, a, kw)
             for a, kw in zip(args, kwargs)]
         def redirect(value):
             events = []
             for r in redirects:
                 events.append(r(value))
             return events
-        return redirect 
-
-    def class_init(self, cls, name):
-        super(Eventful, self).class_init(cls, name)
-        if getattr(self, 'klass', None) is not None:
-            self.watched_type = watched_type(self.type_name,
-                self.klass, *(e[1] for e in self._active_events))
-        else:
-            def dynamic_watched_type(value):
-                new = watched_type(self.type_name, type(value),
-                    *(e[1] for e in self._active_events))
-                return new(value)
+        return redirect
 
 
 class EDict(Eventful, Dict):
@@ -196,13 +188,13 @@ class EDict(Eventful, Dict):
     def _before_clear(self, inst, call):
         return self.redirect(
             None, 'delitem', inst,
-            args=inst.items())
+            args=inst.keys())
 
     @staticmethod
     def before_setitem(inst, call):
         """Expect call.args[0] = key"""
         key, old = call.args[0], inst.get(call.args[0], Undefined)
-        def after_setitem(answered_value):
+        def after_setitem(returned):
             new = inst.get(key, Undefined)
             if not equivalent(old, new):
                 return Bunch(key=key, old=old, new=new)
@@ -228,7 +220,7 @@ class EList(Eventful, List):
             old = inst[index]
         except:
             old = Undefined
-        def after_setitem(answered_value):
+        def after_setitem(returned):
             try:
                 new = inst[index]
             except:

@@ -44,7 +44,7 @@ class Thing(object):
 		return inst,  a, b, c, d, e, f
 
 def check_answer(checklist, inst, name, a, b, c=None, d=None, *e, **f):
-	args, kwargs = condense(inst, a, b, c, d, *e, **f)
+	args, kwargs = condense(a, b, c, d, *e, **f)
 	checklist.append(Bunch(
 		name=name,
 		value=(inst, a, b, c, d, e, f),

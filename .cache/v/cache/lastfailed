@@ -1,4 +1,0 @@
-{
-  "traitlets/config/tests/test_loader.py": true,
-  "traitlets/tests/test_traitlets.py": true
-}
