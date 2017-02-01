@@ -22,7 +22,8 @@ from traitlets import (
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, parse_notifier_name,
+    parse_notifier_tags, TraitEventHandler
 )
 
 import six
@@ -30,6 +31,7 @@ import six
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
     return dict(zip(change_names, ordered_values))
+
 
 #-----------------------------------------------------------------------------
 # Helper classes for testing
@@ -566,6 +568,10 @@ class TestObserveDecorator(TestCase):
 
     def notify2(self, change):
         self._notify2.append(change)
+
+    def test_raise_on_no_names(self):
+        with pytest.raises(TypeError):
+            observe()
 
     def test_notify_all(self):
 
@@ -2637,3 +2643,18 @@ def test_cls_self_argument():
             pass
 
     x = X(cls=None, self=None)
+
+
+#-----------------------------------------------------------------------------
+# Misc testing for improved coverage
+#-----------------------------------------------------------------------------
+
+
+def test_notifier_parsing():
+    with pytest.raises(TypeError):
+        parse_notifier_name([0])
+
+    with pytest.raises(TypeError):
+        parse_notifier_tags(0, {"type": None})
+
+
