@@ -457,6 +457,8 @@ class TraitType(BaseDescriptor):
                 self.metadata = kwargs
         else:
             self.metadata = self.metadata.copy()
+        if config is not None:
+            self.metadata['config'] = config
 
         # We add help to the metadata during a deprecation period so that
         # code that looks for the help string there can find it.
@@ -507,7 +509,6 @@ class TraitType(BaseDescriptor):
 
                 if meth_name in cls.__dict__:
                     method = getattr(obj, meth_name)
-                    _deprecated_method(method, cls, meth_name, "use @default decorator instead.")
                     return method
 
         return getattr(self, 'make_dynamic_default', None)
