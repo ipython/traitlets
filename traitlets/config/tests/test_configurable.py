@@ -439,7 +439,7 @@ class TestConfigContainers(TestCase):
 
         # reset deprecation limiter
         _deprecations_shown.clear()
-        with expected_warnings(["use @default decorator instead\\."]):
+        with expected_warnings([]):
             class DefaultConfigurable(Configurable):
                 a = Integer(config=True)
                 def _config_default(self):
