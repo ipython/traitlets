@@ -118,11 +118,12 @@ by notification type.
         def handler_all(self, change):
             pass
 
-Deprecation of magic method for dynamic defaults generation
------------------------------------------------------------
+dynamic defaults generation with decorators
+-------------------------------------------
 
 The use of the magic methods ``_{trait}_default`` for dynamic default
-generation is deprecated, in favor a new ``@default`` method decorator.
+generation is not deprecated, but a new ``@default`` method decorator
+is added.
 
 **Example:**
 

@@ -416,7 +416,8 @@ class TraitType(BaseDescriptor):
     read_only = False
     info_text = 'any value'
 
-    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None, **kwargs):
+    def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None,
+        config=None, **kwargs):
         """Declare a traitlet.
 
         If *allow_none* is True, None is a valid value in addition to any
