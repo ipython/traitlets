@@ -161,7 +161,7 @@ class TestTraitType(TestCase):
 
         assert obj.x == 5
 
-        with expected_warnings(['@default', '@validate', '@observe']) as w:
+        with expected_warnings(['@validate', '@observe']) as w:
             class ShouldWarn(HasTraits):
                 x = Integer()
 
