@@ -4,6 +4,17 @@ Changes in Traitlets
 4.3
 ---
 
+4.3.2
+*****
+
+`4.3.2 on GitHub`_
+
+4.3.2 is a tiny release, relaxing some of the deprecations introduced in 4.1:
+
+- using :meth:`_traitname_default()` without the ``@default`` decorator is no longer
+  deprecated.
+- Passing ``config=True`` in traitlets constructors is no longer deprecated.
+
 4.3.1
 *****
 
@@ -100,3 +111,4 @@ First release of traitlets as a standalone package.
 .. _`4.2.2 on GitHub`: https://github.com/ipython/traitlets/milestones/4.2.2
 .. _`4.3.0 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3
 .. _`4.3.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.1
+.. _`4.3.2 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.2
