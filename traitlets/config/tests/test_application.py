@@ -93,6 +93,10 @@ class MyApp(Application):
         self.bar = Bar(parent=self)
 
 
+def class_to_names(classes):
+    return [klass.__name__ for klass in classes]
+
+
 class TestApplication(TestCase):
 
     def test_log(self):
@@ -112,6 +116,35 @@ class TestApplication(TestCase):
         self.assertEqual(app.running, False)
         self.assertEqual(app.classes, [MyApp,Bar,Foo])
         self.assertEqual(app.config_file, u'')
+
+    def test_mro_discovery(self):
+        app = MyApp()
+
+        self.assertSequenceEqual(class_to_names(app._classes_with_config_traits()),
+                                 ['Application', 'MyApp', 'Bar', 'Foo'])
+        self.assertSequenceEqual(class_to_names(app._classes_inc_parents()),
+                                 ['Configurable', 'LoggingConfigurable', 'SingletonConfigurable',
+                                  'Application', 'MyApp', 'Bar', 'Foo'])
+
+        self.assertSequenceEqual(class_to_names(app._classes_with_config_traits([Application])),
+                                 ['Application'])
+        self.assertSequenceEqual(class_to_names(app._classes_inc_parents([Application])),
+                                 ['Configurable', 'LoggingConfigurable', 'SingletonConfigurable',
+                                  'Application'])
+
+        self.assertSequenceEqual(class_to_names(app._classes_with_config_traits([Foo])),
+                                 ['Foo'])
+        self.assertSequenceEqual(class_to_names(app._classes_inc_parents([Bar])),
+                                 ['Configurable', 'Bar'])
+
+        class MyApp2(Application):  # no defined `classes` attr
+            pass
+
+        self.assertSequenceEqual(class_to_names(app._classes_with_config_traits([Foo])),
+                                 ['Foo'])
+        self.assertSequenceEqual(class_to_names(app._classes_inc_parents([Bar])),
+                                 ['Configurable', 'Bar'])
+
 
     def test_config(self):
         app = MyApp()
