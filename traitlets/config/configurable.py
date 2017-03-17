@@ -309,6 +309,9 @@ class Configurable(HasTraits):
 
         for name, trait in sorted(cls.class_own_traits(config=True).items()):
             lines.append(c(trait.help))
+            if 'Enum' in type(trait).__name__:
+                # include Enum choices
+                lines.append('#  Choices: %r' % (trait.values,))
             lines.append('#c.%s.%s = %s' % (cls.__name__, name, trait.default_value_repr()))
             lines.append('')
         return '\n'.join(lines)

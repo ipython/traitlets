@@ -17,7 +17,7 @@ from traitlets.config.configurable import (
 )
 
 from traitlets.traitlets import (
-    Integer, Float, Unicode, List, Dict, Set,
+    Integer, Float, Unicode, List, Dict, Set, Enum,
     _deprecations_shown,
 )
 
@@ -184,6 +184,14 @@ class TestConfigurable(TestCase):
     def test_help_inst(self):
         inst = MyConfigurable(a=5, b=4)
         self.assertEqual(MyConfigurable.class_get_help(inst), mc_help_inst)
+
+    def test_gen_enums_help_msg(self):
+        class MyConf(Configurable):
+            an_enum = Enum('Choice1 choice2'.split(),
+                     help="Many choices.").tag(config=True)
+        enum_values_str = "Choices: ['Choice1', 'choice2']"
+        self.assertIn(enum_values_str, MyConf.class_get_help())
+        self.assertIn(enum_values_str, MyConf.class_config_section())
 
 
 class TestSingletonConfigurable(TestCase):
