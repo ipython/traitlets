@@ -141,14 +141,20 @@ class Application(SingletonConfigurable):
     # be exposed at the command line.
     classes = []
 
-    def _classes_inc_parents(self):
+    def _classes_inc_parents(self, classes=None):
         """Iterate through configurable classes, including configurable parents
+
+        :param classes:
+            The list of classes to iterate; if not set, uses :attr:`classes`.
 
         Children should always be after parents, and each class should only be
         yielded once.
         """
+        if classes is None:
+            classes = self.classes
+
         seen = set()
-        for c in self.classes:
+        for c in classes:
             # We want to sort parents before children, so we reverse the MRO
             for parent in reversed(c.mro()):
                 if issubclass(parent, Configurable) and (parent not in seen):
@@ -658,9 +664,12 @@ class Application(SingletonConfigurable):
         self.update_config(new_config)
 
 
-    def _classes_with_config_traits(self):
+    def _classes_with_config_traits(self, classes=None):
         """
         Yields only classes with own traits, and their subclasses.
+
+        :param classes:
+            The list of classes to iterate; if not set, uses :attr:`classes`.
 
         Thus, produced sample config-file will contain all classes
         on which a trait-value may be overridden:
@@ -669,9 +678,12 @@ class Application(SingletonConfigurable):
         - or on its subclasses, even if those subclasses do not define
           any traits themselves.
         """
+        if classes is None:
+            classes = self.classes
+
         cls_to_config = OrderedDict( (cls, bool(cls.class_own_traits(config=True)))
                               for cls
-                              in self._classes_inc_parents())
+                              in self._classes_inc_parents(classes))
 
         def is_any_parent_included(cls):
             return any(b in cls_to_config and cls_to_config[b] for b in cls.__bases__)
