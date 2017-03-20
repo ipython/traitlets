@@ -308,7 +308,7 @@ class Configurable(HasTraits):
             lines.append(c(desc))
             lines.append('')
 
-        for name, trait in sorted(cls.class_own_traits(config=True).items()):
+        for name, trait in sorted(cls.class_traits(config=True).items()):
             lines.append(c(trait.help))
 
             if 'Enum' in type(trait).__name__:
@@ -329,7 +329,7 @@ class Configurable(HasTraits):
         """
         lines = []
         classname = cls.__name__
-        for k, trait in sorted(cls.class_own_traits(config=True).items()):
+        for k, trait in sorted(cls.class_traits(config=True).items()):
             ttype = trait.__class__.__name__
 
             termline = classname + '.' + trait.name

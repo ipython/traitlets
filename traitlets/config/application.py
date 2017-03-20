@@ -666,7 +666,7 @@ class Application(SingletonConfigurable):
 
     def _classes_with_config_traits(self, classes=None):
         """
-        Yields only classes with own traits, and their subclasses.
+        Yields only classes with configurable traits, and their subclasses.
 
         :param classes:
             The list of classes to iterate; if not set, uses :attr:`classes`.
@@ -681,7 +681,7 @@ class Application(SingletonConfigurable):
         if classes is None:
             classes = self.classes
 
-        cls_to_config = OrderedDict( (cls, bool(cls.class_own_traits(config=True)))
+        cls_to_config = OrderedDict( (cls, bool(cls.class_traits(config=True)))
                               for cls
                               in self._classes_inc_parents(classes))
 
