@@ -671,11 +671,8 @@ class TestObserveDecorator(TestCase):
 
         a.unobserve_all()
 
-        # test that tagged notifiers know
-        # about dynamically added traits
-        a.observe(_test_observer1, tags={'type': 'b'})
         a.add_traits(baz=Int().tag(type='b'))
-
+        a.observe(_test_observer1, tags={'type': 'b'})
         a.baz = 1
         self.assertEqual(a.foo, 1)
         a.foo = 0
