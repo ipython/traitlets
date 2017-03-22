@@ -185,13 +185,45 @@ class TestConfigurable(TestCase):
         inst = MyConfigurable(a=5, b=4)
         self.assertEqual(MyConfigurable.class_get_help(inst), mc_help_inst)
 
-    def test_gen_enums_help_msg(self):
+    def test_generated_config_enum_comments(self):
         class MyConf(Configurable):
             an_enum = Enum('Choice1 choice2'.split(),
-                     help="Many choices.").tag(config=True)
-        enum_values_str = "Choices: ['Choice1', 'choice2']"
-        self.assertIn(enum_values_str, MyConf.class_get_help())
-        self.assertIn(enum_values_str, MyConf.class_config_section())
+                           help="Many choices.").tag(config=True)
+
+        help_str = "Many choices."
+        enum_choices_str = "Choices: ['Choice1', 'choice2']"
+
+        self.assertIn(help_str, MyConf.class_get_help())
+        self.assertIn(enum_choices_str, MyConf.class_get_help())
+
+        self.assertIn(help_str, MyConf.class_config_section())
+        self.assertIn(enum_choices_str, MyConf.class_config_section())
+        ## Check order of Help-msg <--> Choices sections
+        self.assertGreater(MyConf.class_config_section().index(enum_choices_str),
+                           MyConf.class_config_section().index(help_str))
+
+        class MyConf2(Configurable):
+            an_enum = Enum('Choice1 choice2'.split(),
+                           default_value='choice2',
+                           help="Many choices.").tag(config=True)
+
+        defaults_str = "Default: 'choice2'"
+
+        self.assertIn(help_str, MyConf2.class_get_help())
+        self.assertIn(enum_choices_str, MyConf2.class_get_help())
+        self.assertIn(defaults_str, MyConf2.class_get_help())
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(MyConf2.class_get_help().index(defaults_str),
+                           MyConf2.class_get_help().index(enum_choices_str))
+
+        self.assertIn(help_str, MyConf2.class_config_section())
+        self.assertIn(enum_choices_str, MyConf2.class_config_section())
+        self.assertIn(defaults_str, MyConf2.class_config_section())
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(MyConf2.class_config_section().index(defaults_str),
+                           MyConf2.class_config_section().index(enum_choices_str))
+
+
 
 
 class TestSingletonConfigurable(TestCase):
