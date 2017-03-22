@@ -186,6 +186,7 @@ def is_trait(t):
 
 def parse_notifier_name(names):
     """Convert the name argument to a list of names.
+
     Examples
     --------
     >>> parse_notifier_name(None)
@@ -212,27 +213,33 @@ def parse_notifier_name(names):
         return list(names)
 
 
-def parse_notifier_tags(obj, tags):
-    """Convert the tags argument to a list of names.
+def parse_notifier_names(owner, names=None, tags=None):
 
-    Parameters
-    ----------
-    obj: HasTraits instance or class
-        The object to which the tags apply
-    tags: dict
-        The tags being converted to trait names
-    """
-    if isinstance(obj, HasTraits):
-        method = obj.trait_names
-    elif issubclass(obj, HasTraits):
-        method = obj.class_trait_names
+    if names is None:
+        names = []
+    elif names is All or isinstance(names, six.string_types):
+        names = [names]
+    elif not names or All in names:
+        names = [All]
+    else:
+        for n in names:
+            if not isinstance(n, six.string_types):
+                raise TypeError("names must be strings or All, not %s" % n)
+        names = list(names)
+
+    if isinstance(owner, HasTraits):
+        method = owner.trait_names
+    elif issubclass(owner, HasTraits):
+        method = owner.class_trait_names
     else:
         raise TypeError("Expected an instance or class from a HasTraits subclass")
 
     if tags is None or not len(tags):
-        return []
+        tags = []
     else:
-        return list(method(**tags))
+        tags = list(method(**tags))
+
+    return list(set(names + tags))
 
 
 class _SimpleTest:
@@ -1311,11 +1318,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """
         if names is None and tags is None:
             names = (All,)
-        all_names = (
-            parse_notifier_name(names) +
-            parse_notifier_tags(self, tags)
-        )
-        self._add_notifiers(handler, all_names, type)
+        names = parse_notifier_names(self, names, tags)
+        self._add_notifiers(handler, names, type)
 
     def unobserve(self, handler, names=None, type='change', tags=None):
         """Remove a trait change handler.
@@ -1336,9 +1340,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """
         if names is None and tags is None:
             names = All
-        named = parse_notifier_name(names)
-        tagged = parse_notifier_tags(self, tags)
-        self._remove_notifiers(handler, named + tagged, type)
+        names = parse_notifier_names(self, names, tags)
+        self._remove_notifiers(handler, names, type)
 
     def unobserve_all(self, name=All, type=All):
         """Remove trait change handlers of for the given name and type.
@@ -1393,27 +1396,22 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         names : List of strings
             The names of the traits that should be cross-validated
         """
-        all_names = (
-            parse_notifier_name(names) +
-            parse_notifier_tags(self, tags)
-        )
-        for name in all_names:
+        names = parse_notifier_names(self, names, tags)
+
+        for name in names:
             magic_name = '_%s_validate' % name
             if hasattr(self, magic_name):
                 class_value = getattr(self.__class__, magic_name)
                 if not isinstance(class_value, ValidateHandler):
                     _deprecated_method(class_value, self.__class, magic_name,
                         "use @validate decorator instead.")
-        for name in all_names:
+
+        for name in names:
             self._trait_validators[name] = handler
 
     @classmethod
     def _register_default_generators(cls, handler, names=None, tags=None):
-        all_names = (
-            parse_notifier_name(names) +
-            parse_notifier_tags(cls, tags)
-        )
-        for name in all_names:
+        for name in parse_notifier_names(cls, names, tags):
             cls._trait_default_generators[name] = handler
 
     def add_traits(self, **traits):

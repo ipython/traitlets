@@ -23,7 +23,7 @@ from traitlets import (
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors, parse_notifier_name,
-    parse_notifier_tags, EventHandler
+    parse_notifier_names, EventHandler
 )
 
 import six
@@ -2652,6 +2652,6 @@ def test_notifier_parsing():
         parse_notifier_name([0])
 
     with pytest.raises(TypeError):
-        parse_notifier_tags(0, {"type": None})
+        parse_notifier_names(0, {"type": None})
 
 
