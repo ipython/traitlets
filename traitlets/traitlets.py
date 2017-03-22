@@ -934,30 +934,14 @@ class EventHandler(BaseDescriptor):
         else:
             return other == self.func
 
-    def __hash__(self):
-        """This hash is ONLY safe for hash comparisons to other EventHandlers!"""
-        if self.func is None:
-            return id(self)
-        else:
-            return hash(self.func)
 
-
-class TraitEventHandler(EventHandler):
-
-    metadata = {}
-    trait_names = []
-
-    def __init__(self, names, tags):
-        if (not names and names is not None) and not tags:
-            raise TypeError("Please specify at least one trait name or tag.")
-        self.trait_names = parse_notifier_name(names)
-        self.metadata = tags or {}
-
-
-class ObserveHandler(TraitEventHandler):
+class ObserveHandler(EventHandler):
 
     def __init__(self, names, type, tags):
-        super(ObserveHandler, self).__init__(names, tags)
+        if not names and not tags:
+            raise TypeError("Please specify at least one trait name or tag.")
+        self.trait_names = names
+        self.metadata = tags
         self.type = type
 
     def instance_init(self, obj):
@@ -965,14 +949,26 @@ class ObserveHandler(TraitEventHandler):
         obj.observe(self, self.trait_names, self.type, self.metadata)
 
 
-class ValidateHandler(TraitEventHandler):
+class ValidateHandler(EventHandler):
+
+    def __init__(self, names, tags):
+        if not names and not tags:
+            raise TypeError("Please specify at least one trait name or tag.")
+        self.trait_names = names
+        self.metadata = tags
 
     def instance_init(self, obj):
         super(ValidateHandler, self).instance_init(obj)
         obj._register_validator(self, self.trait_names, self.metadata)
 
 
-class DefaultHandler(TraitEventHandler):
+class DefaultHandler(EventHandler):
+
+    def __init__(self, names, tags):
+        if not names and not tags:
+            raise TypeError("Please specify at least one trait name or tag.")
+        self.trait_names = names
+        self.metadata = tags
 
     def class_init(self, cls, name):
         super(DefaultHandler, self).class_init(cls, name)
@@ -1218,7 +1214,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
             if isinstance(c, _CallbackWrapper):
                 c = c.__call__
-            elif isinstance(c, TraitEventHandler) and c.name is not None:
+            elif isinstance(c, EventHandler) and c.name is not None:
                 c = getattr(self, c.name)
 
             c(change)

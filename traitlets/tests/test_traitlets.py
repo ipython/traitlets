@@ -23,7 +23,7 @@ from traitlets import (
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors, parse_notifier_name,
-    parse_notifier_tags, TraitEventHandler
+    parse_notifier_tags, EventHandler
 )
 
 import six
