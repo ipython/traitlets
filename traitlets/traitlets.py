@@ -523,6 +523,12 @@ class TraitType(BaseDescriptor):
                     type(self).__name__, self.name, obj))
             value = self._validate(obj, default)
             obj._trait_values[self.name] = value
+            obj.notify_change(Bunch(
+                name=self.name,
+                value=value,
+                owner=obj,
+                type='default',
+            ))
             return value
         except Exception:
             # This should never be reached.
