@@ -260,6 +260,10 @@ class Configurable(HasTraits):
             helptext = '\n'.join(wrap_paragraphs(helptext, 76))
             lines.append(indent(helptext, 4))
 
+        if 'Enum' in trait.__class__.__name__:
+            # include Enum choices
+            lines.append(indent('Choices: %r' % (trait.values,)))
+
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
@@ -271,9 +275,6 @@ class Configurable(HasTraits):
                 if len(dvr) > 64:
                     dvr = dvr[:61]+'...'
                 lines.append(indent('Default: %s' % dvr, 4))
-        if 'Enum' in trait.__class__.__name__:
-            # include Enum choices
-            lines.append(indent('Choices: %r' % (trait.values,)))
 
         return '\n'.join(lines)
 
