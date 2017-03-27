@@ -648,8 +648,6 @@ class Application(SingletonConfigurable):
                     loaded.append(config)
                     filenames.append(loader.full_filename)
 
-
-
     @catch_config_error
     def load_config_file(self, filename, path=None):
         """Load config files by filename and path."""
@@ -662,7 +660,6 @@ class Application(SingletonConfigurable):
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
-
 
     def _classes_with_config_traits(self, classes=None):
         """
@@ -681,7 +678,7 @@ class Application(SingletonConfigurable):
         if classes is None:
             classes = self.classes
 
-        cls_to_config = OrderedDict( (cls, bool(cls.class_traits(config=True)))
+        cls_to_config = OrderedDict( (cls, bool(cls.class_own_traits(config=True)))
                               for cls
                               in self._classes_inc_parents(classes))
 
@@ -702,12 +699,14 @@ class Application(SingletonConfigurable):
             if inc_yes:
                 yield cl
 
-    def generate_config_file(self):
+    def generate_config_file(self, classes=None):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self._classes_with_config_traits():
-            lines.append(cls.class_config_section())
+        classes = self.classes if classes is None else classes
+        config_classes = list(self._classes_with_config_traits(classes))
+        for cls in config_classes:
+            lines.append(cls.class_config_section(config_classes))
         return '\n'.join(lines)
 
     def exit(self, exit_status=0):
