@@ -399,7 +399,7 @@ class Configurable(HasTraits):
                     dvr = dvr[:61]+'...'
                 # Double up backslashes, so they get to the rendered docs
                 dvr = dvr.replace('\\n', '\\\\n')
-                lines.append(indent('Default: ``%s``' % dvr, '#   '))
+                lines.append(indent('Default: ``%s``' % dvr, 4))
                 lines.append('')
 
             help = trait.help or 'No description'
