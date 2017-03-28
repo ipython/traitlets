@@ -362,7 +362,7 @@ class Configurable(HasTraits):
                 lines.append('#  Choices: %r' % (trait.values,))
 
             dvr = trait.default_value_repr()
-            lines.append(indent('#  Default: %s' % dvr, 4))
+            lines.append('#  Default: %s' % dvr)
             lines.append('# c.%s.%s = %s' % (cls.__name__, name, dvr))
             lines.append('')
         return '\n'.join(lines)
@@ -398,7 +398,7 @@ class Configurable(HasTraits):
                     dvr = dvr[:61]+'...'
                 # Double up backslashes, so they get to the rendered docs
                 dvr = dvr.replace('\\n', '\\\\n')
-                lines.append('    Default: ``%s``' % dvr)
+                lines.append(indent('Default: ``%s``' % dvr, '#   '))
                 lines.append('')
 
             help = trait.help or 'No description'
