@@ -523,6 +523,12 @@ class TraitType(BaseDescriptor):
                     type(self).__name__, self.name, obj))
             value = self._validate(obj, default)
             obj._trait_values[self.name] = value
+            obj.notify_change(Bunch(
+                name=self.name,
+                value=value,
+                owner=obj,
+                type='default',
+            ))
             return value
         except Exception:
             # This should never be reached.
@@ -1165,7 +1171,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         # Now static ones
         magic_name = '_%s_changed' % name
-        if hasattr(self, magic_name):
+        if change.type == "change" and hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
                 _deprecated_method(class_value, self.__class__, magic_name,
