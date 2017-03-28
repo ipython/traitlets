@@ -218,7 +218,7 @@ class Configurable(HasTraits):
         """
         assert inst is None or isinstance(inst, cls)
         final_help = []
-        base_classes = ','.join(p.__name__ for p in cls.__bases__)
+        base_classes = ', '.join(p.__name__ for p in cls.__bases__)
         final_help.append(u'%s(%s) options' % (cls.__name__, base_classes))
         final_help.append(len(final_help[0])*u'-')
         for k, v in sorted(cls.class_traits(config=True).items()):
@@ -343,6 +343,8 @@ class Configurable(HasTraits):
             lines.append('')
 
         for name, trait in sorted(cls.class_traits(config=True).items()):
+            default_repr = trait.default_value_repr()
+
             if classes:
                 defining_class = cls._defining_class(trait, classes)
             else:
@@ -351,19 +353,18 @@ class Configurable(HasTraits):
                 # cls owns the trait, show full help
                 if trait.help:
                     lines.append(c(trait.help))
+                if 'Enum' in type(trait).__name__:
+                    # include Enum choices
+                    lines.append('#  Choices: %r' % (trait.values,))
+                lines.append('#  Default: %s' % default_repr)
             else:
                 # Trait appears multiple times and isn't defined here.
                 # Truncate help to first line + "See also Original.trait"
                 if trait.help:
                     lines.append(c(trait.help.split('\n', 1)[0]))
-                lines.append('# See also %s.%s' % (defining_class.__name__, name))
-            if 'Enum' in type(trait).__name__:
-                # include Enum choices
-                lines.append('#  Choices: %r' % (trait.values,))
+                lines.append('#  See also %s.%s' % (defining_class.__name__, name))
 
-            dvr = trait.default_value_repr()
-            lines.append('#  Default: %s' % dvr)
-            lines.append('# c.%s.%s = %s' % (cls.__name__, name, dvr))
+            lines.append('# c.%s.%s = %s' % (cls.__name__, name, default_repr))
             lines.append('')
         return '\n'.join(lines)
 
