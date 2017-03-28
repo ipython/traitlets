@@ -283,7 +283,7 @@ class Application(SingletonConfigurable):
         if cls not in self.classes:
             if self.classes is cls.classes:
                 # class attr, assign instead of insert
-                cls.classes = [cls] + self.classes
+                self.classes = [cls] + self.classes
             else:
                 self.classes.insert(0, self.__class__)
 
