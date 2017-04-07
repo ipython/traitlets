@@ -77,9 +77,6 @@ class Configurable(HasTraits):
 
         config = kwargs.pop('config', None)
 
-        # load kwarg traits, other than config
-        super(Configurable, self).__init__(**kwargs)
-
         # load config
         if config is not None:
             # We used to deepcopy, but for now we are trying to just save
@@ -94,11 +91,8 @@ class Configurable(HasTraits):
             # allow _config_default to return something
             self._load_config(self.config)
 
-        # Ensure explicit kwargs are applied after loading config.
-        # This is usually redundant, but ensures config doesn't override
-        # explicitly assigned values.
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        # load kwarg traits, other than config
+        super(Configurable, self).__init__(**kwargs)
 
     #-------------------------------------------------------------------------
     # Static trait notifiations
@@ -173,6 +167,7 @@ class Configurable(HasTraits):
                         msg += u"  Did you mean `{matches}`?".format(matches=matches[0])
                     elif len(matches) >= 1:
                         msg +="  Did you mean one of: `{matches}`?".format(matches=', '.join(sorted(matches)))
+                    print(msg)
                     warn(msg)
 
     @observe('config')

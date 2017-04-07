@@ -6,6 +6,7 @@
 
 import logging
 import sys
+import warnings
 from unittest import TestCase
 
 from pytest import mark
