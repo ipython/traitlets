@@ -283,7 +283,7 @@ class Application(SingletonConfigurable):
         if cls not in self.classes:
             if self.classes is cls.classes:
                 # class attr, assign instead of insert
-                cls.classes = [cls] + self.classes
+                self.classes = [cls] + self.classes
             else:
                 self.classes.insert(0, self.__class__)
 
@@ -648,8 +648,6 @@ class Application(SingletonConfigurable):
                     loaded.append(config)
                     filenames.append(loader.full_filename)
 
-
-
     @catch_config_error
     def load_config_file(self, filename, path=None):
         """Load config files by filename and path."""
@@ -663,10 +661,9 @@ class Application(SingletonConfigurable):
         new_config.merge(self.cli_config)
         self.update_config(new_config)
 
-
     def _classes_with_config_traits(self, classes=None):
         """
-        Yields only classes with own traits, and their subclasses.
+        Yields only classes with configurable traits, and their subclasses.
 
         :param classes:
             The list of classes to iterate; if not set, uses :attr:`classes`.
@@ -702,12 +699,14 @@ class Application(SingletonConfigurable):
             if inc_yes:
                 yield cl
 
-    def generate_config_file(self):
+    def generate_config_file(self, classes=None):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        for cls in self._classes_with_config_traits():
-            lines.append(cls.class_config_section())
+        classes = self.classes if classes is None else classes
+        config_classes = list(self._classes_with_config_traits(classes))
+        for cls in config_classes:
+            lines.append(cls.class_config_section(config_classes))
         return '\n'.join(lines)
 
     def exit(self, exit_status=0):

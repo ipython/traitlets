@@ -229,7 +229,7 @@ class Configurable(HasTraits):
         """
         assert inst is None or isinstance(inst, cls)
         final_help = []
-        base_classes = ','.join(p.__name__ for p in cls.__bases__)
+        base_classes = ', '.join(p.__name__ for p in cls.__bases__)
         final_help.append(u'%s(%s) options' % (cls.__name__, base_classes))
         final_help.append(len(final_help[0])*u'-')
         for k, v in sorted(cls.class_traits(config=True).items()):
@@ -271,6 +271,10 @@ class Configurable(HasTraits):
             helptext = '\n'.join(wrap_paragraphs(helptext, 76))
             lines.append(indent(helptext, 4))
 
+        if 'Enum' in trait.__class__.__name__:
+            # include Enum choices
+            lines.append(indent('Choices: %r' % (trait.values,)))
+
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
@@ -282,9 +286,6 @@ class Configurable(HasTraits):
                 if len(dvr) > 64:
                     dvr = dvr[:61]+'...'
                 lines.append(indent('Default: %s' % dvr, 4))
-        if 'Enum' in trait.__class__.__name__:
-            # include Enum choices
-            lines.append(indent('Choices: %r' % (trait.values,)))
 
         return '\n'.join(lines)
 
@@ -294,8 +295,41 @@ class Configurable(HasTraits):
         print(cls.class_get_help(inst))
 
     @classmethod
-    def class_config_section(cls):
-        """Get the config class config section"""
+    def _defining_class(cls, trait, classes):
+        """Get the class that defines a trait
+
+        For reducing redundant help output in config files.
+        Returns the current class if:
+        - the trait is defined on this class, or
+        - the class where it is defined would not be in the config file
+
+        Parameters
+        ----------
+        trait: Trait
+            The trait to look for
+        classes: list
+            The list of other classes to consider for redundancy.
+            Will return `cls` even if it is not defined on `cls`
+            if the defining class is not in `classes`.
+        """
+        defining_cls = cls
+        for parent in cls.mro():
+            if issubclass(parent, Configurable) and \
+            parent in classes and \
+            parent.class_own_traits(config=True).get(trait.name, None) is trait:
+                defining_cls = parent
+        return defining_cls
+
+    @classmethod
+    def class_config_section(cls, classes=None):
+        """Get the config section for this class.
+        
+        Parameters
+        ----------
+        classes: list, optional
+            The list of other classes in the config file.
+            Used to reduce redundant information.
+        """
         def c(s):
             """return a commented, wrapped block."""
             s = '\n\n'.join(wrap_paragraphs(s, 78))
@@ -303,8 +337,12 @@ class Configurable(HasTraits):
             return '## ' + s.replace('\n', '\n#  ')
 
         # section header
-        breaker = '#' + '-'*78
-        parent_classes = ','.join(p.__name__ for p in cls.__bases__)
+        breaker = '#' + '-' * 78
+        parent_classes = ', '.join(
+            p.__name__ for p in cls.__bases__
+            if issubclass(p, Configurable)
+        )
+
         s = "# %s(%s) configuration" % (cls.__name__, parent_classes)
         lines = [breaker, s, breaker]
         # get the description trait
@@ -318,9 +356,29 @@ class Configurable(HasTraits):
             lines.append(c(desc))
             lines.append('')
 
-        for name, trait in sorted(cls.class_own_traits(config=True).items()):
-            lines.append(c(trait.help))
-            lines.append('#c.%s.%s = %s' % (cls.__name__, name, trait.default_value_repr()))
+        for name, trait in sorted(cls.class_traits(config=True).items()):
+            default_repr = trait.default_value_repr()
+
+            if classes:
+                defining_class = cls._defining_class(trait, classes)
+            else:
+                defining_class = cls
+            if defining_class is cls:
+                # cls owns the trait, show full help
+                if trait.help:
+                    lines.append(c(trait.help))
+                if 'Enum' in type(trait).__name__:
+                    # include Enum choices
+                    lines.append('#  Choices: %r' % (trait.values,))
+                lines.append('#  Default: %s' % default_repr)
+            else:
+                # Trait appears multiple times and isn't defined here.
+                # Truncate help to first line + "See also Original.trait"
+                if trait.help:
+                    lines.append(c(trait.help.split('\n', 1)[0]))
+                lines.append('#  See also %s.%s' % (defining_class.__name__, name))
+
+            lines.append('# c.%s.%s = %s' % (cls.__name__, name, default_repr))
             lines.append('')
         return '\n'.join(lines)
 
@@ -332,7 +390,7 @@ class Configurable(HasTraits):
         """
         lines = []
         classname = cls.__name__
-        for k, trait in sorted(cls.class_own_traits(config=True).items()):
+        for k, trait in sorted(cls.class_traits(config=True).items()):
             ttype = trait.__class__.__name__
 
             termline = classname + '.' + trait.name
@@ -355,7 +413,7 @@ class Configurable(HasTraits):
                     dvr = dvr[:61]+'...'
                 # Double up backslashes, so they get to the rendered docs
                 dvr = dvr.replace('\\n', '\\\\n')
-                lines.append('    Default: ``%s``' % dvr)
+                lines.append(indent('Default: ``%s``' % dvr, 4))
                 lines.append('')
 
             help = trait.help or 'No description'
