@@ -19,7 +19,7 @@ from traitlets.config.configurable import (
 
 from traitlets.traitlets import (
     Integer, Float, Unicode, List, Dict, Set,
-    _deprecations_shown,
+    _deprecations_shown, validate
 )
 
 from traitlets.config.loader import Config
@@ -459,6 +459,32 @@ class TestConfigContainers(TestCase):
         d2 = DefaultConfigurable()
         self.assertIs(d2.config, single.config)
         self.assertEqual(d2.a, 5)
+    
+    def test_kwarg_config_priority(self):
+        # a, c set in kwargs
+        # a, b set in config
+        # verify that:
+        # - kwargs are set before config
+        # - kwargs have priority over config
+        class A(Configurable):
+            a = Unicode('default', config=True)
+            b = Unicode('default', config=True)
+            c = Unicode('default', config=True)
+            c_during_config = Unicode('never')
+            @validate('b')
+            def _record_c(self, proposal):
+                # setting b from config records c's value at the time
+                self.c_during_config = self.c
+                return proposal.value
+
+        cfg = Config()
+        cfg.A.a = 'a-config'
+        cfg.A.b = 'b-config'
+        obj = A(a='a-kwarg', c='c-kwarg', config=cfg)
+        assert obj.a == 'a-kwarg'
+        assert obj.b == 'b-config'
+        assert obj.c == 'c-kwarg'
+        assert obj.c_during_config == 'c-kwarg'
 
 
 class TestLogger(TestCase):
