@@ -33,13 +33,18 @@ from traitlets.config.application import (
 )
 
 from ipython_genutils.tempdir import TemporaryDirectory
-from traitlets.traitlets import (
+from traitlets import (
+    HasTraits,
     Bool, Unicode, Integer, List, Tuple, Set, Dict
 )
 
 class Foo(Configurable):
 
-    i = Integer(0, help="The integer i.").tag(config=True)
+    i = Integer(0, help="""
+    The integer i.
+
+    Details about i.
+    """).tag(config=True)
     j = Integer(1, help="The integer j.").tag(config=True)
     name = Unicode(u'Brian', help="First name.").tag(config=True)
     la = List([]).tag(config=True)
@@ -114,7 +119,7 @@ class TestApplication(TestCase):
         app = MyApp()
         self.assertEqual(app.name, u'myapp')
         self.assertEqual(app.running, False)
-        self.assertEqual(app.classes, [MyApp,Bar,Foo])
+        self.assertEqual(app.classes, [MyApp, Bar, Foo])
         self.assertEqual(app.config_file, u'')
 
     def test_mro_discovery(self):
@@ -406,17 +411,38 @@ class TestApplication(TestCase):
         assert 'The integer b.' in app.generate_config_file()
 
     def test_generate_config_file_classes_to_include(self):
-        class NoTraits(Foo, Bar):
+        class NotInConfig(HasTraits):
+            from_hidden = Unicode('x', help="""From hidden class
+            
+            Details about from_hidden.
+            """).tag(config=True)
+
+        class NoTraits(Foo, Bar, NotInConfig):
             pass
 
         app = MyApp()
         app.classes.append(NoTraits)
+
         conf_txt = app.generate_config_file()
+        print(conf_txt)
         self.assertIn('The integer b.', conf_txt)
-        self.assertIn('# Bar(Configurable)', conf_txt)
         self.assertIn('# Foo(Configurable)', conf_txt)
         self.assertNotIn('# Configurable', conf_txt)
-        self.assertIn('# NoTraits(Foo,Bar)', conf_txt)
+        self.assertIn('# NoTraits(Foo, Bar)', conf_txt)
+
+        # inherited traits, parent in class list:
+        self.assertIn('# c.NoTraits.i', conf_txt)
+        self.assertIn('# c.NoTraits.j', conf_txt)
+        self.assertIn('# c.NoTraits.n', conf_txt)
+        self.assertIn('#  See also Foo.j', conf_txt)
+        self.assertIn('#  See also Bar.b', conf_txt)
+        self.assertEqual(conf_txt.count('Details about i.'), 1)
+
+        # inherited traits, parent not in class list:
+        self.assertIn("# c.NoTraits.from_hidden", conf_txt)
+        self.assertNotIn('#  See also NotInConfig.', conf_txt)
+        self.assertEqual(conf_txt.count('Details about from_hidden.'), 1)
+        self.assertNotIn("NotInConfig", conf_txt)
 
     def test_multi_file(self):
         app = MyApp()
