@@ -77,6 +77,20 @@ class Configurable(HasTraits):
 
         config = kwargs.pop('config', None)
 
+        # load kwarg traits, other than config
+        super(Configurable, self).__init__(**kwargs)
+        
+        # record traits set by config
+        config_override_names = set()
+        def notice_config_override(change):
+            """Record traits set by both config and kwargs.
+
+            They will need to be overridden again after loading config.
+            """
+            if change.name in kwargs:
+                config_override_names.add(change.name)
+        self.observe(notice_config_override)
+
         # load config
         if config is not None:
             # We used to deepcopy, but for now we are trying to just save
@@ -90,9 +104,11 @@ class Configurable(HasTraits):
         else:
             # allow _config_default to return something
             self._load_config(self.config)
+        self.unobserve(notice_config_override)
 
-        # load kwarg traits, other than config
-        super(Configurable, self).__init__(**kwargs)
+        for name in config_override_names:
+            setattr(self, name, kwargs[name])
+
 
     #-------------------------------------------------------------------------
     # Static trait notifiations
