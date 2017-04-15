@@ -270,11 +270,15 @@ class link(object):
     def __init__(self, source, target):
         _validate_link(source, target)
         self.source, self.target = source, target
+        self.link()
+
+    def link(self):
         try:
-            setattr(target[0], target[1], getattr(source[0], source[1]))
+            setattr(self.target[0], self.target[1],
+                    getattr(self.source[0], self.source[1]))
         finally:
-            source[0].observe(self._update_target, names=source[1])
-            target[0].observe(self._update_source, names=target[1])
+            self.source[0].observe(self._update_target, names=self.source[1])
+            self.target[0].observe(self._update_source, names=self.target[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -299,7 +303,6 @@ class link(object):
     def unlink(self):
         self.source[0].unobserve(self._update_target, names=self.source[1])
         self.target[0].unobserve(self._update_source, names=self.target[1])
-        self.source, self.target = None, None
 
 
 class directional_link(object):
@@ -325,9 +328,12 @@ class directional_link(object):
         self._transform = transform if transform else lambda x: x
         _validate_link(source, target)
         self.source, self.target = source, target
+        self.link()
+
+    def link(self):
         try:
-            setattr(target[0], target[1],
-                    self._transform(getattr(source[0], source[1])))
+            setattr(self.target[0], self.target[1],
+                    self._transform(getattr(self.source[0], self.source[1])))
         finally:
             self.source[0].observe(self._update, names=self.source[1])
 
@@ -348,7 +354,6 @@ class directional_link(object):
 
     def unlink(self):
         self.source[0].unobserve(self._update, names=self.source[1])
-        self.source, self.target = None, None
 
 dlink = directional_link
 
