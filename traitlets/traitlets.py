@@ -214,7 +214,21 @@ def parse_notifier_name(names):
 
 
 def parse_notifier_names(owner, names=None, tags=None):
+    """Parse named and tagged traits into a single list.
+    
+    Parameters
+    ----------
+    owner : HasTraits
+        A HasTraits instance or class.
+    names : list of str or str or All
+        A list of trait names.
+    tags : dict
+        A dict of trait metadata that will be converted to a list of trait names.
 
+    Returns
+    -------
+    A list of strings which are trait names.
+    """
     if names is None:
         names = []
     elif names is All or isinstance(names, six.string_types):
@@ -879,8 +893,10 @@ def default(*names, **kwargs):
 
     Parameters
     ----------
-    name
+    name : str
         The str name of the Trait on the object whose default should be generated.
+    tags : dict
+        A dictionary of tags. This dynamic default will apply to any trait with the same tags.
 
     Notes
     -----
@@ -893,7 +909,7 @@ def default(*names, **kwargs):
     ::
 
         class A(HasTraits):
-            bar = Int()
+            bar = Int().tag(foo="data")
 
             @default('bar')
             def get_bar_default(self):
@@ -907,7 +923,7 @@ def default(*names, **kwargs):
 
         class C(B):
 
-            @default('bar')
+            @default(tags={"foo": "data"})
             def some_other_default(self):  # This default generator should not be
                 return 3.0                 # ignored since it is defined in a
                                            # class derived from B.a.this_class.
@@ -1310,11 +1326,11 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         type : str, All (default: 'change')
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
-
-
-        Returns
-        -------
-        An :class:`ObserveHandler`.
+        tags : dict or None (default: None)
+            A dict of trait metadata. The given handler will observe any trait
+            which shares the same metadata. See the ``traits`` method docstring
+            for more information on the form of this dict, and how to applied
+            metadata selectors. By default no metadata is used to add observers.
         """
         if names is None and tags is None:
             names = (All,)
@@ -1337,25 +1353,41 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         type : str or All (default: 'change')
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
+        tags : dict or None (default: None)
+            A dict of trait metadata. The given handler will no longer observe
+            a trait which shares the same metadata. See the ``traits`` method
+            docstring for more information on the form of this dict. By default
+            no metadata is used to remove observers.
         """
         if names is None and tags is None:
             names = All
         names = parse_notifier_names(self, names, tags)
-        self._remove_notifiers(handler, names, type)
+        if handler is None:
+            warn("`unobserve` now expects a handler to be provided. Use `unobserve_all` instead.")
 
-    def unobserve_all(self, name=All, type=All):
+            self.unobserve_all(names or All, type, tags)
+        else:
+            
+            self._remove_notifiers(handler, names, type)
+
+    def unobserve_all(self, name=All, type=All, tags=None):
         """Remove trait change handlers of for the given name and type.
 
         Parameters
         ----------
-            name: str, All
-                If name is All, then all handlers of the given type are removed.
-                If a name is specified, then all handlers of that name and type
-                are removed instead.
-            type: str, All
-                If type is All, then all handlers of the given name are removed.
-                If a type is specified, then all handlers of that type and name
-                are removed instead.
+        name : str, All
+            If name is All, then all handlers of the given type are removed.
+            If a name is specified, then all handlers of that name and type
+            are removed instead.
+        type : str, All
+            If type is All, then all handlers of the given name are removed.
+            If a type is specified, then all handlers of that type and name
+            are removed instead.
+        tags : dict or None (default: None)
+            A dict of trait metadata. Any observer that is tracking a trait
+            which shares the same metadata will be removed. See the ``traits``
+            method docstring for more information on the form of this dict.
+            By default no metadata is used to remove observers.
         """
         if name is All and type is All:
             self._trait_notifiers = {}
