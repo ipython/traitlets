@@ -505,8 +505,8 @@ class SingletonConfigurable(LoggingConfigurable):
             return cls._instance
         else:
             raise MultipleInstanceError(
-                'Multiple incompatible subclass instances of '
-                '%s are being created.' % cls.__name__
+                "An incompatible sibling of '%s' is already instanciated"
+                " as singleton: %s" % (cls.__name__, type(cls._instance).__name__)
             )
 
     @classmethod
