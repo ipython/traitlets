@@ -343,8 +343,16 @@ class Application(SingletonConfigurable):
 
     def start_show_config(self):
         """start function used when show_config is True"""
+        config = self.config.copy()
+        # exclude show_config flags from displayed config
+        for cls in self.__class__.mro():
+            if cls.__name__ in config:
+                cls_config = config[cls.__name__]
+                cls_config.pop('show_config', None)
+                cls_config.pop('show_config_json', None)
+
         if self.show_config_json:
-            json.dump(self.config, sys.stdout,
+            json.dump(config, sys.stdout,
                       indent=1, sort_keys=True, default=repr)
             # add trailing newline
             sys.stdout.write('\n')
@@ -356,11 +364,11 @@ class Application(SingletonConfigurable):
                 print('  ' + f)
             print()
 
-        for classname in sorted(self.config):
-            print(classname)
-            class_config = self.config[classname]
+        for classname in sorted(config):
+            class_config = config[classname]
             if not class_config:
                 continue
+            print(classname)
             for traitname in sorted(class_config):
                 value = class_config[traitname]
                 sio = io.StringIO()

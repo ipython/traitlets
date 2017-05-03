@@ -26,7 +26,7 @@ from pytest import mark
 
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config
-from traitlets.tests.utils import check_help_output, check_help_all_output
+from traitlets.tests.utils import get_output_error_code, check_help_output, check_help_all_output
 
 from traitlets.config.application import (
     Application
@@ -69,7 +69,9 @@ class MyApp(Application):
     warn_tpyo = Unicode(u"yes the name is wrong on purpose", config=True,
             help="Should print a warning if `MyApp.warn-typo=...` command is passed")
 
-    aliases = Dict({
+    aliases = {}
+    aliases.update(Application.aliases)
+    aliases.update({
                     ('fooi', 'i') : 'Foo.i',
                     ('j', 'fooj') : ('Foo.j', "`j` terse help msg"),
                     'name' : 'Foo.name',
@@ -80,7 +82,9 @@ class MyApp(Application):
                     'log-level' : 'Application.log_level',
                 })
 
-    flags = Dict({('enable', 'e'):
+    flags = {}
+    flags.update(Application.flags)
+    flags.update({('enable', 'e'):
                         ({'Bar': {'enabled' : True}},
                          "Set Bar.enabled to True"),
                   ('d', 'disable'):
@@ -587,6 +591,45 @@ def test_deprecated_notifier():
 def test_help_output():
     check_help_output(__name__)
     check_help_all_output(__name__)
+
+
+def test_show_config_cli():
+    out, err, ec = get_output_error_code([sys.executable, '-m', __name__, '--show-config'])
+    assert ec == 0
+    assert 'show_config' not in out
+
+
+def test_show_config_json_cli():
+    out, err, ec = get_output_error_code([sys.executable, '-m', __name__, '--show-config-json'])
+    assert ec == 0
+    assert 'show_config' not in out
+
+
+def test_show_config(capsys):
+    cfg = Config()
+    cfg.MyApp.i = 5
+    # don't show empty
+    cfg.OtherApp
+    
+    app = MyApp(config=cfg, show_config=True)
+    app.start()
+    out, err = capsys.readouterr()
+    assert 'MyApp' in out
+    assert 'i = 5' in out
+    assert 'OtherApp' not in out
+
+
+def test_show_config_json(capsys):
+    cfg = Config()
+    cfg.MyApp.i = 5
+    cfg.OtherApp
+    
+    app = MyApp(config=cfg, show_config_json=True)
+    app.start()
+    out, err = capsys.readouterr()
+    displayed = json.loads(out)
+    assert Config(displayed) == cfg
+
 
 if __name__ == '__main__':
     # for test_help_output:
