@@ -78,7 +78,7 @@ class TestFileCL(TestCase):
         self.assertEqual(config.D.C.value, 'hi there')
 
     def test_python(self):
-        fd, fname = mkstemp('.py')
+        fd, fname = mkstemp('.py', prefix=u'μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write(pyfile)
         f.close()
@@ -88,7 +88,7 @@ class TestFileCL(TestCase):
         self._check_conf(config)
 
     def test_json(self):
-        fd, fname = mkstemp('.json')
+        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write(json1file)
         f.close()
@@ -99,7 +99,7 @@ class TestFileCL(TestCase):
 
     def test_context_manager(self):
 
-        fd, fname = mkstemp('.json')
+        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write('{}')
         f.close()
@@ -118,7 +118,7 @@ class TestFileCL(TestCase):
         self.assertEqual(cl.config.MyAttr.value, value)
 
     def test_json_context_bad_write(self):
-        fd, fname = mkstemp('.json')
+        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write('{}')
         f.close()
@@ -164,7 +164,7 @@ class TestFileCL(TestCase):
         })
 
     def test_v2raise(self):
-        fd, fname = mkstemp('.json')
+        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write(json2file)
         f.close()
