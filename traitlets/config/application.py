@@ -8,15 +8,12 @@ from __future__ import print_function
 
 from collections import defaultdict, OrderedDict
 from copy import deepcopy
-import io
 import json
 import logging
 import os
 import pprint
 import re
 import sys
-
-from decorator import decorator
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
@@ -371,14 +368,10 @@ class Application(SingletonConfigurable):
             print(classname)
             for traitname in sorted(class_config):
                 value = class_config[traitname]
-                sio = io.StringIO()
-                pprint.pprint(value, stream=sio)
-                vs = sio.getvalue()
-                sys.stdout.write('  .%s = ' % traitname)
-                if '\n' in vs.strip():
-                    sys.stdout.write('\n')
-                    vs = indent(vs, 4)
-                sys.stdout.write(vs)
+                print('  .{} = {}'.format(
+                    traitname,
+                    pprint.pformat(value, compact=True, indent=4),
+                ))
 
     def print_alias_help(self):
         """Print the alias part of the help."""
