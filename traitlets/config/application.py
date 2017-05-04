@@ -11,8 +11,10 @@ from copy import deepcopy
 import json
 import logging
 import os
+import pprint
 import re
 import sys
+
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
     KVArgParseConfigLoader, PyFileConfigLoader, Config, ArgumentError, ConfigFileNotFound, JSONFileConfigLoader
@@ -236,23 +238,29 @@ class Application(SingletonConfigurable):
     #: the alias map for configurables
     #: Keys might strings or tuples for additional options; single-letter alias accessed like `-v`.
     #: Values might be like "Class.trait" strings of two-tuples: (Class.trait, help-text).
-    aliases = Dict({'log-level' : 'Application.log_level'})
+    aliases = {'log-level' : 'Application.log_level'}
 
     # flags for loading Configurables or store_const style flags
     # flags are loaded from this dict by '--key' flags
     # this must be a dict of two-tuples, the first element being the Config/dict
     # and the second being the help string for the flag
-    flags = Dict()
-    @observe('flags')
-    @observe_compat
-    def _flags_changed(self, change):
-        """ensure flags dict is valid"""
-        new = change.new
-        for key, value in new.items():
-            assert len(value) == 2, "Bad flag: %r:%s" % (key, value)
-            assert isinstance(value[0], (dict, Config)), "Bad flag: %r:%s" % (key, value)
-            assert isinstance(value[1], six.string_types), "Bad flag: %r:%s" % (key, value)
-
+    flags = {
+        'debug': ({
+            'Application': {
+                'log_level': logging.DEBUG,
+            },
+        }, "Set log-level to debug, for the most verbose logging."),
+        'show-config': ({
+            'Application': {
+                'show_config': True,
+            },
+        }, "Show the application's configuration (human-readable format)"),
+        'show-config-json': ({
+            'Application': {
+                'show_config_json': True,
+            },
+        }, "Show the application's configuration (json format)"),
+    }
 
     # subcommands for launching other applications
     # if this is not empty, this will be a parent Application
@@ -274,6 +282,25 @@ class Application(SingletonConfigurable):
         """
     )
 
+    _loaded_config_files = List()
+
+    show_config = Bool(
+        help="Instead of starting the Application, dump configuration to stdout"
+    ).tag(config=True)
+
+    show_config_json = Bool(
+        help="Instead of starting the Application, dump configuration to stdout (as JSON)"
+    ).tag(config=True)
+
+    @observe('show_config_json')
+    def _show_config_json_changed(self, change):
+        self.show_config = change.new
+
+    @observe('show_config')
+    def _show_config_changed(self, change):
+        if change.new:
+            self._save_start = self.start
+            self.start = self.start_show_config
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
@@ -310,6 +337,45 @@ class Application(SingletonConfigurable):
         """
         if self.subapp is not None:
             return self.subapp.start()
+
+    def start_show_config(self):
+        """start function used when show_config is True"""
+        config = self.config.copy()
+        # exclude show_config flags from displayed config
+        for cls in self.__class__.mro():
+            if cls.__name__ in config:
+                cls_config = config[cls.__name__]
+                cls_config.pop('show_config', None)
+                cls_config.pop('show_config_json', None)
+
+        if self.show_config_json:
+            json.dump(config, sys.stdout,
+                      indent=1, sort_keys=True, default=repr)
+            # add trailing newline
+            sys.stdout.write('\n')
+            return
+
+        if self._loaded_config_files:
+            print("Loaded config files:")
+            for f in self._loaded_config_files:
+                print('  ' + f)
+            print()
+
+        for classname in sorted(config):
+            class_config = config[classname]
+            if not class_config:
+                continue
+            print(classname)
+            pformat_kwargs = dict(indent=4)
+            if sys.version_info >= (3,4):
+                # use compact pretty-print on Pythons that support it
+                pformat_kwargs['compact'] = True
+            for traitname in sorted(class_config):
+                value = class_config[traitname]
+                print('  .{} = {}'.format(
+                    traitname,
+                    pprint.pformat(value, **pformat_kwargs),
+                ))
 
     def print_alias_help(self):
         """Print the alias part of the help."""
@@ -615,10 +681,10 @@ class Application(SingletonConfigurable):
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
             jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
-            config = None
             loaded = []
             filenames = []
             for loader in [pyloader, jsonloader]:
+                config = None
                 try:
                     config = loader.load_config()
                 except ConfigFileNotFound:
@@ -644,7 +710,7 @@ class Application(SingletonConfigurable):
                                 " {1} has higher priority: {2}".format(
                                 filename, loader.full_filename, json.dumps(collisions, indent=2),
                             ))
-                    yield config
+                    yield (config, loader.full_filename)
                     loaded.append(config)
                     filenames.append(loader.full_filename)
 
@@ -653,10 +719,11 @@ class Application(SingletonConfigurable):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
-        for config in self._load_config_files(filename, path=path, log=self.log,
+        for (config, filename) in self._load_config_files(filename, path=path, log=self.log,
             raise_config_file_errors=self.raise_config_file_errors,
         ):
             new_config.merge(config)
+            self._loaded_config_files.append(filename)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
@@ -727,6 +794,9 @@ class Application(SingletonConfigurable):
 # utility functions, for convenience
 #-----------------------------------------------------------------------------
 
+default_aliases = Application.aliases
+default_flags = Application.flags
+
 def boolean_flag(name, configurable, set_help='', unset_help=''):
     """Helper for building basic --trait, --no-trait flags.
 
@@ -769,3 +839,7 @@ def get_config():
         return Application.instance().config
     else:
         return Config()
+
+
+if __name__ == '__main__':
+    Application.launch_instance()
