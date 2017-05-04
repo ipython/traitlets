@@ -183,7 +183,6 @@ class Configurable(HasTraits):
                         msg += u"  Did you mean `{matches}`?".format(matches=matches[0])
                     elif len(matches) >= 1:
                         msg +="  Did you mean one of: `{matches}`?".format(matches=', '.join(sorted(matches)))
-                    print(msg)
                     warn(msg)
 
     @observe('config')
