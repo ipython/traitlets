@@ -499,6 +499,25 @@ class TraitType(BaseDescriptor):
             # Undefined will raise in TraitType.get
             return self.default_value
 
+    def obj_default(self, obj):
+        """Return this trait's default value on the given object.
+
+        Pulls from the object's ``_trait_default_generators`` using
+        ``self.name`` to generate a default value and validate it.
+        If that value is ``Undefined`` then an error is raised.
+        """
+        try:
+            dgen = type(obj)._trait_default_generators[self.name]
+        except KeyError:
+            raise TraitError("Impropper default generator setup "
+                "for '%s.%s'" % (type(obj).__name__, self.name))
+        default = dgen(obj)
+        if default is Undefined:
+            raise TraitError("No default value found for "
+                    "the '%s' trait named '%s' of %r" % (
+                    type(self).__name__, self.name, obj))
+        return self._validate(obj, default)
+
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
         Use self.default_value instead
@@ -520,13 +539,7 @@ class TraitType(BaseDescriptor):
         try:
             value = obj._trait_values[self.name]
         except KeyError:
-            # Check for a dynamic initializer.
-            default = cls._trait_default_generators[self.name](obj)
-            if default is Undefined:
-                raise TraitError("No default value found for "
-                    "the '%s' trait named '%s' of %r" % (
-                    type(self).__name__, self.name, obj))
-            value = self._validate(obj, default)
+            value = self.obj_default(obj)
             obj._trait_values[self.name] = value
             obj.notify_change(Bunch(
                 name=self.name,
@@ -558,9 +571,12 @@ class TraitType(BaseDescriptor):
     def set(self, obj, value):
         new_value = self._validate(obj, value)
         try:
+            # No prior value exists. We choose to be explicit
+            # about this. If a user truly needs a prior value
+            # it can be retrieved via `HasTraits.trait_defaults`
             old_value = obj._trait_values[self.name]
         except KeyError:
-            old_value = self.default_value
+            old_value = Undefined
 
         obj._trait_values[self.name] = new_value
         try:
