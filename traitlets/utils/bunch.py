@@ -26,6 +26,10 @@ class EmptyMethodDescriptor(object):
 
 class Bunch(dict):
     """A dict with attribute access"""
+
+    def __contains__(self, key):
+        return hasattr(self, key)
+
     def __getattr__(self, key):
         try:
             return self.__getitem__(key)
@@ -67,3 +71,12 @@ class FrozenBunch(with_metaclass(MetaFrozenBunch, Bunch)):
     def thaw(self):
         """Returns a mutable copy"""
         return Bunch(self)
+
+    def copy(self, *args, **kwargs):
+        """Get a new instance with the given updates"""
+        new = FrozenBunch(self)
+        dict.update(new, *args, **kwargs)
+        object.__setattr__(new, "__class__", type(self))
+        return new
+
+

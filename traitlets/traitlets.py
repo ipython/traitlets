@@ -86,30 +86,29 @@ NoDefaultSpecified = Undefined
 class TraitError(Exception):
     pass
 
-class EventReport(FrozenBunch):
-    """An object containing callback information for particular events"""
 
-    _event_type = None
+class EventReport(FrozenBunch):
+    """An object containing callback information for particular events
+
+    Event report classes provide a base class for all FrozenBunch
+    instances being passed to event callbacks. At minimum, a report
+    has a 'type' key/attribute indicating the type of event being
+    reported. Outside of this, it's up to subclasses to add more
+    information.
+    """
+
+    _etype = None
 
     def __init__(self, *args, **kwargs):
         super(EventReport, self).__init__(*args, **kwargs)
         if "type" not in self:
-            dict.__setitem__(self, "type", self._event_type)
-
-    def copy(self, **updates):
-        """Get a new instance with the given updates"""
-        if 'type' in updates:
-            raise KeyError("'type' is a reserved key")
-        else:
-            new = super(EventReport, self).copy()
-            dict.update(new, updates)
-            return new
+            dict.__setitem__(self, "type", self._etype)
 
 
 class DefaultEvent(EventReport):
     """An object holding information about a trait's generated default"""
 
-    _event_type = 'default'
+    _etype = 'default'
 
     def __init__(self, name=None, value=Undefined, owner=None):
         super(DefaultEvent, self).__init__(name=name, value=value, owner=owner)
@@ -118,7 +117,16 @@ class DefaultEvent(EventReport):
 class ChangeEvent(EventReport):
     """An object holding information for trait change callbacks"""
 
-    _event_type = 'change'
+    _etype = 'change'
+
+    def rollback(self):
+        if self.old is not Undefined:
+            self.owner.set_trait(self.name, self.old)
+        else:
+            del self.owner._trait_values[self.name]
+
+    def compress(self, other):
+        return self.copy(new=other.new)
 
     def __init__(self, name=None, new=Undefined, old=Undefined, owner=None):
         super(ChangeEvent, self).__init__(name=name, new=new, old=old, owner=owner)
@@ -126,7 +134,7 @@ class ChangeEvent(EventReport):
 class ValidationEvent(EventReport):
     """An object holding information for trait validation callbacks"""
 
-    _event_type = 'proposal'
+    _etype = 'validation'
 
     def __init__(self, trait=None, value=Undefined, owner=None):
         super(ValidationEvent, self).__init__(trait=trait, value=value, owner=owner)
@@ -1140,21 +1148,19 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             cache = {}
             notify_change = self.notify_change
 
-            def compress(past_changes, change):
-                """Merges the provided change with the last if possible."""
-                if past_changes is None:
-                    return [change]
-                else:
-                    if past_changes[-1]['type'] == 'change' and change.type == 'change':
-                        past_changes[-1] = EventReport(past_changes[-1], new=change.new)
-                    else:
-                        # In case of changes other than 'change', append the notification.
-                        past_changes.append(change)
-                    return past_changes
-
             def hold(change):
-                name = change.name
-                cache[name] = compress(cache.get(name), change)
+                name = change.get("name")
+                if name in cache:
+                    past = cache[name]
+                    if "compress" in change:
+                        past[-1].type
+                        if change.type == past[-1].type:
+                            past[-1] = past[-1].compress(change)
+                    else:
+                        past.append(change)
+                else:
+                    past = [change]
+                    cache[name] = past
 
             try:
                 # Replace notify_change with `hold`, caching and compressing
@@ -1173,11 +1179,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
-                        if change.type == 'change':
-                            if change.old is not Undefined:
-                                self.set_trait(name, change.old)
-                            else:
-                                self._trait_values.pop(name)
+                        if "rollback" in change:
+                            change.rollback()
                 cache = {}
                 raise e
             finally:
@@ -1202,6 +1205,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         if not isinstance(change, EventReport):
             # cast to bunch if given a dict
             change = EventReport(change)
+            raise
         name, type = change.name, change.type
 
         callables = []
