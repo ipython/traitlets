@@ -59,14 +59,13 @@ import six
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
-from .utils.bunch import Bunch
+from .utils.bunch import FrozenBunch
 
 SequenceTypes = (list, tuple, set, frozenset)
 
 #-----------------------------------------------------------------------------
 # Basic classes
 #-----------------------------------------------------------------------------
-
 
 Undefined = Sentinel('Undefined', 'traitlets',
 '''
@@ -86,6 +85,51 @@ NoDefaultSpecified = Undefined
 
 class TraitError(Exception):
     pass
+
+class EventReport(FrozenBunch):
+    """An object containing callback information for particular events"""
+
+    _event_type = None
+
+    def __init__(self, *args, **kwargs):
+        super(EventReport, self).__init__(*args, **kwargs)
+        if "type" not in self:
+            dict.__setitem__(self, "type", self._event_type)
+
+    def copy(self, **updates):
+        """Get a new instance with the given updates"""
+        if 'type' in updates:
+            raise KeyError("'type' is a reserved key")
+        else:
+            new = super(EventReport, self).copy()
+            dict.update(new, updates)
+            return new
+
+
+class DefaultEvent(EventReport):
+    """An object holding information about a trait's generated default"""
+
+    _event_type = 'default'
+
+    def __init__(self, name=None, value=Undefined, owner=None):
+        super(DefaultEvent, self).__init__(name=name, value=value, owner=owner)
+
+
+class ChangeEvent(EventReport):
+    """An object holding information for trait change callbacks"""
+
+    _event_type = 'change'
+
+    def __init__(self, name=None, new=Undefined, old=Undefined, owner=None):
+        super(ChangeEvent, self).__init__(name=name, new=new, old=old, owner=owner)
+
+class ValidationEvent(EventReport):
+    """An object holding information for trait validation callbacks"""
+
+    _event_type = 'proposal'
+
+    def __init__(self, trait=None, value=Undefined, owner=None):
+        super(ValidationEvent, self).__init__(trait=trait, value=value, owner=owner)
 
 #-----------------------------------------------------------------------------
 # Utilities
@@ -528,12 +572,7 @@ class TraitType(BaseDescriptor):
                     type(self).__name__, self.name, obj))
             value = self._validate(obj, default)
             obj._trait_values[self.name] = value
-            obj.notify_change(Bunch(
-                name=self.name,
-                value=value,
-                owner=obj,
-                type='default',
-            ))
+            obj.notify_change(DefaultEvent(self.name, value, obj))
             return value
         except Exception:
             # This should never be reached.
@@ -595,7 +634,7 @@ class TraitType(BaseDescriptor):
 
     def _cross_validate(self, obj, value):
         if self.name in obj._trait_validators:
-            proposal = Bunch({'trait': self, 'value': value, 'owner': obj})
+            proposal = ValidationEvent(trait=self, value=value, owner=obj)
             value = obj._trait_validators[self.name](obj, proposal)
         elif hasattr(obj, '_%s_validate' % self.name):
             meth_name = '_%s_validate' % self.name
@@ -773,13 +812,12 @@ class MetaHasTraits(MetaHasDescriptors):
 def observe(*names, **kwargs):
     """A decorator which can be used to observe Traits on a class.
 
-    The handler passed to the decorator will be called with one ``change``
-    dict argument. The change dictionary at least holds a 'type' key and a
-    'name' key, corresponding respectively to the type of notification and the
-    name of the attribute that triggered the notification.
+    The handler for the decorator must accept one ``change`` argument, into which is
+    passed a :class:`EventReport` instance that holds (at minumum) a 'type' key/attribute
+    corresponding to the type of event being reported. Other keys/attributes may be
+    included depending on the value of 'type'.
 
-    Other keys may be passed depending on the value of 'type'. In the case
-    where type is 'change', we also have the following keys:
+    By default, the handler is passed a :class:`Change` instance with additional info:
     * ``owner`` : the HasTraits instance
     * ``old`` : the old value of the modified trait attribute
     * ``new`` : the new value of the modified trait attribute
@@ -820,8 +858,7 @@ def observe_compat(func):
             clsname = self.__class__.__name__
             warn("A parent of %s._%s_changed has adopted the new (traitlets 4.1) @observe(change) API" % (
                 clsname, change_or_name), DeprecationWarning)
-            change = Bunch(
-                type='change',
+            change = ChangeEvent(
                 old=old,
                 new=new,
                 name=change_or_name,
@@ -835,8 +872,8 @@ def validate(*names):
     """A decorator to register cross validator of HasTraits object's state
     when a Trait is set.
 
-    The handler passed to the decorator must have one ``proposal`` dict argument.
-    The proposal dictionary must hold the following keys:
+    The handler for the decorator must accept one ``proposal`` argument, into which
+    is passed a :class:`Proposal` instance with the following keys/attributes:
     * ``owner`` : the HasTraits instance
     * ``value`` : the proposed value for the modified trait attribute
     * ``trait`` : the TraitType instance associated with the attribute
@@ -1109,7 +1146,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                     return [change]
                 else:
                     if past_changes[-1]['type'] == 'change' and change.type == 'change':
-                        past_changes[-1]['new'] = change.new
+                        past_changes[-1] = EventReport(past_changes[-1], new=change.new)
                     else:
                         # In case of changes other than 'change', append the notification.
                         past_changes.append(change)
@@ -1154,18 +1191,17 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                         self.notify_change(change)
 
     def _notify_trait(self, name, old_value, new_value):
-        self.notify_change(Bunch(
+        self.notify_change(ChangeEvent(
             name=name,
             old=old_value,
             new=new_value,
             owner=self,
-            type='change',
         ))
 
     def notify_change(self, change):
-        if not isinstance(change, Bunch):
+        if not isinstance(change, EventReport):
             # cast to bunch if given a dict
-            change = Bunch(change)
+            change = EventReport(change)
         name, type = change.name, change.type
 
         callables = []
@@ -1265,12 +1301,11 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         Parameters
         ----------
         handler : callable
-            A callable that is called when a trait changes. Its
-            signature should be ``handler(change)``, where ``change`` is a
-            dictionary. The change dictionary at least holds a 'type' key.
-            * ``type``: the type of notification.
-            Other keys may be passed depending on the value of 'type'. In the
-            case where type is 'change', we also have the following keys:
+            A callable that accepts one ``change`` argument, into which is
+            passed a :class:`EventReport` instance that holds (at minumum)
+            a 'type' key/attribute. Other keys/attributes may be included
+            depending on the value of 'type'. By default, the handler is
+            passed a :class:`Change` instance with additional info:
             * ``owner`` : the HasTraits instance
             * ``old`` : the old value of the modified trait attribute
             * ``new`` : the new value of the modified trait attribute
@@ -1331,8 +1366,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         ----------
         handler : callable
             A callable that is called when the given trait is cross-validated.
-            Its signature is handler(proposal), where proposal is a Bunch (dictionary with attribute access)
-            with the following attributes/keys:
+            Its signature is ``handler(Proposal)``, where the :class:`Proposal`
+            instance has the following attributes/keys:
                 * ``owner`` : the HasTraits instance
                 * ``value`` : the proposed value for the modified trait attribute
                 * ``trait`` : the TraitType instance associated with the attribute
