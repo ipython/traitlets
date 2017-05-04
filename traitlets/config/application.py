@@ -366,11 +366,15 @@ class Application(SingletonConfigurable):
             if not class_config:
                 continue
             print(classname)
+            pformat_kwargs = dict(indent=4)
+            if sys.version_info >= (3,4):
+                # use compact pretty-print on Pythons that support it
+                pformat_kwargs['compact'] = True
             for traitname in sorted(class_config):
                 value = class_config[traitname]
                 print('  .{} = {}'.format(
                     traitname,
-                    pprint.pformat(value, compact=True, indent=4),
+                    pprint.pformat(value, **pformat_kwargs),
                 ))
 
     def print_alias_help(self):
