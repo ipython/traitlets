@@ -1423,6 +1423,28 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
 
+    def trait_values(self, **metadata):
+        """A ``dict`` of trait names and their values.
+
+        The metadata kwargs allow functions to be passed in which
+        filter traits based on metadata values.  The functions should
+        take a single value as an argument and return a boolean.  If
+        any function returns False, then the trait is not included in
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
+
+        Returns
+        -------
+        A ``dict`` of trait names and their values.
+
+        Notes
+        -----
+        Trait values are retrieved via ``getattr``, any exceptions raised
+        by traits or the operations they may trigger will result in the
+        absence of a trait value in the result ``dict``.
+        """
+        return {name: getattr(self, name) for name in self.trait_names(**metadata)}
+
     def trait_defaults(self, *names, **metadata):
         """Return a trait's default value or a dictionary of them
 
