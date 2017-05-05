@@ -438,13 +438,13 @@ class TestApplication(TestCase):
         self.assertIn('# c.NoTraits.i', conf_txt)
         self.assertIn('# c.NoTraits.j', conf_txt)
         self.assertIn('# c.NoTraits.n', conf_txt)
-        self.assertIn('#  See also Foo.j', conf_txt)
-        self.assertIn('#  See also Bar.b', conf_txt)
+        self.assertIn('#  See also: Foo.j', conf_txt)
+        self.assertIn('#  See also: Bar.b', conf_txt)
         self.assertEqual(conf_txt.count('Details about i.'), 1)
 
         # inherited traits, parent not in class list:
         self.assertIn("# c.NoTraits.from_hidden", conf_txt)
-        self.assertNotIn('#  See also NotInConfig.', conf_txt)
+        self.assertNotIn('#  See also: NotInConfig.', conf_txt)
         self.assertEqual(conf_txt.count('Details about from_hidden.'), 1)
         self.assertNotIn("NotInConfig", conf_txt)
 

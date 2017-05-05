@@ -375,7 +375,7 @@ class Configurable(HasTraits):
                 # Truncate help to first line + "See also Original.trait"
                 if trait.help:
                     lines.append(c(trait.help.split('\n', 1)[0]))
-                lines.append('#  See also %s.%s' % (defining_class.__name__, name))
+                lines.append('#  See also: %s.%s' % (defining_class.__name__, name))
 
             lines.append('# c.%s.%s = %s' % (cls.__name__, name, default_repr))
             lines.append('')
