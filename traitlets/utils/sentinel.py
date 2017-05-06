@@ -11,7 +11,8 @@ class Sentinel(object):
         if docstring:
             self.__doc__ = docstring
 
-
     def __repr__(self):
         return str(self.module)+'.'+self.name
 
+    def __str__(self):
+    	return self.name
