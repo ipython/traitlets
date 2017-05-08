@@ -3,7 +3,7 @@
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
-# 
+#
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
@@ -521,29 +521,29 @@ class TestHasTraitsNotify(TestCase):
 
         class A(HasTraits):
             listen_to = ['a']
-            
+
             a = Int(0)
             b = 0
-            
+
             def __init__(self, **kwargs):
                 super(A, self).__init__(**kwargs)
                 self.on_trait_change(self.listener1, ['a'])
-            
+
             def listener1(self, name, old, new):
                 self.b += 1
 
         class B(A):
-                    
+
             c = 0
             d = 0
-            
+
             def __init__(self, **kwargs):
                 super(B, self).__init__(**kwargs)
                 self.on_trait_change(self.listener2)
-            
+
             def listener2(self, name, old, new):
                 self.c += 1
-            
+
             def _a_changed(self, name, old, new):
                 self.d += 1
 
@@ -653,7 +653,7 @@ class TestObserveDecorator(TestCase):
             b = Int()
             _notify1 = []
             _notify_any = []
-            
+
             @observe('a')
             def _a_changed(self, change):
                 self._notify1.append(change)
@@ -717,29 +717,29 @@ class TestObserveDecorator(TestCase):
 
         class A(HasTraits):
             listen_to = ['a']
-            
+
             a = Int(0)
             b = 0
-            
+
             def __init__(self, **kwargs):
                 super(A, self).__init__(**kwargs)
                 self.observe(self.listener1, ['a'])
-            
+
             def listener1(self, change):
                 self.b += 1
 
         class B(A):
-                    
+
             c = 0
             d = 0
-            
+
             def __init__(self, **kwargs):
                 super(B, self).__init__(**kwargs)
                 self.observe(self.listener2)
-            
+
             def listener2(self, change):
                 self.c += 1
-            
+
             @observe('a')
             def _a_changed(self, change):
                 self.d += 1
@@ -839,7 +839,7 @@ class TestHasTraits(TestCase):
             def __init__(self, i):
                 super(A, self).__init__()
                 self.i = i
-        
+
         a = A(5)
         self.assertEqual(a.i, 5)
         # should raise TypeError if no positional arg given
@@ -1499,7 +1499,7 @@ class TestList(TraitTestBase):
     _default_value = []
     _good_values = [[], [1], list(range(10)), (1,2)]
     _bad_values = [10, [1,'a'], 'a']
-    
+
     def coerce(self, value):
         if value is not None:
             value = list(value)
@@ -1509,7 +1509,7 @@ class Foo(object):
     pass
 
 class NoneInstanceListTrait(HasTraits):
-    
+
     value = List(Instance(Foo))
 
 class TestNoneInstanceList(TraitTestBase):
@@ -1575,7 +1575,7 @@ class TestTupleTrait(TraitTestBase):
 
     obj = TupleTrait()
 
-    _default_value = (1,) 
+    _default_value = (1,)
     _good_values = [(1,), (0,), [1]]
     _bad_values = [10, (1, 2), ('a'), (), None]
 
@@ -1647,7 +1647,7 @@ def test_dict_assignment():
     c = DictTrait()
     c.value = d
     d['a'] = 5
-    assert d == c.value  
+    assert d == c.value
     assert c.value is d
 
 
@@ -1745,7 +1745,7 @@ class TestValidationHook(TestCase):
                 if self.parity == 'odd' and (value % 2 == 0):
                     raise TraitError('Expected an odd number')
                 return value
-        
+
         u = Parity()
         u.parity = 'odd'
         u.value = 1  # OK
@@ -1827,8 +1827,8 @@ class TestLink(TestCase):
         b.count = 4
         self.assertEqual(a.value, b.count)
 
-    def test_unlink(self):
-        """Verify two linked traitlets can be unlinked."""
+    def test_unlink_link(self):
+        """Verify two linked traitlets can be unlinked and relinked."""
 
         # Create two simple classes with Int traitlets.
         class A(HasTraits):
@@ -1844,6 +1844,10 @@ class TestLink(TestCase):
         # Change one of the values to make sure they don't stay in sync.
         a.value = 5
         self.assertNotEqual(a.value, b.value)
+        c.link()
+        self.assertEqual(a.value, b.value)
+        a.value += 1
+        self.assertEqual(a.value, b.value)
 
     def test_callbacks(self):
         """Verify two linked traitlets have their callbacks called once."""
@@ -1855,7 +1859,7 @@ class TestLink(TestCase):
             count = Int()
         a = A(value=9)
         b = B(count=8)
-        
+
         # Register callbacks that count.
         callback_count = []
         def a_callback(name, old, new):
@@ -1975,8 +1979,8 @@ class TestDirectionalLink(TestCase):
         b.value = 6
         self.assertEqual(a.value, 5)
 
-    def test_unlink(self):
-        """Verify two linked traitlets can be unlinked."""
+    def test_unlink_link(self):
+        """Verify two linked traitlets can be unlinked and relinked."""
 
         # Create two simple classes with Int traitlets.
         class A(HasTraits):
@@ -1992,6 +1996,10 @@ class TestDirectionalLink(TestCase):
         # Change one of the values to make sure they don't stay in sync.
         a.value = 5
         self.assertNotEqual(a.value, b.value)
+        c.link()
+        self.assertEqual(a.value, b.value)
+        a.value += 1
+        self.assertEqual(a.value, b.value)
 
 class Pickleable(HasTraits):
 
@@ -2003,7 +2011,7 @@ class Pickleable(HasTraits):
         return commit['value']
 
     j = Int()
-    
+
     def __init__(self):
         with self.hold_trait_notifications():
             self.i = 1
@@ -2108,7 +2116,7 @@ def test_cache_modification():
 
 class OrderTraits(HasTraits):
     notified = Dict()
-    
+
     a = Unicode()
     b = Unicode()
     c = Unicode()
@@ -2121,10 +2129,10 @@ class OrderTraits(HasTraits):
     j = Unicode()
     k = Unicode()
     l = Unicode()
-    
+
     def _notify(self, name, old, new):
         """check the value of all traits when each trait change is triggered
-        
+
         This verifies that the values are not sensitive
         to dict ordering when loaded from kwargs
         """
@@ -2133,7 +2141,7 @@ class OrderTraits(HasTraits):
         self.notified[name] = {
             c: getattr(self, c) for c in 'abcdefghijkl'
         }
-    
+
     def __init__(self, **kwargs):
         self.on_trait_change(self._notify)
         super(OrderTraits, self).__init__(**kwargs)
@@ -2327,7 +2335,7 @@ def test_default_value_repr():
         n = Integer(0)
         lis = List()
         d = Dict()
-    
+
     assert C.t.default_value_repr() == "'traitlets.HasTraits'"
     assert C.t2.default_value_repr() == "'traitlets.traitlets.HasTraits'"
     assert C.n.default_value_repr() == '0'
@@ -2336,7 +2344,7 @@ def test_default_value_repr():
 
 
 class TransitionalClass(HasTraits):
-    
+
     d = Any()
     @default('d')
     def _d_default(self):
@@ -2344,19 +2352,19 @@ class TransitionalClass(HasTraits):
 
     parent_super = False
     calls_super = Integer(0)
-    
+
     @default('calls_super')
     def _calls_super_default(self):
         return -1
-    
+
     @observe('calls_super')
     @observe_compat
     def _calls_super_changed(self, change):
         self.parent_super = change
-    
+
     parent_override = False
     overrides = Integer(0)
-    
+
     @observe('overrides')
     @observe_compat
     def _overrides_changed(self, change):
@@ -2366,12 +2374,12 @@ class TransitionalClass(HasTraits):
 class SubClass(TransitionalClass):
     def _d_default(self):
         return SubClass
-    
+
     subclass_super = False
     def _calls_super_changed(self, name, old, new):
         self.subclass_super = True
         super(SubClass, self)._calls_super_changed(name, old, new)
-    
+
     subclass_override = False
     def _overrides_changed(self, name, old, new):
         self.subclass_override = True
@@ -2390,7 +2398,7 @@ def test_subclass_compat():
 
 class DefinesHandler(HasTraits):
     parent_called = False
-    
+
     trait = Integer()
     @observe('trait')
     def handler(self, change):
@@ -2399,7 +2407,7 @@ class DefinesHandler(HasTraits):
 
 class OverridesHandler(DefinesHandler):
     child_called = False
-    
+
     @observe('trait')
     def handler(self, change):
         self.child_called = True
@@ -2414,7 +2422,7 @@ def test_subclass_override_observer():
 
 class DoesntRegisterHandler(DefinesHandler):
     child_called = False
-    
+
     def handler(self, change):
         self.child_called = True
 
@@ -2429,7 +2437,7 @@ def test_subclass_override_not_registered():
 
 class AddsHandler(DefinesHandler):
     child_called = False
-    
+
     @observe('trait')
     def child_handler(self, change):
         self.child_called = True
@@ -2486,10 +2494,10 @@ def test_super_args():
         def __init__(self, *args, **kwargs):
             self.super_args = args
             self.super_kwargs = kwargs
-    
+
     class SuperHasTraits(HasTraits, SuperRecorder):
         i = Integer()
-    
+
     obj = SuperHasTraits('a1', 'a2', b=10, i=5, c='x')
     assert obj.i ==  5
     assert not hasattr(obj, 'b')
@@ -2500,7 +2508,7 @@ def test_super_args():
 def test_super_bad_args():
     class SuperHasTraits(HasTraits):
         a = Integer()
-    
+
     if sys.version_info < (3,):
         # Legacy Python, object.__init__ warns itself, instead of raising
         w = ['object.__init__']
@@ -2508,7 +2516,7 @@ def test_super_bad_args():
         w = ["Passing unrecoginized arguments"]
     with expected_warnings(w):
         obj = SuperHasTraits(a=1, b=2)
-    assert obj.a ==  1 
+    assert obj.a ==  1
     assert not hasattr(obj, 'b')
 
 

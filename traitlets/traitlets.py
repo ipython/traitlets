@@ -275,12 +275,16 @@ class link(object):
         self._transform, self._transform_inv = (
             transform if transform else (lambda x: x,) * 2)
 
+        self.link()
+
+    def link(self):
         try:
             setattr(target[0], target[1],
                     self._transform(getattr(source[0], source[1])))
+
         finally:
-            source[0].observe(self._update_target, names=source[1])
-            target[0].observe(self._update_source, names=target[1])
+            self.source[0].observe(self._update_target, names=self.source[1])
+            self.target[0].observe(self._update_source, names=self.target[1])
 
     @contextlib.contextmanager
     def _busy_updating(self):
@@ -306,8 +310,6 @@ class link(object):
     def unlink(self):
         self.source[0].unobserve(self._update_target, names=self.source[1])
         self.target[0].unobserve(self._update_source, names=self.target[1])
-        self.source, self.target = None, None
-        self._tranform, self._tranform_inv = None, None
 
 
 class directional_link(object):
@@ -333,9 +335,12 @@ class directional_link(object):
         self._transform = transform if transform else lambda x: x
         _validate_link(source, target)
         self.source, self.target = source, target
+        self.link()
+
+    def link(self):
         try:
-            setattr(target[0], target[1],
-                    self._transform(getattr(source[0], source[1])))
+            setattr(self.target[0], self.target[1],
+                    self._transform(getattr(self.source[0], self.source[1])))
         finally:
             self.source[0].observe(self._update, names=self.source[1])
 
@@ -356,7 +361,6 @@ class directional_link(object):
 
     def unlink(self):
         self.source[0].unobserve(self._update, names=self.source[1])
-        self.source, self.target = None, None
 
 dlink = directional_link
 
@@ -1426,6 +1430,28 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
 
+    def trait_values(self, **metadata):
+        """A ``dict`` of trait names and their values.
+
+        The metadata kwargs allow functions to be passed in which
+        filter traits based on metadata values.  The functions should
+        take a single value as an argument and return a boolean.  If
+        any function returns False, then the trait is not included in
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
+
+        Returns
+        -------
+        A ``dict`` of trait names and their values.
+
+        Notes
+        -----
+        Trait values are retrieved via ``getattr``, any exceptions raised
+        by traits or the operations they may trigger will result in the
+        absence of a trait value in the result ``dict``.
+        """
+        return {name: getattr(self, name) for name in self.trait_names(**metadata)}
+
     def trait_defaults(self, *names, **metadata):
         """Return a trait's default value or a dictionary of them
 
@@ -2210,6 +2236,43 @@ class CaselessStrEnum(Enum):
             if v.lower() == value.lower():
                 return v
         self.error(obj, value)
+
+
+class FuzzyEnum(Enum):
+    """An case-ignoring enum matching choices by unique prefixes/substrings."""
+
+    case_sensitive = False
+    #: If True, choices match anywhere in the string, otherwise match prefixes.
+    substring_matching = False
+
+    def __init__(self, values, default_value=Undefined,
+                 case_sensitive=False, substring_matching=False, **kwargs):
+        self.case_sensitive = case_sensitive
+        self.substring_matching = substring_matching
+        values = [cast_unicode_py2(value) for value in values]
+        super(FuzzyEnum, self).__init__(values, default_value=default_value, **kwargs)
+
+    def validate(self, obj, value):
+        if isinstance(value, str):
+            value = cast_unicode_py2(value)
+        if not isinstance(value, six.string_types):
+            self.error(obj, value)
+
+        conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
+        substring_matching = self.substring_matching
+        match_func = ((lambda v, c: v in c)
+                      if substring_matching
+                      else (lambda v, c: c.startswith(v)))
+        value = conv_func(value)
+        choices = self.values
+        matches = [match_func(value, conv_func(c)) for c in choices]
+        if sum(matches) == 1:
+            for v, m in zip(choices, matches):
+                if m:
+                    return v
+
+        self.error(obj, value)
+
 
 class Container(Instance):
     """An instance of a container (list, set, etc.)
