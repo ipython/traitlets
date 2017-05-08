@@ -279,8 +279,8 @@ class link(object):
 
     def link(self):
         try:
-            setattr(target[0], target[1],
-                    self._transform(getattr(source[0], source[1])))
+            setattr(self.target[0], self.target[1],
+                    self._transform(getattr(self.source[0], self.source[1])))
 
         finally:
             self.source[0].observe(self._update_target, names=self.source[1])
