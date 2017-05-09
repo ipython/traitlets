@@ -583,29 +583,60 @@ class TraitType(BaseDescriptor):
     def info(self):
         return self.info_text
 
-    def error(self, obj, value, error=None):
+    def error(self, obj, value, error=None, info=None):
+        """Raise a TraitError
+
+        Parameters
+        ----------
+        obj: HasTraits or None
+            The instance which owns the trait. If not
+            object is given, then an object agnostic
+            error will be raised.
+        value: any
+            The value that caused the error.
+        error: Exception (default: None)
+            An error that was raised by a child trait.
+            The arguments of this exception should be
+            of the form ``(value, info, *traits)``.
+            Where the ``value`` and ``info`` are the
+            problem value, and string describing the
+            expected value. The ``traits`` are a series
+            of :class:`TraitType` instances that are
+            "children" of this one (the first being
+            the deepest).
+        info: str (default: None)
+            A description of the expected value. By
+            default this is infered from this trait's
+            ``info`` method.
+        """
         if error is not None:
             # handle nested error
             error.args += (self,)
             if self.name is not None:
-                # this is the root trait that must format the final nested error message
-                error.args = ("The '%s' trait of %s instance contains %s which expected %s, not %s." % (
-                    self.name, describe("an", obj), " of ".join(describe("a", t) for t in error.args[1:]),
-                    error.args[1].info(), describe("the", error.args[0])),)
+                # this is the root trait that must format the final message
+                chain = " of ".join(describe("a", t) for t in error.args[2:])
+                if obj is not None:
+                    error.args = ("The '%s' trait of %s instance contains %s which "
+                        "expected %s, not %s." % (self.name, describe("an", obj),
+                        chain, error.args[1], describe("the", error.args[0])),)
+                else:
+                    error.args = ("The '%s' trait contains %s which "
+                        "expected %s, not %s." % (self.name, chain,
+                        error.args[1], describe("the", error.args[0])),)
             raise error
         else:
             # this trait caused an error
             if self.name is None:
                 # this is not the root trait
-                raise TraitError(value, self)
+                raise TraitError(value, info or self.info(), self)
             else:
                 # this is the root trait
                 if obj is not None:
-                    e = "The '%s' trait of %s instance must be %s, but a value of %s was specified." \
-                        % (self.name, class_of(obj), self.info(), repr_type(value))
+                    e = "The '%s' trait of %s instance expected %s, not %s." % (
+                        self.name, class_of(obj), self.info(), describe("the", value))
                 else:
-                    e = "The '%s' trait must be %s, but a value of %r was specified." \
-                        % (self.name, self.info(), repr_type(value))
+                    e = "The '%s' trait expected %s, not %s." % (
+                        self.name, self.info(), describe("the", value))
                 raise TraitError(e)
 
     def get_metadata(self, key, default=None):
