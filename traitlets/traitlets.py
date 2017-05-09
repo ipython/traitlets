@@ -42,6 +42,7 @@ Inheritance diagram:
 
 import contextlib
 import inspect
+import collections
 import os
 import re
 import sys
@@ -495,7 +496,7 @@ class TraitType(BaseDescriptor):
             return self.make_dynamic_default()
         else:
             # Undefined will raise in TraitType.get
-            return self.default_value
+            return Undefined
 
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
@@ -709,7 +710,7 @@ class TraitType(BaseDescriptor):
         return self
 
     def default_value_repr(self):
-        return repr(self.default_value)
+        return repr(self.default())
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
@@ -1749,14 +1750,112 @@ class Type(ClassBasedTraitType):
             self.default_value = self._resolve_string(self.default_value)
 
     def default_value_repr(self):
-        value = self.default_value
+        value = self.default()
         if isinstance(value, six.string_types):
             return repr(value)
         else:
             return repr('{}.{}'.format(value.__module__, value.__name__))
 
 
-class Instance(ClassBasedTraitType):
+class TypeCast(ClassBasedTraitType):
+    """Subclasses force values to be an instance of, or coerced to, a specified type.
+
+    Declare default classes, args, and kwargs by overriding the ``klass``,
+    ``default_args``, and ``default_kwargs`` attributes respectively.
+
+    Attributes
+    ----------
+    klass : class, str
+        The class that forms the basis for the trait.  Class names
+        can also be specified as strings, like 'foo.bar.Bar'.
+    default_args : tuple
+        Positional arguments for generating the default value.
+    default_kwargs : dict
+        Keyword arguments for generating the default value.
+    _cast: callable or None
+        Cast values to the appropriate type. If given as
+        None, then values are cast with ``klass`` instead.
+    _cast_types: tuple of classes and types, or None
+        The classes which are allowed to be cast to ``klass``.
+        Similar rules for specifying classes with strings
+        (e.g. 'foo.bar.Bar') apply. If given as None, then
+        only instances of ``klass`` are allowed.
+    """
+
+    klass = None
+    info_text = None
+    _cast_types = ()
+
+    def __new__(cls, *args, **kwargs):
+        new = super(TypeCast, cls).__new__
+        if new is not object.__new__:
+            self = new(cls, *args, **kwargs)
+        else:
+            self = new(cls)
+        if not isinstance(self._cast_types, tuple):
+            self._cast_types = (self._cast_types,)
+        return self
+
+    def _cast(self, value):
+        return self.klass(value)
+
+    def _can_cast(self, value):
+        return isinstance(value, self._cast_types)
+
+    def instance_init(self, obj):
+        self._resolve_classes()
+        super(TypeCast, self).instance_init(obj)
+
+    def _resolve_classes(self):
+        if isinstance(self.klass, six.string_types):
+            self.klass = self._resolve_string(self.klass)
+        self._cast_types = tuple(
+            self._resolve_string(c) if
+            isinstance(c, six.string_types)
+            else c for c in self._cast_types)
+
+    def validate(self, obj, value):
+        if self._can_cast(value):
+            try:
+                value = self._cast(value)
+            except Exception as e:
+                raise TraitError("The '%s' trait of %s failed to cast %s to %s with "
+                    "%s because: %s" %  (self.name, describe("the", obj), describe("the", value),
+                    describe("a", self.klass), describe("the", self._cast, verbose=True), e))
+        if isinstance(value, self.klass):
+            return value
+        else:
+            self.error(obj, value)
+
+    def info(self):
+        if self.info_text:
+            return self.info_text
+
+        result = describe("a", self.klass)
+        if self.allow_none:
+            result += " or None"
+
+        cast_info = self._cast_info()
+        if cast_info is not None:
+            result += " (can cast %s)" % cast_info
+
+        return result
+
+    def _cast_info(self):
+        if len(self._cast_types):
+            castables = [
+                describe("a", c)
+                for c in self._cast_types
+            ]
+            if len(castables) > 1:
+                the_types = (', '.join(castables[:-1])
+                    + ', or %s' % castables[-1])
+            else:
+                the_types = castables[0]
+            return the_types
+
+
+class Instance(TypeCast):
     """A trait whose value must be an instance of a specified class.
 
     The value can also be an instance of a subclass of the specified class.
@@ -1809,6 +1908,11 @@ class Instance(ClassBasedTraitType):
 
         self.default_args = args
         self.default_kwargs = kw
+
+        if "cast" in kwargs:
+            self._cast = kwargs["cast"]
+        if "cast_types" in kwargs:
+            self._cast_types = kwargs["cast_types"]
 
         super(Instance, self).__init__(**kwargs)
 
@@ -1970,298 +2074,194 @@ class Any(TraitType):
     info_text = 'any value'
 
 
-def _validate_bounds(trait, obj, value):
-    """
-    Validate that a number to be applied to a trait is between bounds.
-
-    If value is not between min_bound and max_bound, this raises a
-    TraitError with an error message appropriate for this trait.
-    """
-    if trait.min is not None and value < trait.min:
-        raise TraitError(
-            "The value of the '{name}' trait of {klass} instance should "
-            "not be less than {min_bound}, but a value of {value} was "
-            "specified".format(
-                name=trait.name, klass=class_of(obj),
-                value=value, min_bound=trait.min))
-    if trait.max is not None and value > trait.max:
-        raise TraitError(
-            "The value of the '{name}' trait of {klass} instance should "
-            "not be greater than {max_bound}, but a value of {value} was "
-            "specified".format(
-                name=trait.name, klass=class_of(obj),
-                value=value, max_bound=trait.max))
-    return value
-
-
-class Int(TraitType):
-    """An int trait."""
-
-    default_value = 0
-    info_text = 'an int'
+class NumberBase(TypeCast):
 
     def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', None)
         self.max = kwargs.pop('max', None)
-        super(Int, self).__init__(default_value=default_value,
-                                  allow_none=allow_none, **kwargs)
+        super(NumberBase, self).__init__(
+            default_value=default_value,
+            allow_none=allow_none, **kwargs)
 
     def validate(self, obj, value):
-        if not isinstance(value, int):
-            self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+        value = super(NumberBase, self).validate(obj, value)
+        return self._validate_bounds(obj, value)
+
+    def _validate_bounds(self, obj, value):
+        """Validate that a number to be applied to a trait is between bounds.
+        If value is not between min_bound and max_bound, this raises a
+        TraitError with an error message appropriate for this trait.
+        """
+        if self.min is not None and value < self.min:
+            raise TraitError(
+                "The value of the '{name}' trait of {klass} instance should "
+                "not be less than {min_bound}, but a value of {value} was "
+                "specified".format(name=self.name, klass=describe("an", obj),
+                    value=value, min_bound=self.min))
+        if self.max is not None and value > self.max:
+            raise TraitError(
+                "The value of the '{name}' trait of {klass} instance should "
+                "not be greater than {max_bound}, but a value of {value} was "
+                "specified".format(name=self.name, klass=describe("an", obj),
+                    value=value, max_bound=self.max))
+        return value
+
+
+class Int(NumberBase):
+    """An int trait."""
+
+    klass = int
+    default_value = 0
 
 
 class CInt(Int):
     """A casting version of the int trait."""
-
-    def validate(self, obj, value):
-        try:
-            value = int(value)
-        except:
-            self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+    _cast_types = object
 
 
 if six.PY2:
-    class Long(TraitType):
+    class Long(NumberBase):
         """A long integer trait."""
 
+        klass = long
+        _cast_types = int
         default_value = 0
-        info_text = 'a long'
-
-        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
-            self.min = kwargs.pop('min', None)
-            self.max = kwargs.pop('max', None)
-            super(Long, self).__init__(
-                default_value=default_value,
-                allow_none=allow_none, **kwargs)
-
-        def _validate_long(self, obj, value):
-            if isinstance(value, long):
-                return value
-            if isinstance(value, int):
-                return long(value)
-            self.error(obj, value)
-
-        def validate(self, obj, value):
-            value = self._validate_long(obj, value)
-            return _validate_bounds(self, obj, value)
 
 
     class CLong(Long):
         """A casting version of the long integer trait."""
-
-        def validate(self, obj, value):
-            try:
-                value = long(value)
-            except:
-                self.error(obj, value)
-            return _validate_bounds(self, obj, value)
+        _cast_types = object
 
 
-    class Integer(TraitType):
+    class Integer(NumberBase):
         """An integer trait.
-
         Longs that are unnecessary (<= sys.maxint) are cast to ints."""
 
-        default_value = 0
-        info_text = 'an integer'
-
-        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
-            self.min = kwargs.pop('min', None)
-            self.max = kwargs.pop('max', None)
-            super(Integer, self).__init__(
-                default_value=default_value,
-                allow_none=allow_none, **kwargs)
-
-        def _validate_int(self, obj, value):
-            if isinstance(value, int):
-                return value
-            if isinstance(value, long):
-                # downcast longs that fit in int:
-                # note that int(n > sys.maxint) returns a long, so
-                # we don't need a condition on this cast
-                return int(value)
-            if sys.platform == "cli":
-                from System import Int64
-                if isinstance(value, Int64):
-                    return int(value)
-            self.error(obj, value)
+        klass = int
+        # downcast longs that fit in int:
+        if sys.platform == 'cli':
+            from System import Int64
+            _cast_types = (long, Int64)
+        else:
+            _cast_types = long
 
         def validate(self, obj, value):
-            value = self._validate_int(obj, value)
-            return _validate_bounds(self, obj, value)
+            if isinstance(value, long) and isinstance(int(value), long):
+                # int(long > sys.maxint) is a long: we need a special
+                # condition here to avoid raising a trait error
+                return value
+            else:
+                return super(Integer, self).validate(obj, value)
+
+        default_value = 0
 
 else:
     Long, CLong = Int, CInt
     Integer = Int
 
 
-class Float(TraitType):
+class Float(NumberBase):
     """A float trait."""
 
     default_value = 0.0
-    info_text = 'a float'
-
-    def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
-        self.min = kwargs.pop('min', -float('inf'))
-        self.max = kwargs.pop('max', float('inf'))
-        super(Float, self).__init__(default_value=default_value,
-                                    allow_none=allow_none, **kwargs)
-
-    def validate(self, obj, value):
-        if isinstance(value, int):
-            value = float(value)
-        if not isinstance(value, float):
-            self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+    klass = float
+    _cast_types = int
 
 
 class CFloat(Float):
     """A casting version of the float trait."""
-
-    def validate(self, obj, value):
-        try:
-            value = float(value)
-        except:
-            self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+    _cast_types = object
 
 
-class Complex(TraitType):
+class Complex(NumberBase):
     """A trait for complex numbers."""
+
+    klass = complex
+    _cast_types = (float, int)
 
     default_value = 0.0 + 0.0j
     info_text = 'a complex number'
 
-    def validate(self, obj, value):
-        if isinstance(value, complex):
-            return value
-        if isinstance(value, (float, int)):
-            return complex(value)
-        self.error(obj, value)
-
 
 class CComplex(Complex):
     """A casting version of the complex number trait."""
+    _cast_types = object
 
-    def validate (self, obj, value):
-        try:
-            return complex(value)
-        except:
-            self.error(obj, value)
 
 # We should always be explicit about whether we're using bytes or unicode, both
 # for Python 3 conversion and for reliable unicode behaviour on Python 2. So
 # we don't have a Str type.
-class Bytes(TraitType):
+class Bytes(TypeCast):
     """A trait for byte strings."""
 
     default_value = b''
     info_text = 'a bytes object'
-
-    def validate(self, obj, value):
-        if isinstance(value, bytes):
-            return value
-        self.error(obj, value)
-
+    klass = bytes
 
 class CBytes(Bytes):
     """A casting version of the byte string trait."""
-
-    def validate(self, obj, value):
-        try:
-            return bytes(value)
-        except:
-            self.error(obj, value)
+    _cast_types = object
 
 
-class Unicode(TraitType):
+class Unicode(TypeCast):
     """A trait for unicode strings."""
 
     default_value = u''
     info_text = 'a unicode string'
+    klass = six.text_type
 
-    def validate(self, obj, value):
-        if isinstance(value, six.text_type):
-            return value
-        if isinstance(value, bytes):
-            try:
-                return value.decode('ascii', 'strict')
-            except UnicodeDecodeError:
-                msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
-                raise TraitError(msg.format(value, self.name, class_of(obj)))
-        self.error(obj, value)
+    _cast_types = (bytes,)
+    def _cast(self, value):
+        try:
+            return value.decode('ascii', 'strict')
+        except UnicodeDecodeError:
+            raise TraitError("Could not strictly decode %r to ascii." % value)
 
 
 class CUnicode(Unicode):
     """A casting version of the unicode trait."""
-
-    def validate(self, obj, value):
-        try:
-            return six.text_type(value)
-        except:
-            self.error(obj, value)
+    _cast_types = object
+    _cast = TypeCast._cast
 
 
-class ObjectName(TraitType):
+class ObjectName(TypeCast):
     """A string holding a valid object name in this version of Python.
 
     This does not check that the name exists in any scope."""
+
     info_text = "a valid object identifier in Python"
 
+    klass = six.string_types
+
     if six.PY2:
-        # Python 2:
-        def coerce_str(self, obj, value):
-            "In Python 2, coerce ascii-only unicode to str"
-            if isinstance(value, unicode):
-                try:
-                    return str(value)
-                except UnicodeEncodeError:
-                    self.error(obj, value)
-            return value
-    else:
-        coerce_str = staticmethod(lambda _,s: s)
+        _cast = str
+        _cast_types = unicode
 
     def validate(self, obj, value):
-        value = self.coerce_str(obj, value)
-
-        if isinstance(value, six.string_types) and isidentifier(value):
-            return value
-        self.error(obj, value)
+        value = super(ObjectName, self).validate(obj, value)
+        if not isidentifier(value):
+            self.error(obj, value)
+        return value
+        
 
 class DottedObjectName(ObjectName):
     """A string holding a valid dotted object name in Python, such as A.b3._c"""
     def validate(self, obj, value):
-        value = self.coerce_str(obj, value)
-
-        if isinstance(value, six.string_types) and all(isidentifier(a)
-          for a in value.split('.')):
-            return value
-        self.error(obj, value)
+        value = super(ObjectName, self).validate(obj, value)
+        if not all(isidentifier(a) for a in value.split('.')):
+            self.error(obj, value)
+        return value
 
 
-class Bool(TraitType):
+class Bool(TypeCast):
     """A boolean (True, False) trait."""
-
+    klass = bool
     default_value = False
-    info_text = 'a boolean'
-
-    def validate(self, obj, value):
-        if isinstance(value, bool):
-            return value
-        self.error(obj, value)
 
 
 class CBool(Bool):
     """A casting version of the boolean trait."""
-
-    def validate(self, obj, value):
-        try:
-            return bool(value)
-        except:
-            self.error(obj, value)
+    _cast_types = object
 
 
 class Enum(TraitType):
@@ -2438,7 +2438,7 @@ class Container(Instance):
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
-            raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
+            raise TypeError('default value of %s was %s' % (self.__class__.__name__, default_value))
 
         if is_trait(trait):
             if isinstance(trait, type):
@@ -2822,7 +2822,7 @@ class Dict(Instance):
             if key_trait:
                 try:
                     key = key_trait._validate(obj, key)
-                except TraitError as error:
+                except TraitError:
                     self.element_error(obj, key, key_trait, 'Keys')
             active_value_trait = per_key_override.get(key, value_trait)
             if active_value_trait:
