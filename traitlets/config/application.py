@@ -499,11 +499,13 @@ class Application(SingletonConfigurable):
             for cls in help_classes:
                 cls.class_print_help()
                 print()
-        else:
-            print("To see all available configurables, use `--help-all`")
+        self.print_examples()
+
+
+        if not classes:
+            print("To see all available configurables, use `--help-all`.")
             print()
 
-        self.print_examples()
 
     def document_config_options(self):
         """Generate rST format documentation for the config options this application
