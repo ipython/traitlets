@@ -1906,9 +1906,35 @@ class TestLink(TestCase):
         a.value = 5
         self.assertEqual(b.value, 10)
         # Change one the value of the target and check that it modifies the
-        # source. 
+        # source.
         b.value = 6
         self.assertEqual(a.value, 3)
+
+    def test_link_broken_at_source(self):
+        class MyClass(HasTraits):
+            i = Int()
+            j = Int()
+
+            @observe("j")
+            def another_update(self, change):
+                self.i = change.new * 2
+
+        mc = MyClass()
+        l = link((mc, "i"), (mc, "j"))
+        self.assertRaises(TraitError, setattr, mc, 'i', 2)
+
+    def test_link_broken_at_target(self):
+        class MyClass(HasTraits):
+            i =Int()
+            j = Int()
+
+            @observe("i")
+            def another_update(self, change):
+                self.j = change.new * 2
+
+        mc = MyClass()
+        l = link((mc, "i"), (mc, "j"))
+        self.assertRaises(TraitError, setattr, mc, 'j', 2)
 
 class TestDirectionalLink(TestCase):
     def test_connect_same(self):
