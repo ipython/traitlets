@@ -299,6 +299,10 @@ class link(object):
             return
         with self._busy_updating():
             setattr(self.target[0], self.target[1], self._transform(change.new))
+            if getattr(self.source[0], self.source[1]) != change.new:
+                raise TraitError(
+                    "Broken link {}: the source value changed while updating "
+                    "the target.".format(self))
 
     def _update_source(self, change):
         if self.updating:
@@ -306,6 +310,10 @@ class link(object):
         with self._busy_updating():
             setattr(self.source[0], self.source[1],
                     self._transform_inv(change.new))
+            if getattr(self.target[0], self.target[1]) != change.new:
+                raise TraitError(
+                    "Broken link {}: the target value changed while updating "
+                    "the source.".format(self))
 
     def unlink(self):
         self.source[0].unobserve(self._update_target, names=self.source[1])
