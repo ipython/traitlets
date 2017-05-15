@@ -378,11 +378,13 @@ class Application(SingletonConfigurable):
                 ))
 
     def print_alias_help(self):
+        print('\n'.join(self.emit_alias_help()))
+
+    def emit_alias_help(self):
         """Print the alias part of the help."""
         if not self.aliases:
             return
 
-        lines = []
         classdict = {}
         for cls in self.classes:
             # include all parents (up to, but excluding Configurable) in available names
@@ -409,103 +411,119 @@ class Application(SingletonConfigurable):
 
                 # reformat first line
                 fhelp[0] = fhelp[0].replace('--' + longname, alias)
-                lines.extend(fhelp)
-                lines.append(indent("Equivalent to: [--%s]" % longname))
+                for l in fhelp:
+                    yield l
+                yield indent("Equivalent to: [--%s]" % longname)
             except Exception as ex:
                 self.log.error('Failed collecting help-message for alias %r, due to: %s',
                                alias, ex)
                 raise
 
-        # lines.append('')
-        print(os.linesep.join(lines))
-
     def print_flag_help(self):
+        print('\n'.join(self.emit_flag_help()))
+
+    def emit_flag_help(self):
         """Print the flag part of the help."""
         if not self.flags:
             return
 
-        lines = []
         for flags, (cfg, fhelp) in self.flags.items():
             try:
                 if not isinstance(flags, tuple):
                     flags = (flags, )
                 flags = sorted(flags, key=len)
                 flags = ', '.join(('--%s' if len(m) > 1 else '-%s') % m
-                              for m in flags)
-                lines.append(flags)
-                lines.append(indent(dedent(fhelp.strip())))
+                                  for m in flags)
+                yield flags
+                yield indent(dedent(fhelp.strip()))
                 cfg_list = ' '.join('--%s.%s=%s' %(clname, prop, val)
-                            for clname, props_dict
-                            in cfg.items() for prop, val in props_dict.items())
+                                    for clname, props_dict
+                                    in cfg.items()
+                                    for prop, val in props_dict.items())
                 cfg_txt = "Equivalent to: [%s]" % cfg_list
-                lines.append(indent(dedent(cfg_txt)))
+                yield indent(dedent(cfg_txt))
             except Exception as ex:
                 self.log.error('Failed collecting help-message for flag %r, due to: %s',
                                flags, ex)
                 raise
 
-        # lines.append('')
-        print(os.linesep.join(lines))
-
     def print_options(self):
+        print('\n'.join(self.emit_options_help()))
+
+    def emit_options_help(self):
         if not self.flags and not self.aliases:
             return
-        lines = ['Options']
-        lines.append('=' * len(lines[0]))
+        header = 'Options'
+        yield header
+        yield '=' * len(header)
         for p in wrap_paragraphs(self.option_description):
-            lines.append(p)
-            lines.append('')
-        print(os.linesep.join(lines))
-        self.print_flag_help()
-        self.print_alias_help()
-        print()
+            yield p
+            yield ''
+
+        for l in self.emit_flag_help():
+            yield l
+        for l in self.emit_alias_help():
+            yield l
+        yield ''
 
     def print_subcommands(self):
+        print('\n'.join(self.emit_subcommands_help()))
+
+    def emit_subcommands_help(self):
         """Print the subcommand part of the help."""
         if not self.subcommands:
             return
 
-        lines = ["Subcommands"]
-        lines.append('=' * len(lines[0]))
+        header = "Subcommands"
+        yield header
+        yield '=' * len(header)
         for p in wrap_paragraphs(self.subcommand_description.format(
                     app=self.name)):
-            lines.append(p)
-            lines.append('')
+            yield p
+            yield ''
         for subc, (cls, help) in self.subcommands.items():
-            lines.append(subc)
+            yield subc
             if help:
-                lines.append(indent(dedent(help.strip())))
-        lines.append('')
-        print(os.linesep.join(lines))
+                yield indent(dedent(help.strip()))
+        yield ''
 
     def print_help(self, classes=False):
         """Print the help for each Configurable class in self.classes.
 
         If classes=False (the default), only flags and aliases are printed.
         """
-        self.print_description()
-        self.print_subcommands()
-        self.print_options()
+        print('\n'.join(self.emit_help(classes=classes)))
+
+    def emit_help(self, classes=False):
+        """Print the help for each Configurable class in self.classes.
+
+        If classes=False (the default), only flags and aliases are printed.
+        """
+        for l in self.emit_description():
+            yield l
+        for l in self.emit_subcommands_help():
+            yield l
+        for l in self.emit_options_help():
+            yield l
 
         if classes:
             help_classes = self._classes_with_config_traits()
             if help_classes:
-                print("Class options")
-                print("=============")
+                yield "Class options"
+                yield "============="
                 for p in wrap_paragraphs(self.keyvalue_description):
-                    print(p)
-                    print()
+                    yield p
+                    yield ''
 
             for cls in help_classes:
                 cls.class_print_help()
-                print()
-        self.print_examples()
-
+                yield ''
+        for l in self.emit_examples():
+            yield l
 
         if not classes:
-            print("To see all available configurables, use `--help-all`.")
-            print()
-
+            yield "To see all available configurables, use `--help-all`."
+            yield ''
 
     def document_config_options(self):
         """Generate rST format documentation for the config options this application
@@ -515,25 +533,32 @@ class Application(SingletonConfigurable):
         return '\n'.join(c.class_config_rst_doc()
                          for c in self._classes_inc_parents())
 
-
     def print_description(self):
         """Print the application description."""
+        print('\n'.join(self.emit_description()))
+
+    def emit_description(self):
+        """Yield lines with the application description."""
         for p in wrap_paragraphs(self.description or self.__doc__):
-            print(p)
-            print()
+            yield p
+            yield ''
 
     def print_examples(self):
-        """Print usage and examples.
+        """Print usage and examples (see `emit_examples()`). """
+        print('\n'.join(self.emitt_examples()))
+
+    def emit_examples(self):
+        """Yield lines with the usage and examples.
 
         This usage string goes at the end of the command line help string
         and should contain examples of the application's usage.
         """
         if self.examples:
-            print("Examples")
-            print("--------")
-            print()
-            print(indent(dedent(self.examples.strip())))
-            print()
+            yield "Examples"
+            yield "--------"
+            yield ''
+            yield indent(dedent(self.examples.strip()))
+            yield ''
 
     def print_version(self):
         """Print the version string."""
