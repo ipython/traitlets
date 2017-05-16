@@ -378,10 +378,11 @@ class Application(SingletonConfigurable):
                 ))
 
     def print_alias_help(self):
+        """Print the alias parts of the help."""
         print('\n'.join(self.emit_alias_help()))
 
     def emit_alias_help(self):
-        """Print the alias part of the help."""
+        """Yield the lines for alias part of the help."""
         if not self.aliases:
             return
 
@@ -420,10 +421,11 @@ class Application(SingletonConfigurable):
                 raise
 
     def print_flag_help(self):
+        """Print the flag part of the help."""
         print('\n'.join(self.emit_flag_help()))
 
     def emit_flag_help(self):
-        """Print the flag part of the help."""
+        """Yield the lines for the flag part of the help."""
         if not self.flags:
             return
 
@@ -448,9 +450,11 @@ class Application(SingletonConfigurable):
                 raise
 
     def print_options(self):
+        """Print the options part of the help."""
         print('\n'.join(self.emit_options_help()))
 
     def emit_options_help(self):
+        """Yield the lines for the options part of the help."""
         if not self.flags and not self.aliases:
             return
         header = 'Options'
@@ -467,10 +471,11 @@ class Application(SingletonConfigurable):
         yield ''
 
     def print_subcommands(self):
+        """Print the subcommand part of the help."""
         print('\n'.join(self.emit_subcommands_help()))
 
     def emit_subcommands_help(self):
-        """Print the subcommand part of the help."""
+        """Yield the lines for the subcommand part of the help."""
         if not self.subcommands:
             return
 
@@ -495,7 +500,7 @@ class Application(SingletonConfigurable):
         print('\n'.join(self.emit_help(classes=classes)))
 
     def emit_help(self, classes=False):
-        """Print the help for each Configurable class in self.classes.
+        """Yield the help-lines for each Configurable class in self.classes.
 
         If classes=False (the default), only flags and aliases are printed.
         """
