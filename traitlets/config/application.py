@@ -492,6 +492,15 @@ class Application(SingletonConfigurable):
                 yield indent(dedent(help.strip()))
         yield ''
 
+    def emit_help_epilogue(self, classes):
+        """Yield the very bottom lines of the help message.
+
+        If classes=False (the default), print `--help-all` msg.
+        """
+        if not classes:
+            yield "To see all available configurables, use `--help-all`."
+            yield ''
+
     def print_help(self, classes=False):
         """Print the help for each Configurable class in self.classes.
 
@@ -526,9 +535,8 @@ class Application(SingletonConfigurable):
         for l in self.emit_examples():
             yield l
 
-        if not classes:
-            yield "To see all available configurables, use `--help-all`."
-            yield ''
+        for l in self.emit_help_epilogue(classes):
+            yield l
 
     def document_config_options(self):
         """Generate rST format documentation for the config options this application
