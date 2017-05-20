@@ -63,6 +63,28 @@ from .utils.bunch import Bunch
 
 SequenceTypes = (list, tuple, set, frozenset)
 
+# exports:
+
+__all__ = [
+    'default',
+    'validate',
+    'observe',
+    'link',
+    'directional_link',
+    'dlink',
+    'Undefined',
+    'All',
+    'NoDefaultSpecified',
+    'TraitError',
+    'HasDescriptors',
+    'HasTraits',
+    'MetaHasDescriptors',
+    'MetaHasTraits',
+    'BaseDescriptor',
+    'TraitType',
+]
+# any TraitType subclass will be added automatically
+
 #-----------------------------------------------------------------------------
 # Basic classes
 #-----------------------------------------------------------------------------
@@ -368,7 +390,7 @@ class BaseDescriptor(object):
 
     Notes
     -----
-    This implements Python's descriptor prototol.
+    This implements Python's descriptor protocol.
 
     This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
@@ -2878,3 +2900,11 @@ class Callable(TraitType):
             return value
         else:
             self.error(obj, value)
+
+# add all TraitType subclasses to export
+# avoid iterating through globals while defining variables
+def _add_all():
+    for _name, _value in globals().items():
+        if isinstance(_value, type) and issubclass(_value, TraitType):
+            __all__.append(_name)
+_add_all()
