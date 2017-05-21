@@ -2332,6 +2332,8 @@ class Container(Instance):
 
         super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
 
+        self.default_value = self.make_dynamic_default()
+
     def element_error(self, obj, element, validator):
         e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
             % (self.name, class_of(obj), validator.info(), repr_type(element))
