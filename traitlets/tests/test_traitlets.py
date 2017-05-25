@@ -264,6 +264,8 @@ class TestTraitType(TestCase):
         class Foo(HasTraits):
             bar = Union([Dict(), Int()])
         self.assertEqual(Foo().bar, {})
+        # generate default value from the
+        # first given TraitType
 
     def test_deprecated_metadata_access(self):
         class MyIntTT(TraitType):
