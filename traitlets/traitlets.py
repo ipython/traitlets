@@ -533,7 +533,12 @@ class TraitType(BaseDescriptor):
 
         obj._trait_values[self.name] = new_value
         try:
-            silent = bool(old_value == new_value)
+            # first check that old_value is not non, because comparison
+            # to none is being depricated.
+            try:
+                silent = bool((old_value is none) and (new_value is none))
+            except:
+                silent = bool(old_value == new_value)
         except:
             # if there is an error in comparing, default to notify
             silent = False
