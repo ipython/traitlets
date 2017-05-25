@@ -1058,6 +1058,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     def __getstate__(self):
         d = self.__dict__.copy()
+        d.pop('notify_change', None)
         # event handlers stored on an instance are
         # expected to be reinstantiated during a
         # recall of instance_init during __setstate__
