@@ -2750,12 +2750,19 @@ class TCPAddress(TraitType):
 
     def validate(self, obj, value):
         if isinstance(value, tuple):
-            if len(value) == 2:
-                if isinstance(value[0], six.string_types) and isinstance(value[1], int):
-                    port = value[1]
-                    if port >= 0 and port <= 65535:
-                        return value
-        self.error(obj, value)
+        if len(value) == 2:
+            if isinstance(value[0], six.string_types) and isinstance(value[1], int):
+                host = value[0]
+                port = value[1]
+                host_valid = False
+                port_valid = False
+                if port >= 0 and port <= 65535:
+                    port_valid = True
+                if  len(host) <= 255 and re.search('(?:\A\w[\d|\w|-]{0,63}(\Z|\.))+', host):
+                    host_valid = True
+                if host_valid == True and port_valid == True:
+                    return value
+        self.error(obj, value)  
 
 class CRegExp(TraitType):
     """A casting compiled regular expression trait.
