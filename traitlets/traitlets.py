@@ -47,6 +47,7 @@ import os
 import re
 import sys
 import types
+import copy
 import enum
 try:
     from types import ClassType, InstanceType
@@ -617,14 +618,14 @@ class TraitType(BaseDescriptor):
                 # this is the root trait that must format the final message
                 chain = " of ".join(describe("a", t) for t in error.args[2:])
                 if obj is not None:
-                    error.args = ("The '%s' trait of %s instance contains %s which "
-                        "expected %s, not %s." % (self.name, describe("an", obj),
-                        chain, error.args[1], describe("the", error.args[0])),)
+                    error.args = ("The %r trait of %s instance contains %s which "
+                        "expected %s, not %s." % (self.name, describe("an", obj), chain,
+                        info or error.args[1], describe("the", error.args[0])),)
                 else:
-                    error.args = ("The '%s' trait contains %s which "
+                    error.args = ("The %r trait contains %s which "
                         "expected %s, not %s." % (self.name, chain,
-                        error.args[1], describe("the", error.args[0])),)
-            raise error
+                        info or error.args[1], describe("the", error.args[0])),)
+            raise
         else:
             # this trait caused an error
             if self.name is None:
@@ -633,11 +634,13 @@ class TraitType(BaseDescriptor):
             else:
                 # this is the root trait
                 if obj is not None:
-                    e = "The '%s' trait of %s instance expected %s, not %s." % (
-                        self.name, class_of(obj), self.info(), describe("the", value))
+                    e = "The %r %s of %s instance expects %s, not %s." % (
+                        self.name, type(self).__name__, class_of(obj),
+                        info or self.info(), describe("the", value))
                 else:
-                    e = "The '%s' trait expected %s, not %s." % (
-                        self.name, self.info(), describe("the", value))
+                    e = "The %r %s expected %s, not %s." % (self.name,
+                        type(self).__name__, info or self.info(),
+                        describe("the", value))
                 raise TraitError(e)
 
     def get_metadata(self, key, default=None):
@@ -1725,6 +1728,16 @@ class TypeCast(ClassBasedTraitType):
             self._cast_types = (self._cast_types,)
         return self
 
+    def __init__(self, default_value=Undefined, *args, **kwargs):
+        if default_value not in (Undefined, None):
+            hold, self.name = self.name, "no-name"
+            # We use TypeCast.validate because other validation methods
+            # may require the owner of the trait to be provided. In this
+            # one case we can get away with just passing `None`.
+            default_value = TypeCast.validate(self, None, default_value)
+            self.name = hold
+        super(TypeCast, self).__init__(default_value=default_value, *args, **kwargs)
+
     def _cast(self, value):
         return self.klass(value)
 
@@ -1748,9 +1761,7 @@ class TypeCast(ClassBasedTraitType):
             try:
                 value = self._cast(value)
             except Exception as e:
-                raise TraitError("The '%s' trait of %s failed to cast %s to %s with "
-                    "%s because: %s" %  (self.name, describe("the", obj), describe("the", value),
-                    describe("a", self.klass), describe("the", self._cast, verbose=True), e))
+                raise self.cast_error(obj, value, e)
         if isinstance(value, self.klass):
             return value
         else:
@@ -1769,6 +1780,16 @@ class TypeCast(ClassBasedTraitType):
             result += " (can cast %s)" % cast_info
 
         return result
+
+    def cast_error(self, obj, value, error):
+        if self.name is not None and obj is not None:
+            raise TraitError("The '%s' trait of %s failed to cast "
+                "%s to %s because: %s" % (self.name, describe("the", obj),
+                describe("the", value), describe("a", self.klass), error))
+        else:
+            raise TraitError("The %s failed to cast %s to %s because: "
+                "%s" % (describe("the", self), describe("the", value),
+                describe("a", self.klass), error))
 
     def _cast_info(self):
         if len(self._cast_types):
@@ -2269,287 +2290,57 @@ class FuzzyEnum(Enum):
         self.error(obj, value)
 
 
-class Container(Instance):
-    """An instance of a container (list, set, etc.)
+class Mutable(TypeCast):
 
-    To be subclassed by overriding klass.
-    """
-    klass = None
-    _cast_types = ()
-    _valid_defaults = SequenceTypes
-    _trait = None
+    def __init__(self, *args, **kwargs):
+        super(Mutable, self).__init__(*args, **kwargs)
+        self._default_progenitor = self.default_value
+        self.default_value = Undefined
 
-    def __init__(self, trait=None, default_value=None, **kwargs):
-        """Create a container trait type from a list, set, or tuple.
+    def make_dynamic_default(self):
+        return copy.copy(self._default_progenitor)
 
-        The default value is created by doing ``List(default_value)``,
-        which creates a copy of the ``default_value``.
 
-        ``trait`` can be specified, which restricts the type of elements
-        in the container to that TraitType.
+class Container(TypeCast):
 
-        If only one arg is given and it is not a Trait, it is taken as
-        ``default_value``:
-
-        ``c = List([1, 2, 3])``
-
-        Parameters
-        ----------
-
-        trait : TraitType [ optional ]
-            the type for restricting the contents of the Container.  If unspecified,
-            types are not checked.
-
-        default_value : SequenceType [ optional ]
-            The default value for the Trait.  Must be list/tuple/set, and
-            will be cast to the container type.
-
-        allow_none : bool [ default False ]
-            Whether to allow the value to be None
-
-        **kwargs : any
-            further keys for extensions to the Trait (e.g. config)
-
-        """
-        # allow List([values]):
-        if default_value is None and not is_trait(trait):
-            default_value = trait
-            trait = None
-
-        if default_value is None:
-            args = ()
-        elif isinstance(default_value, self._valid_defaults):
-            args = (default_value,)
-        else:
-            raise TypeError('default value of %s was %s' % (self.__class__.__name__, default_value))
-
-        if is_trait(trait):
-            if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
-                     " Passing types is deprecated in traitlets 4.1.",
-                     DeprecationWarning, stacklevel=3)
-            self._trait = trait() if isinstance(trait, type) else trait
-        elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
-
-        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
-
+    _cast_types = SequenceTypes
+    
     def validate(self, obj, value):
-        if isinstance(value, self._cast_types):
-            value = self.klass(value)
-        value = super(Container, self).validate(obj, value)
-        if value is None:
-            return value
-
-        value = self.validate_elements(obj, value)
-
+        validate = super(Container, self).validate
+        value = self.validate_elements(obj, validate(obj, value))
+        if not isinstance(value, self.klass):
+            value = validate(obj, value)
         return value
-
+    
     def validate_elements(self, obj, value):
-        validated = []
-        if self._trait is None or isinstance(self._trait, Any):
-            return value
-        for v in value:
-            try:
-                v = self._trait._validate(obj, v)
-            except TraitError as error:
-                self.error(obj, v, error)
-            else:
-                validated.append(v)
-        return self.klass(validated)
-
-    def class_init(self, cls, name):
-        if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
-
-    def instance_init(self, obj):
-        if isinstance(self._trait, TraitType):
-            self._trait.instance_init(obj)
-        super(Container, self).instance_init(obj)
+        raise NotImplementedError()
 
 
-class List(Container):
-    """An instance of a Python list."""
-    klass = list
-    _cast_types = (tuple,)
-
-    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize, **kwargs):
-        """Create a List trait type from a list, set, or tuple.
-
-        The default value is created by doing ``list(default_value)``,
-        which creates a copy of the ``default_value``.
-
-        ``trait`` can be specified, which restricts the type of elements
-        in the container to that TraitType.
-
-        If only one arg is given and it is not a Trait, it is taken as
-        ``default_value``:
-
-        ``c = List([1, 2, 3])``
-
-        Parameters
-        ----------
-
-        trait : TraitType [ optional ]
-            the type for restricting the contents of the Container.
-            If unspecified, types are not checked.
-
-        default_value : SequenceType [ optional ]
-            The default value for the Trait.  Must be list/tuple/set, and
-            will be cast to the container type.
-
-        minlen : Int [ default 0 ]
-            The minimum length of the input list
-
-        maxlen : Int [ default sys.maxsize ]
-            The maximum length of the input list
-        """
-        self._minlen = minlen
-        self._maxlen = maxlen
-        super(List, self).__init__(trait=trait, default_value=default_value,
-                                   **kwargs)
-
-    def length_error(self, obj, value):
-        e = "The '%s' trait of %s instance must be of length %i <= L <= %i, but a value of %s was specified." \
-            % (self.name, class_of(obj), self._minlen, self._maxlen, value)
-        raise TraitError(e)
-
-    def validate_elements(self, obj, value):
-        length = len(value)
-        if length < self._minlen or length > self._maxlen:
-            self.length_error(obj, value)
-
-        return super(List, self).validate_elements(obj, value)
-
-    def validate(self, obj, value):
-        value = super(List, self).validate(obj, value)
-        value = self.validate_elements(obj, value)
-        return value
-
-
-class Set(List):
-    """An instance of a Python set."""
-    klass = set
-    _cast_types = (tuple, list)
-
-    # Redefine __init__ just to make the docstring more accurate.
-    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize,
-                 **kwargs):
-        """Create a Set trait type from a list, set, or tuple.
-
-        The default value is created by doing ``set(default_value)``,
-        which creates a copy of the ``default_value``.
-
-        ``trait`` can be specified, which restricts the type of elements
-        in the container to that TraitType.
-
-        If only one arg is given and it is not a Trait, it is taken as
-        ``default_value``:
-
-        ``c = Set({1, 2, 3})``
-
-        Parameters
-        ----------
-
-        trait : TraitType [ optional ]
-            the type for restricting the contents of the Container.
-            If unspecified, types are not checked.
-
-        default_value : SequenceType [ optional ]
-            The default value for the Trait.  Must be list/tuple/set, and
-            will be cast to the container type.
-
-        minlen : Int [ default 0 ]
-            The minimum length of the input list
-
-        maxlen : Int [ default sys.maxsize ]
-            The maximum length of the input list
-        """
-        super(Set, self).__init__(trait, default_value, minlen, maxlen, **kwargs)
-
-
-class Tuple(Container):
-    """An instance of a Python tuple."""
-    klass = tuple
-    _cast_types = (list,)
-
+class Collection(Container):
+    
+    _traits = None
+    
     def __init__(self, *traits, **kwargs):
-        """Create a tuple from a list, set, or tuple.
-
-        Create a fixed-type tuple with Traits:
-
-        ``t = Tuple(Int(), Str(), CStr())``
-
-        would be length 3, with Int,Str,CStr for each element.
-
-        If only one arg is given and it is not a Trait, it is taken as
-        default_value:
-
-        ``t = Tuple((1, 2, 3))``
-
-        Otherwise, ``default_value`` *must* be specified by keyword.
-
-        Parameters
-        ----------
-
-        `*traits` : TraitTypes [ optional ]
-            the types for restricting the contents of the Tuple.  If unspecified,
-            types are not checked. If specified, then each positional argument
-            corresponds to an element of the tuple.  Tuples defined with traits
-            are of fixed length.
-
-        default_value : SequenceType [ optional ]
-            The default value for the Tuple.  Must be list/tuple/set, and
-            will be cast to a tuple. If ``traits`` are specified,
-            ``default_value`` must conform to the shape and type they specify.
-        """
-        default_value = kwargs.pop('default_value', Undefined)
-        # allow Tuple((values,)):
-        if len(traits) == 1 and default_value is Undefined and not is_trait(traits[0]):
-            default_value = traits[0]
-            traits = ()
-
-        if default_value is Undefined:
-            args = ()
-        elif isinstance(default_value, self._valid_defaults):
-            args = (default_value,)
-        else:
-            raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
-
+        default_value = kwargs.get("default_value", Undefined)
+        if len(traits) == 1 and not is_trait(traits[0]) and default_value is Undefined:
+            kwargs["default_value"], traits = traits[0], ()
+        
         self._traits = []
-        for trait in traits:
-            if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
-                     " Passing types is deprecated in traitlets 4.1.",
-                     DeprecationWarning, stacklevel=2)
-            t = trait() if isinstance(trait, type) else trait
-            self._traits.append(t)
-
-        if self._traits and default_value is None:
-            # don't allow default to be an empty container if length is specified
-            args = None
-        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
-
-    def validate_elements(self, obj, value):
-        if not self._traits:
-            # nothing to validate
-            return value
-        if len(value) != len(self._traits):
-            e = "The '%s' trait of %s instance requires %i elements, but a value of %s was specified." \
-                % (self.name, class_of(obj), len(self._traits), repr_type(value))
-            raise TraitError(e)
-
-        validated = []
-        for t, v in zip(self._traits, value):
-            try:
-                v = t._validate(obj, v)
-            except TraitError as error:
-                self.error(obj, v, error)
+        for i, trait in enumerate(traits):
+            if inspect.isclass(trait) and issubclass(trait, TraitType):
+                warn("Traits should be given as instances, not types "
+                     "(for example, `Int()`, not `Int`). Passing "
+                     "types is deprecated in traitlets 4.1.",
+                     DeprecationWarning, stacklevel=3)
+                trait = trait()
+            if not isinstance(trait, TraitType):
+                raise TypeError("Argument %i of 'traits' must be %s, not %s." %
+                    (i, describe("a", TraitType), describe("the", trait)))
             else:
-                validated.append(v)
-        return tuple(validated)
+                self._traits.append(trait)
 
+        super(Collection, self).__init__(**kwargs)
+    
     def class_init(self, cls, name):
         for trait in self._traits:
             if isinstance(trait, TraitType):
@@ -2561,9 +2352,226 @@ class Tuple(Container):
             if isinstance(trait, TraitType):
                 trait.instance_init(obj)
         super(Container, self).instance_init(obj)
+                
+    def validate_elements(self, obj, value):
+        if not self._traits:
+            return value
+        if len(self._traits) != len(value):
+            info = "a length %i" % len(self._traits)
+            self.error(obj, len(value), info=info)
+        new = []
+        for t, v in zip(self._traits, value):
+            try:
+                v = t._validate(obj, v)
+            except TraitError as error:
+                self.error(obj, v, error)
+            else:
+                new.append(v)
+        return new
 
 
-class Dict(Instance):
+class BaseSequence(Container):
+
+    _trait = None
+    allow_none = True
+
+    def __init__(self, trait=None, default_value=Undefined, **kwargs):
+        if default_value is Undefined and not is_trait(trait):
+            if trait is not None or kwargs.get("allow_none", False):
+                kwargs['default_value'], trait = trait, None
+
+        if inspect.isclass(trait) and issubclass(trait, TraitType):
+            warn("Traits should be given as instances, not types "
+                 "(for example, `Int()`, not `Int`). Passing "
+                 "types is deprecated in traitlets 4.1.",
+                 DeprecationWarning, stacklevel=3)
+            trait = trait()
+        if not isinstance(trait, TraitType) and trait is not None:
+            raise TypeError("The argument 'trait' must be %s, not %s." %
+                (describe("a", TraitType), describe("the", trait)))
+
+        self._trait = trait
+
+        super(BaseSequence, self).__init__(**kwargs)
+    
+    def class_init(self, cls, name):
+        if isinstance(self._trait, TraitType):
+            self._trait.class_init(cls, None)
+        super(Container, self).class_init(cls, name)
+
+    def instance_init(self, obj):
+        if isinstance(self._trait, TraitType):
+            self._trait.instance_init(obj)
+        super(Container, self).instance_init(obj)
+
+
+class Sequence(BaseSequence):
+    
+    def validate_elements(self, obj, value):
+        if not self._trait:
+            return value
+        new = []
+        for v in value:
+            try:
+                v = self._trait._validate(obj, v)
+            except TraitError as error:
+                self.error(obj, v, error)
+            else:
+                new.append(v)
+        return new
+
+
+class MutableSequence(Mutable, BaseSequence):
+
+    def __init__(self, trait=None, default_value=Undefined, minlen=0, maxlen=sys.maxsize, **kwargs):
+        self._minlen, self._maxlen = minlen, maxlen
+        super(MutableSequence, self).__init__(trait=trait, default_value=default_value, **kwargs)
+
+    def validate_elements(self, obj, value):
+        if not self._trait:
+            return value
+        for i, v in enumerate(value):
+            try:
+                v = self._trait._validate(obj, v)
+            except TraitError as error:
+                self.error(obj, v, error)
+            else:
+                value[i] = v
+        return value
+
+
+class Tuple(Collection):
+    
+    klass = tuple
+    _cast_types = list
+    default_value = ()
+
+
+class Set(Sequence):
+    
+    klass = set
+    _cast_types = (list, tuple)
+    default_value = set()
+
+
+class List(MutableSequence):
+
+    klass = list
+    _cast_types = tuple
+    default_value = []
+    
+    def validate_elements(self, obj, value):
+        length = len(value)
+        if length < self._minlen:
+            info = "a length <= %i" % self._minlen
+            self.error(obj, length, info=info)
+        elif length > self._maxlen:
+            info = "a length >= %i" % self._maxlen
+            self.error(obj, length, info=info)
+        return super(List, self).validate_elements(obj, value)
+
+
+class Mapping(Container):
+
+    _trait_mapping = None
+    _value_trait = None
+    _key_trait = None
+
+    def __init__(self, trait, trait_mapping=None, default_value=Undefined, **kwargs):
+        if default_value is Undefined and not is_trait(trait):
+            default_value, trait = Undefined, None
+
+        if not is_trait(trait) and trait is not None:
+            key_trait, value_trait = trait
+        else:
+            value_trait = trait
+            key_trait = None
+
+        if is_trait(value_trait):
+            if isinstance(value_trait, type):
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                     " Passing types is deprecated in traitlets 4.1.",
+                     DeprecationWarning, stacklevel=2)
+                value_trait = value_trait()
+        elif value_trait is not None:
+            raise TypeError("`value_trait` must be a Trait or None, got %s" % repr_type(value_trait))
+
+        if is_trait(key_trait):
+            if isinstance(key_trait, type):
+                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                     " Passing types is deprecated in traitlets 4.1.",
+                     DeprecationWarning, stacklevel=2)
+                key_trait = key_trait()
+        elif key_trait is not None:
+            raise TypeError("`key_trait` must be a Trait or None, got %s" % repr_type(key_trait))
+
+        self._key_trait = key_trait
+        self._value_trait = value_trait
+        self._trait_mapping = trait_mapping
+
+        super(Mapping, self).__init__(default_value=default_value, **kwargs)
+
+        self._default_progenitor = self.default_value
+        self.default_value = Undefined
+
+    def make_dynamic_default(self):
+        return copy.copy(self._default_progenitor)
+
+    def class_init(self, cls, name):
+        if self._value_trait is not None:
+            self._value_trait.class_init(cls, None)
+        if self._key_trait is not None:
+            self._key_trait.class_init(cls, None)
+        if self._trait_mapping is not None:
+            for trait in self._trait_mapping.values():
+                trait.class_init(cls, None)
+        super(Mapping, self).class_init(cls, name)
+
+    def instance_init(self, obj):
+        if self._value_trait is not None:
+            self._value_trait.instance_init(obj)
+        if self._key_trait is not None:
+            self._key_trait.instance_init(obj)
+        if self._trait_mapping is not None:
+            for trait in self._trait_mapping.values():
+                trait.instance_init(obj)
+        super(Mapping, self).instance_init(obj)
+
+    def validate_elements(self, obj, new):
+        key_trait, value_trait = self._key_trait, self._value_trait
+        trait_mapping = self._trait_mapping or {}
+
+        if not (key_trait or value_trait or trait_mapping):
+            return new
+
+        result = {}
+
+        for k in new:
+            # validate keys
+            if key_trait is not None:
+                try:
+                    k = key_trait._validate(obj, k)
+                except TraitError as error:
+                    # an error occured while validating a key
+                    info = "the key %r to be %s" % (k, key_trait.info())
+                    self.error(obj, k, info=info, error=error)
+            # validate values
+            v = new[k]
+            _value_trait = trait_mapping.get(k, value_trait)
+            if _value_trait is not None:
+                try:
+                    v = _value_trait._validate(obj, v)
+                except TraitError as error:
+                    # an error occured while validating a value
+                    info = "a value of the key %r to be %s" % (k, _value_trait.info())
+                    self.error(obj, v, info=info, error=error)
+
+            result[k] = v
+
+        return result
+
+
+class Dict(Mapping):
     """An instance of a Python dict.
 
     One or more traits can be passed to the constructor
@@ -2577,11 +2585,12 @@ class Dict(Instance):
     .. versionchanged:: 5.0
         Deprecated ambiguous ``trait``, ``traits`` args in favor of ``value_trait``, ``per_key_traits``.
     """
-    _value_trait = None
-    _key_trait = None
 
-    def __init__(self, value_trait=None, per_key_traits=None, key_trait=None, default_value=Undefined,
-                 **kwargs):
+    klass = dict
+    default_value = {}
+
+    def __init__(self, value_trait=None, per_key_traits=None,
+            key_trait=None, default_value=Undefined, **kwargs):
         """Create a dict trait type from a Python dict.
 
         The default value is created by doing ``dict(default_value)``,
@@ -2648,18 +2657,6 @@ class Dict(Instance):
                 key_trait = per_key_traits
                 per_key_traits = None
 
-        # Handling default value
-        if default_value is Undefined:
-            default_value = {}
-        if default_value is None:
-            args = None
-        elif isinstance(default_value, dict):
-            args = (default_value,)
-        elif isinstance(default_value, SequenceTypes):
-            args = (default_value,)
-        else:
-            raise TypeError('default value of Dict was %s' % default_value)
-
         # Case where a type of TraitType is provided rather than an instance
         if is_trait(value_trait):
             if isinstance(value_trait, type):
@@ -2683,64 +2680,7 @@ class Dict(Instance):
 
         self._per_key_traits = per_key_traits
 
-        super(Dict, self).__init__(klass=dict, args=args, **kwargs)
-
-    def element_error(self, obj, element, validator, side='Values'):
-        e = side + " of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
-            % (self.name, class_of(obj), validator.info(), repr_type(element))
-        raise TraitError(e)
-
-    def validate(self, obj, value):
-        value = super(Dict, self).validate(obj, value)
-        if value is None:
-            return value
-        value = self.validate_elements(obj, value)
-        return value
-
-    def validate_elements(self, obj, value):
-        per_key_override = self._per_key_traits or {}
-        key_trait = self._key_trait
-        value_trait = self._value_trait
-        if not (key_trait or value_trait or per_key_override):
-            return value
-
-        validated = {}
-        for key in value:
-            v = value[key]
-            if key_trait:
-                try:
-                    key = key_trait._validate(obj, key)
-                except TraitError:
-                    self.element_error(obj, key, key_trait, 'Keys')
-            active_value_trait = per_key_override.get(key, value_trait)
-            if active_value_trait:
-                try:
-                    v = active_value_trait._validate(obj, v)
-                except TraitError:
-                    self.element_error(obj, v, active_value_trait, 'Values')
-            validated[key] = v
-
-        return self.klass(validated)
-
-    def class_init(self, cls, name):
-        if isinstance(self._value_trait, TraitType):
-            self._value_trait.class_init(cls, None)
-        if isinstance(self._key_trait, TraitType):
-            self._key_trait.class_init(cls, None)
-        if self._per_key_traits is not None:
-            for trait in self._per_key_traits.values():
-                trait.class_init(cls, None)
-        super(Dict, self).class_init(cls, name)
-
-    def instance_init(self, obj):
-        if isinstance(self._value_trait, TraitType):
-            self._value_trait.instance_init(obj)
-        if isinstance(self._key_trait, TraitType):
-            self._key_trait.instance_init(obj)
-        if self._per_key_traits is not None:
-            for trait in self._per_key_traits.values():
-                trait.instance_init(obj)
-        super(Dict, self).instance_init(obj)
+        super(Dict, self).__init__((key_trait, value_trait), per_key_traits, default_value=default_value, **kwargs)
 
 
 class TCPAddress(TraitType):

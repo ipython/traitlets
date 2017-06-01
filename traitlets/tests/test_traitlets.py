@@ -1585,8 +1585,8 @@ class TestTupleTrait(TraitTestBase):
         return value
 
     def test_invalid_args(self):
-        self.assertRaises(TypeError, Tuple, 5)
-        self.assertRaises(TypeError, Tuple, default_value='hello')
+        self.assertRaises(TraitError, Tuple, 5)
+        self.assertRaises(TraitError, Tuple, default_value='hello')
         t = Tuple(Int(), CBytes(), default_value=(1,5))
 
 class LooseTupleTrait(HasTraits):
@@ -1607,8 +1607,8 @@ class TestLooseTupleTrait(TraitTestBase):
         return value
 
     def test_invalid_args(self):
-        self.assertRaises(TypeError, Tuple, 5)
-        self.assertRaises(TypeError, Tuple, default_value='hello')
+        self.assertRaises(TraitError, Tuple, 5)
+        self.assertRaises(TraitError, Tuple, default_value='hello')
         t = Tuple(Int(), CBytes(), default_value=(1,5))
 
 
