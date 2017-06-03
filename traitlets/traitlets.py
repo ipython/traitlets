@@ -233,7 +233,7 @@ def parse_notifier_names(owner, names=None, tags=None):
         names = []
     elif names is All or isinstance(names, six.string_types):
         names = [names]
-    elif not names or All in names:
+    elif (not names and not tags) or All in names:
         names = [All]
     else:
         for n in names:

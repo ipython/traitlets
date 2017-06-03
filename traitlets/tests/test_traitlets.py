@@ -628,10 +628,6 @@ class TestObserveDecorator(TestCase):
         a.bar = 1
         self.assertEqual(a.foo, a.bar)
 
-        a.add_traits(baz=Int().tag(test=True))
-        a.baz = 2
-        self.assertEqual(a.foo, a.baz)
-
     def test_observe_via_tags(self):
 
         class unhashable(object):
