@@ -525,22 +525,37 @@ class TraitType(BaseDescriptor):
             return self.get(obj, cls)
 
     def set(self, obj, value):
-        new_value = self._validate(obj, value)
+        new = self._validate(obj, value)
         try:
-            old_value = obj._trait_values[self.name]
+            old = obj._trait_values[self.name]
         except KeyError:
-            old_value = self.default_value
+            old = self.default()
 
-        obj._trait_values[self.name] = new_value
-        try:
-            silent = bool(old_value == new_value)
-        except:
-            # if there is an error in comparing, default to notify
-            silent = False
-        if silent is not True:
+        obj._trait_values[self.name] = new
+
+        change = self.change(obj, old, new)
+        
+        if change is not None:
             # we explicitly compare silent to True just in case the equality
             # comparison above returns something other than True/False
-            obj._notify_trait(self.name, old_value, new_value)
+            obj._notify_trait(change.name, change.old, change.new)
+
+    def change(self, owner, old, new):
+        """If there was a change, return a bunch describing it."""
+        if self.compare(old, new):
+            return Bunch(name=self.name, old=old,
+                new=new, owner=owner, type='change')
+        else:
+            return None
+
+    def compare(self, old, new):
+        """Compare old and new values.
+
+        While this often returns a boolean, it does not have to since
+        :meth:`traitlets.TraitType.change` may contain special logic
+        that parses the comparison into a custom change event.
+        """
+        return old != new
 
     def __set__(self, obj, value):
         """Set the value of the trait by self.name for the instance.
