@@ -1438,6 +1438,10 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
 
+    def has_trait_value(self, name):
+        """Return True if the specified trait has a value (not it's default)"""
+        return name in self._trait_values
+
     def trait_values(self, **metadata):
         """A ``dict`` of trait names and their values.
 

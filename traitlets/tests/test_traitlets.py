@@ -764,6 +764,12 @@ class TestHasTraits(TestCase):
         self.assertEqual(sorted(A.class_trait_names()),['f','i'])
         self.assertTrue(a.has_trait('f'))
         self.assertFalse(a.has_trait('g'))
+        self.assertFalse(a.has_trait_value('f'))
+        self.assertFalse(a.has_trait_value('g'))
+        a.i = 1
+        a.f
+        self.assertTrue(a.has_trait_value('i'))
+        self.assertTrue(a.has_trait_value('f'))
 
     def test_trait_metadata_deprecated(self):
         with expected_warnings(['metadata should be set using the \.tag\(\) method']):
