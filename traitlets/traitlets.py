@@ -1462,7 +1462,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         Walk the MRO to resolve the correct default generator according to inheritance.
         """
         for c in cls.mro():
-            if name in getattr(c, '_trait_default_generators', {}):
+            if name in c.__dict__.get('_trait_default_generators', {}):
                 return c._trait_default_generators[name]
         raise KeyError("No default generator for trait %r found in %r" % (name, cls.mro()))
 
