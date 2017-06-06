@@ -1439,7 +1439,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         return isinstance(getattr(self.__class__, name, None), TraitType)
 
     def has_trait_value(self, name):
-        """Return sTrue if the specified trait has a value.
+        """Returns True if the specified trait has a value.
 
         This will return false even if ``getattr`` would return a
         dynamically generated default value. These default values

@@ -764,6 +764,12 @@ class TestHasTraits(TestCase):
         self.assertEqual(sorted(A.class_trait_names()),['f','i'])
         self.assertTrue(a.has_trait('f'))
         self.assertFalse(a.has_trait('g'))
+
+    def test_has_trait_value(self):
+        class A(HasTraits):
+            i = Int()
+            f = Float()
+        a = A()
         self.assertFalse(a.has_trait_value('f'))
         self.assertFalse(a.has_trait_value('g'))
         a.i = 1
