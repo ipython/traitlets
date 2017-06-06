@@ -69,6 +69,7 @@ __all__ = [
     'default',
     'validate',
     'observe',
+    'observe_compat',
     'link',
     'directional_link',
     'dlink',
@@ -83,7 +84,8 @@ __all__ = [
     'BaseDescriptor',
     'TraitType',
 ]
-# any TraitType subclass will be added automatically
+
+# any TraitType subclass (that doesn't start with _) will be added automatically
 
 #-----------------------------------------------------------------------------
 # Basic classes
@@ -2901,10 +2903,13 @@ class Callable(TraitType):
         else:
             self.error(obj, value)
 
-# add all TraitType subclasses to export
-# avoid iterating through globals while defining variables
 def _add_all():
+    """add all trait types to `__all__`
+
+    do in a function to avoid iterating through globals while defining local variables
+    """
     for _name, _value in globals().items():
-        if isinstance(_value, type) and issubclass(_value, TraitType):
+        if not _name.startswith('_') and isinstance(_value, type) and issubclass(_value, TraitType):
             __all__.append(_name)
+
 _add_all()
