@@ -1743,13 +1743,11 @@ class Instance(ClassBasedTraitType):
 
     def info(self):
         if isinstance(self.klass, six.string_types):
-            klass = self.klass
+            result = add_article(self.klass)
         else:
-            klass = self.klass.__name__
-        result = class_of(klass)
+            result = describe("a", self.klass)
         if self.allow_none:
-            return result + ' or None'
-
+            result += ' or None'
         return result
 
     def instance_init(self, obj):
