@@ -490,7 +490,7 @@ class TraitType(BaseDescriptor):
             value = obj._trait_values[self.name]
         except KeyError:
             # Check for a dynamic initializer.
-            default = cls._trait_default_generators[self.name](obj)
+            default = cls._get_trait_default_generator(self.name)(obj)
             if default is Undefined:
                 raise TraitError("No default value found for "
                     "the '%s' trait named '%s' of %r" % (
@@ -776,11 +776,6 @@ class MetaHasTraits(MetaHasDescriptors):
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
         super(MetaHasTraits, cls).setup_class(classdict)
-        new = {}
-        for c in reversed(cls.mro()):
-            if hasattr(c, "_trait_default_generators"):
-                new.update(c._trait_default_generators)
-        cls._trait_default_generators = new
 
 
 
@@ -1460,6 +1455,17 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """
         return {name: getattr(self, name) for name in self.trait_names(**metadata)}
 
+    @classmethod
+    def _get_trait_default_generator(cls, name):
+        """Return default generator for a given trait
+
+        Walk the MRO to resolve the correct default generator according to inheritance.
+        """
+        for c in cls.mro():
+            if name in getattr(c, '_trait_default_generators', {}):
+                return c._trait_default_generators[name]
+        raise KeyError("No default generator for trait %r found in %r" % (name, cls.mro()))
+
     def trait_defaults(self, *names, **metadata):
         """Return a trait's default value or a dictionary of them
 
@@ -1468,7 +1474,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         Dynamically generated default values may
         depend on the current state of the object."""
         if len(names) == 1 and len(metadata) == 0:
-            return self._trait_default_generators[names[0]](self)
+            return self._get_trait_default_generator(names[0])(self)
 
         for n in names:
             if not has_trait(self, n):
@@ -1479,7 +1485,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         defaults = {}
         for n in trait_names:
-            defaults[n] = self._trait_default_generators[n](self)
+            defaults[n] = self._get_trait_default_generator(n)(self)
         return defaults
 
     def trait_names(self, **metadata):
