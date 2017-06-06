@@ -1728,15 +1728,16 @@ class TypeCast(ClassBasedTraitType):
             self._cast_types = (self._cast_types,)
         return self
 
-    def __init__(self, default_value=Undefined, *args, **kwargs):
-        if default_value not in (Undefined, None):
+    def __init__(self, *args, **kwargs):
+        self.klass = kwargs.pop("klass", self.klass)
+        super(TypeCast, self).__init__(*args, **kwargs)
+        if self.default_value not in (Undefined, None) and self.klass is not None:
             hold, self.name = self.name, "no-name"
             # We use TypeCast.validate because other validation methods
             # may require the owner of the trait to be provided. In this
             # one case we can get away with just passing `None`.
-            default_value = TypeCast.validate(self, None, default_value)
+            self.default_value = TypeCast.validate(self, None, self.default_value)
             self.name = hold
-        super(TypeCast, self).__init__(default_value=default_value, *args, **kwargs)
 
     def _cast(self, value):
         return self.klass(value)
