@@ -490,7 +490,7 @@ class TraitType(BaseDescriptor):
             value = obj._trait_values[self.name]
         except KeyError:
             # Check for a dynamic initializer.
-            default = cls._get_trait_default_generator(self.name)(obj)
+            default = obj.trait_defaults(self.name)
             if default is Undefined:
                 raise TraitError("No default value found for "
                     "the '%s' trait named '%s' of %r" % (
