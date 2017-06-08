@@ -2496,6 +2496,39 @@ def test_super_bad_args():
     assert not hasattr(obj, 'b')
 
 
+def test_default_mro():
+    """Verify that default values follow mro"""
+    class Base(HasTraits):
+        trait = Unicode('base')
+        attr = 'base'
+
+    class A(Base):
+        pass
+
+    class B(Base):
+        trait = Unicode('B')
+        attr = 'B'
+
+    class AB(A, B):
+        pass
+
+    class BA(B, A):
+        pass
+
+    assert 'trait' in Base._trait_default_generators
+    assert 'trait' not in A._trait_default_generators
+    assert 'trait' in B._trait_default_generators
+    assert 'trait' not in AB._trait_default_generators
+    assert 'trait' not in BA._trait_default_generators
+
+    assert A().trait == 'base'
+    assert A().attr == 'base'
+    assert BA().trait == 'B'
+    assert BA().attr == 'B'
+    assert AB().trait == 'B'
+    assert AB().attr == 'B'
+
+
 def test_cls_self_argument():
     class X(HasTraits):
         def __init__(__self, cls, self):
