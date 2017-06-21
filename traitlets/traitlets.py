@@ -2423,9 +2423,7 @@ class List(Container):
         return super(List, self).validate_elements(obj, value)
 
     def validate(self, obj, value):
-        value = super(List, self).validate(obj, value)
-        value = self.validate_elements(obj, value)
-        return value
+        return super(List, self).validate(obj, value)
 
 
 class Set(List):
