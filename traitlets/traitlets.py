@@ -2422,9 +2422,6 @@ class List(Container):
 
         return super(List, self).validate_elements(obj, value)
 
-    def validate(self, obj, value):
-        return super(List, self).validate(obj, value)
-
 
 class Set(List):
     """An instance of a Python set."""
