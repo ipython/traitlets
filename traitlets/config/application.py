@@ -558,7 +558,7 @@ class Application(SingletonConfigurable):
 
     def print_examples(self):
         """Print usage and examples (see `emit_examples()`). """
-        print('\n'.join(self.emitt_examples()))
+        print('\n'.join(self.emit_examples()))
 
     def emit_examples(self):
         """Yield lines with the usage and examples.
