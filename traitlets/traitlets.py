@@ -2214,6 +2214,7 @@ class Enum(TraitType):
             return result + ' or None'
         return result
 
+
 class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
 
@@ -2231,6 +2232,13 @@ class CaselessStrEnum(Enum):
             if v.lower() == value.lower():
                 return v
         self.error(obj, value)
+
+    def info(self):
+        """ Returns a description of the trait."""
+        result = 'any of %s (case-insensitive)' % (self.values, )
+        if self.allow_none:
+            return result + ' or None'
+        return result
 
 
 class FuzzyEnum(Enum):
@@ -2267,6 +2275,15 @@ class FuzzyEnum(Enum):
                     return v
 
         self.error(obj, value)
+
+    def info(self):
+        """ Returns a description of the trait."""
+        case = 'sensitive' if self.case_sensitive else 'insensitive'
+        substr = 'substring' if self.substring_matching else 'prefix'
+        result = 'any case-%s %s of %s' % (case, substr, self.values)
+        if self.allow_none:
+            return result + ' or None'
+        return result
 
 
 class Container(Instance):
