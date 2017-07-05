@@ -18,8 +18,8 @@ from traitlets.config.configurable import (
 )
 
 from traitlets.traitlets import (
-    Integer, Float, Unicode, List, Dict, Set, Enum,
-    _deprecations_shown, validate,
+    Integer, Float, Unicode, List, Dict, Set, Enum, FuzzyEnum,
+    CaselessStrEnum, _deprecations_shown, validate,
 )
 
 from traitlets.config.loader import Config
@@ -192,38 +192,116 @@ class TestConfigurable(TestCase):
                            help="Many choices.").tag(config=True)
 
         help_str = "Many choices."
-        enum_choices_str = "Choices: ['Choice1', 'choice2']"
+        enum_choices_str = "Choices: any of ['Choice1', 'choice2']"
+        or_none_str = "or None"
 
-        self.assertIn(help_str, MyConf.class_get_help())
-        self.assertIn(enum_choices_str, MyConf.class_get_help())
+        cls_help = MyConf.class_get_help()
 
-        self.assertIn(help_str, MyConf.class_config_section())
-        self.assertIn(enum_choices_str, MyConf.class_config_section())
+        self.assertIn(help_str, cls_help)
+        self.assertIn(enum_choices_str, cls_help)
+        self.assertNotIn(or_none_str, cls_help)
+
+        cls_cfg = MyConf.class_config_section()
+
+        self.assertIn(help_str, cls_cfg)
+        self.assertIn(enum_choices_str, cls_cfg)
+        self.assertNotIn(or_none_str, cls_help)
         ## Check order of Help-msg <--> Choices sections
-        self.assertGreater(MyConf.class_config_section().index(enum_choices_str),
-                           MyConf.class_config_section().index(help_str))
+        self.assertGreater(cls_cfg.index(enum_choices_str),
+                           cls_cfg.index(help_str))
 
         class MyConf2(Configurable):
             an_enum = Enum('Choice1 choice2'.split(),
+                           allow_none=True,
                            default_value='choice2',
                            help="Many choices.").tag(config=True)
 
         defaults_str = "Default: 'choice2'"
 
-        self.assertIn(help_str, MyConf2.class_get_help())
-        self.assertIn(enum_choices_str, MyConf2.class_get_help())
-        self.assertIn(defaults_str, MyConf2.class_get_help())
-        ## Check order of Default <--> Choices sections
-        self.assertGreater(MyConf2.class_get_help().index(defaults_str),
-                           MyConf2.class_get_help().index(enum_choices_str))
+        cls2_msg = MyConf2.class_get_help()
 
-        self.assertIn(help_str, MyConf2.class_config_section())
-        self.assertIn(enum_choices_str, MyConf2.class_config_section())
-        self.assertIn(defaults_str, MyConf2.class_config_section())
+        self.assertIn(help_str, cls2_msg)
+        self.assertIn(enum_choices_str, cls2_msg)
+        self.assertIn(or_none_str, cls2_msg)
+        self.assertIn(defaults_str, cls2_msg)
         ## Check order of Default <--> Choices sections
-        self.assertGreater(MyConf2.class_config_section().index(defaults_str),
-                           MyConf2.class_config_section().index(enum_choices_str))
+        self.assertGreater(cls2_msg.index(defaults_str),
+                           cls2_msg.index(enum_choices_str))
 
+        cls2_cfg = MyConf2.class_config_section()
+
+        self.assertIn(help_str, cls2_cfg)
+        self.assertIn(enum_choices_str, cls2_cfg)
+        self.assertIn(or_none_str, cls2_cfg)
+        self.assertIn(defaults_str, cls2_cfg)
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(cls2_cfg.index(defaults_str),
+                           cls2_cfg.index(enum_choices_str))
+
+    @mark.skipif(sys.version_info < (3, ),
+                 reason="Unicodes printed with `u` prefix in PY2!'")
+    def test_generated_config_strenum_comments(self):
+        help_str = "Many choices."
+        defaults_str = "Default: 'choice2'"
+        or_none_str = "or None"
+
+        class MyConf3(Configurable):
+            an_enum = CaselessStrEnum('Choice1 choice2'.split(),
+                                      allow_none=True,
+                                      default_value='choice2',
+                                      help="Many choices.").tag(config=True)
+
+        enum_choices_str = ("Choices: any of ['Choice1', 'choice2'] "
+                            "(case-insensitive)")
+
+        cls3_msg = MyConf3.class_get_help()
+
+        self.assertIn(help_str, cls3_msg)
+        self.assertIn(enum_choices_str, cls3_msg)
+        self.assertIn(or_none_str, cls3_msg)
+        self.assertIn(defaults_str, cls3_msg)
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(cls3_msg.index(defaults_str),
+                           cls3_msg.index(enum_choices_str))
+
+        cls3_cfg = MyConf3.class_config_section()
+
+        self.assertIn(help_str, cls3_cfg)
+        self.assertIn(enum_choices_str, cls3_cfg)
+        self.assertIn(or_none_str, cls3_cfg)
+        self.assertIn(defaults_str, cls3_cfg)
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(cls3_cfg.index(defaults_str),
+                           cls3_cfg.index(enum_choices_str))
+
+        class MyConf4(Configurable):
+            an_enum = FuzzyEnum('Choice1 choice2'.split(),
+                                allow_none=True,
+                                default_value='choice2',
+                                help="Many choices.").tag(config=True)
+
+        enum_choices_str = ("Choices: any case-insensitive prefix "
+                            "of ['Choice1', 'choice2']")
+
+        cls4_msg = MyConf4.class_get_help()
+
+        self.assertIn(help_str, cls4_msg)
+        self.assertIn(enum_choices_str, cls4_msg)
+        self.assertIn(or_none_str, cls4_msg)
+        self.assertIn(defaults_str, cls4_msg)
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(cls4_msg.index(defaults_str),
+                           cls4_msg.index(enum_choices_str))
+
+        cls4_cfg = MyConf4.class_config_section()
+
+        self.assertIn(help_str, cls4_cfg)
+        self.assertIn(enum_choices_str, cls4_cfg)
+        self.assertIn(or_none_str, cls4_cfg)
+        self.assertIn(defaults_str, cls4_cfg)
+        ## Check order of Default <--> Choices sections
+        self.assertGreater(cls4_cfg.index(defaults_str),
+                           cls4_cfg.index(enum_choices_str))
 
 
 
@@ -499,7 +577,7 @@ class TestConfigContainers(TestCase):
         d2 = DefaultConfigurable()
         self.assertIs(d2.config, single.config)
         self.assertEqual(d2.a, 5)
-    
+
     def test_kwarg_config_priority(self):
         # a, c set in kwargs
         # a, b set in config

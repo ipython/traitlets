@@ -79,7 +79,7 @@ class Configurable(HasTraits):
 
         # load kwarg traits, other than config
         super(Configurable, self).__init__(**kwargs)
-        
+
         # record traits set by config
         config_override_names = set()
         def notice_config_override(change):
@@ -272,7 +272,7 @@ class Configurable(HasTraits):
 
         if 'Enum' in trait.__class__.__name__:
             # include Enum choices
-            lines.append(indent('Choices: %r' % (trait.values,)))
+            lines.append(indent('Choices: %s' % trait.info()))
 
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
@@ -322,7 +322,7 @@ class Configurable(HasTraits):
     @classmethod
     def class_config_section(cls, classes=None):
         """Get the config section for this class.
-        
+
         Parameters
         ----------
         classes: list, optional
@@ -368,7 +368,7 @@ class Configurable(HasTraits):
                     lines.append(c(trait.help))
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
-                    lines.append('#  Choices: %r' % (trait.values,))
+                    lines.append('#  Choices: %s' % trait.info())
                 lines.append('#  Default: %s' % default_repr)
             else:
                 # Trait appears multiple times and isn't defined here.
