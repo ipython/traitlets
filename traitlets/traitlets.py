@@ -352,6 +352,8 @@ class BaseDescriptor(object):
     """
 
     name = None
+    bequeaths = ()
+    inherits = ()
     this_class = None
 
     def class_init(self, cls, name):
@@ -366,6 +368,8 @@ class BaseDescriptor(object):
         """
         self.this_class = cls
         self.name = name
+        if self.inherits:
+            self._confer(cls, name)
 
     def subclass_init(self, cls):
         pass
@@ -381,6 +385,37 @@ class BaseDescriptor(object):
         other descriptors.
         """
         pass
+
+    def _confer(self, cls, name):
+        """Update attributes that have been bequeathed by parent descriptors.
+
+        If a descriptor has specified that it :attr:`inherits` attributes and
+        there are descriptors of the given ``name`` in the lineage of the ``cls``
+        which have bequeathed one or more of those attributes, then they are
+        conferred to that descriptor. If there are attributes that should be
+        inherited, but that have not been bequeathed, an error will be raised.
+
+        Parameters
+        ----------
+        cls : type
+            The class whose lineage should be searched for descriptors.
+        name : str
+            The attribute that descriptors were assigned to in the lineage of ``cls``.
+        """
+        if cls is not None and self.inherits:
+            inherits = set(self.inherits)
+            for c in cls.mro()[1:]:
+                descriptor = getattr(c, name, None)
+                if isinstance(descriptor, BaseDescriptor):
+                    intersection = inherits.intersection(descriptor.bequeaths)
+                    for name in intersection:
+                        setattr(self, name, getattr(descriptor, name))
+                    inherits = inherits.difference(intersection)
+            if inherits:
+                inherits = ", ".join(repr(inherits[:-1])) + " and " + repr(inherits[-1])
+                raise TypeError("conferral failed - descriptors by the name %r "
+                    "in the lineage of %r have not bequeathed the attributes %s "
+                    "upon their successors." % (name, cls, inherits))
 
 
 class TraitType(BaseDescriptor):
@@ -451,6 +486,16 @@ class TraitType(BaseDescriptor):
         # code that looks for the help string there can find it.
         if help is not None:
             self.metadata['help'] = help
+
+        self._ancestral = []
+
+    def bequeath(self, *names):
+        self.bequeaths += names
+        return self
+
+    def inherit(self, *names):
+        self.inherits += names
+        return self
 
     def default(self, obj=None):
         """The default generator for this trait
