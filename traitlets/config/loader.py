@@ -543,7 +543,7 @@ class CommandLineConfigLoader(ConfigLoader):
 
         elif isinstance(rhs, (list, tuple)):
             value = None
-            if len(rhs) == 1:
+            if len(rhs) == 1 and len(rhs[0]) > 0:
                 # check for deprecated --Class.trait="['a', 'b', 'c']"
                 r = rhs[0]
                 if (
