@@ -326,6 +326,35 @@ class directional_link(object):
 
 dlink = directional_link
 
+def calculation(inputs, output, initial_calulation=True):
+    """Decorator: sets the output trait based on the outcome of a computation with multiple inputs
+
+    Parameters
+    ----------
+    inputs : [(object, attribute name), ...] list corresponding to arguments
+    output : (object, attribute name) pair
+    initial_calulation: boolean (optional)
+        Set the output value immediately
+
+    Instead of a (object, attribute) pair, also an object can be passed, and attribute
+    is assumed to be 'value'
+    """
+    def _assign(object, value):
+        if isinstance(object, HasTraits):
+            object, trait = object, 'value'
+        else:
+            object, trait = object
+        setattr(object, trait, value)
+    def decorator(f):
+        def calculate(*ignore_args):
+            values = [getattr(input, 'value') for input in inputs]
+            result = f(*values)
+            _assign(output, result)
+        for input in inputs:
+            input.observe(calculate, 'value')
+        if initial_calulation:
+            calculate()
+    return decorator
 
 #-----------------------------------------------------------------------------
 # Base Descriptor Class
