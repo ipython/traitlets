@@ -183,7 +183,6 @@ JSON configuration file:
 .. sourcecode:: json
 
     {
-      "version": "1.0",
       "MyClass": {
         "name": "coolname",
         "ranking": 10

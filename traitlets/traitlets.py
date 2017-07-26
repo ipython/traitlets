@@ -60,6 +60,7 @@ from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
 from .utils.bunch import FrozenBunch
+from .utils.descriptions import describe, class_of, add_article, repr_type
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -196,38 +197,6 @@ def _deprecated_method(method, cls, method_name, msg):
         warn(warn_msg + ('\n(inspection failed) %s' % e), DeprecationWarning)
     else:
         warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
-
-def class_of(object):
-    """ Returns a string containing the class name of an object with the
-    correct indefinite article ('a' or 'an') preceding it (e.g., 'an Image',
-    'a PlotValue').
-    """
-    if isinstance( object, six.string_types ):
-        return add_article( object )
-
-    return add_article( object.__class__.__name__ )
-
-
-def add_article(name):
-    """ Returns a string containing the correct indefinite article ('a' or 'an')
-    prefixed to the specified string.
-    """
-    if name[:1].lower() in 'aeiou':
-       return 'an ' + name
-
-    return 'a ' + name
-
-
-def repr_type(obj):
-    """ Return a string representation of a value and its type for readable
-    error messages.
-    """
-    the_type = type(obj)
-    if six.PY2 and the_type is InstanceType:
-        # Old-style class.
-        the_type = obj.__class__
-    msg = '%r %r' % (obj, the_type)
-    return msg
 
 
 def is_trait(t):
@@ -573,7 +542,7 @@ class TraitType(BaseDescriptor):
             value = obj._trait_values[self.name]
         except KeyError:
             # Check for a dynamic initializer.
-            default = cls._trait_default_generators[self.name](obj)
+            default = obj.trait_defaults(self.name)
             if default is Undefined:
                 raise TraitError("No default value found for "
                     "the '%s' trait named '%s' of %r" % (
@@ -661,15 +630,61 @@ class TraitType(BaseDescriptor):
     def info(self):
         return self.info_text
 
-    def error(self, obj, value):
-        if obj is not None:
-            e = "The '%s' trait of %s instance must be %s, but a value of %s was specified." \
-                % (self.name, class_of(obj),
-                   self.info(), repr_type(value))
+    def error(self, obj, value, error=None, info=None):
+        """Raise a TraitError
+
+        Parameters
+        ----------
+        obj: HasTraits or None
+            The instance which owns the trait. If not
+            object is given, then an object agnostic
+            error will be raised.
+        value: any
+            The value that caused the error.
+        error: Exception (default: None)
+            An error that was raised by a child trait.
+            The arguments of this exception should be
+            of the form ``(value, info, *traits)``.
+            Where the ``value`` and ``info`` are the
+            problem value, and string describing the
+            expected value. The ``traits`` are a series
+            of :class:`TraitType` instances that are
+            "children" of this one (the first being
+            the deepest).
+        info: str (default: None)
+            A description of the expected value. By
+            default this is infered from this trait's
+            ``info`` method.
+        """
+        if error is not None:
+            # handle nested error
+            error.args += (self,)
+            if self.name is not None:
+                # this is the root trait that must format the final message
+                chain = " of ".join(describe("a", t) for t in error.args[2:])
+                if obj is not None:
+                    error.args = ("The '%s' trait of %s instance contains %s which "
+                        "expected %s, not %s." % (self.name, describe("an", obj),
+                        chain, error.args[1], describe("the", error.args[0])),)
+                else:
+                    error.args = ("The '%s' trait contains %s which "
+                        "expected %s, not %s." % (self.name, chain,
+                        error.args[1], describe("the", error.args[0])),)
+            raise error
         else:
-            e = "The '%s' trait must be %s, but a value of %r was specified." \
-                % (self.name, self.info(), repr_type(value))
-        raise TraitError(e)
+            # this trait caused an error
+            if self.name is None:
+                # this is not the root trait
+                raise TraitError(value, info or self.info(), self)
+            else:
+                # this is the root trait
+                if obj is not None:
+                    e = "The '%s' trait of %s instance expected %s, not %s." % (
+                        self.name, class_of(obj), self.info(), describe("the", value))
+                else:
+                    e = "The '%s' trait expected %s, not %s." % (
+                        self.name, self.info(), describe("the", value))
+                raise TraitError(e)
 
     def get_metadata(self, key, default=None):
         """DEPRECATED: Get a metadata value.
@@ -808,11 +823,6 @@ class MetaHasTraits(MetaHasDescriptors):
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
         super(MetaHasTraits, cls).setup_class(classdict)
-        new = {}
-        for c in reversed(cls.mro()):
-            if hasattr(c, "_trait_default_generators"):
-                new.update(c._trait_default_generators)
-        cls._trait_default_generators = new
 
 
 
@@ -1462,6 +1472,39 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """Returns True if the object has a trait with the specified name."""
         return isinstance(getattr(self.__class__, name, None), TraitType)
 
+    def trait_values(self, **metadata):
+        """A ``dict`` of trait names and their values.
+
+        The metadata kwargs allow functions to be passed in which
+        filter traits based on metadata values.  The functions should
+        take a single value as an argument and return a boolean.  If
+        any function returns False, then the trait is not included in
+        the output.  If a metadata key doesn't exist, None will be passed
+        to the function.
+
+        Returns
+        -------
+        A ``dict`` of trait names and their values.
+
+        Notes
+        -----
+        Trait values are retrieved via ``getattr``, any exceptions raised
+        by traits or the operations they may trigger will result in the
+        absence of a trait value in the result ``dict``.
+        """
+        return {name: getattr(self, name) for name in self.trait_names(**metadata)}
+
+    @classmethod
+    def _get_trait_default_generator(cls, name):
+        """Return default generator for a given trait
+
+        Walk the MRO to resolve the correct default generator according to inheritance.
+        """
+        for c in cls.mro():
+            if name in c.__dict__.get('_trait_default_generators', {}):
+                return c._trait_default_generators[name]
+        raise KeyError("No default generator for trait %r found in %r" % (name, cls.mro()))
+
     def trait_defaults(self, *names, **metadata):
         """Return a trait's default value or a dictionary of them
 
@@ -1470,7 +1513,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         Dynamically generated default values may
         depend on the current state of the object."""
         if len(names) == 1 and len(metadata) == 0:
-            return self._trait_default_generators[names[0]](self)
+            return self._get_trait_default_generator(names[0])(self)
 
         for n in names:
             if not has_trait(self, n):
@@ -1481,7 +1524,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         defaults = {}
         for n in trait_names:
-            defaults[n] = self._trait_default_generators[n](self)
+            defaults[n] = self._get_trait_default_generator(n)(self)
         return defaults
 
     def trait_names(self, **metadata):
@@ -1589,23 +1632,6 @@ class ClassBasedTraitType(TraitType):
         Resolve a string supplied for a type into an actual object.
         """
         return import_item(string)
-
-    def error(self, obj, value):
-        kind = type(value)
-        if six.PY2 and kind is InstanceType:
-            msg = 'class %s' % value.__class__.__name__
-        else:
-            msg = '%s (i.e. %s)' % ( str( kind )[1:-1], repr( value ) )
-
-        if obj is not None:
-            e = "The '%s' trait of %s instance must be %s, but a value of %s was specified." \
-                % (self.name, class_of(obj),
-                   self.info(), msg)
-        else:
-            e = "The '%s' trait must be %s, but a value of %r was specified." \
-                % (self.name, self.info(), msg)
-
-        raise TraitError(e)
 
 
 class Type(ClassBasedTraitType):
@@ -1762,13 +1788,11 @@ class Instance(ClassBasedTraitType):
 
     def info(self):
         if isinstance(self.klass, six.string_types):
-            klass = self.klass
+            result = add_article(self.klass)
         else:
-            klass = self.klass.__name__
-        result = class_of(klass)
+            result = describe("a", self.klass)
         if self.allow_none:
-            return result + ' or None'
-
+            result += ' or None'
         return result
 
     def instance_init(self, obj):
@@ -2247,6 +2271,43 @@ class CaselessStrEnum(Enum):
                 return v
         self.error(obj, value)
 
+
+class FuzzyEnum(Enum):
+    """An case-ignoring enum matching choices by unique prefixes/substrings."""
+
+    case_sensitive = False
+    #: If True, choices match anywhere in the string, otherwise match prefixes.
+    substring_matching = False
+
+    def __init__(self, values, default_value=Undefined,
+                 case_sensitive=False, substring_matching=False, **kwargs):
+        self.case_sensitive = case_sensitive
+        self.substring_matching = substring_matching
+        values = [cast_unicode_py2(value) for value in values]
+        super(FuzzyEnum, self).__init__(values, default_value=default_value, **kwargs)
+
+    def validate(self, obj, value):
+        if isinstance(value, str):
+            value = cast_unicode_py2(value)
+        if not isinstance(value, six.string_types):
+            self.error(obj, value)
+
+        conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
+        substring_matching = self.substring_matching
+        match_func = ((lambda v, c: v in c)
+                      if substring_matching
+                      else (lambda v, c: c.startswith(v)))
+        value = conv_func(value)
+        choices = self.values
+        matches = [match_func(value, conv_func(c)) for c in choices]
+        if sum(matches) == 1:
+            for v, m in zip(choices, matches):
+                if m:
+                    return v
+
+        self.error(obj, value)
+
+
 class Container(Instance):
     """An instance of a container (list, set, etc.)
 
@@ -2312,11 +2373,6 @@ class Container(Instance):
 
         super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
 
-    def element_error(self, obj, element, validator):
-        e = "Element of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
-            % (self.name, class_of(obj), validator.info(), repr_type(element))
-        raise TraitError(e)
-
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
             value = self.klass(value)
@@ -2335,8 +2391,8 @@ class Container(Instance):
         for v in value:
             try:
                 v = self._trait._validate(obj, v)
-            except TraitError:
-                self.element_error(obj, v, self._trait)
+            except TraitError as error:
+                self.error(obj, v, error)
             else:
                 validated.append(v)
         return self.klass(validated)
@@ -2404,11 +2460,6 @@ class List(Container):
             self.length_error(obj, value)
 
         return super(List, self).validate_elements(obj, value)
-
-    def validate(self, obj, value):
-        value = super(List, self).validate(obj, value)
-        value = self.validate_elements(obj, value)
-        return value
 
 
 class Set(List):
@@ -2527,8 +2578,8 @@ class Tuple(Container):
         for t, v in zip(self._traits, value):
             try:
                 v = t._validate(obj, v)
-            except TraitError:
-                self.element_error(obj, v, t)
+            except TraitError as error:
+                self.error(obj, v, error)
             else:
                 validated.append(v)
         return tuple(validated)
@@ -2693,7 +2744,7 @@ class Dict(Instance):
             if key_trait:
                 try:
                     key = key_trait._validate(obj, key)
-                except TraitError:
+                except TraitError as error:
                     self.element_error(obj, key, key_trait, 'Keys')
             active_value_trait = per_key_override.get(key, value_trait)
             if active_value_trait:
