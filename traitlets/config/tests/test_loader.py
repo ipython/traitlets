@@ -345,6 +345,13 @@ class TestArgParseKVCL(TestKeyValueCL):
         self.assertEqual(config.CSub.d, [1, 'BBB'])
         self.assertEqual(config.CSub.e, [1, 'a', 'bcd'])
 
+    def test_seq_traits_single_empty_string(self):
+        cl = self.klass(log=log, classes=(CBase, ))
+        aliases = {'seqopt': 'CBase.c'}
+        argv = ['--seqopt', '']
+        config = cl.load_config(argv, aliases=aliases)
+        self.assertEqual(config.CBase.c, [''])
+
     def test_dict_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
         aliases = {'D': 'CBase.adict', 'E': 'CSub.bdict'}
