@@ -88,8 +88,7 @@ def catch_config_error(method, app, *args, **kwargs):
         return method(app, *args, **kwargs)
     except (TraitError, ArgumentError) as e:
         app.print_help()
-        app.log.fatal("Bad config encountered during initialization:")
-        app.log.fatal(str(e))
+        app.log.fatal("Bad config encountered during initialization: %s", e)
         app.log.debug("Config at the time: %s", app.config)
         app.exit(1)
 
@@ -318,8 +317,7 @@ class Application(SingletonConfigurable):
     @observe_compat
     def _config_changed(self, change):
         super(Application, self)._config_changed(change)
-        self.log.debug('Config changed:')
-        self.log.debug(repr(change.new))
+        self.log.debug('Config changed: %r', change.new)
 
     @catch_config_error
     def initialize(self, argv=None):
