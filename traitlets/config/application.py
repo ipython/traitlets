@@ -530,7 +530,7 @@ class Application(SingletonConfigurable):
                     yield ''
 
             for cls in help_classes:
-                cls.class_print_help()
+                yield cls.class_get_help()
                 yield ''
         for l in self.emit_examples():
             yield l
