@@ -519,8 +519,18 @@ class TraitType(BaseDescriptor):
                 raise TraitError("No default value found for "
                     "the '%s' trait named '%s' of %r" % (
                     type(self).__name__, self.name, obj))
-            value = self._validate(obj, default)
+            # store initial value without running through cross-validation
+            # to avoid infinite recursion on cyclical validators
+            with obj.cross_validation_lock:
+                value = self._validate(obj, default)
             obj._trait_values[self.name] = value
+            # can run cross-validation now, after storing initial value
+            # this runs internal trait validation twice,
+            # but better to avoid diverging from _validate
+            if not obj._cross_validation_lock:
+                value = self._validate(obj, default)
+                obj._trait_values[self.name] = value
+
             obj.notify_change(Bunch(
                 name=self.name,
                 value=value,
@@ -582,7 +592,7 @@ class TraitType(BaseDescriptor):
             return value
         if hasattr(self, 'validate'):
             value = self.validate(obj, value)
-        if obj._cross_validation_lock is False:
+        if not obj._cross_validation_lock:
             value = self._cross_validate(obj, value)
         return value
 
