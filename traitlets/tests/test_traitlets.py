@@ -765,6 +765,18 @@ class TestHasTraits(TestCase):
         self.assertTrue(a.has_trait('f'))
         self.assertFalse(a.has_trait('g'))
 
+    def test_trait_has_value(self):
+        class A(HasTraits):
+            i = Int()
+            f = Float()
+        a = A()
+        self.assertFalse(a.trait_has_value('f'))
+        self.assertFalse(a.trait_has_value('g'))
+        a.i = 1
+        a.f
+        self.assertTrue(a.trait_has_value('i'))
+        self.assertTrue(a.trait_has_value('f'))
+
     def test_trait_metadata_deprecated(self):
         with expected_warnings(['metadata should be set using the \.tag\(\) method']):
             class A(HasTraits):
