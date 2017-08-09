@@ -519,7 +519,8 @@ class TraitType(BaseDescriptor):
                 raise TraitError("No default value found for "
                     "the '%s' trait named '%s' of %r" % (
                     type(self).__name__, self.name, obj))
-            value = self._validate(obj, default)
+            with obj.cross_validation_lock:
+                value = self._validate(obj, default)
             obj._trait_values[self.name] = value
             obj.notify_change(Bunch(
                 name=self.name,
