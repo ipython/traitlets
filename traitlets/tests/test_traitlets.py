@@ -2547,3 +2547,26 @@ def test_cls_self_argument():
             pass
 
     x = X(cls=None, self=None)
+
+
+def test_override_default():
+    class C(HasTraits):
+        a = Unicode('hard default')
+        def _a_default(self):
+            return 'default method'
+    
+    C._a_default = lambda self: 'overridden'
+    c = C()
+    assert c.a == 'overridden'
+
+def test_override_default_decorator():
+    class C(HasTraits):
+        a = Unicode('hard default')
+        @default('a')
+        def _a_default(self):
+            return 'default method'
+    
+    C._a_default = lambda self: 'overridden'
+    c = C()
+    assert c.a == 'overridden'
+
