@@ -522,7 +522,7 @@ class TraitType(BaseDescriptor):
             with obj.cross_validation_lock:
                 value = self._validate(obj, default)
             obj._trait_values[self.name] = value
-            obj.notify_change(Bunch(
+            obj._notify_observers(Bunch(
                 name=self.name,
                 value=value,
                 owner=obj,
@@ -1198,10 +1198,15 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         ))
 
     def notify_change(self, change):
-        if not isinstance(change, Bunch):
+        """Notify observers of a change event"""
+        return self._notify_observers(change)
+    
+    def _notify_observers(self, event):
+        """Notify observers of any event"""
+        if not isinstance(event, Bunch):
             # cast to bunch if given a dict
-            change = Bunch(change)
-        name, type = change.name, change.type
+            event = Bunch(event)
+        name, type = event.name, event.type
 
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
@@ -1211,7 +1216,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         # Now static ones
         magic_name = '_%s_changed' % name
-        if change.type == "change" and hasattr(self, magic_name):
+        if event.type == "change" and hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
                 _deprecated_method(class_value, self.__class__, magic_name,
@@ -1231,7 +1236,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             elif isinstance(c, EventHandler) and c.name is not None:
                 c = getattr(self, c.name)
 
-            c(change)
+            c(event)
 
     def _add_notifiers(self, handler, name, type):
         if name not in self._trait_notifiers:
