@@ -1491,21 +1491,23 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         """
         return {name: getattr(self, name) for name in self.trait_names(**metadata)}
 
-    @classmethod
-    def _get_trait_default_generator(cls, name):
+    def _get_trait_default_generator(self, name):
         """Return default generator for a given trait
 
         Walk the MRO to resolve the correct default generator according to inheritance.
         """
+        method_name = '_%s_default' % name
+        if method_name in self.__dict__:
+            return getattr(self, method_name)
+        cls = self.__class__
         trait = getattr(cls, name)
         assert isinstance(trait, TraitType)
         # truncate mro to the class on which the trait is defined
         mro = cls.mro()
         mro = mro[:mro.index(trait.this_class) + 1]
         for c in mro:
-            method_name = '_%s_default' % name
             if method_name in c.__dict__:
-                return getattr(c, '_%s_default' % name)
+                return getattr(c, method_name)
             if name in c.__dict__.get('_trait_default_generators', {}):
                 return c._trait_default_generators[name]
         return trait.default

@@ -2564,3 +2564,14 @@ def test_override_default_decorator():
     c = C()
     assert c.a == 'overridden'
 
+def test_override_default_instance():
+    class C(HasTraits):
+        a = Unicode('hard default')
+        @default('a')
+        def _a_default(self):
+            return 'default method'
+    
+    c = C()
+    c._a_default = lambda self: 'overridden'
+    assert c.a == 'overridden'
+
