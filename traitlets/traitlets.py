@@ -1504,7 +1504,11 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         assert isinstance(trait, TraitType)
         # truncate mro to the class on which the trait is defined
         mro = cls.mro()
-        mro = mro[:mro.index(trait.this_class) + 1]
+        try:
+            mro = mro[:mro.index(trait.this_class) + 1]
+        except ValueError:
+            # this_class not in mro
+            pass
         for c in mro:
             if method_name in c.__dict__:
                 return getattr(c, method_name)
