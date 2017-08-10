@@ -1519,13 +1519,14 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         -----
         Dynamically generated default values may
         depend on the current state of the object."""
+        for n in names:
+            if not self.has_trait(n):
+                raise TraitError("'%s' is not a trait of '%s' "
+                    "instances" % (n, type(self).__name__))
+
         if len(names) == 1 and len(metadata) == 0:
             return self._get_trait_default_generator(names[0])(self)
 
-        for n in names:
-            if not has_trait(self, n):
-                raise TraitError("'%s' is not a trait of '%s' "
-                    "instances" % (n, type(self).__name__))
         trait_names = self.trait_names(**metadata)
         trait_names.extend(names)
 
