@@ -417,16 +417,6 @@ class TraitType(BaseDescriptor):
     info_text = 'any value'
     default_value = Undefined
 
-    def class_init(self, cls, name):
-        super(TraitType, self).class_init(cls, name)
-        if self.name is not None and self.name not in cls._trait_default_generators:
-            cls._trait_default_generators[self.name] = self.default
-
-    def subclass_init(self, cls):
-        if '_%s_default' % self.name in cls.__dict__:
-            method = getattr(cls, '_%s_default' % self.name)
-            cls._trait_default_generators[self.name] = method
-
     def __init__(self, default_value=Undefined, allow_none=False, read_only=None, help=None,
         config=None, **kwargs):
         """Declare a traitlet.
@@ -1507,10 +1497,18 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         Walk the MRO to resolve the correct default generator according to inheritance.
         """
-        for c in cls.mro():
+        trait = getattr(cls, name)
+        assert isinstance(trait, TraitType)
+        # truncate mro to the class on which the trait is defined
+        mro = cls.mro()
+        mro = mro[:mro.index(trait.this_class) + 1]
+        for c in mro:
+            method_name = '_%s_default' % name
+            if method_name in c.__dict__:
+                return getattr(c, '_%s_default' % name)
             if name in c.__dict__.get('_trait_default_generators', {}):
                 return c._trait_default_generators[name]
-        raise KeyError("No default generator for trait %r found in %r" % (name, cls.mro()))
+        return trait.default
 
     def trait_defaults(self, *names, **metadata):
         """Return a trait's default value or a dictionary of them

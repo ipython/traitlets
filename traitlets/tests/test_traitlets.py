@@ -2527,12 +2527,6 @@ def test_default_mro():
     class BA(B, A):
         pass
 
-    assert 'trait' in Base._trait_default_generators
-    assert 'trait' not in A._trait_default_generators
-    assert 'trait' in B._trait_default_generators
-    assert 'trait' not in AB._trait_default_generators
-    assert 'trait' not in BA._trait_default_generators
-
     assert A().trait == 'base'
     assert A().attr == 'base'
     assert BA().trait == 'B'
