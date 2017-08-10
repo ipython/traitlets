@@ -2527,12 +2527,6 @@ def test_default_mro():
     class BA(B, A):
         pass
 
-    assert 'trait' in Base._trait_default_generators
-    assert 'trait' not in A._trait_default_generators
-    assert 'trait' in B._trait_default_generators
-    assert 'trait' not in AB._trait_default_generators
-    assert 'trait' not in BA._trait_default_generators
-
     assert A().trait == 'base'
     assert A().attr == 'base'
     assert BA().trait == 'B'
@@ -2547,3 +2541,37 @@ def test_cls_self_argument():
             pass
 
     x = X(cls=None, self=None)
+
+
+def test_override_default():
+    class C(HasTraits):
+        a = Unicode('hard default')
+        def _a_default(self):
+            return 'default method'
+    
+    C._a_default = lambda self: 'overridden'
+    c = C()
+    assert c.a == 'overridden'
+
+def test_override_default_decorator():
+    class C(HasTraits):
+        a = Unicode('hard default')
+        @default('a')
+        def _a_default(self):
+            return 'default method'
+    
+    C._a_default = lambda self: 'overridden'
+    c = C()
+    assert c.a == 'overridden'
+
+def test_override_default_instance():
+    class C(HasTraits):
+        a = Unicode('hard default')
+        @default('a')
+        def _a_default(self):
+            return 'default method'
+    
+    c = C()
+    c._a_default = lambda self: 'overridden'
+    assert c.a == 'overridden'
+
