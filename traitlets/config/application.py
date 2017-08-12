@@ -700,7 +700,7 @@ class Application(SingletonConfigurable):
         classes = tuple(self._classes_with_config_traits())
         loader = self._create_loader(argv, aliases, flags, classes=classes)
         self.cli_config = deepcopy(loader.load_config())
-        self.update_config(self.cli_config)
+        self.update_config(self.cli_config, skip_env=True)
         # store unparsed args in extra_args
         self.extra_args = loader.extra_args
 

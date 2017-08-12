@@ -35,7 +35,7 @@ from traitlets.config.application import (
 from ipython_genutils.tempdir import TemporaryDirectory
 from traitlets import (
     HasTraits,
-    Bool, Unicode, Integer, List, Tuple, Set, Dict
+    Bool, default, Unicode, Integer, List, Tuple, Set, Dict
 )
 
 class Foo(Configurable):
@@ -417,7 +417,7 @@ class TestApplication(TestCase):
     def test_generate_config_file_classes_to_include(self):
         class NotInConfig(HasTraits):
             from_hidden = Unicode('x', help="""From hidden class
-            
+
             Details about from_hidden.
             """).tag(config=True)
 
@@ -610,7 +610,7 @@ def test_show_config(capsys):
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
     app.start()
     out, err = capsys.readouterr()
@@ -623,12 +623,78 @@ def test_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
     app.start()
     out, err = capsys.readouterr()
     displayed = json.loads(out)
     assert Config(displayed) == cfg
+
+def test_env_vars_priority(monkeypatch):
+    class App(Application):
+        a = Unicode('def').tag(config=True, envvar='MY_ENVVAR')
+        b = Unicode().tag(config=True, envvar='MY_ENVVAR')
+        aliases = {'a': 'App.a', 'b': 'App.b'}
+
+        @default('b')
+        def set_a_dyn(self):
+            return 'dyn'
+
+    exp_no_envvar = {
+        'init': ('def', 'dyn'),  # values after construction
+        'set': ('set', 'set'),  # values after direct assignment
+        'cfg': ('cfg', 'cfg'),  # values after `update_config()
+        'skp': ('cfg', 'cfg'),  # values when `skip_env=True`
+        'cmd': ('cmd', 'cmd'),  # values after prsing cmd-line args
+    }
+    exp_with_envvar = {
+        'init': ('env', 'env'),
+        'set': ('set', 'set'),
+        'cfg': ('env', 'env'),
+        'skp': ('cfg', 'cfg'),
+        'cmd': ('cmd', 'cmd'),
+    }
+
+
+    def check_priority(exp):
+        cfg = Config()
+        cfg.App.a = cfg.App.b = 'cfg'
+
+        app = App()
+        assert (app.a, app.b) == exp['init']
+        app.update_config(cfg, skip_env=True)
+        assert (app.a, app.b) == exp['skp']
+
+        app.update_config(cfg, skip_env=False)
+        assert (app.a, app.b) == exp['cfg']
+
+        app.a = app.b = 'set'
+        assert (app.a, app.b) == exp['set']
+
+        ## Above had been check by test_config.
+        ## Now add cmd-line into the mix.
+
+        app.parse_command_line([])
+        assert (app.a, app.b) == exp['set']
+
+        app.parse_command_line('-a=cmd -b=cmd'.split())
+        assert (app.a, app.b) == exp['cmd']
+
+        app = App(config=cfg)
+        assert (app.a, app.b) == exp['cfg']
+
+        app.parse_command_line('-a=cmd -b=cmd'.split())
+        assert (app.a, app.b) == exp['cmd']
+
+        app = App()
+        assert (app.a, app.b) == exp['init']
+
+        app.parse_command_line('-a=cmd -b=cmd'.split())
+        assert (app.a, app.b) == exp['cmd']
+
+    check_priority(exp_no_envvar)
+    monkeypatch.setenv('MY_ENVVAR', 'env')
+    check_priority(exp_with_envvar)
 
 
 if __name__ == '__main__':
