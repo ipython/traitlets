@@ -2548,7 +2548,7 @@ def test_override_default():
         a = Unicode('hard default')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2559,7 +2559,7 @@ def test_override_default_decorator():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2570,8 +2570,26 @@ def test_override_default_instance():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     c = C()
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
 
+def test_envvar_override_default(monkeypatch):
+    class A(HasTraits):
+        b = CInt(allow_none=True).tag(config=True, envvar='MY_ENVVAR')
+
+    a = A()
+    assert a.b == 0
+
+    monkeypatch.setenv('MY_ENVVAR', '1')
+
+    a = A()
+    assert a.b == 1
+    a = A(a=2)
+    assert a.b == 1
+
+    a.b = 3
+    assert a.b == 3  # Direct assignments override env-var.
+    a.b = None
+    assert a.b == None

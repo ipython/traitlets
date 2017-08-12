@@ -499,18 +499,33 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = value
         return value
 
+    def get_env_value(self):
+        """
+        Gets the value of any environment-variable named as `env` metadata.
+
+        :return:
+            the textual value of the environment variable, or None, meaning
+            that no `envvar` metadata is defined.
+        """
+        env_var = self.metadata.get('envvar')
+        return env_var and os.environ.get(env_var)
+
     def get(self, obj, cls=None):
+        ## Value origin precendance: assigned-by-code, env-var, defaults.
         try:
             value = obj._trait_values[self.name]
-        except KeyError:
-            # Check for a dynamic initializer.
-            default = obj.trait_defaults(self.name)
-            if default is Undefined:
-                raise TraitError("No default value found for "
-                    "the '%s' trait named '%s' of %r" % (
-                    type(self).__name__, self.name, obj))
+        except KeyError as ex:
+            value = self.get_env_value()
+            if value is None:
+                # Check for a dynamic initializer.
+                value = obj.trait_defaults(self.name)
+                if value is Undefined:
+                    raise TraitError("No default value found for "
+                        "the '%s' trait named '%s' of %r" % (
+                        type(self).__name__, self.name, obj))
+
             with obj.cross_validation_lock:
-                value = self._validate(obj, default)
+                value = self._validate(obj, value)
             obj._trait_values[self.name] = value
             obj._notify_observers(Bunch(
                 name=self.name,
