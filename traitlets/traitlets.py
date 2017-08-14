@@ -1374,7 +1374,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
             if hasattr(self, magic_name):
                 class_value = getattr(self.__class__, magic_name)
                 if not isinstance(class_value, ValidateHandler):
-                    _deprecated_method(class_value, self.__class, magic_name,
+                    _deprecated_method(class_value, self.__class__, magic_name,
                         "use @validate decorator instead.")
         for name in names:
             self._trait_validators[name] = handler
