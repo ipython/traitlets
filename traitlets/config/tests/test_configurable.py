@@ -645,9 +645,9 @@ def check_meth():
 
 
 @mark.parametrize('check_meth', [
-    ('class_get_help', r'^    Env-var: MY_ENVVAR'),
-    ('class_config_section', r'^#  Env-var: MY_ENVVAR'),
-    ('class_config_rst_doc', r'^    Env-var: ``MY_ENVVAR``'),
+    ('class_get_help', r'^    Environment variable: MY_ENVVAR'),
+    ('class_config_section', r'^#  Environment variable: MY_ENVVAR'),
+    ('class_config_rst_doc', r'^    Environment variable: ``MY_ENVVAR``'),
 ])
 def test_environment_variable_comment_list(check_meth):
     import re

@@ -288,7 +288,7 @@ class Configurable(HasTraits):
 
         env_var = trait.metadata.get('envvar')
         if env_var:
-            env_info = 'Env-var: %s' % env_var
+            env_info = 'Environment variable: %s' % env_var
             lines.append(indent(env_info, 4))
 
         if inst is not None:
@@ -386,7 +386,10 @@ class Configurable(HasTraits):
 
                 env_var = trait.metadata.get('envvar')
                 if env_var:
-                    lines.append('#  Env-var: %s' % env_var)
+
+
+
+                    lines.append('#  Environment variable: %s' % env_var)
 
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
@@ -426,7 +429,7 @@ class Configurable(HasTraits):
 
             env_var = trait.metadata.get('envvar')
             if env_var:
-                lines.append(indent('Env-var: ``%s``' % env_var, 4))
+                lines.append(indent('Environment variable: ``%s``' % env_var, 4))
 
             # Default value
             try:
