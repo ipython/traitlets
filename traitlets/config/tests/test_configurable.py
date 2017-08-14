@@ -639,6 +639,30 @@ class TestLogger(TestCase):
         self.assertNotIn('Did you mean', output)
 
 
+@mark.fixture
+def check_meth():
+    pass
+
+
+@mark.parametrize('check_meth', [
+    ('class_get_help', r'^    Env-var: MY_ENVVAR'),
+    ('class_config_section', r'^#  Env-var: MY_ENVVAR'),
+    ('class_config_rst_doc', r'^    Env-var: ``MY_ENVVAR``'),
+])
+def test_environment_variable_comment_list(check_meth):
+    import re
+
+    class A(Configurable):
+        a = Integer().tag(config=True, envvar='MY_ENVVAR')
+        b = Integer().tag(config=True, envvar='NO_ENVVAR')
+
+    meth, regex = check_meth
+    txt = getattr(A, meth)()
+    assert re.search(regex, txt,
+        re.MULTILINE)
+    #assert not re.search('Environment variable: NO_ENVVAR', txt)
+
+
 def test_environment_variable_default(monkeypatch):
     class A(Configurable):
         b = CInt(allow_none=True).tag(config=True, envvar='MY_ENVVAR')
@@ -662,7 +686,8 @@ def test_environment_variable_default(monkeypatch):
     a.b = 3
     assert a.b == 3  # Direct assignments override env-var.
     a.b = None
-    assert a.b == None
+    assert a.b is None
+
 
 def test_env_vars_priority(monkeypatch):
     class Conf(Configurable):
@@ -686,7 +711,6 @@ def test_env_vars_priority(monkeypatch):
         'cfg': ('env', 'env'),
         'skp': ('cfg', 'cfg'),
     }
-
 
     def check_priority(exp):
         cfg = Config()
@@ -717,8 +741,6 @@ def test_env_vars_priority(monkeypatch):
 
         conf = Conf(config=cfg)
         assert (conf.a, conf.b) == exp['cfg']
-
-
 
     check_priority(exp_no_envvar)
     monkeypatch.setenv('MY_ENVVAR', 'env')
