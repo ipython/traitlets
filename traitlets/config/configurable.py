@@ -397,7 +397,7 @@ class Configurable(HasTraits):
             # Choices or type
             if 'Enum' in ttype:
                 # include Enum choices
-                termline += ' : ' + trait.info(as_rst=True)
+                termline += ' : ' + trait.info_rst()
             else:
                 termline += ' : ' + ttype
             lines.append(termline)

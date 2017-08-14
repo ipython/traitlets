@@ -2272,12 +2272,18 @@ class Enum(TraitType):
             choices = repr(list(choices))
         return choices
 
-    def info(self, as_rst=False):
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
         none = (' or %s' % ('`None`' if as_rst else 'None')
                 if self.allow_none else
                 '')
         return 'any of %s%s' % (self._choices_str(as_rst), none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class CaselessStrEnum(Enum):
@@ -2298,12 +2304,18 @@ class CaselessStrEnum(Enum):
                 return v
         self.error(obj, value)
 
-    def info(self, as_rst=False):
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
         none = (' or %s' % ('`None`' if as_rst else 'None')
                 if self.allow_none else
                 '')
         return 'any of %s (case-insensitive)%s' % (self._choices_str(as_rst), none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class FuzzyEnum(Enum):
@@ -2341,7 +2353,7 @@ class FuzzyEnum(Enum):
 
         self.error(obj, value)
 
-    def info(self, as_rst=False):
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
         none = (' or %s' % ('`None`' if as_rst else 'None')
                 if self.allow_none else
@@ -2351,6 +2363,12 @@ class FuzzyEnum(Enum):
         return 'any case-%s %s of %s%s' % (case, substr,
                                            self._choices_str(as_rst),
                                            none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class Container(Instance):
@@ -2940,12 +2958,18 @@ class UseEnum(TraitType):
         else:
             return repr(list(choices))  # Listify because py3.4- prints odict-class
 
-    def info(self, as_rst=False):
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
         none = (' or %s' % ('`None`' if as_rst else 'None')
                 if self.allow_none else
                 '')
         return 'any of %s%s' % (self._choices_str(as_rst), none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class Callable(TraitType):

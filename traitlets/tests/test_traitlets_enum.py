@@ -210,7 +210,7 @@ class TestUseEnum(unittest.TestCase):
             self.assertEqual(len(info.split(', ')), len(choices), info.split(', '))
             self.assertIn('or None', info)
 
-            info = enum.info(as_rst=True)
+            info = enum.info_rst()
             self.assertEqual(len(info.split('|')), len(choices), info.split('|'))
             self.assertIn('or `None`', info)
             ## Check no single `\` exists.
@@ -223,7 +223,7 @@ class TestUseEnum(unittest.TestCase):
             self.assertEqual(len(info.split(', ')), len(choices), info.split(', '))
             self.assertNotIn('None', info)
 
-            info = enum.info(as_rst=True)
+            info = enum.info_rst()
             self.assertEqual(len(info.split('|')), len(choices), info.split('|'))
             self.assertNotIn('None', info)
             ## Check no single `\` exists.
