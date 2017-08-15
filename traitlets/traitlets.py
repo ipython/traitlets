@@ -171,6 +171,17 @@ def _deprecated_method(method, cls, method_name, msg):
     else:
         warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
+def _safe_literal_eval(s):
+    """Safely evaluate an expression
+
+    Returns original string if eval fails.
+    
+    Use only where types are ambiguous.
+    """
+    try:
+        return literal_eval(s)
+    except (NameError, SyntaxError, ValueError):
+        return s
 
 def is_trait(t):
     """ Returns whether the given value is an instance or subclass of TraitType.
@@ -482,20 +493,17 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
-    def from_string(self, s, obj=None):
+    def from_string(self, s):
         """Get a value from a config string
 
         such as an environment variable or CLI arguments.
 
         Traits can override this method to define their own
+        parsing of config strings.
 
         .. versionadded:: 5.0
         """
-        # I don't like this, but keep it on the base class for backward-compatibility
-        try:
-            return literal_eval(s)
-        except (NameError, SyntaxError, ValueError) as e:
-            return s
+        return s
 
     def default(self, obj=None):
         """The default generator for this trait
@@ -1858,6 +1866,9 @@ class Instance(ClassBasedTraitType):
     def default_value_repr(self):
         return repr(self.make_dynamic_default())
 
+    def from_string(self, s):
+        return literal_eval(s)
+
 
 class ForwardDeclaredMixin(object):
     """
@@ -2025,6 +2036,9 @@ class Int(TraitType):
             self.error(obj, value)
         return _validate_bounds(self, obj, value)
 
+    def from_string(self, s):
+        return int(s)
+
 
 class CInt(Int):
     """A casting version of the int trait."""
@@ -2061,6 +2075,9 @@ if six.PY2:
         def validate(self, obj, value):
             value = self._validate_long(obj, value)
             return _validate_bounds(self, obj, value)
+
+        def from_string(self, s):
+            return long(s)
 
 
     class CLong(Long):
@@ -2107,6 +2124,9 @@ if six.PY2:
             value = self._validate_int(obj, value)
             return _validate_bounds(self, obj, value)
 
+        def from_string(self, s):
+            return int(s)
+
 else:
     Long, CLong = Int, CInt
     Integer = Int
@@ -2130,6 +2150,9 @@ class Float(TraitType):
         if not isinstance(value, float):
             self.error(obj, value)
         return _validate_bounds(self, obj, value)
+
+    def from_string(self, s):
+        return float(s)
 
 
 class CFloat(Float):
@@ -2156,6 +2179,9 @@ class Complex(TraitType):
             return complex(value)
         self.error(obj, value)
 
+    def from_string(self, s):
+        return complex(s)
+
 
 class CComplex(Complex):
     """A casting version of the complex number trait."""
@@ -2180,8 +2206,8 @@ class Bytes(TraitType):
             return value
         self.error(obj, value)
 
-    def from_string(self, s, obj=None):
-        return self.validate(obj, s.encode('utf8'))
+    def from_string(self, s):
+        return s.encode('utf8')
 
 
 class CBytes(Bytes):
@@ -2210,13 +2236,6 @@ class Unicode(TraitType):
                 msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
                 raise TraitError(msg.format(value, self.name, class_of(obj)))
         self.error(obj, value)
-
-    def from_string(self, s, obj=None):
-        # expanduser here for backward compatibility
-        # I wish we didn't have to do this.
-        s = os.path.expanduser(s)
-        return self.validate(obj, s)
-
 
 
 class CUnicode(Unicode):
@@ -2255,8 +2274,8 @@ class ObjectName(TraitType):
             return value
         self.error(obj, value)
 
-    def from_string(self, s, obj=None):
-        return self.validate(obj, s)
+    def from_string(self, s):
+        return s
 
 class DottedObjectName(ObjectName):
     """A string holding a valid dotted object name in Python, such as A.b3._c"""
@@ -2285,7 +2304,7 @@ class Bool(TraitType):
                 return False
         self.error(obj, value)
 
-    def from_string(self, s, obj=None):
+    def from_string(self, s):
         s = s.lower()
         if s in {'true', '1'}:
             return True
@@ -2326,8 +2345,11 @@ class Enum(TraitType):
             return result + ' or None'
         return result
 
-    def from_string(self, s, obj=None):
-        return s
+    def from_string(self, s):
+        try:
+            return self.validate(None, s)
+        except TraitError:
+            return _safe_literal_eval(s)
 
 
 class CaselessStrEnum(Enum):
@@ -2888,7 +2910,7 @@ class TCPAddress(TraitType):
                         return value
         self.error(obj, value)
 
-    def from_string(self, s, obj=None):
+    def from_string(self, s):
         if ':' not in s:
             self.error(obj, s)
         ip, port = s.split(':', 1)
@@ -2909,9 +2931,6 @@ class CRegExp(TraitType):
             return re.compile(value)
         except:
             self.error(obj, value)
-
-    def from_string(self, s, obj=None):
-        return s
 
 
 class UseEnum(TraitType):
