@@ -18,7 +18,7 @@ from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
 from six import text_type, string_types, PY3
 from traitlets.traitlets import (
-    HasTraits, Container, List, Dict, Any,
+    HasTraits, Container, List, Dict, Any, Undefined,
 )
 
 #-----------------------------------------------------------------------------
@@ -853,6 +853,25 @@ def _kv_opt(traitname, opt_value):
     return m.groups()
 
 
+class _FlagAction(argparse.Action):
+    """ArgParse action to handle a flag"""
+    def __init__(self, *args, **kwargs):
+        self.flag = kwargs.pop('flag')
+        self.alias = kwargs.pop('alias', None)
+        kwargs['const'] = Undefined
+        if not self.alias:
+            kwargs['nargs'] = 0
+        super(_FlagAction, self).__init__(*args, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        key = option_string.lstrip('-')
+        print('values %r' % values)
+        if self.nargs == 0 or values is Undefined:
+            namespace._flags.append(self.flag)
+        else:
+            setattr(namespace, self.alias, values)
+
+
 class KVArgParseConfigLoader(ArgParseConfigLoader):
     """A config loader that loads aliases and flags with argparse,
     but will use KVLoader for the rest.  This allows better parsing
@@ -860,7 +879,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     arbitrary config with `ipython --InteractiveShell.autoindent=False`"""
 
     def _add_arguments(self, aliases=None, flags=None, classes=None):
-        self.alias_flags = {}
+        alias_flags = {}
         # print aliases, flags
         if aliases is None:
             aliases = self.aliases
@@ -869,6 +888,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         if classes is None:
             classes = self.classes
         paa = self.parser.add_argument
+        self.parser.set_defaults(_flags=[])
 
         ## An index of all container traits collected::
         #
@@ -892,61 +912,54 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 argparse_traits[argname] = (trait, argparse_kwds)
                 paa('--'+argname, **argparse_kwds)
 
-        for keys, traitname in aliases.items():
-            if not isinstance(keys, tuple):
-                keys = (keys, )
-            for key in keys:
-                argparse_kwds = {'type': text_type, 'dest': traitname}
-                ## Is alias for a sequence-trait?
-                #
-                if traitname in argparse_traits:
-                    argparse_kwds.update(argparse_traits[traitname][1])
-                    if 'action' in argparse_kwds:
-                        ## A flag+alias should have `nargs='?'` multiplicity,
-                        #  but base config-property had 'append' multiplicity!
-                        #
-                        if key in flags:
-                            raise ArgumentError(
-                                "The alias `%s` for the 'append' sequence "
-                                "config-trait `%s` cannot be also a flag!'"
-                                % (key, traitname))
-                else:
-                    if key in flags:
-                        argparse_kwds['nargs'] = '?'
-                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
-                paa(*keys, **argparse_kwds)
-
         for keys, (value, _) in flags.items():
             if not isinstance(keys, tuple):
                 keys = (keys, )
             for key in keys:
                 if key in self.aliases:
-                    self.alias_flags[self.aliases[key]] = value
+                    alias_flags[self.aliases[key]] = value
                     continue
                 keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
-                paa(*keys, action='append_const', dest='_flags', const=value)
+                paa(*keys, action=_FlagAction, flag=value)
+
+        for keys, traitname in aliases.items():
+            if not isinstance(keys, tuple):
+                keys = (keys, )
+            for key in keys:
+                argparse_kwds = {'type': text_type, 'dest': traitname}
+                if traitname in argparse_traits:
+                    argparse_kwds.update(argparse_traits[traitname][1])
+                    if 'action' in argparse_kwds and traitname in alias_flags:
+                        # flag sets 'action', so can't have flag & alias with custom action
+                        # on the same name
+                        raise ArgumentError(
+                            "The alias `%s` for the 'append' sequence "
+                            "config-trait `%s` cannot be also a flag!'"
+                            % (key, traitname))
+                if traitname in alias_flags:
+                    # alias and flag.
+                    # when called with 0 args: flag
+                    # when called with >= 1: alias
+                    argparse_kwds.setdefault('nargs', '?')
+                    argparse_kwds['action'] = _FlagAction
+                    argparse_kwds['flag'] = alias_flags[traitname]
+                    argparse_kwds['alias'] = traitname
+                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                paa(*keys, **argparse_kwds)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
-        # remove subconfigs list from namespace before transforming the Namespace
-        if '_flags' in self.parsed_data:
-            subcs = self.parsed_data._flags
-            del self.parsed_data._flags
-        else:
-            subcs = []
-
         for k, v in vars(self.parsed_data).items():
-            if v is None:
-                # it was a flag that shares the name of an alias
-                subcs.append(self.alias_flags[k])
-            else:
-                trait = self.argparse_traits.get(k)
-                if trait:
-                    trait = trait[0]
-                # eval the KV assignment
-                self._exec_config_str(k, v, trait=trait)
+            if k == '_flags':
+                # _flags will be handled later
+                continue
+            trait = self.argparse_traits.get(k)
+            if trait:
+                trait = trait[0]
+            # eval the KV assignment
+            self._exec_config_str(k, v, trait=trait)
 
-        for subc in subcs:
+        for subc in self.parsed_data._flags:
             self._load_flag(subc)
 
         if self.extra_args:

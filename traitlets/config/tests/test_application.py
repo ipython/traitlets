@@ -79,6 +79,7 @@ class MyApp(Application):
                     'tb': 'Bar.tb',
                     'D': 'Bar.bdict',
                     'enabled' : 'Bar.enabled',
+                    'enable' : 'Bar.enabled',
                     'log-level' : 'Application.log_level',
                 })
 
@@ -157,7 +158,7 @@ class TestApplication(TestCase):
 
     def test_config(self):
         app = MyApp()
-        app.parse_command_line(["--i=10","--Foo.j=10","--enabled=False","--log-level=50"])
+        app.parse_command_line(["--i=10","--Foo.j=10","--enable=False","--log-level=50"])
         config = app.config
         self.assertEqual(config.Foo.i, 10)
         self.assertEqual(config.Foo.j, 10)
@@ -195,7 +196,7 @@ class TestApplication(TestCase):
 
     def test_config_propagation(self):
         app = MyApp()
-        app.parse_command_line(["--i=10","--Foo.j=10","--enabled=False","--log-level=50"])
+        app.parse_command_line(["--i=10","--Foo.j=10","--enable=False","--log-level=50"])
         app.init_foo()
         app.init_bar()
         self.assertEqual(app.foo.i, 10)
