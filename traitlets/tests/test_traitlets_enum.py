@@ -7,7 +7,7 @@ Test the trait-type ``UseEnum``.
 import unittest
 import enum
 from ipython_genutils.py3compat import string_types
-from traitlets import HasTraits, TraitError, UseEnum, FuzzyEnum
+from traitlets import HasTraits, TraitError, Enum, UseEnum, CaselessStrEnum, FuzzyEnum
 
 
 # -----------------------------------------------------------------------------
@@ -23,6 +23,16 @@ class Color(enum.Enum):
 class OtherColor(enum.Enum):
     red = 0
     green = 1
+
+
+class CSColor(enum.Enum):
+    red = 1
+    Green = 2
+    BLUE = 3
+    YeLLoW = 4
+
+
+color_choices = 'red Green  BLUE YeLLoW'.split()
 
 
 # -----------------------------------------------------------------------------
@@ -180,11 +190,46 @@ class TestUseEnum(unittest.TestCase):
         with self.assertRaises(TraitError):
             example.color = "BAD_VALUE"
 
+    def test_info(self):
+        import sys
 
-# -----------------------------------------------------------------------------
-# TEST SUPPORT:
-# -----------------------------------------------------------------------------
-color_choices = 'red Green  BLUE YeLLoW'.split()
+        choices = color_choices
+        class Example(HasTraits):
+            enum1 = Enum(choices, allow_none=False)
+            enum2 = CaselessStrEnum(choices, allow_none=False)
+            enum3 = FuzzyEnum(choices, allow_none=False)
+            enum4 = UseEnum(CSColor, allow_none=False)
+
+        for i in range(1,5):
+            attr = 'enum%s' % i
+            enum = getattr(Example, attr)
+
+            enum.allow_none = True
+
+            info = enum.info()
+            self.assertEqual(len(info.split(', ')), len(choices), info.split(', '))
+            self.assertIn('or None', info)
+
+            info = enum.info_rst()
+            self.assertEqual(len(info.split('|')), len(choices), info.split('|'))
+            self.assertIn('or `None`', info)
+            ## Check no single `\` exists.
+            if sys.version_info >= (3, ):
+                self.assertNotRegex(info, r'\b\\\b')
+
+            enum.allow_none = False
+
+            info = enum.info()
+            self.assertEqual(len(info.split(', ')), len(choices), info.split(', '))
+            self.assertNotIn('None', info)
+
+            info = enum.info_rst()
+            self.assertEqual(len(info.split('|')), len(choices), info.split('|'))
+            self.assertNotIn('None', info)
+            ## Check no single `\` exists.
+            if sys.version_info >= (3, ):
+                self.assertNotRegex(info, r'\b\\\b')
+
 
 
 # -----------------------------------------------------------------------------

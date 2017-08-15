@@ -193,6 +193,7 @@ class TestConfigurable(TestCase):
 
         help_str = "Many choices."
         enum_choices_str = "Choices: any of ['Choice1', 'choice2']"
+        rst_choices_str = "MyConf.an_enum : any of ``'Choice1'``|``'choice2'``"
         or_none_str = "or None"
 
         cls_help = MyConf.class_get_help()
@@ -209,6 +210,12 @@ class TestConfigurable(TestCase):
         ## Check order of Help-msg <--> Choices sections
         self.assertGreater(cls_cfg.index(enum_choices_str),
                            cls_cfg.index(help_str))
+
+        rst_help = MyConf.class_config_rst_doc()
+
+        self.assertIn(help_str, rst_help)
+        self.assertIn(rst_choices_str, rst_help)
+        self.assertNotIn(or_none_str, rst_help)
 
         class MyConf2(Configurable):
             an_enum = Enum('Choice1 choice2'.split(),

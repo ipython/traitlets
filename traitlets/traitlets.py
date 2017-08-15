@@ -1205,7 +1205,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def notify_change(self, change):
         """Notify observers of a change event"""
         return self._notify_observers(change)
-    
+
     def _notify_observers(self, event):
         """Notify observers of any event"""
         if not isinstance(event, Bunch):
@@ -2278,12 +2278,27 @@ class Enum(TraitType):
                 return value
         self.error(obj, value)
 
-    def info(self):
+    def _choices_str(self, as_rst=False):
+        """ Returns a description of the trait choices (not none)."""
+        choices = self.values
+        if as_rst:
+            choices = '|'.join('``%r``' % x for x in choices)
+        else:
+            choices = repr(list(choices))
+        return choices
+
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
-        result = 'any of ' + repr(self.values)
-        if self.allow_none:
-            return result + ' or None'
-        return result
+        none = (' or %s' % ('`None`' if as_rst else 'None')
+                if self.allow_none else
+                '')
+        return 'any of %s%s' % (self._choices_str(as_rst), none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class CaselessStrEnum(Enum):
@@ -2304,12 +2319,18 @@ class CaselessStrEnum(Enum):
                 return v
         self.error(obj, value)
 
-    def info(self):
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
-        result = 'any of %s (case-insensitive)' % (self.values, )
-        if self.allow_none:
-            return result + ' or None'
-        return result
+        none = (' or %s' % ('`None`' if as_rst else 'None')
+                if self.allow_none else
+                '')
+        return 'any of %s (case-insensitive)%s' % (self._choices_str(as_rst), none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class FuzzyEnum(Enum):
@@ -2347,14 +2368,22 @@ class FuzzyEnum(Enum):
 
         self.error(obj, value)
 
-    def info(self):
+    def _info(self, as_rst=False):
         """ Returns a description of the trait."""
+        none = (' or %s' % ('`None`' if as_rst else 'None')
+                if self.allow_none else
+                '')
         case = 'sensitive' if self.case_sensitive else 'insensitive'
         substr = 'substring' if self.substring_matching else 'prefix'
-        result = 'any case-%s %s of %s' % (case, substr, self.values)
-        if self.allow_none:
-            return result + ' or None'
-        return result
+        return 'any case-%s %s of %s%s' % (case, substr,
+                                           self._choices_str(as_rst),
+                                           none)
+
+    def info(self):
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
 
 
 class Container(Instance):
@@ -2936,12 +2965,27 @@ class UseEnum(TraitType):
                 return self.default_value
         self.error(obj, value)
 
+    def _choices_str(self, as_rst=False):
+        """ Returns a description of the trait choices (not none)."""
+        choices = self.enum_class.__members__.keys()
+        if as_rst:
+            return '|'.join('``%r``' % x for x in choices)
+        else:
+            return repr(list(choices))  # Listify because py3.4- prints odict-class
+
+    def _info(self, as_rst=False):
+        """ Returns a description of the trait."""
+        none = (' or %s' % ('`None`' if as_rst else 'None')
+                if self.allow_none else
+                '')
+        return 'any of %s%s' % (self._choices_str(as_rst), none)
+
     def info(self):
-        """Returns a description of this Enum trait (in case of errors)."""
-        result = "Any of: %s" % ", ".join(self.enum_class.__members__.keys())
-        if self.allow_none:
-            return result + " or None"
-        return result
+        return self._info(as_rst=False)
+
+    def info_rst(self):
+        return self._info(as_rst=True)
+
 
 class Callable(TraitType):
     """A trait which is callable.
