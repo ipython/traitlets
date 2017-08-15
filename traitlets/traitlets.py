@@ -40,6 +40,7 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+from ast import literal_eval
 import contextlib
 import inspect
 import os
@@ -481,6 +482,21 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
+    def from_string(self, s, obj=None):
+        """Get a value from a config string
+
+        such as an environment variable or CLI arguments.
+
+        Traits can override this method to define their own
+
+        .. versionadded:: 5.0
+        """
+        # I don't like this, but keep it on the base class for backward-compatibility
+        try:
+            return literal_eval(s)
+        except (NameError, SyntaxError, ValueError) as e:
+            return s
+
     def default(self, obj=None):
         """The default generator for this trait
 
@@ -806,8 +822,6 @@ class MetaHasTraits(MetaHasDescriptors):
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
         super(MetaHasTraits, cls).setup_class(classdict)
-
-
 
 
 def observe(*names, **kwargs):
@@ -2166,6 +2180,9 @@ class Bytes(TraitType):
             return value
         self.error(obj, value)
 
+    def from_string(self, s, obj=None):
+        return self.validate(obj, s.encode('utf8'))
+
 
 class CBytes(Bytes):
     """A casting version of the byte string trait."""
@@ -2193,6 +2210,13 @@ class Unicode(TraitType):
                 msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
                 raise TraitError(msg.format(value, self.name, class_of(obj)))
         self.error(obj, value)
+
+    def from_string(self, s, obj=None):
+        # expanduser here for backward compatibility
+        # I wish we didn't have to do this.
+        s = os.path.expanduser(s)
+        return self.validate(obj, s)
+
 
 
 class CUnicode(Unicode):
@@ -2231,6 +2255,9 @@ class ObjectName(TraitType):
             return value
         self.error(obj, value)
 
+    def from_string(self, s, obj=None):
+        return self.validate(obj, s)
+
 class DottedObjectName(ObjectName):
     """A string holding a valid dotted object name in Python, such as A.b3._c"""
     def validate(self, obj, value):
@@ -2251,7 +2278,21 @@ class Bool(TraitType):
     def validate(self, obj, value):
         if isinstance(value, bool):
             return value
+        elif isinstance(value, int):
+            if value == 1:
+                return True
+            elif value == 0:
+                return False
         self.error(obj, value)
+
+    def from_string(self, s, obj=None):
+        s = s.lower()
+        if s in {'true', '1'}:
+            return True
+        elif s in {'false', '0'}:
+            return False
+        else:
+            self.error(obj, s)
 
 
 class CBool(Bool):
@@ -2284,6 +2325,9 @@ class Enum(TraitType):
         if self.allow_none:
             return result + ' or None'
         return result
+
+    def from_string(self, s, obj=None):
+        return s
 
 
 class CaselessStrEnum(Enum):
@@ -2844,6 +2888,14 @@ class TCPAddress(TraitType):
                         return value
         self.error(obj, value)
 
+    def from_string(self, s, obj=None):
+        if ':' not in s:
+            self.error(obj, s)
+        ip, port = s.split(':', 1)
+        port = int(port)
+        return (ip, port)
+
+
 class CRegExp(TraitType):
     """A casting compiled regular expression trait.
 
@@ -2857,6 +2909,9 @@ class CRegExp(TraitType):
             return re.compile(value)
         except:
             self.error(obj, value)
+
+    def from_string(self, s, obj=None):
+        return s
 
 
 class UseEnum(TraitType):
@@ -2943,6 +2998,7 @@ class UseEnum(TraitType):
             return result + " or None"
         return result
 
+
 class Callable(TraitType):
     """A trait which is callable.
 
@@ -2958,6 +3014,7 @@ class Callable(TraitType):
             return value
         else:
             self.error(obj, value)
+
 
 def _add_all():
     """add all trait types to `__all__`
