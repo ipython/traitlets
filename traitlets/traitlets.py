@@ -44,6 +44,7 @@ import contextlib
 import inspect
 import os
 import re
+import os
 import sys
 import types
 import enum
@@ -904,7 +905,7 @@ def validate(*names):
 
 
 def default(name):
-    """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
+    """A decorator which assigns a dynamic default for a Trait on a HasTraits object.
 
     Parameters
     ----------
@@ -944,6 +945,36 @@ def default(name):
     if not isinstance(name, six.string_types):
         raise TypeError("Trait name must be a string or All, not %r" % name)
     return DefaultHandler(name)
+
+
+def envvar_default(name, envvar):
+    """A decorator that sets environment variable defaults for Traits of Configurable objects.
+
+    The handler passed to the decorator will be called with one ``init`` dict
+    argument. The value returned by the handler will be the default value for
+    the Trait. The init dict contains information on which trait is being set,
+    the name of the environment variable, and the value of that variable:
+    * ``name`` : the trait the default is set to
+    * ``envvar`` : the name of the environment variable
+    * ``value`` : the value of that variable
+
+    Parameters
+    ----------
+    name: string
+        The name of the Trait on the object whose default should be generated.
+    envvar: string
+        The environment variable the default value should depend on.
+
+    Returns
+    -------
+    An initialized EnvvarDefaultHandler descriptor instance.
+
+    Notes
+    -----
+    Unlike observers and validators which are properties of the HasTraits
+    instance, default value generators are class-level properties.
+    """
+    return EnvvarDefaultHandler(name, envvar)
 
 
 class EventHandler(BaseDescriptor):
@@ -992,6 +1023,24 @@ class DefaultHandler(EventHandler):
     def class_init(self, cls, name):
         super(DefaultHandler, self).class_init(cls, name)
         cls._trait_default_generators[self.trait_name] = self
+
+
+class EnvvarDefaultHandler(DefaultHandler):
+    """Simple class for initializing defaults from environment variables"""
+
+    def __init__(self, name, envvar):
+        self.trait_name = name
+        self.envvar = envvar
+
+    def _init_call(self, func):
+        def _envvar_wrapper(inst):
+            init_bunch = Bunch({
+                'value': os.environ.get(self.envvar),
+                'trait': getattr(inst.__class__, self.trait_name),
+                'envvar': self.envvar})
+            return func(inst, init_bunch)
+        self.func = _envvar_wrapper
+        return self
 
 
 class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
