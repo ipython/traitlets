@@ -346,6 +346,29 @@ class Config(dict):
             raise AttributeError(e)
 
 
+class DeferredConfigString(text_type):
+    """Config value for loading config from a string
+
+    Interpretation is deferred until it is loaded into the trait.
+
+    Subclass of unicode for backward compatibility.
+
+    This class is only used for values that are not listed
+    in the configurable classes.
+
+    When config is loaded, `trait.from_string` will be used.
+
+    .. versionadded:: 5.0
+    """
+    def get_value(self, trait):
+        """Get the value stored in this string"""
+        return trait.from_string(self)
+
+    def __repr__(self):
+        super_repr = super(DeferredConfigString, self).__repr__()
+        return '%s(%s)' % (self.__class__.__name__, super_repr)
+
+
 #-----------------------------------------------------------------------------
 # Config loading classes
 #-----------------------------------------------------------------------------
@@ -544,18 +567,12 @@ class CommandLineConfigLoader(ConfigLoader):
     here.
     """
 
-    def _parse_config_value(self, rhs):
+    def _parse_config_value(self, rhs, trait=None):
         """Python-evaluates any cmd-line argument values."""
-        rhs = os.path.expanduser(rhs)
-        try:
-            # Try to see if regular Python syntax will work. This
-            # won't handle strings as the quote marks are removed
-            # by the system shell.
-            value = literal_eval(rhs)
-        except (NameError, SyntaxError, ValueError):
-            # This case happens if the rhs is a string.
-            value = rhs
-        return value
+        if trait:
+            return trait.from_string(rhs)
+        else:
+            return DeferredConfigString(rhs)
 
     def _exec_config_str(self, lhs, rhs, trait=None):
         """execute self.config.<lhs> = <rhs>
@@ -573,8 +590,9 @@ class CommandLineConfigLoader(ConfigLoader):
                     "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
                         lhs, rhs[0])
                 )
-                value = self._parse_config_value(rhs[0])
+                value = self._parse_config_value(rhs[0], trait)
             else:
+                # FIXME: get trait for values
                 value = {k: self._parse_config_value(v) for k,v in rhs}
 
         elif isinstance(rhs, (list, tuple)):
@@ -591,12 +609,12 @@ class CommandLineConfigLoader(ConfigLoader):
                         "You can pass --{0} item ... multiple times to add items to a list.".format(
                             lhs, rhs)
                     )
-                    value = self._parse_config_value(r)
+                    value = self._parse_config_value(r, trait)
 
             if value is None:
-                value = [self._parse_config_value(r) for r in rhs]
+                value = [self._parse_config_value(r, trait) for r in rhs]
         else:
-            value = self._parse_config_value(rhs)
+            value = self._parse_config_value(rhs, trait)
 
         exec(u'self.config.%s = value' % lhs, None, locals())
 
@@ -636,7 +654,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         ipython --profile="foo" --InteractiveShell.autocall=False
     """
 
-    def __init__(self, argv=None, aliases=None, flags=None, **kw):
+    def __init__(self, argv=None, aliases=None, flags=None, classes=None, **kw):
         """Create a key value pair config loader.
 
         Parameters
@@ -650,9 +668,12 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
             Keys are the short aliases, Values are the resolved trait.
             Of the form: `{'alias' : 'Configurable.trait'}`
         flags : dict
-            A dict of flags, keyed by str name. Vaues can be Config objects,
+            A dict of flags, keyed by str name. Values can be Config objects,
             dicts, or "key=value" strings.  If Config or dict, when the flag
             is triggered, The flag is loaded as `self.config.update(m)`.
+        classes : sequence
+            A list/tuple of classes that are to be configured.
+            Classes included in this list
 
         Returns
         -------
@@ -673,6 +694,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         self.argv = argv
         self.aliases = aliases or {}
         self.flags = flags or {}
+        self.classes = classes or ()
 
 
     def clear(self):
@@ -692,6 +714,19 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
             uargv.append(arg)
         return uargv
 
+    def _find_trait(self, lhs):
+        """Find the trait for a Class.trait string"""
+        
+        from .configurable import Configurable
+        class_name, trait_name = lhs.split('.')[-2:]
+        for cls in self.classes:
+            for parent in cls.mro():
+                if (
+                    issubclass(parent, Configurable) and
+                    parent.__name__ == class_name
+                ):
+                    return parent.class_traits().get(trait_name)
+        return None
 
     def load_config(self, argv=None, aliases=None, flags=None):
         """Parse the configuration and generate the Config object.
@@ -750,9 +785,12 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                     lhs = aliases[lhs]
                 if '.' not in lhs:
                     # probably a mistyped alias, but not technically illegal
-                    self.log.warning("Unrecognized alias: '%s', it will probably have no effect.", raw)
+                    self.log.warning("Unrecognized alias: '%s', it will have no effect.", raw)
+                    trait = None
+                else:
+                    trait = self._find_trait(lhs)
                 try:
-                    self._exec_config_str(lhs, rhs)
+                    self._exec_config_str(lhs, rhs, trait)
                 except Exception:
                     raise ArgumentError("Invalid argument: '%s'" % raw)
 
@@ -843,11 +881,6 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
     def _create_parser(self, aliases=None, flags=None, classes=None):
         self.parser = ArgumentParser(*self.parser_args, **self.parser_kw)
         self._add_arguments(aliases, flags, classes)
-
-    def _parse_config_traits(self):
-        for cls in self.classes:
-            for trait, traitname in cls.class_traits(config=True).items():
-                yield ()
 
     def _add_arguments(self, aliases=None, flags=None, classes=None):
         raise NotImplementedError("subclasses must implement _add_arguments")
@@ -992,7 +1025,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             self._load_flag(subc)
 
         if self.extra_args:
-            sub_parser = KeyValueConfigLoader(log=self.log)
+            sub_parser = KeyValueConfigLoader(log=self.log, classes=self.classes)
             sub_parser.load_config(self.extra_args)
             self.config.merge(sub_parser.config)
             self.extra_args = sub_parser.extra_args
