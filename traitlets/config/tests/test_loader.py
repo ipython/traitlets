@@ -23,7 +23,16 @@ from traitlets.config.loader import (
     KVArgParseConfigLoader,
     ConfigError,
 )
-from traitlets import (HasTraits, Union, List, Tuple, Dict, Int, Unicode)
+from traitlets import (
+    HasTraits,
+    Union,
+    List,
+    Tuple,
+    Dict,
+    Int,
+    Unicode,
+    Integer,
+)
 from traitlets.config import Configurable
 
 
@@ -68,8 +77,8 @@ import logging
 log = logging.getLogger('devnull')
 log.setLevel(0)
 
-class TestFileCL(TestCase):
 
+class TestFileCL(TestCase):
     def _check_conf(self, config):
         self.assertEqual(config.a, 10)
         self.assertEqual(config.b, 20)
@@ -173,11 +182,13 @@ class TestFileCL(TestCase):
         with self.assertRaises(ValueError):
             cl.load_config()
 
+
 def _parse_int_or_str(v):
     try:
         return int(v)
     except:
         return str(v)
+
 
 class MyLoader1(ArgParseConfigLoader):
     def _add_arguments(self, aliases=None, flags=None, classes=None):
@@ -236,25 +247,29 @@ class TestArgParseCL(TestCase):
         self.assertEqual(config.list1, [1, 'B'])
         self.assertEqual(config.list2, [1, 2, 3])
 
+class C(Configurable):
+    str_trait = Unicode(config=True)
+    int_trait = Integer(config=True)
+    list_trait = List(config=True)
 
 class TestKeyValueCL(TestCase):
     klass = KeyValueConfigLoader
 
     def test_eval(self):
         cl = self.klass(log=log)
-        config = cl.load_config('--Class.str_trait=all --Class.int_trait=5 --Class.list_trait=["hello",5]'.split())
-        self.assertEqual(config.Class.str_trait, 'all')
-        self.assertEqual(config.Class.int_trait, 5)
-        self.assertEqual(config.Class.list_trait, ["hello", 5])
+        config = cl.load_config('--C.str_trait=all --C.int_trait=5 --C.list_trait=["hello",5]'.split())
+        c = C(config=config)
+        assert c.str_trait == 'all'
+        assert c.int_trait == 5
+        assert c.list_trait == ["hello", 5]
 
     def test_basic(self):
         cl = self.klass(log=log)
         argv = [ '--' + s[2:] for s in pyfile.split('\n') if s.startswith('c.') ]
-        print(argv)
         config = cl.load_config(argv)
-        self.assertEqual(config.a, 10)
-        self.assertEqual(config.b, 20)
-        self.assertEqual(config.Foo.Bar.value, 10)
+        assert config.a == '10'
+        assert config.b == '20'
+        assert config.Foo.Bar.value == '10'
         # non-literal expressions are not evaluated
         self.assertEqual(config.Foo.Bam.value, 'list(range(10))')
         self.assertEqual(config.D.C.value, 'hi there')
@@ -272,8 +287,8 @@ class TestKeyValueCL(TestCase):
         cl = self.klass(log=log)
         config = cl.load_config(['--a=5', 'b', '--c=10', 'd'])
         self.assertEqual(cl.extra_args, ['b', 'd'])
-        self.assertEqual(config.a, 5)
-        self.assertEqual(config.c, 10)
+        assert config.a == '5'
+        assert config.c == '10'
         config = cl.load_config(['--', '--a=5', '--c=10'])
         self.assertEqual(cl.extra_args, ['--a=5', '--c=10'])
 
@@ -307,7 +322,7 @@ class TestKeyValueCL(TestCase):
 
 class CBase(HasTraits):
     a = List().tag(config=True)
-    b = List().tag(config=True, multiplicity='*')
+    b = List(Integer()).tag(config=True, multiplicity='*')
     c = List().tag(config=True, multiplicity='append')
     adict = Dict().tag(config=True)
 
@@ -338,12 +353,12 @@ class TestArgParseKVCL(TestKeyValueCL):
         argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --a3 AA --CBase.c BB "
                 "--CSub.d 1 --CSub.d BBB --CSub.e 1 a bcd").split()
         config = cl.load_config(argv, aliases=aliases)
-        self.assertEqual(config.CBase.a, ['A', 2])
-        self.assertEqual(config.CBase.b, [1, 2, 3])
+        assert config.CBase.a == ['A', '2']
+        assert config.CBase.b == [1, 2, 3]
         self.assertEqual(config.CBase.c, ['AA', 'BB'])
 
-        self.assertEqual(config.CSub.d, [1, 'BBB'])
-        self.assertEqual(config.CSub.e, [1, 'a', 'bcd'])
+        assert config.CSub.d == ['1', 'BBB']
+        assert config.CSub.e == ['1', 'a', 'bcd']
 
     def test_seq_traits_single_empty_string(self):
         cl = self.klass(log=log, classes=(CBase, ))
@@ -357,10 +372,10 @@ class TestArgParseKVCL(TestKeyValueCL):
         aliases = {'D': 'CBase.adict', 'E': 'CSub.bdict'}
         argv = ["--CBase.adict", "k1=v1", "-D=k2=2", "-D", "k3=v 3", "-E", "k=v", "22=222"]
         config = cl.load_config(argv, aliases=aliases)
-        self.assertDictEqual(config.CBase.adict,
-                {'k1': 'v1', 'k2': 2, 'k3': 'v 3'})
-        self.assertEqual(config.CSub.bdict,
-                {'k': 'v', '22': 222})
+        assert config.CBase.adict == \
+                {'k1': 'v1', 'k2': '2', 'k3': 'v 3'}
+        assert config.CSub.bdict == \
+                {'k': 'v', '22': '222'}
 
 
 class TestConfig(TestCase):

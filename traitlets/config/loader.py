@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import json
+import warnings
 from ast import literal_eval
 
 from ..utils import cast_unicode
@@ -362,7 +363,7 @@ class DeferredConfigString(text_type):
     """
     def get_value(self, trait):
         """Get the value stored in this string"""
-        return trait.from_string(self)
+        return trait.from_string(text_type(self))
 
     def __repr__(self):
         super_repr = super(DeferredConfigString, self).__repr__()
@@ -569,6 +570,17 @@ class CommandLineConfigLoader(ConfigLoader):
 
     def _parse_config_value(self, rhs, trait=None):
         """Python-evaluates any cmd-line argument values."""
+        rhs = os.path.expanduser(rhs)
+        if len(rhs) > 2:
+            # handle deprecated "1"
+            for c in "'\"":
+                if rhs[0] == rhs[-1] == c:
+                    old_rhs = rhs
+                    rhs = rhs[1:-1]
+                    warnings.warn(
+                        "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
+                        "Use %r instead of %r" % (rhs, old_rhs),
+                        DeprecationWarning)
         if trait:
             return trait.from_string(rhs)
         else:
@@ -578,11 +590,9 @@ class CommandLineConfigLoader(ConfigLoader):
         """execute self.config.<lhs> = <rhs>
 
         * expands ~ with expanduser
-        * tries to assign with literal_eval, otherwise assigns with just the string,
-          allowing `--C.a=foobar` and `--C.a="foobar"` to be equivalent.  *Not*
-          equivalent are `--C.a=4` and `--C.a='4'`.
+        * interprets value with trait if available
         """
-        if isinstance(trait, Dict):
+        if isinstance(trait, Dict) and not isinstance(rhs, str):
             if len(rhs) == 1 and isinstance(rhs[0], str):
                 # check for deprecated --Class.trait="{'a': 'b'}"
                 self.log.warning(
@@ -590,10 +600,19 @@ class CommandLineConfigLoader(ConfigLoader):
                     "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
                         lhs, rhs[0])
                 )
-                value = self._parse_config_value(rhs[0], trait)
+                value = literal_eval(rhs[0])
             else:
                 # FIXME: get trait for values
-                value = {k: self._parse_config_value(v) for k,v in rhs}
+                value = {}
+                for k, v in rhs:
+                    value_trait = (trait._per_key_traits or {}).get(k, trait._value_trait)
+                    if value_trait:
+                        value[k] = self._parse_config_value(v, value_trait)
+                    else:
+                        # no trait, use str
+                        # non-str values can only be passed this way
+                        # if the dict trait defines value traits
+                        value[k] = v
 
         elif isinstance(rhs, (list, tuple)):
             value = None
@@ -612,7 +631,15 @@ class CommandLineConfigLoader(ConfigLoader):
                     value = self._parse_config_value(r, trait)
 
             if value is None:
-                value = [self._parse_config_value(r, trait) for r in rhs]
+                if trait:
+                    value_trait = getattr(trait, "_trait")
+                else:
+                    value_trait = None
+                if value_trait:
+                    value = [self._parse_config_value(r, value_trait) for r in rhs]
+                else:
+                    # no trait, use strings
+                    value = [r for r in rhs]
         else:
             value = self._parse_config_value(rhs, trait)
 
