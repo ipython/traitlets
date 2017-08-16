@@ -718,19 +718,19 @@ def test_env_vars_priority(monkeypatch):
 
         conf = Conf()
         assert (conf.a, conf.b) == exp['init']
-        conf.update_config(cfg, skip_env=True)
+        conf.update_config_with_env(cfg, skip_env=True)
         assert (conf.a, conf.b) == exp['skp']
 
-        conf.update_config(cfg, skip_env=False)
+        conf.update_config_with_env(cfg, skip_env=False)
         assert (conf.a, conf.b) == exp['cfg']
 
         conf.a = conf.b = 'set'
         assert (conf.a, conf.b) == exp['set']
 
-        conf.update_config(cfg, skip_env=True)
+        conf.update_config_with_env(cfg, skip_env=True)
         assert (conf.a, conf.b) == exp['skp']
 
-        conf.update_config(cfg, skip_env=False)
+        conf.update_config_with_env(cfg, skip_env=False)
         assert (conf.a, conf.b) == exp['cfg']
 
         conf = Conf(a='set', b='set')

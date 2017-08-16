@@ -210,12 +210,27 @@ class Configurable(HasTraits):
         section_names = self.section_names()
         self._load_config(change.new, traits=traits, section_names=section_names)
 
-    def update_config(self, config, skip_env=False):
+    def update_config(self, config):
         """
-        Update config and load the new values
+        Update config, load trait-values from `config` and overwrite any env-vars
+
+        - Simply delegates to :meth:`update_config_with_env()`.
+        - Use that method instead, if you don't want any env-vars to apply.
+        """
+        ## Had to split methods to preserve BW-compatibility for new `skip_env`.
+        self.update_config_with_env(config)
+
+    def update_config_with_env(self, config, skip_env=False):
+        """
+        Update config, apply `config` to traits and overwrite any env-vars
 
         :param skip_env:
-            when true, does configs apply even for traits with `envvar` metadata.
+            (relevant only for traits with `envvar` in metadata)
+            if true, config-values will NOT be overwriten by env-vars; note that
+            traits missing from `config`, will resolve to env-vars values,
+            regardless of this flag.
+
+        Note: merged configs in :attr:`config` will NOT contain env-var values.
         """
         # traitlets prior to 4.2 created a copy of self.config in order to trigger change events.
         # Some projects (IPython < 5) relied upon one side effect of this,

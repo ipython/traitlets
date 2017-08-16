@@ -662,10 +662,10 @@ def test_env_vars_priority(monkeypatch):
 
         app = App()
         assert (app.a, app.b) == exp['init']
-        app.update_config(cfg, skip_env=True)
+        app.update_config_with_env(cfg, skip_env=True)
         assert (app.a, app.b) == exp['skp']
 
-        app.update_config(cfg, skip_env=False)
+        app.update_config_with_env(cfg, skip_env=False)
         assert (app.a, app.b) == exp['cfg']
 
         app.a = app.b = 'set'
