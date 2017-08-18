@@ -18,8 +18,8 @@ from traitlets.config.configurable import (
 )
 
 from traitlets.traitlets import (
-    Integer, Float, Unicode, List, Dict, Set, Enum, FuzzyEnum,
-    CaselessStrEnum, _deprecations_shown, validate,
+    Integer, CInt, Float, Unicode, List, Dict, Set, Enum, FuzzyEnum,
+    CaselessStrEnum, _deprecations_shown, validate, default
 )
 
 from traitlets.config.loader import Config
@@ -309,7 +309,6 @@ class TestConfigurable(TestCase):
         ## Check order of Default <--> Choices sections
         self.assertGreater(cls4_cfg.index(defaults_str),
                            cls4_cfg.index(enum_choices_str))
-
 
 
 class TestSingletonConfigurable(TestCase):
@@ -646,3 +645,110 @@ class TestLogger(TestCase):
         self.assertIn('Config option `totally_wrong` not recognized by `A`.', output)
         self.assertNotIn('Did you mean', output)
 
+
+@mark.fixture
+def check_meth():
+    pass
+
+
+@mark.parametrize('check_meth', [
+    ('class_get_help', r'^    Environment variable: MY_ENVVAR'),
+    ('class_config_section', r'^#  Environment variable: MY_ENVVAR'),
+    ('class_config_rst_doc', r'^    Environment variable: ``MY_ENVVAR``'),
+])
+def test_environment_variable_comment_list(check_meth):
+    import re
+
+    class A(Configurable):
+        a = Integer().tag(config=True, envvar='MY_ENVVAR')
+        b = Integer().tag(config=True, envvar='NO_ENVVAR')
+
+    meth, regex = check_meth
+    txt = getattr(A, meth)()
+    assert re.search(regex, txt,
+        re.MULTILINE)
+    #assert not re.search('Environment variable: NO_ENVVAR', txt)
+
+
+def test_environment_variable_default(monkeypatch):
+    class A(Configurable):
+        b = CInt(allow_none=True).tag(config=True, envvar='MY_ENVVAR')
+
+    cfg = Config()
+    cfg.A.b = 2
+
+    a = A()
+    assert a.b == 0
+    a = A(config=cfg)
+    assert a.b == 2
+
+    monkeypatch.setenv('MY_ENVVAR', '1')
+
+    a = A()
+    assert a.b == 1  # env-var has precendance.
+
+    a = A(config=cfg)
+    assert a.b == 1  # env-var has precendance.
+
+    a.b = 3
+    assert a.b == 3  # Direct assignments override env-var.
+    a.b = None
+    assert a.b is None
+
+
+def test_env_vars_priority(monkeypatch):
+    class Conf(Configurable):
+        a = Unicode('def').tag(config=True, envvar='MY_ENVVAR')
+        b = Unicode().tag(config=True, envvar='MY_ENVVAR')
+        aliases = {'def': 'App.a', 'dyn': 'App.b'}
+
+        @default('b')
+        def set_a_dyn(self):
+            return 'dyn'
+
+    exp_no_envvar = {
+        'init': ('def', 'dyn'),  # values after "empty" construction
+        'set': ('set', 'set'),  # values after direct assignment
+        'cfg': ('cfg', 'cfg'),  # values after `update_config()
+        'skp': ('cfg', 'cfg'),  # values when `skip_env=True`
+    }
+    exp_with_envvar = {
+        'init': ('env', 'env'),
+        'set': ('set', 'set'),
+        'cfg': ('env', 'env'),
+        'skp': ('cfg', 'cfg'),
+    }
+
+    def check_priority(exp):
+        cfg = Config()
+        cfg.Conf.a = cfg.Conf.b = 'cfg'
+
+        conf = Conf()
+        assert (conf.a, conf.b) == exp['init']
+        conf.update_config_with_env(cfg, skip_env=True)
+        assert (conf.a, conf.b) == exp['skp']
+
+        conf.update_config_with_env(cfg, skip_env=False)
+        assert (conf.a, conf.b) == exp['cfg']
+
+        conf.a = conf.b = 'set'
+        assert (conf.a, conf.b) == exp['set']
+
+        conf.update_config_with_env(cfg, skip_env=True)
+        assert (conf.a, conf.b) == exp['skp']
+
+        conf.update_config_with_env(cfg, skip_env=False)
+        assert (conf.a, conf.b) == exp['cfg']
+
+        conf = Conf(a='set', b='set')
+        assert (conf.a, conf.b) == exp['set']
+
+        conf = Conf(config=cfg, a='set', b='set')
+        assert (conf.a, conf.b) == exp['set']
+
+        conf = Conf(config=cfg)
+        assert (conf.a, conf.b) == exp['cfg']
+
+    check_priority(exp_no_envvar)
+    monkeypatch.setenv('MY_ENVVAR', 'env')
+    check_priority(exp_with_envvar)

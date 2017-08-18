@@ -146,7 +146,7 @@ class Configurable(HasTraits):
                     my_config.merge(c[sname])
         return my_config
 
-    def _load_config(self, cfg, section_names=None, traits=None):
+    def _load_config(self, cfg, section_names=None, traits=None, skip_env=False):
         """load traits from a Config object"""
 
         if traits is None:
@@ -159,7 +159,14 @@ class Configurable(HasTraits):
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():
             for name, config_value in my_config.items():
-                if name in traits:
+                trait = traits.get(name)
+                if trait:
+                    env_value = trait.get_env_value()
+                    if not skip_env and env_value is not None:
+                        ## Env-vars take precendance over config-params.
+                        setattr(self, name, env_value)
+                        continue
+
                     if isinstance(config_value, LazyConfigValue):
                         # ConfigValue is a wrapper for using append / update on containers
                         # without having to copy the initial value
@@ -204,7 +211,27 @@ class Configurable(HasTraits):
         self._load_config(change.new, traits=traits, section_names=section_names)
 
     def update_config(self, config):
-        """Update config and load the new values"""
+        """
+        Update config, load trait-values from `config` and overwrite any env-vars
+
+        - Simply delegates to :meth:`update_config_with_env()`.
+        - Use that method instead, if you don't want any env-vars to apply.
+        """
+        ## Had to split methods to preserve BW-compatibility for new `skip_env`.
+        self.update_config_with_env(config)
+
+    def update_config_with_env(self, config, skip_env=False):
+        """
+        Update config, apply `config` to traits and overwrite any env-vars
+
+        :param skip_env:
+            (relevant only for traits with `envvar` in metadata)
+            if true, config-values will NOT be overwriten by env-vars; note that
+            traits missing from `config`, will resolve to env-vars values,
+            regardless of this flag.
+
+        Note: merged configs in :attr:`config` will NOT contain env-var values.
+        """
         # traitlets prior to 4.2 created a copy of self.config in order to trigger change events.
         # Some projects (IPython < 5) relied upon one side effect of this,
         # that self.config prior to update_config was not modified in-place.
@@ -213,7 +240,7 @@ class Configurable(HasTraits):
         # but config consumers should not rely on this behavior.
         self.config = deepcopy(self.config)
         # load config
-        self._load_config(config)
+        self._load_config(config, skip_env=skip_env)
         # merge it into self.config
         self.config.merge(config)
         # TODO: trigger change event if/when dict-update change events take place
@@ -273,6 +300,11 @@ class Configurable(HasTraits):
         if 'Enum' in trait.__class__.__name__:
             # include Enum choices
             lines.append(indent('Choices: %s' % trait.info()))
+
+        env_var = trait.metadata.get('envvar')
+        if env_var:
+            env_info = 'Environment variable: %s' % env_var
+            lines.append(indent(env_info, 4))
 
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
@@ -366,6 +398,14 @@ class Configurable(HasTraits):
                 # cls owns the trait, show full help
                 if trait.help:
                     lines.append(c(trait.help))
+
+                env_var = trait.metadata.get('envvar')
+                if env_var:
+
+
+
+                    lines.append('#  Environment variable: %s' % env_var)
+
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
                     lines.append('#  Choices: %s' % trait.info())
@@ -401,6 +441,10 @@ class Configurable(HasTraits):
             else:
                 termline += ' : ' + ttype
             lines.append(termline)
+
+            env_var = trait.metadata.get('envvar')
+            if env_var:
+                lines.append(indent('Environment variable: ``%s``' % env_var, 4))
 
             # Default value
             try:
@@ -523,6 +567,4 @@ class SingletonConfigurable(LoggingConfigurable):
     def initialized(cls):
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
-
-
 
