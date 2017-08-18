@@ -1865,7 +1865,7 @@ class Instance(ClassBasedTraitType):
         return repr(self.make_dynamic_default())
 
     def from_string(self, s):
-        return literal_eval(s)
+        return _safe_literal_eval(s)
 
 
 class ForwardDeclaredMixin(object):
@@ -2221,7 +2221,7 @@ class Bool(TraitType):
         elif s in {'false', '0'}:
             return False
         else:
-            self.error(obj, s)
+            raise ValueError("%r is not 1, 0, true, or false")
 
 
 class CBool(Bool):
@@ -2834,7 +2834,7 @@ class TCPAddress(TraitType):
 
     def from_string(self, s):
         if ':' not in s:
-            self.error(obj, s)
+            raise ValueError('Require `ip:port`, got %r' % s)
         ip, port = s.split(':', 1)
         port = int(port)
         return (ip, port)
