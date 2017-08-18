@@ -865,7 +865,6 @@ class _FlagAction(argparse.Action):
 
     def __call__(self, parser, namespace, values, option_string=None):
         key = option_string.lstrip('-')
-        print('values %r' % values)
         if self.nargs == 0 or values is Undefined:
             namespace._flags.append(self.flag)
         else:
