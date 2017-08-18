@@ -317,12 +317,21 @@ class DeferredConfigString(text_type):
     in the configurable classes.
 
     When config is loaded, `trait.from_string` will be used.
+    
+    If an error is raised
 
     .. versionadded:: 5.0
     """
     def get_value(self, trait):
         """Get the value stored in this string"""
-        return trait.from_string(text_type(self))
+        s = text_type(self)
+        try:
+            return trait.from_string(s)
+        except Exception:
+            # exception casting from string,
+            # let the original string lie.
+            # this will raise a more informative error when config is loaded.
+            return s
 
     def __repr__(self):
         super_repr = super(DeferredConfigString, self).__repr__()
@@ -546,7 +555,12 @@ class CommandLineConfigLoader(ConfigLoader):
                         "Use %r instead of %r" % (rhs, old_rhs),
                         DeprecationWarning)
         if trait:
-            return trait.from_string(rhs)
+            try:
+                return trait.from_string(rhs)
+            except Exception:
+                # failed to eval, let later config loading raise,
+                # which will be more informative
+                return rhs
         else:
             return DeferredConfigString(rhs)
 
