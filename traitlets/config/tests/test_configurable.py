@@ -646,3 +646,26 @@ class TestLogger(TestCase):
         self.assertIn('Config option `totally_wrong` not recognized by `A`.', output)
         self.assertNotIn('Did you mean', output)
 
+
+@mark.fixture
+def check_meth():
+    pass
+
+
+@mark.parametrize('check_meth', [
+    ('class_get_help', r'^    Environment variable: MY_ENVVAR'),
+    ('class_config_section', r'^#  Environment variable: MY_ENVVAR'),
+    ('class_config_rst_doc', r'^    Environment variable: ``MY_ENVVAR``'),
+])
+def test_environment_variable_comment_list(check_meth):
+    import re
+
+    class A(Configurable):
+        a = Integer().tag(config=True, envvar='MY_ENVVAR')
+        b = Integer().tag(config=True, envvar='NO_ENVVAR')
+
+    meth, regex = check_meth
+    txt = getattr(A, meth)()
+    assert re.search(regex, txt,
+        re.MULTILINE)
+    #assert not re.search('Environment variable: NO_ENVVAR', txt)

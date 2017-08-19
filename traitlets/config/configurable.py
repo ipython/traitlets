@@ -274,6 +274,11 @@ class Configurable(HasTraits):
             # include Enum choices
             lines.append(indent('Choices: %s' % trait.info()))
 
+        env_var = trait.metadata.get('envvar')
+        if env_var:
+            env_info = 'Environment variable: %s' % env_var
+            lines.append(indent(env_info, 4))
+
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
         else:
@@ -366,6 +371,11 @@ class Configurable(HasTraits):
                 # cls owns the trait, show full help
                 if trait.help:
                     lines.append(c(trait.help))
+
+                env_var = trait.metadata.get('envvar')
+                if env_var:
+                    lines.append('#  Environment variable: %s' % env_var)
+                
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
                     lines.append('#  Choices: %s' % trait.info())
@@ -401,6 +411,10 @@ class Configurable(HasTraits):
             else:
                 termline += ' : ' + ttype
             lines.append(termline)
+
+            env_var = trait.metadata.get('envvar')
+            if env_var:
+                lines.append(indent('Environment variable: ``%s``' % env_var, 4))
 
             # Default value
             try:
@@ -523,6 +537,4 @@ class SingletonConfigurable(LoggingConfigurable):
     def initialized(cls):
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
-
-
 
