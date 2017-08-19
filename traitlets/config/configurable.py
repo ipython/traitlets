@@ -159,7 +159,15 @@ class Configurable(HasTraits):
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():
             for name, config_value in my_config.items():
-                if name in traits:
+                trait = traits.get(name)
+                if trait:
+                    env_value = trait.get_env_value()
+                    ## priority: file-conf < env-vars < cli-options
+                    #  See :data:`application.ENV_RANK`
+                    if env_value is not None and my_config.rank_of(name) < 10:
+                        setattr(self, name, env_value)
+                        continue
+
                     if isinstance(config_value, LazyConfigValue):
                         # ConfigValue is a wrapper for using append / update on containers
                         # without having to copy the initial value
@@ -377,7 +385,7 @@ class Configurable(HasTraits):
                 env_var = trait.metadata.get('envvar')
                 if env_var:
                     lines.append('#  Environment variable: %s' % env_var)
-                
+
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
                     lines.append('#  Choices: %s' % trait.info())

@@ -65,7 +65,7 @@ subcommand 'cmd', do: `{app} cmd -h`.
 #-----------------------------------------------------------------------------
 
 CFG_RANK = 0
-ENV_RANK = 10
+ENV_RANK = 10  # Informative; used literal in :meth:`Configurable.update_config()`.
 CLI_RANK = 20
 
 
