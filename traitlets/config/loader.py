@@ -164,7 +164,12 @@ def _is_section_key(key):
 
 
 class Config(dict):
-    """An attribute based dict that can do smart merges."""
+    """An attribute based dict that can do smart merges respecting their priority-ranks."""
+
+    #: Either the "priority rank" as integer, or a dict mapping, at least,
+    #: the `None` key to the default priority-rank
+    #: (ie for all non-explicit direct children).
+    _merge_priorities = 0
 
     def __init__(self, *args, **kwds):
         dict.__init__(self, *args, **kwds)
@@ -183,6 +188,39 @@ class Config(dict):
                     and not isinstance(obj, Config):
                 setattr(self, key, Config(obj))
 
+    def rank_of(self, key=None):
+        """return the rank(an int) of the value for the given `key` or default one"""
+        my_pr = self._merge_priorities
+        try:
+            rank = my_pr.get(key)
+        except AttributeError:
+            return my_pr
+        return my_pr[None] if rank is None else rank
+
+    def _set_rank_of(self, key, rank):
+        """private, so as to push clients to work with default-rank on sub-configs"""
+        my_pr = self._merge_priorities
+        if my_pr != rank:
+            try:
+                def_rank = my_pr[None]
+            except TypeError:
+                self._merge_priorities = {None: my_pr, key: rank}
+            else:
+                if def_rank != rank:
+                    my_pr[key] = rank
+
+    def set_default_rank(self, rank):
+        """set priority-rank(an int) for all values without explicit rank, recursively"""
+        my_pr = self._merge_priorities
+        try:
+            my_pr[None] = rank
+        except TypeError:
+            self._merge_priorities = rank
+
+        for v in self.values():
+            if isinstance(v, Config):
+                v.set_default_rank(rank)
+
     def _merge(self, other):
         """deprecated alias, use Config.merge()"""
         self.merge(other)
@@ -191,17 +229,62 @@ class Config(dict):
         """merge another config object into this one"""
         to_update = {}
         for k, v in other.items():
+            try:
+                other_rank = other.rank_of(k)
+            except AttributeError:
+                my_rank = other_rank = None
+            else:
+                my_rank = self.rank_of(k)
+
             if k not in self:
+                # New keys adopted regardless of rank.
                 to_update[k] = v
             else: # I have this key
                 if isinstance(v, Config) and isinstance(self[k], Config):
-                    # Recursively merge common sub Configs
+                    # Recursively merge common sub Configs.
                     self[k].merge(v)
-                else:
-                    # Plain updates for non-Configs
+                else: # For non-Configs, update anything >= my-rank.
+                    if my_rank is not None and other_rank < my_rank:
+                        continue
+
                     to_update[k] = v
 
+            if my_rank != other_rank:
+                self._set_rank_of(k, other_rank)
+
         self.update(to_update)
+
+    def substract(self, other):
+        """return a new config with all overriding-differences of the `other`"""
+        diffs = type(self)()
+        ## Diffs jusfged against my priorities.
+        diffs._merge_priorities = self.rank_of()
+
+        for k, v in other.items():
+            try:
+                other_rank = other.rank_of(k)
+            except AttributeError:
+                my_rank = other_rank = None
+            else:
+                my_rank = self.rank_of(k)
+
+            if k not in self:
+                # New keys adopted regardless of rank.
+                diffs[k] = v
+            else: # I have this key
+                if isinstance(v, Config) and isinstance(self[k], Config):
+                    # Recursively substract common Configs.
+                    diffs[k] = self[k].substract(v)
+                else: # For non-Configs, diff is anything >= my-rank.
+                    if my_rank is not None and other_rank < my_rank:
+                        continue
+
+                    diffs[k] = v
+
+            if my_rank != other_rank:
+                diffs._set_rank_of(k, other_rank)
+
+        return diffs
 
     def collisions(self, other):
         """Check for collisions between two config objects.
@@ -240,7 +323,9 @@ class Config(dict):
         return _is_section_key(key) and key in self
 
     def copy(self):
-        return type(self)(dict.copy(self))
+        clone = type(self)(dict.copy(self))
+        clone._merge_priorities = copy.copy(self._merge_priorities)
+        return clone
 
     def __copy__(self):
         return self.copy()
@@ -255,6 +340,7 @@ class Config(dict):
                 # shallow copy plain container traits
                 value = copy.copy(value)
             new_config[key] = value
+        new_config._merge_priorities = copy.deepcopy(self._merge_priorities)
         return new_config
 
     def __getitem__(self, key):
@@ -289,7 +375,7 @@ class Config(dict):
             raise AttributeError(e)
 
     def __setattr__(self, key, value):
-        if key.startswith('__'):
+        if key.startswith('__') or key == '_merge_priorities':
             return dict.__setattr__(self, key, value)
         try:
             self.__setitem__(key, value)
