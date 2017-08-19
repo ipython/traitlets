@@ -526,3 +526,55 @@ class TestConfig(TestCase):
         self.assertEqual(c.Foo.trait, [1])
         self.assertEqual(c2.Foo.trait, [1])
 
+def test_config_priorities():
+    c0 = Config()
+    c0.A.a = 0
+    c0.A.B.c = 0
+    c0.A.B.d = 0
+
+    c1 = Config()
+    c1.A.a = 1
+    c1.A.b = 11
+    c1.A.B.c = 111
+    c1.set_default_rank(10)
+    assert c1.rank_of() == 10
+    assert c1.A.rank_of() == 10
+    assert c1.A.rank_of('a') == 10
+    assert c1.A.rank_of('b') == 10
+    assert c1.A.B.rank_of() == 10
+    assert c1.A.B.rank_of('c') == 10
+
+    c2 = Config()
+    c2.A.a = 2
+    c2.A.b = 22
+    c2.A.B.c = 222
+    c2.set_default_rank(-10)
+
+    c = copy.deepcopy(c0)
+    c.merge(c1)
+    assert c.A.a == 1
+    assert c.A.b == 11
+    assert c.A.B.c == 111
+    assert c.A.B.d == 0
+    assert c.rank_of() == 0
+    assert c.A.rank_of() == 0
+    assert c.A.rank_of('a') == 10
+    assert c.A.rank_of('b') == 10
+    assert c.A.B.rank_of() == 0
+    assert c.A.B.rank_of('c') == 10
+    assert c.A.B.rank_of('d') == 0
+
+    c = copy.deepcopy(c0)
+    c.merge(c2)
+    assert c.A.a == 0
+    assert c.A.b == 22
+    assert c.A.B.c == 0
+    assert c.A.B.d == 0
+    assert c.rank_of() == 0
+    assert c.A.rank_of() == 0
+    assert c.A.rank_of('a') == 0
+    assert c.A.rank_of('b') == -10
+    assert c.A.B.rank_of() == 0
+    assert c.A.B.rank_of('c') == 0
+    assert c.A.B.rank_of('d') == 0
+

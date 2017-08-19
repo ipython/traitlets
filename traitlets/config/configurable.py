@@ -159,7 +159,15 @@ class Configurable(HasTraits):
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():
             for name, config_value in my_config.items():
-                if name in traits:
+                trait = traits.get(name)
+                if trait:
+                    env_value = trait.get_env_value()
+                    ## priority: file-conf < env-vars < cli-options
+                    #  See :data:`application.ENV_RANK`
+                    if env_value is not None and my_config.rank_of(name) < 10:
+                        setattr(self, name, env_value)
+                        continue
+
                     if isinstance(config_value, LazyConfigValue):
                         # ConfigValue is a wrapper for using append / update on containers
                         # without having to copy the initial value
@@ -204,18 +212,20 @@ class Configurable(HasTraits):
         self._load_config(change.new, traits=traits, section_names=section_names)
 
     def update_config(self, config):
-        """Update config and load the new values"""
+        """Update traits and merge prioritized any `config` values into :attr:`config`"""
+        diffs = self.config.substract(config)
+        self._load_config(diffs)
+
         # traitlets prior to 4.2 created a copy of self.config in order to trigger change events.
         # Some projects (IPython < 5) relied upon one side effect of this,
         # that self.config prior to update_config was not modified in-place.
         # For backward-compatibility, we must ensure that self.config
         # is a new object and not modified in-place,
         # but config consumers should not rely on this behavior.
-        self.config = deepcopy(self.config)
         # load config
-        self._load_config(config)
         # merge it into self.config
-        self.config.merge(config)
+        self.config = deepcopy(self.config)
+        self.config.merge(diffs)
         # TODO: trigger change event if/when dict-update change events take place
         # DO NOT trigger full trait-change
 
@@ -273,6 +283,11 @@ class Configurable(HasTraits):
         if 'Enum' in trait.__class__.__name__:
             # include Enum choices
             lines.append(indent('Choices: %s' % trait.info()))
+
+        env_var = trait.metadata.get('envvar')
+        if env_var:
+            env_info = 'Environment variable: %s' % env_var
+            lines.append(indent(env_info, 4))
 
         if inst is not None:
             lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
@@ -366,6 +381,11 @@ class Configurable(HasTraits):
                 # cls owns the trait, show full help
                 if trait.help:
                     lines.append(c(trait.help))
+
+                env_var = trait.metadata.get('envvar')
+                if env_var:
+                    lines.append('#  Environment variable: %s' % env_var)
+
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
                     lines.append('#  Choices: %s' % trait.info())
@@ -401,6 +421,10 @@ class Configurable(HasTraits):
             else:
                 termline += ' : ' + ttype
             lines.append(termline)
+
+            env_var = trait.metadata.get('envvar')
+            if env_var:
+                lines.append(indent('Environment variable: ``%s``' % env_var, 4))
 
             # Default value
             try:
@@ -523,6 +547,4 @@ class SingletonConfigurable(LoggingConfigurable):
     def initialized(cls):
         """Has an instance been created?"""
         return hasattr(cls, "_instance") and cls._instance is not None
-
-
 
