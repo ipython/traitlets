@@ -254,6 +254,38 @@ class Config(dict):
 
         self.update(to_update)
 
+    def substract(self, other):
+        """return a new config with all overriding-differences of the `other`"""
+        diffs = type(self)()
+        ## Diffs jusfged against my priorities.
+        diffs._merge_priorities = self.rank_of()
+
+        for k, v in other.items():
+            try:
+                other_rank = other.rank_of(k)
+            except AttributeError:
+                my_rank = other_rank = None
+            else:
+                my_rank = self.rank_of(k)
+
+            if k not in self:
+                # New keys adopted regardless of rank.
+                diffs[k] = v
+            else: # I have this key
+                if isinstance(v, Config) and isinstance(self[k], Config):
+                    # Recursively substract common Configs.
+                    diffs[k] = self[k].substract(v)
+                else: # For non-Configs, diff is anything >= my-rank.
+                    if my_rank is not None and other_rank < my_rank:
+                        continue
+
+                    diffs[k] = v
+
+            if my_rank != other_rank:
+                diffs._set_rank_of(k, other_rank)
+
+        return diffs
+
     def collisions(self, other):
         """Check for collisions between two config objects.
 

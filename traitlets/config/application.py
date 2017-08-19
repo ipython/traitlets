@@ -64,6 +64,9 @@ subcommand 'cmd', do: `{app} cmd -h`.
 # Application class
 #-----------------------------------------------------------------------------
 
+CFG_RANK = 0
+ENV_RANK = 10
+CLI_RANK = 20
 
 
 _envvar = os.environ.get('TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR','')
@@ -275,6 +278,8 @@ class Application(SingletonConfigurable):
 
     cli_config = Instance(Config, (), {},
         help="""The subset of our configuration that came from the command-line
+
+        <DEPRECATED and unused but updated - use `Config` merge-priorities instead.>
 
         We re-load this configuration after loading config files,
         to ensure that it maintains highest priority.
@@ -700,6 +705,7 @@ class Application(SingletonConfigurable):
         classes = tuple(self._classes_with_config_traits())
         loader = self._create_loader(argv, aliases, flags, classes=classes)
         self.cli_config = deepcopy(loader.load_config())
+        self.cli_config.set_default_rank(CLI_RANK)
         self.update_config(self.cli_config)
         # store unparsed args in extra_args
         self.extra_args = loader.extra_args
@@ -762,8 +768,6 @@ class Application(SingletonConfigurable):
         ):
             new_config.merge(config)
             self._loaded_config_files.append(filename)
-        # add self.cli_config to preserve CLI config priority
-        new_config.merge(self.cli_config)
         self.update_config(new_config)
 
     def _classes_with_config_traits(self, classes=None):
