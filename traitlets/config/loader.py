@@ -317,8 +317,9 @@ class DeferredConfigString(text_type):
     in the configurable classes.
 
     When config is loaded, `trait.from_string` will be used.
-    
-    If an error is raised
+
+    If an error is raised in `.from_string`,
+    the original string is returned.
 
     .. versionadded:: 5.0
     """
