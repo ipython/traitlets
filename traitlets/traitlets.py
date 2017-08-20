@@ -175,7 +175,7 @@ def _safe_literal_eval(s):
     """Safely evaluate an expression
 
     Returns original string if eval fails.
-    
+
     Use only where types are ambiguous.
     """
     try:
@@ -547,7 +547,11 @@ class TraitType(BaseDescriptor):
             that no `envvar` metadata is defined.
         """
         env_var = self.metadata.get('envvar')
-        return env_var and os.environ.get(env_var)
+        if env_var:
+            env_value = os.environ.get(env_var)
+            if env_value is not None:
+                ## `trait.from_string()` cannot handle nones.
+                return self.from_string(env_value)
 
     def get(self, obj, cls=None):
         ## Value origin precendance: assigned-by-code, env-var, defaults.
