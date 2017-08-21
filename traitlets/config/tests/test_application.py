@@ -125,6 +125,12 @@ class TestApplication(TestCase):
         app.log.info("hello")
         assert "hello" in stream.getvalue()
 
+    def test_no_eval_cli_text(self):
+        app = MyApp()
+        app.initialize(['--Foo.name=1'])
+        app.init_foo()
+        assert app.foo.name == '1'
+
     def test_basic(self):
         app = MyApp()
         self.assertEqual(app.name, u'myapp')
