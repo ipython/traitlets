@@ -653,19 +653,20 @@ def check_meth():
 
 
 @mark.parametrize('check_meth', [
-    ('class_get_help', r'^    Environment variable: MY_ENVVAR'),
-    ('class_config_section', r'^#  Environment variable: MY_ENVVAR'),
-    ('class_config_rst_doc', r'^    Environment variable: ``MY_ENVVAR``'),
+    ('class_get_help', r'^    Environment variable(\(only\))?: MY_ENVVAR', 2),
+    ('class_config_section', r'^#  Environment variable(\(only\))?: MY_ENVVAR', 1),
+    ('class_config_rst_doc', r'^    Environment variable(\(only\))?: ``MY_ENVVAR``', 2),
 ])
 def test_environment_variable_comment_list(check_meth):
     import re
 
     class A(Configurable):
         a = Integer().tag(config=True, envvar='MY_ENVVAR')
-        b = Integer().tag(config=True, envvar='NO_ENVVAR')
+        b = Integer().tag(envvar='MY_ENVVAR')
 
-    meth, regex = check_meth
+    meth, regex, expected_nmatches = check_meth
     txt = getattr(A, meth)()
-    assert re.search(regex, txt,
-        re.MULTILINE)
-    #assert not re.search('Environment variable: NO_ENVVAR', txt)
+    matches = list(re.finditer(regex, txt, re.MULTILINE))
+    assert len(matches) == expected_nmatches
+    if expected_nmatches > 1:
+        assert matches[1].group(1) == '(only)'

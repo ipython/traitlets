@@ -230,10 +230,12 @@ class Configurable(HasTraits):
         final_help = []
         base_classes = ', '.join(p.__name__ for p in cls.__bases__)
         final_help.append(u'%s(%s) options' % (cls.__name__, base_classes))
-        final_help.append(len(final_help[0])*u'-')
-        for k, v in sorted(cls.class_traits(config=True).items()):
-            help = cls.class_get_trait_help(v, inst)
-            final_help.append(help)
+        final_help.append(len(final_help[0]) * u'-')
+        traits = cls.class_traits(config=True)
+        traits.update(cls.class_traits(envvar=lambda ev: bool(ev)))
+        for _, trait in sorted(traits.items()):
+            thelp = cls.class_get_trait_help(trait, inst)
+            final_help.append(thelp)
         return '\n'.join(final_help)
 
     @classmethod
@@ -276,7 +278,8 @@ class Configurable(HasTraits):
 
         env_var = trait.metadata.get('envvar')
         if env_var:
-            env_info = 'Environment variable: %s' % env_var
+            only = '' if trait.metadata.get('config') else '(only)'
+            env_info = 'Environment variable%s: %s' % (only, env_var)
             lines.append(indent(env_info, 4))
 
         if inst is not None:
@@ -375,7 +378,7 @@ class Configurable(HasTraits):
                 env_var = trait.metadata.get('envvar')
                 if env_var:
                     lines.append('#  Environment variable: %s' % env_var)
-                
+
                 if 'Enum' in type(trait).__name__:
                     # include Enum choices
                     lines.append('#  Choices: %s' % trait.info())
@@ -399,7 +402,9 @@ class Configurable(HasTraits):
         """
         lines = []
         classname = cls.__name__
-        for k, trait in sorted(cls.class_traits(config=True).items()):
+        traits = cls.class_traits(config=True)
+        traits.update(cls.class_traits(envvar=lambda ev: bool(ev)))
+        for _, trait in sorted(traits.items()):
             ttype = trait.__class__.__name__
 
             termline = classname + '.' + trait.name
@@ -414,7 +419,9 @@ class Configurable(HasTraits):
 
             env_var = trait.metadata.get('envvar')
             if env_var:
-                lines.append(indent('Environment variable: ``%s``' % env_var, 4))
+                only = '' if trait.metadata.get('config') else '(only)'
+                env_info = 'Environment variable%s: ``%s``' % (only, env_var)
+                lines.append(indent(env_info, 4))
 
             # Default value
             try:
