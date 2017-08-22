@@ -9,7 +9,7 @@ from __future__ import print_function, absolute_import
 from copy import deepcopy
 import warnings
 
-from .loader import Config, LazyConfigValue, _is_section_key
+from .loader import Config, LazyConfigValue, DeferredConfigString, _is_section_key
 from traitlets.traitlets import (
     HasTraits,
     Instance,
@@ -165,6 +165,9 @@ class Configurable(HasTraits):
                         # without having to copy the initial value
                         initial = getattr(self, name)
                         config_value = config_value.get_value(initial)
+                    elif isinstance(config_value, DeferredConfigString):
+                        # DeferredEval tends to come from CLI/environment variables
+                        config_value = config_value.get_value(self.traits()[name])
                     # We have to do a deepcopy here if we don't deepcopy the entire
                     # config object. If we don't, a mutable config_value will be
                     # shared by all instances, effectively making it a class attribute.
