@@ -15,7 +15,7 @@ Default values, and checking type and value
 -------------------------------------------
 
 At its most basic, traitlets provides type checking, and dynamic default
-value generation of attributes on :class:``traitlets.HasTraits``
+value generation of attributes on :class:`traitlets.HasTraits`
 subclasses:
 
 .. code:: python
