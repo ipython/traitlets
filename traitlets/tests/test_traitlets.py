@@ -2625,3 +2625,82 @@ def test_override_default_instance():
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
 
+
+# adding additional tests to test default values for original types and new ones
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+        ([],  {},                      0),
+        ([],  {"default_value": 1},    1),
+        ([1], {},                      1)
+        ])
+def test_int_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = Int(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+    assert type(ht.foo) is int
+
+
+class NewInt(Int):
+    info_text = "an int with default_value = None"
+    allow_none = True
+    default_value = None
+    
+    def __init__(self, default_value=None, allow_none=False,
+                 read_only=None, help=None, config=None, **kwargs):
+        super(NewInt, self).__init__(default_value=default_value, allow_none=allow_none,
+                                     read_only=read_only, help=help, config=config)
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+        ([],  {},                      None),
+        ([],  {"default_value": None}, None),
+        ([],  {"default_value": 1},    1),
+        ([1], {},                      1)
+        ])
+def test_newint_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = NewInt(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+     ([],    {},                      []),
+     ([],    {"default_value": [1]},  [1]),
+     ([[1]], {},                      [1])
+     ])
+def test_list_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = List(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+class NewList(List):
+    allow_none = True
+    default_value = None
+    info_text = "a list with default_value = None"
+    def __init__(self, trait=None, default_value=None,
+                 minlen=0, maxlen=sys.maxsize, kw=None,
+                 read_only=None, help=None, config=None, **kwargs):
+        super(NewList, self).__init__(trait=trait, default_value=default_value,
+                                      minlen=0, maxlen=maxlen, kw=kw,
+                                      read_only=read_only, help=help, config=config)
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+     ([],    {},                      None),
+     ([],    {"default_value": None}, None),
+     ([],    {"default_value": [1]},  [1]),
+     ([[1]], {},                      [1])
+     ])
+def test_newlist_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = NewList(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
