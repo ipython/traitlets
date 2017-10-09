@@ -2437,6 +2437,7 @@ class Container(Instance):
             args = ()
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
+            self.default_value = Undefined
         else:
             raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
 
