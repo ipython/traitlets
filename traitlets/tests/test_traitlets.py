@@ -2679,6 +2679,43 @@ def test_list_default(arg_lst, arg_dict, foo_val):
     assert ht.foo == foo_val
 
 
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+        ([],     {},                                     False),
+        ([],     {"default_value": True},                True),
+        ([True], {},                                     True)
+        ])
+def test_bool_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = Bool(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+class NewBool(Bool):
+    allow_none = True
+    default_value = None
+    info_text = "a boolean with default_value = None"
+    def __init__(self, default_value=None, allow_none=False,
+                 read_only=None, help=None, config=None, **kwargs):
+        super(NewBool, self).__init__(default_value=default_value, allow_none=allow_none,
+                                   read_only=read_only, help=help, config=config)
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+        ([],     {},                      None),
+        ([],     {"default_value": None}, None),
+        ([],     {"default_value": True}, True),
+        ([True], {},                      True)
+        ])
+def test_newbool_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = NewBool(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+
 class NewList(List):
     allow_none = True
     default_value = None
@@ -2688,7 +2725,7 @@ class NewList(List):
                  read_only=None, help=None, config=None, **kwargs):
         super(NewList, self).__init__(trait=trait, default_value=default_value,
                                       minlen=0, maxlen=maxlen, kw=kw,
-                                      read_only=read_only, help=help, config=config)
+                                      read_only=read_only, help=help, config=config, **kwargs)
 
 @pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
      ([],    {},                      None),
@@ -2704,3 +2741,77 @@ def test_newlist_default(arg_lst, arg_dict, foo_val):
     assert ht.foo == foo_val
 
 
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+     ([],    {},                       ()),
+     ([],    {"default_value": (1,2)}, (1,2)),
+     ([(1,)], {},                      (1,))
+     ])
+def test_tuple_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = Tuple(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+class NewTuple(Tuple):
+    allow_none = True
+    default_value = None
+    info_text = "a tuple with default_value = None"
+    def __init__(self, *traits, default_value=Undefined, kw=None, #default_value can't be None??
+                 read_only=None, help=None, config=None, **kwargs):
+        super(NewTuple, self).__init__(*traits, default_value=default_value,
+                                        kw=kw, read_only=read_only, help=help, 
+                                        config=config, **kwargs)
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+     ([],     {},                       None),
+     ([],     {"default_value": None},  None),
+     ([],     {"default_value": (1,2)}, (1,2)),
+     ([(1,)], {},                       (1,))
+     ])
+def test_newtuple_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = NewTuple(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+     ([],        {},                         {}),
+     ([],        {"default_value": {"a":1}}, {"a":1}),
+     ([{"a":1}], {},                         {"a":1})
+     ])
+def test_dict_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = Dict(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
+
+
+class NewDict(Dict):
+    allow_none = True
+    default_value = None
+    info_text = "a dictionary with default_value = None"
+
+    def __init__(self, value_trait=None, per_key_traits=None, key_trait=None,
+                 default_value=None, kw=None,
+                 read_only=None, help=None, config=None, **kwargs):
+        super(NewDict, self).__init__(value_trait=value_trait, per_key_traits=per_key_traits,
+                                   key_trait=key_trait, default_value=default_value,
+                                   kw=kw, read_only=read_only,
+                                   help=help, config=config)
+
+@pytest.mark.parametrize("arg_lst, arg_dict, foo_val", [
+     ([],        {},                         None),
+     ([],        {"default_value": None},    None),
+     ([],        {"default_value": {"a":1}}, {"a":1}),
+     ])
+def test_newdict_default(arg_lst, arg_dict, foo_val):
+    class HasTr(HasTraits):
+        foo = NewDict(*arg_lst, **arg_dict)
+
+    ht = HasTr()
+    assert ht.foo == foo_val
