@@ -47,6 +47,8 @@ import re
 import sys
 import types
 import enum
+import pdb
+
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -567,10 +569,16 @@ class TraitType(BaseDescriptor):
         except:
             # if there is an error in comparing, default to notify
             silent = False
-        if silent is not True:
-            # we explicitly compare silent to True just in case the equality
-            # comparison above returns something other than True/False
-            obj._notify_trait(self.name, old_value, new_value)
+        for change_type, handler in obj._trait_notifiers[self.name].items():
+            if change_type == All:
+                obj._notify_trait(self.name, old_value, new_value, change_type)
+            elif change_type == 'change' and silent is not True:
+                # we explicitly compare silent to True just in case the equality
+                # comparison above returns something other than True/False
+                obj._notify_trait(self.name, old_value, new_value, change_type)
+            else:
+                msg = "Unknown change for traitlet (%s) should be All or 'change'" % change_type
+                TraitError(msg)
 
     def __set__(self, obj, value):
         """Set the value of the trait by self.name for the instance.
@@ -1193,13 +1201,13 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                     for change in changes:
                         self.notify_change(change)
 
-    def _notify_trait(self, name, old_value, new_value):
+    def _notify_trait(self, name, old_value, new_value, change_type):
         self.notify_change(Bunch(
             name=name,
             old=old_value,
             new=new_value,
             owner=self,
-            type='change',
+            type=change_type,
         ))
 
     def notify_change(self, change):
@@ -1215,9 +1223,9 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
+        # callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
         callables.extend(self._trait_notifiers.get(All, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
+        # callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
 
         # Now static ones
         magic_name = '_%s_changed' % name
