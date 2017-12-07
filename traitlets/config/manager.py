@@ -3,6 +3,7 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 import errno
+import glob
 import io
 import json
 import os
@@ -62,23 +63,15 @@ class BaseJSONConfigManager(LoggingConfigurable):
         Returns the data as a dictionary, or an empty dictionary if the file
         doesn't exist.
         """
-        filename = self.file_name(section_name)
-        data = {}
+        paths = [self.file_name(section_name)]
         if self.read_directory:
-            directory = self.directory(section_name)
-            if os.path.isdir(directory):
-                paths = os.listdir(directory)
-                for path in sorted(paths):
-                    name, ext = os.path.splitext(path)
-                    abspath = os.path.join(directory, path)
-                    if ext == ".json" and name not in data:
-                        with io.open(abspath, encoding='utf-8') as f:
-                            more_defaults = json.load(f)
-                        recursive_update(data, more_defaults)
-        if os.path.isfile(filename):
-            with io.open(filename, encoding='utf-8') as f:
-                new_data = json.load(f)
-            recursive_update(data, new_data)
+            pattern = os.path.join(self.directory(section_name), '*.json')
+            paths = sorted(glob.glob(pattern)) + paths
+        data = {}
+        for path in paths:
+            if os.path.isfile(path):
+                with io.open(path, encoding='utf-8') as f:
+                    recursive_update(data, json.load(f))
         return data
 
     def set(self, section_name, data):
