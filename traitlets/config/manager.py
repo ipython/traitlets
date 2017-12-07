@@ -66,6 +66,11 @@ class BaseJSONConfigManager(LoggingConfigurable):
         paths = [self.file_name(section_name)]
         if self.read_directory:
             pattern = os.path.join(self.directory(section_name), '*.json')
+            # These json files should be processed first so that the
+            # {section_name}.json take precedence.
+            # The idea behind this is that installing a Python package may
+            # put a json file somewhere in the a .d directory, while the 
+            # .json file is probably a user configuration.
             paths = sorted(glob.glob(pattern)) + paths
         data = {}
         for path in paths:
