@@ -3,13 +3,14 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 import errno
+import glob
 import io
 import json
 import os
 
 from six import PY3
 from traitlets.config import LoggingConfigurable
-from traitlets.traitlets import Unicode
+from traitlets.traitlets import Unicode, Bool
 
 
 def recursive_update(target, new):
@@ -36,10 +37,12 @@ def recursive_update(target, new):
 class BaseJSONConfigManager(LoggingConfigurable):
     """General JSON config manager
     
-    Deals with persisting/storing config in a json file
+    Deals with persisting/storing config in a json file with optionally
+    default values in a {section_name}.d directory.
     """
 
     config_dir = Unicode('.')
+    read_directory = Bool(True)
 
     def ensure_config_dir_exists(self):
         try:
@@ -51,18 +54,30 @@ class BaseJSONConfigManager(LoggingConfigurable):
     def file_name(self, section_name):
         return os.path.join(self.config_dir, section_name+'.json')
 
+    def directory(self, section_name):
+        return os.path.join(self.config_dir, section_name+'.d')
+
     def get(self, section_name):
         """Retrieve the config data for the specified section.
 
         Returns the data as a dictionary, or an empty dictionary if the file
         doesn't exist.
         """
-        filename = self.file_name(section_name)
-        if os.path.isfile(filename):
-            with io.open(filename, encoding='utf-8') as f:
-                return json.load(f)
-        else:
-            return {}
+        paths = [self.file_name(section_name)]
+        if self.read_directory:
+            pattern = os.path.join(self.directory(section_name), '*.json')
+            # These json files should be processed first so that the
+            # {section_name}.json take precedence.
+            # The idea behind this is that installing a Python package may
+            # put a json file somewhere in the a .d directory, while the 
+            # .json file is probably a user configuration.
+            paths = sorted(glob.glob(pattern)) + paths
+        data = {}
+        for path in paths:
+            if os.path.isfile(path):
+                with io.open(path, encoding='utf-8') as f:
+                    recursive_update(data, json.load(f))
+        return data
 
     def set(self, section_name, data):
         """Store the given config data.
