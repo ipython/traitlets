@@ -8,6 +8,7 @@ from __future__ import print_function
 
 from collections import defaultdict, OrderedDict
 from copy import deepcopy
+import functools
 import json
 import logging
 import os
@@ -23,7 +24,6 @@ from traitlets.traitlets import (
     Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
 
-from decorator import decorator
 from ipython_genutils import py3compat
 from ipython_genutils.importstring import import_item
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
@@ -75,8 +75,7 @@ else:
     raise ValueError("Unsupported value for environment variable: 'TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR' is set to '%s' which is none of  {'0', '1', 'false', 'true', ''}."% _envvar )
 
 
-@decorator
-def catch_config_error(method, app, *args, **kwargs):
+def catch_config_error(method):
     """Method decorator for catching invalid config (Trait/ArgumentErrors) during init.
 
     On a TraitError (generally caused by bad config), this will print the trait's
@@ -84,14 +83,17 @@ def catch_config_error(method, app, *args, **kwargs):
 
     For use on init methods, to prevent invoking excepthook on invalid input.
     """
-    try:
-        return method(app, *args, **kwargs)
-    except (TraitError, ArgumentError) as e:
-        app.print_help()
-        app.log.fatal("Bad config encountered during initialization: %s", e)
-        app.log.debug("Config at the time: %s", app.config)
-        app.exit(1)
+    @functools.wraps(method)
+    def inner(app, *args, **kwargs):
+        try:
+            return method(app, *args, **kwargs)
+        except (TraitError, ArgumentError) as e:
+            app.print_help()
+            app.log.fatal("Bad config encountered during initialization: %s", e)
+            app.log.debug("Config at the time: %s", app.config)
+            app.exit(1)
 
+    return inner
 
 class ApplicationError(Exception):
     pass
