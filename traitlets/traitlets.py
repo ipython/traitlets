@@ -47,6 +47,7 @@ import re
 import sys
 import types
 import enum
+from weakref import ref
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -393,7 +394,18 @@ class BaseDescriptor(object):
     name = None
     this_class = None
 
-    def class_init(self, cls, name):
+    @property
+    def absolute_name(self):
+        if self.name is None:
+            parent = self._parent()
+            if parent is not None:
+                return parent.absolute_name
+            else:
+                return None
+        else:
+            return self.name
+
+    def class_init(self, cls, name, parent=None):
         """Part of the initialization which may depend on the underlying
         HasDescriptors class.
 
@@ -405,6 +417,7 @@ class BaseDescriptor(object):
         """
         self.this_class = cls
         self.name = name
+        self._parent = ref(parent) if parent else parent
 
     def subclass_init(self, cls):
         pass
@@ -989,8 +1002,8 @@ class DefaultHandler(EventHandler):
     def __init__(self, name):
         self.trait_name = name
 
-    def class_init(self, cls, name):
-        super(DefaultHandler, self).class_init(cls, name)
+    def class_init(self, cls, name, parent=None):
+        super(DefaultHandler, self).class_init(cls, name, parent)
         cls._trait_default_generators[self.trait_name] = self
 
 
@@ -1928,10 +1941,10 @@ class Union(TraitType):
                 break
         return default
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         for trait_type in reversed(self.trait_types):
-            trait_type.class_init(cls, None)
-        super(Union, self).class_init(cls, name)
+            trait_type.class_init(cls, None, self)
+        super(Union, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait_type in reversed(self.trait_types):
@@ -2475,10 +2488,10 @@ class Container(Instance):
                 validated.append(v)
         return self.klass(validated)
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
+            self._trait.class_init(cls, None, self)
+        super(Container, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
@@ -2662,11 +2675,11 @@ class Tuple(Container):
                 validated.append(v)
         return tuple(validated)
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         for trait in self._traits:
             if isinstance(trait, TraitType):
-                trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
+                trait.class_init(cls, None, self)
+        super(Container, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait in self._traits:
@@ -2834,15 +2847,15 @@ class Dict(Instance):
 
         return self.klass(validated)
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         if isinstance(self._value_trait, TraitType):
-            self._value_trait.class_init(cls, None)
+            self._value_trait.class_init(cls, None, self)
         if isinstance(self._key_trait, TraitType):
-            self._key_trait.class_init(cls, None)
+            self._key_trait.class_init(cls, None, self)
         if self._per_key_traits is not None:
             for trait in self._per_key_traits.values():
-                trait.class_init(cls, None)
-        super(Dict, self).class_init(cls, name)
+                trait.class_init(cls, None, self)
+        super(Dict, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if isinstance(self._value_trait, TraitType):
