@@ -437,15 +437,17 @@ class BaseDescriptor(object):
             yield parent
 
     def __str__(self):
-        lineage = list(self._lineage())
-        absolute_name = lineage[-1].name
-        info = " of ".join(
-            ["the " + type(self).__name__] +
-            [describe("a", t) for t in lineage[1:]]
-        )
-        if self.this_class is not None and absolute_name is not None:
+        if self.this_class is not None:
+            lineage = list(self._lineage())
+            absolute_name = lineage[-1].name
+            info = " of ".join(
+                ["the " + type(self).__name__] +
+                [describe("a", t) for t in lineage[1:]]
+            )
             class_name = describe(None, self.this_class, verbose=True)
             info += " at %s.%s" % (class_name, absolute_name)
+        else:
+            info = super(BaseDescriptor, self).__str__()
         return info
 
 
