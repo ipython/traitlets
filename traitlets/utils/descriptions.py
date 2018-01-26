@@ -44,7 +44,7 @@ def describe(article, value, name=None, verbose=False, capital=False):
     'an object'
     >>> describe("a", type(object))
     'a type'
-    
+
     Definite description:
 
     >>> describe("the", object())
@@ -75,9 +75,9 @@ def describe(article, value, name=None, verbose=False, capital=False):
         if name is not None:
             result = "%s %s" % (typename, name)
             if article is not None:
-                return add_article(result, True, capital)
+                final = add_article(result, True, capital)
             else:
-                return result
+                final = result.strip()
         else:
             tick_wrap = False
             if inspect.isclass(value):
@@ -98,17 +98,19 @@ def describe(article, value, name=None, verbose=False, capital=False):
                 name = _prefix(value) + name
             if tick_wrap:
                 name = name.join("''")
-            return describe(article, value, name=name,
+            final = describe(article, value, name=name,
                 verbose=verbose, capital=capital)
     elif article in ("a", "an") or article is None:
         if article is None:
-            return typename
-        return add_article(typename, False, capital)
+            final = typename
+        else:
+            final = add_article(typename, False, capital)
     else:
         raise ValueError("The 'article' argument should "
             "be 'the', 'a', 'an', or None not %r" % article)
+    return final.strip()
 
-    
+
 def _prefix(value):
     if isinstance(value, types.MethodType):
         name = describe(None, value.__self__, verbose=True) + '.'

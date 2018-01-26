@@ -393,17 +393,11 @@ class BaseDescriptor(object):
 
     name = None
     this_class = None
+    _parent = None
 
     @property
     def absolute_name(self):
-        if self.name is None:
-            parent = self._parent()
-            if parent is not None:
-                return parent.absolute_name
-            else:
-                return None
-        else:
-            return self.name
+        return list(self._lineage())[-1].name
 
     def class_init(self, cls, name, parent=None):
         """Part of the initialization which may depend on the underlying
@@ -417,7 +411,8 @@ class BaseDescriptor(object):
         """
         self.this_class = cls
         self.name = name
-        self._parent = ref(parent) if parent else parent
+        if parent is not None:
+            self._parent = ref(parent)
 
     def subclass_init(self, cls):
         pass
@@ -433,6 +428,25 @@ class BaseDescriptor(object):
         other descriptors.
         """
         pass
+
+    def _lineage(self):
+        parent = self
+        yield parent
+        while parent._parent is not None:
+            parent = parent._parent()
+            yield parent
+
+    def __str__(self):
+        lineage = list(self._lineage())
+        absolute_name = lineage[-1].name
+        info = " of ".join(
+            ["the " + type(self).__name__] +
+            [describe("a", t) for t in lineage[1:]]
+        )
+        if self.this_class is not None and absolute_name is not None:
+            class_name = describe(None, self.this_class, verbose=True)
+            info += " at %s.%s" % (class_name, absolute_name)
+        return info
 
 
 class TraitType(BaseDescriptor):
@@ -639,48 +653,26 @@ class TraitType(BaseDescriptor):
             The value that caused the error.
         error: Exception (default: None)
             An error that was raised by a child trait.
-            The arguments of this exception should be
-            of the form ``(value, info, *traits)``.
-            Where the ``value`` and ``info`` are the
-            problem value, and string describing the
-            expected value. The ``traits`` are a series
-            of :class:`TraitType` instances that are
-            "children" of this one (the first being
-            the deepest).
         info: str (default: None)
             A description of the expected value. By
             default this is infered from this trait's
             ``info`` method.
         """
+        if error is None:
+            error = sys.exc_info()[1]
         if error is not None:
-            # handle nested error
-            error.args += (self,)
-            if self.name is not None:
-                # this is the root trait that must format the final message
-                chain = " of ".join(describe("a", t) for t in error.args[2:])
-                if obj is not None:
-                    error.args = ("The '%s' trait of %s instance contains %s which "
-                        "expected %s, not %s." % (self.name, describe("an", obj),
-                        chain, error.args[1], describe("the", error.args[0])),)
-                else:
-                    error.args = ("The '%s' trait contains %s which "
-                        "expected %s, not %s." % (self.name, chain,
-                        error.args[1], describe("the", error.args[0])),)
-            raise error
-        else:
-            # this trait caused an error
-            if self.name is None:
-                # this is not the root trait
-                raise TraitError(value, info or self.info(), self)
+            if isinstance(error, TraitError):
+                raise
             else:
-                # this is the root trait
-                if obj is not None:
-                    e = "The '%s' trait of %s instance expected %s, not %s." % (
-                        self.name, class_of(obj), self.info(), describe("the", value))
-                else:
-                    e = "The '%s' trait expected %s, not %s." % (
-                        self.name, self.info(), describe("the", value))
-                raise TraitError(e)
+                msg = "{value} caused {error} in {trait} because {info}.".format(
+                    value=describe("the", value),
+                    error=describe("a", type(error)),
+                    info=info or error,
+                    trait=self,
+                )
+        else:
+            msg = "%s expected %s, not %r." % (self, info or self.info(), value)
+        raise TraitError(msg)
 
     def get_metadata(self, key, default=None):
         """DEPRECATED: Get a metadata value.
@@ -723,6 +715,7 @@ class TraitType(BaseDescriptor):
 
     def default_value_repr(self):
         return repr(self.default_value)
+
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
