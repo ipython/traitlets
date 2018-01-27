@@ -705,6 +705,29 @@ class Application(SingletonConfigurable):
         self.extra_args = loader.extra_args
 
     @classmethod
+    def _make_loaders(cls, basefilename, path=None, **kw):
+        """
+        Builds the list of config-loaders to try.
+
+        :param str basefilename:
+            The config filename without extension (`.py` or `.json`).
+        :param path:
+            The dirpath to search for the config file on, or a sequence of
+            paths to try in order.
+        :type path: str, list, tuple
+        :param kw:
+            Other params for :class:`FileConfigLoader` such as `log`.
+        :return:
+            a list, currently `python-load, json-loader].
+        """
+        pyloader = cls.python_config_loader_class(basefilename+'.py',
+                                                  path=path, **kw)
+        jsonloader = cls.json_config_loader_class(basefilename+'.json',
+                                                  path=path, **kw)
+
+        return [pyloader, jsonloader]
+
+    @classmethod
     def _load_config_files(cls, basefilename, path=None, log=None, raise_config_file_errors=False):
         """Load config files (py,json) by filename and path.
 
@@ -715,13 +738,12 @@ class Application(SingletonConfigurable):
             path = [path]
         for path in path[::-1]:
             # path list is in descending priority order, so load files backwards:
-            pyloader = cls.python_config_loader_class(basefilename+'.py', path=path, log=log)
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
-            jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
+            loaders = cls._make_loaders(basefilename, path=path, log=log)
             loaded = []
             filenames = []
-            for loader in [pyloader, jsonloader]:
+            for loader in loaders:
                 config = None
                 try:
                     config = loader.load_config()
