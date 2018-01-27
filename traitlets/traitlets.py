@@ -1771,10 +1771,10 @@ class TypeCast(ClassBasedTraitType):
         Positional arguments for generating the default value.
     default_kwargs : dict
         Keyword arguments for generating the default value.
-    _cast: callable or None
+    cast: callable or None
         Cast values to the appropriate type. If given as
         None, then values are cast with ``klass`` instead.
-    _cast_types: tuple of classes and types, or None
+    cast_types: tuple of classes and types, or None
         The classes which are allowed to be cast to ``klass``.
         Similar rules for specifying classes with strings
         (e.g. 'foo.bar.Bar') apply. If given as None, then
@@ -1783,7 +1783,7 @@ class TypeCast(ClassBasedTraitType):
 
     klass = None
     info_text = None
-    _cast_types = ()
+    cast_types = ()
 
     def __new__(cls, *args, **kwargs):
         new = super(TypeCast, cls).__new__
@@ -1791,8 +1791,8 @@ class TypeCast(ClassBasedTraitType):
             self = new(cls, *args, **kwargs)
         else:
             self = new(cls)
-        if not isinstance(self._cast_types, tuple):
-            self._cast_types = (self._cast_types,)
+        if not isinstance(self.cast_types, tuple):
+            self.cast_types = (self.cast_types,)
         return self
 
     def __init__(self, *args, **kwargs):
@@ -1806,11 +1806,8 @@ class TypeCast(ClassBasedTraitType):
             self.default_value = TypeCast.validate(self, None, self.default_value)
             self.name = hold
 
-    def _cast(self, obj, value):
+    def cast(self, obj, value):
         return self.klass(value)
-
-    def _try_cast(self, obj, value):
-        return isinstance(value, self._cast_types)
 
     def instance_init(self, obj):
         self._resolve_classes()
@@ -1819,15 +1816,15 @@ class TypeCast(ClassBasedTraitType):
     def _resolve_classes(self):
         if isinstance(self.klass, six.string_types):
             self.klass = self._resolve_string(self.klass)
-        self._cast_types = tuple(
+        self.cast_types = tuple(
             self._resolve_string(c) if
             isinstance(c, six.string_types)
-            else c for c in self._cast_types)
+            else c for c in self.cast_types)
 
     def validate(self, obj, value):
-        if self._try_cast(obj, value):
+        if isinstance(value, self.cast_types):
             try:
-                value = self._cast(obj, value)
+                value = self.cast(obj, value)
             except Exception as e:
                 raise self.cast_error(obj, value, e)
         if isinstance(value, self.klass):
@@ -1860,10 +1857,10 @@ class TypeCast(ClassBasedTraitType):
                 describe("a", self.klass), error))
 
     def _cast_info(self):
-        if len(self._cast_types):
+        if len(self.cast_types):
             castables = [
                 describe("a", c)
-                for c in self._cast_types
+                for c in self.cast_types
             ]
             if len(castables) > 1:
                 the_types = (', '.join(castables[:-1])
@@ -1927,10 +1924,8 @@ class Instance(TypeCast):
         self.default_args = args
         self.default_kwargs = kw
 
-        if "cast" in kwargs:
-            self._cast = kwargs["cast"]
         if "cast_types" in kwargs:
-            self._cast_types = kwargs["cast_types"]
+            self.cast_types = kwargs["cast_types"]
 
         super(Instance, self).__init__(**kwargs)
 
@@ -2134,7 +2129,7 @@ class Int(NumberBase):
 
 class CInt(Int):
     """A casting version of the int trait."""
-    _cast_types = object
+    cast_types = object
 
 
 if six.PY2:
@@ -2142,13 +2137,13 @@ if six.PY2:
         """A long integer trait."""
 
         klass = long
-        _cast_types = int
+        cast_types = int
         default_value = 0
 
 
     class CLong(Long):
         """A casting version of the long integer trait."""
-        _cast_types = object
+        cast_types = object
 
 
     class Integer(NumberBase):
@@ -2159,9 +2154,9 @@ if six.PY2:
         # downcast longs that fit in int:
         if sys.platform == 'cli':
             from System import Int64
-            _cast_types = (long, Int64)
+            cast_types = (long, Int64)
         else:
-            _cast_types = long
+            cast_types = long
 
         def validate(self, obj, value):
             if isinstance(value, long) and isinstance(int(value), long):
@@ -2183,19 +2178,19 @@ class Float(NumberBase):
 
     default_value = 0.0
     klass = float
-    _cast_types = int
+    cast_types = int
 
 
 class CFloat(Float):
     """A casting version of the float trait."""
-    _cast_types = object
+    cast_types = object
 
 
 class Complex(NumberBase):
     """A trait for complex numbers."""
 
     klass = complex
-    _cast_types = (float, int)
+    cast_types = (float, int)
 
     default_value = 0.0 + 0.0j
     info_text = 'a complex number'
@@ -2203,7 +2198,7 @@ class Complex(NumberBase):
 
 class CComplex(Complex):
     """A casting version of the complex number trait."""
-    _cast_types = object
+    cast_types = object
 
 
 # We should always be explicit about whether we're using bytes or unicode, both
@@ -2218,7 +2213,7 @@ class Bytes(TypeCast):
 
 class CBytes(Bytes):
     """A casting version of the byte string trait."""
-    _cast_types = object
+    cast_types = object
 
 
 class Unicode(TypeCast):
@@ -2228,9 +2223,9 @@ class Unicode(TypeCast):
     info_text = 'a unicode string'
     klass = six.text_type
 
-    _cast_types = (bytes,)
+    cast_types = (bytes,)
 
-    def _cast(self, obj, value):
+    def cast(self, obj, value):
         try:
             return value.decode('ascii', 'strict')
         except UnicodeDecodeError:
@@ -2239,8 +2234,8 @@ class Unicode(TypeCast):
 
 class CUnicode(Unicode):
     """A casting version of the unicode trait."""
-    _cast_types = object
-    _cast = TypeCast._cast
+    cast_types = object
+    cast = TypeCast.cast
 
 
 class ObjectName(TypeCast):
@@ -2253,8 +2248,11 @@ class ObjectName(TypeCast):
     klass = six.string_types
 
     if six.PY2:
-        _cast = str
-        _cast_types = unicode
+
+        cast_types = unicode
+
+        def cast(self, obj, value):
+            return str(value)
 
     def validate(self, obj, value):
         value = super(ObjectName, self).validate(obj, value)
@@ -2280,7 +2278,7 @@ class Bool(TypeCast):
 
 class CBool(Bool):
     """A casting version of the boolean trait."""
-    _cast_types = object
+    cast_types = object
 
 
 class Enum(TraitType):
@@ -2658,28 +2656,23 @@ class Mutable(TypeCast):
             msg = "Cannot set builtins like %r on eventful traits."
             raise TraitError(msg % type(val))
         else:
+            if self.eventful:
+                self.unregister(getattr(obj, self.name))
             return super(Mutable, self).set(obj, val)
 
-    def _validate(self, owner, value):
-        if self.eventful and self.name in owner._trait_values:
-            old = owner._trait_values[self.name]
-            self.unregister_events(old)
-        value = super(Mutable, self)._validate(owner, value)
-        if self.eventful and value is not None:
-            value = self._to_watchable(owner, value)
-        return value
-
-    def _to_watchable(self, owner, value):
+    def cast(self, owner, value):
         """Returns a value whose mutations are observable."""
-        if not spectate.watchable(value):
-            cls = type(value)
-            methods = set(e[0] for e in self.iter_events())
-            wtype = spectate.expose_as(cls.__name__, cls, *methods)
-            try:
-                value.__class__ = wtype
-            except TypeError:
-                value = wtype(value)
-        self.register_events(owner, value)
+        value = super(Mutable, self).cast(owner, value)
+        if self.eventful and value is not None:
+            if not spectate.watchable(value):
+                cls = type(value)
+                methods = set(e[0] for e in self.iter_events())
+                wtype = spectate.expose_as(cls.__name__, cls, *methods)
+                try:
+                    value.__class__ = wtype
+                except TypeError:
+                    value = wtype(value)
+            self.register_events(owner, value)
         return value
 
     def _validate_mutation(self, change):
@@ -2842,14 +2835,14 @@ class MutableSequence(Mutable, BaseSequence):
 class Tuple(Collection):
 
     klass = tuple
-    _cast_types = list
+    cast_types = list
     default_value = ()
 
 
 class Set(Mutable, Sequence):
 
     klass = set
-    _cast_types = (list, tuple)
+    cast_types = (list, tuple)
     default_value = set()
 
     events = {
@@ -2873,7 +2866,7 @@ class Set(Mutable, Sequence):
 class List(MutableSequence):
 
     klass = list
-    _cast_types = tuple
+    cast_types = tuple
     default_value = []
     events = {
         'append': 'append',
