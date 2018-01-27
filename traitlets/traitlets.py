@@ -2666,12 +2666,13 @@ class Mutable(TypeCast):
             self.unregister_events(old)
         value = super(Mutable, self)._validate(owner, value)
         if self.eventful and value is not None:
-            value = self._cast_to_watched(owner, value)
+            value = self._to_watchable(owner, value)
         return value
 
-    def _cast_to_watched(self, owner, value):
+    def _to_watchable(self, owner, value):
         """Returns a value whose mutations are observable."""
         if not spectate.watchable(value):
+            cls = type(value)
             methods = set(e[0] for e in self.iter_events())
             wtype = spectate.expose_as(cls.__name__, cls, *methods)
             try:
@@ -2826,32 +2827,6 @@ class MutableSequence(Mutable, BaseSequence):
                 value[i] = v
         return value
 
-    @staticmethod
-    def _before_setitem(value, call, notify):
-        key = call.args[0]
-        try:
-            old = value[key]
-        except (KeyError, IndexError):
-            old = Undefined
-        return key, old
-
-    @staticmethod
-    def _after_setitem(value, answer, notify):
-        key, old = answer.before
-        new = value[key]
-        if new != old:
-            notify("item", index=key, old=old, new=new)
-
-    @staticmethod
-    def _before_delitem(value, call, notify):
-        key = call.args[0]
-        try:
-            old = value[key]
-        except KeyError:
-            pass
-        else:
-            notify("item", index=key, old=old, new=Undefined)
-
     def _validate_mutation(self, change):
         if self._trait is not None:
             for e in change.events:
@@ -2871,11 +2846,28 @@ class Tuple(Collection):
     default_value = ()
 
 
-class Set(Sequence):
+class Set(Mutable, Sequence):
 
     klass = set
     _cast_types = (list, tuple)
     default_value = set()
+
+    events = {
+        "update": (
+            "add", "clear", "update", "difference_update",
+            "intersection_update", "pop", "remove",
+            "symmetric_difference_update", "discard",
+        )
+    }
+
+    def _before_update(self, value, call, notify):
+        return value.copy()
+
+    def _after_update(self, value, answer, notify):
+        new = value.difference(answer.before)
+        old = answer.before.difference(value)
+        if new or old:
+            notify("item", new=new, old=old)
 
 
 class List(MutableSequence):
@@ -2883,6 +2875,15 @@ class List(MutableSequence):
     klass = list
     _cast_types = tuple
     default_value = []
+    events = {
+        'append': 'append',
+        'extend': 'extend',
+        'setitem': '__setitem__',
+        'remove': "remove",
+        'delitem': '__delitem__',
+        'reverse': 'reverse',
+        'sort': 'sort',
+    }
 
     def validate_elements(self, obj, value):
         length = len(value)
@@ -2893,6 +2894,43 @@ class List(MutableSequence):
             info = "a length >= %i" % self._maxlen
             self.error(obj, length, info=info)
         return super(List, self).validate_elements(obj, value)
+
+    def _after_append(self, value, answer, notify):
+        notify("item", index=len(value) - 1, old=Undefined, new=value[-1])
+
+    def _before_extend(self, value, call, notify):
+        return len(value)
+
+    def _after_extend(self, value, answer, notify):
+        for i in range(answer.before, len(value)):
+            notify("item", index=i, old=Undefined, new=value[i])
+
+    def _before_remove(self, value, call, notify):
+        i = value.index(call.args[0])
+        return i, value[i]
+
+    def _after_remove(self, value, answer, notify):
+        index, old = answer.before
+        try:
+            new = value[index]
+        except IndexError:
+            new = Undefined
+        notify("item", index=index, old=old, new=new)
+
+    def _before_reverse(self, value, call, notify):
+        return self.rearrangement(value)
+
+    def _before_sort(self, value, call, notify):
+        return self.rearrangement(value)
+
+    @staticmethod
+    def rearrangement(new):
+        old = new[:]
+        def after_rearangement(returned, notify):
+            for i, v in enumerate(old):
+                if v != new[i]:
+                    notify("item", index=i, old=v, new=new[i])
+        return after_rearangement
 
 
 class Mapping(Mutable, Container):
@@ -3007,6 +3045,13 @@ class Dict(Mapping):
     klass = dict
     default_value = {}
 
+    events = {
+        'setitem': ('__setitem__', 'setdefault'),
+        'delitem': ('__delitem__', 'pop'),
+        'update': 'update',
+        'clear': 'clear',
+    }
+
     def __init__(self, value_trait=None, per_key_traits=None,
             key_trait=None, default_value=Undefined, **kwargs):
         """Create a dict trait type from a Python dict.
@@ -3099,6 +3144,59 @@ class Dict(Mapping):
         self._per_key_traits = per_key_traits
 
         super(Dict, self).__init__((key_trait, value_trait), per_key_traits, default_value=default_value, **kwargs)
+
+    @staticmethod
+    def _before_setitem(value, call, notify):
+        key = call.args[0]
+        try:
+            old = value[key]
+        except KeyError:
+            old = Undefined
+        return key, old
+
+    @staticmethod
+    def _after_setitem(value, answer, notify):
+        key, old = answer.before
+        new = value[key]
+        if new != old:
+            notify("item", key=key, old=old, new=new)
+
+    @staticmethod
+    def _before_delitem(value, call, notify):
+        key = call.args[0]
+        try:
+            old = value[key]
+        except KeyError:
+            pass
+        else:
+            def _after(returned, notify):
+                notify("item", key=key, old=old, new=Undefined)
+
+    def _before_update(self, value, call, notify):
+        if len(call.args):
+            new = call.args[0]
+            new.update(call.kwargs)
+        else:
+            new = call.kwargs
+        old = {k: value[k] for k in new}
+        return old
+
+    def _after_update(self, value, answer, notify):
+        for k, v in answer.before.items():
+            if value[k] != v:
+                notify("item", key=k, old=v, new=value[k])
+
+    def _before_clear(self, value, call, notify):
+        return value.copy()
+
+    def _after_clear(self, value, answer, notify):
+        for k, v in answer.before.items():
+            notify("item", key=k, old=v, new=Undefined)
+
+    def _validate_mutation(self, change):
+        # TODO: implement this validation to cast
+        # keys and values to their appropriate types.
+        return change
 
 
 class TCPAddress(TraitType):
