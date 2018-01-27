@@ -6,7 +6,6 @@ import inspect
 
 def describe(article, value, name=None, verbose=False, capital=False):
     """Return string that describes a value
-
     Parameters
     ----------
     article: str or None
@@ -32,30 +31,23 @@ def describe(article, value, name=None, verbose=False, capital=False):
     capital: bool (default: False)
         Whether the first letter of the article should
         be capitalized or not. By default it is not.
-
     Examples
     --------
-
     Indefinite description:
-
     >>> describe("a", object())
     'an object'
     >>> describe("a", object)
     'an object'
     >>> describe("a", type(object))
     'a type'
-    
     Definite description:
-
     >>> describe("the", object())
     "the object at '0x10741f1b0'"
     >>> describe("the", object)
     "the type 'object'"
     >>> describe("the", type(object))
     "the type 'type'"
-
     Definitely named description:
-
     >>> describe("the", object(), "I made")
     'the object I made'
     >>> describe("the", object, "I will use")
@@ -75,9 +67,9 @@ def describe(article, value, name=None, verbose=False, capital=False):
         if name is not None:
             result = "%s %s" % (typename, name)
             if article is not None:
-                return add_article(result, True, capital)
+                final = add_article(result, True, capital)
             else:
-                return result
+                final = result.strip()
         else:
             tick_wrap = False
             if inspect.isclass(value):
@@ -98,17 +90,19 @@ def describe(article, value, name=None, verbose=False, capital=False):
                 name = _prefix(value) + name
             if tick_wrap:
                 name = name.join("''")
-            return describe(article, value, name=name,
+            final = describe(article, value, name=name,
                 verbose=verbose, capital=capital)
     elif article in ("a", "an") or article is None:
         if article is None:
-            return typename
-        return add_article(typename, False, capital)
+            final = typename
+        else:
+            final = add_article(typename, False, capital)
     else:
         raise ValueError("The 'article' argument should "
             "be 'the', 'a', 'an', or None not %r" % article)
+    return final.strip()
 
-    
+
 def _prefix(value):
     if isinstance(value, types.MethodType):
         name = describe(None, value.__self__, verbose=True) + '.'
@@ -123,7 +117,6 @@ def _prefix(value):
 
 def class_of(value):
     """Returns a string of the value's type with an indefinite article.
-
     For example 'an Image' or 'a PlotValue'.
     """
     if inspect.isclass(value):
@@ -134,9 +127,7 @@ def class_of(value):
 
 def add_article(name, definite=False, capital=False):
     """Returns the string with a prepended article.
-
     The input does not need to begin with a charater.
-
     Parameters
     ----------
     definite: bool (default: False)
@@ -164,7 +155,6 @@ def add_article(name, definite=False, capital=False):
 
 def repr_type(obj):
     """Return a string representation of a value and its type for readable
-
     error messages.
     """
     the_type = type(obj)

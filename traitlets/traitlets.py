@@ -375,15 +375,12 @@ dlink = directional_link
 
 class BaseDescriptor(object):
     """Base descriptor class
-
     Notes
     -----
     This implements Python's descriptor protocol.
-
     This class is the base class for all such descriptors.  The
     only magic we use is a custom metaclass for the main :class:`HasTraits`
     class that does the following:
-
     1. Sets the :attr:`name` attribute of every :class:`BaseDescriptor`
        instance in the class dict to the name of the attribute.
     2. Sets the :attr:`this_class` attribute of every :class:`BaseDescriptor`
@@ -394,19 +391,24 @@ class BaseDescriptor(object):
 
     name = None
     this_class = None
+    _parent = None
 
-    def class_init(self, cls, name):
+    @property
+    def absolute_name(self):
+        return list(self._lineage())[-1].name
+
+    def class_init(self, cls, name, parent=None):
         """Part of the initialization which may depend on the underlying
         HasDescriptors class.
-
         It is typically overloaded for specific types.
-
         This method is called by :meth:`MetaHasDescriptors.__init__`
         passing the class (`cls`) and `name` under which the descriptor
         has been assigned.
         """
         self.this_class = cls
         self.name = name
+        if parent is not None:
+            self._parent = ref(parent)
 
     def subclass_init(self, cls):
         pass
@@ -414,14 +416,33 @@ class BaseDescriptor(object):
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
         HasDescriptors instance.
-
         It is typically overloaded for specific types.
-
         This method is called by :meth:`HasTraits.__new__` and in the
         :meth:`BaseDescriptor.instance_init` method of descriptors holding
         other descriptors.
         """
         pass
+
+    def _lineage(self):
+        parent = self
+        yield parent
+        while parent._parent is not None:
+            parent = parent._parent()
+            yield parent
+
+    def __str__(self):
+        if self.this_class is not None:
+            lineage = list(self._lineage())
+            absolute_name = lineage[-1].name
+            info = " of ".join(
+                ["the " + type(self).__name__] +
+                [describe("a", t) for t in lineage[1:]]
+            )
+            class_name = describe(None, self.this_class, verbose=True)
+            info += " at %s.%s" % (class_name, absolute_name)
+        else:
+            info = super(BaseDescriptor, self).__str__()
+        return info
 
 
 class TraitType(BaseDescriptor):
@@ -617,7 +638,6 @@ class TraitType(BaseDescriptor):
 
     def error(self, obj, value, error=None, info=None):
         """Raise a TraitError
-
         Parameters
         ----------
         obj: HasTraits or None
@@ -628,50 +648,26 @@ class TraitType(BaseDescriptor):
             The value that caused the error.
         error: Exception (default: None)
             An error that was raised by a child trait.
-            The arguments of this exception should be
-            of the form ``(value, info, *traits)``.
-            Where the ``value`` and ``info`` are the
-            problem value, and string describing the
-            expected value. The ``traits`` are a series
-            of :class:`TraitType` instances that are
-            "children" of this one (the first being
-            the deepest).
         info: str (default: None)
             A description of the expected value. By
             default this is infered from this trait's
             ``info`` method.
         """
+        if error is None:
+            error = sys.exc_info()[1]
         if error is not None:
-            # handle nested error
-            error.args += (self,)
-            if self.name is not None:
-                # this is the root trait that must format the final message
-                chain = " of ".join(describe("a", t) for t in error.args[2:])
-                if obj is not None:
-                    error.args = ("The %r trait of %s instance contains %s which "
-                        "expected %s, not %s." % (self.name, describe("an", obj), chain,
-                        info or error.args[1], describe("the", error.args[0])),)
-                else:
-                    error.args = ("The %r trait contains %s which "
-                        "expected %s, not %s." % (self.name, chain,
-                        info or error.args[1], describe("the", error.args[0])),)
-            raise
-        else:
-            # this trait caused an error
-            if self.name is None:
-                # this is not the root trait
-                raise TraitError(value, info or self.info(), self)
+            if isinstance(error, TraitError):
+                raise
             else:
-                # this is the root trait
-                if obj is not None:
-                    e = "The %r %s of %s instance expects %s, not %s." % (
-                        self.name, type(self).__name__, class_of(obj),
-                        info or self.info(), describe("the", value))
-                else:
-                    e = "The %r %s expected %s, not %s." % (self.name,
-                        type(self).__name__, info or self.info(),
-                        describe("the", value))
-                raise TraitError(e)
+                msg = "{value} caused {error} in {trait} because {info}.".format(
+                    value=describe("the", value),
+                    error=describe("a", type(error)),
+                    info=info or error,
+                    trait=self,
+                )
+        else:
+            msg = "%s expected %s, not %r." % (self, info or self.info(), value)
+        raise TraitError(msg)
 
     def get_metadata(self, key, default=None):
         """DEPRECATED: Get a metadata value.
@@ -993,8 +989,8 @@ class DefaultHandler(EventHandler):
     def __init__(self, name):
         self.trait_name = name
 
-    def class_init(self, cls, name):
-        super(DefaultHandler, self).class_init(cls, name)
+    def class_init(self, cls, name, parent=None):
+        super(DefaultHandler, self).class_init(cls, name, parent)
         cls._trait_default_generators[self.trait_name] = self
 
 
@@ -2054,10 +2050,10 @@ class Union(TraitType):
                 break
         return default
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         for trait_type in reversed(self.trait_types):
-            trait_type.class_init(cls, None)
-        super(Union, self).class_init(cls, name)
+            trait_type.class_init(cls, None, self)
+        super(Union, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait_type in reversed(self.trait_types):
@@ -2727,11 +2723,11 @@ class Collection(Container):
 
         super(Collection, self).__init__(**kwargs)
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         for trait in self._traits:
             if isinstance(trait, TraitType):
-                trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
+                trait.class_init(cls, None, self)
+        super(Container, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait in self._traits:
@@ -2780,10 +2776,10 @@ class BaseSequence(Container):
 
         super(BaseSequence, self).__init__(**kwargs)
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
+            self._trait.class_init(cls, None, self)
+        super(Container, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
@@ -2939,15 +2935,15 @@ class Mapping(Mutable, Container):
 
         super(Mapping, self).__init__(default_value=default_value, **kwargs)
 
-    def class_init(self, cls, name):
+    def class_init(self, cls, name, parent=None):
         if self._value_trait is not None:
-            self._value_trait.class_init(cls, None)
+            self._value_trait.class_init(cls, None, self)
         if self._key_trait is not None:
-            self._key_trait.class_init(cls, None)
+            self._key_trait.class_init(cls, None, self)
         if self._trait_mapping is not None:
             for trait in self._trait_mapping.values():
-                trait.class_init(cls, None)
-        super(Mapping, self).class_init(cls, name)
+                trait.class_init(cls, None, self)
+        super(Mapping, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if self._value_trait is not None:
