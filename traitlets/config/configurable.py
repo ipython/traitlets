@@ -138,8 +138,9 @@ class Configurable(HasTraits):
         if self.parent:
             cfgs.append(self.parent._find_my_config(cfg))
         my_config = Config()
+        section_names = self.section_names()
         for c in cfgs:
-            for sname in self.section_names():
+            for sname in section_names:
                 # Don't do a blind getattr as that would cause the config to
                 # dynamically create the section with name Class.__name__.
                 if c._has_section(sname):
