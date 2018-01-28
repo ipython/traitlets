@@ -2379,7 +2379,7 @@ class Notifier(object):
                 name=lineage[-1].name,
                 depth=len(lineage),
                 value=self.value,
-                type="item",
+                type="mutation",
             ))
             self.callback.owner.notify_change(change)
             change.type = "nested"
@@ -2612,12 +2612,6 @@ class Mutable(Instance):
     def validate(self, owner, value):
         value = super(Mutable, self).validate(owner, value)
         if self.eventful and value is not None:
-            self.register_events(owner, value)
-        return value
-
-    def cast(self, value):
-        value = super(Mutable, self).cast(value)
-        if self.eventful and value is not None:
             if not spectate.watchable(value):
                 cls = type(value)
                 methods = set(e[0] for e in self.iter_events())
@@ -2626,6 +2620,7 @@ class Mutable(Instance):
                     value.__class__ = wtype
                 except TypeError:
                     value = wtype(value)
+            self.register_events(owner, value)
         return value
 
     def _validate_mutation(self, change):
@@ -2699,12 +2694,14 @@ class Collection(Container):
         return new
 
 
-class BaseSequence(Container):
+class Sequence(Mutable, Container):
 
     _trait = None
     allow_none = True
 
-    def __init__(self, trait=None, default_value=Undefined, **kwargs):
+    def __init__(self, trait=None, default_value=Undefined,
+                 minlen=0, maxlen=sys.maxsize, **kwargs):
+        self._minlen, self._maxlen = minlen, maxlen
         if default_value is Undefined and not is_trait(trait):
             if trait is not None or kwargs.get("allow_none", False):
                 kwargs['default_value'], trait = trait, None
@@ -2718,23 +2715,29 @@ class BaseSequence(Container):
         if not isinstance(trait, TraitType) and trait is not None:
             raise TypeError("The argument 'trait' must be %s, not %s." %
                 (describe("a", TraitType), describe("the", trait)))
-
         self._trait = trait
-
-        super(BaseSequence, self).__init__(**kwargs)
+        super(Sequence, self).__init__(**kwargs)
 
     def class_init(self, cls, name, parent=None):
         if isinstance(self._trait, TraitType):
             self._trait.class_init(cls, None, self)
-        super(Container, self).class_init(cls, name, parent)
+        super(Sequence, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
             self._trait.instance_init(obj)
-        super(Container, self).instance_init(obj)
+        super(Sequence, self).instance_init(obj)
 
-
-class Sequence(BaseSequence):
+    def validate(self, obj, value):
+        value = super(Sequence, self).validate(obj, value)
+        length = len(value)
+        if length < self._minlen:
+            info = "a length <= %i" % self._minlen
+            self.error(obj, length, info=info)
+        elif length > self._maxlen:
+            info = "a length >= %i" % self._maxlen
+            self.error(obj, length, info=info)
+        return value
 
     def validate_elements(self, obj, value):
         if not self._trait:
@@ -2748,30 +2751,6 @@ class Sequence(BaseSequence):
             else:
                 new.append(v)
         return new
-
-
-class MutableSequence(Mutable, BaseSequence):
-
-    events = {
-        "setitem": "__setitem__",
-        "delitem": "__delitem__",
-    }
-
-    def __init__(self, trait=None, default_value=Undefined, minlen=0, maxlen=sys.maxsize, **kwargs):
-        self._minlen, self._maxlen = minlen, maxlen
-        super(MutableSequence, self).__init__(trait=trait, default_value=default_value, **kwargs)
-
-    def validate_elements(self, obj, value):
-        if not self._trait:
-            return value
-        for i, v in enumerate(value):
-            try:
-                v = self._trait._validate(obj, v)
-            except TraitError as error:
-                self.error(obj, v, error)
-            else:
-                value[i] = v
-        return value
 
     def _validate_mutation(self, change):
         if self._trait is not None:
@@ -2792,7 +2771,7 @@ class Tuple(Collection):
     default_value = ()
 
 
-class Set(Mutable, Sequence):
+class Set(Sequence):
 
     klass = set
     _cast_types = (list, tuple)
@@ -2816,7 +2795,7 @@ class Set(Mutable, Sequence):
             notify("mutation", new=new, old=old)
 
 
-class List(MutableSequence):
+class List(Sequence):
 
     klass = list
     _cast_types = tuple
@@ -2832,14 +2811,44 @@ class List(MutableSequence):
     }
 
     def validate_elements(self, obj, value):
-        length = len(value)
-        if length < self._minlen:
-            info = "a length <= %i" % self._minlen
-            self.error(obj, length, info=info)
-        elif length > self._maxlen:
-            info = "a length >= %i" % self._maxlen
-            self.error(obj, length, info=info)
-        return super(List, self).validate_elements(obj, value)
+        value = super(List, self).validate_elements(obj, value)
+        if not self._trait:
+            return value
+        for i, v in enumerate(value):
+            try:
+                v = self._trait._validate(obj, v)
+            except TraitError as error:
+                self.error(obj, v, error)
+            else:
+                value[i] = v
+        return value
+
+    @staticmethod
+    def _before_setitem(value, call, notify):
+        index = call.args[0]
+        try:
+            old = value[index]
+        except KeyError:
+            old = Undefined
+        return index, old
+
+    @staticmethod
+    def _after_setitem(value, answer, notify):
+        index, old = answer.before
+        new = value[index]
+        if new != old:
+            notify("mutation", index=index, old=old, new=new)
+
+    @staticmethod
+    def _before_delitem(value, call, notify):
+        index = call.args[0]
+        try:
+            old = value[index]
+        except KeyError:
+            pass
+        else:
+            def _after(returned, notify):
+                notify("mutation", index=index, old=old, new=Undefined)
 
     def _after_append(self, value, answer, notify):
         notify("mutation", index=len(value) - 1, old=Undefined, new=value[-1])
