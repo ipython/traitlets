@@ -65,6 +65,7 @@ from .utils.bunch import Bunch
 from .utils.descriptions import describe, class_of, add_article, repr_type
 
 SequenceTypes = (list, tuple, set, frozenset)
+MutableBuiltins = (list, set, dict)
 
 # exports:
 
@@ -2364,6 +2365,8 @@ from collections import defaultdict
 
 
 class _Notifier(object):
+    """An object for collecting, and distributing eventful notifications.
+    """
 
     def __init__(self, cb, v):
         self.callback = cb
@@ -2371,9 +2374,30 @@ class _Notifier(object):
         self._events = defaultdict(list)
 
     def __call__(self, etype, **data):
+        """Gather a notification.
+
+        Parameters
+        ----------
+        etype : str
+            The type of event that will be sent to the :class:`HasTraits` instance.
+        **data : any
+            A description of the event that occured."""
         self._events[etype].append(data)
 
     def send(self, validate=False):
+        """Send all gathered notifications.
+
+        Noticications are sent with six attributes:
+
+        type : A classification for the notification that will be sent.
+        owner : The :class:`HasTraits` instance that will be notified.
+        events : A list of data objects which were gathered.
+        name : The name of the trait to be notified.
+        depth : How nested the trait is that produced the notification where
+            indexing begins at 0. Given ``trait = List(List())`` the outer list
+            trait has a depth of 0, while the inner one has a depth of 1.
+        value : The instance whose method was called.
+        """
         lineage = list(self.callback.trait._lineage())
         with self.callback.owner.hold_trait_notifications():
             for etype, data in self._events.items():
@@ -2383,7 +2407,7 @@ class _Notifier(object):
                     name=lineage[-1].name,
                     depth=len(lineage) - 1,
                     value=self.value,
-                    type="mutation",
+                    type=etype,
                 ))
             self._events.clear()
             if validate:
@@ -2392,8 +2416,7 @@ class _Notifier(object):
 
 
 class _Callback(object):
-    """A wrapper for the callbacks of an :class:`Eventful` subclass.
-    """
+    """A wrapper for the callbacks of an :class:`Eventful` subclass."""
 
     notify = False
 
@@ -2515,7 +2538,7 @@ class Mutable(Instance):
     values. For example, standard traits do not react when users calls
     ``list.append`` to mutate a list attached to a ``HasTraits`` object. A
     ``Mutable`` trait on the other hand, provided it has the appropriate
-    attributes, can.
+    attributes and ``eventful=True`` is specified in the constructor.
 
     In order to report an event that has occurred on a trait value, we need
     an ``events`` dictionary, and callback methods. The ``events`` dictionary
@@ -2580,6 +2603,15 @@ class Mutable(Instance):
             return Undefined
 
     def register_events(self, owner, value):
+        """Add the events this trait defines to a watchable type.
+
+        Parameters
+        ----------
+        owner : HasTraits
+            The instance this trait belongs to.
+        value : spectate.WatchedType
+            The value to which the events should be registered.
+        """
         spectator = spectate.watch(value)
         for method, before, after in self.iter_events():
             if not (before is None and after is None):
@@ -2588,14 +2620,27 @@ class Mutable(Instance):
                     _Afterback(owner, self, after)
                 )
 
-    def unregister_events(self, old):
-        if spectate.watchable(old) and spectate.watcher(old):
-            spectator = spectate.watcher(old)
+    def unregister_events(self, value):
+        """Remove the events this trait defines from a watchable type.
+
+        Parameters
+        ----------
+        value : spectate.WatchedType
+            The value from which the events should be removed.
+        """
+        if spectate.watchable(value) and spectate.watcher(value):
+            spectator = spectate.watcher(value)
             for method, before, after in self.iter_events():
                 if before is not None or after is not None:
                     spectator.remove_callback(method, before, after)
 
     def iter_events(self):
+        """Iterate over the event callbacks this trait defined.
+
+        They are yielded in the form ``(method, before, after)`` where
+        ``method`` is the name of the method the callbacks react to,
+        ``before`` the Beforeback, and ``after`` the Afteraback.
+        """
         for name, on in self.events.items():
             for method in (on if isinstance(on, (tuple, list)) else (on,)):
                 yield (
@@ -2605,7 +2650,12 @@ class Mutable(Instance):
                 )
 
     def set(self, obj, val):
-        if self.eventful and type(val) in (list, set, dict):
+        """Mutable builtins (e.g. list, dict, set) are dissalowed for eventful traits.
+
+        The events of this trait will also be removed from a previous value
+        exists if it is eventful.
+        """
+        if self.eventful and type(val) in MutableBuiltins:
             raise TraitError(
                 "%r is a mutable builtin type, and cannot "
                 "be assigned to eventful traits." % val)
@@ -2615,6 +2665,8 @@ class Mutable(Instance):
             return super(Mutable, self).set(obj, val)
 
     def validate(self, owner, value):
+        """Registers the events this trait defines if it is eventful.
+        """
         value = super(Mutable, self).validate(owner, value)
         if self.eventful and value is not None:
             if not spectate.watchable(value):
@@ -2629,6 +2681,8 @@ class Mutable(Instance):
         return value
 
     def _validate_mutation(self, change):
+        """Called after an eventful notification is sent.
+        """
         return change
 
 
@@ -2645,7 +2699,7 @@ class Container(Instance):
 
 
 class Collection(Container):
-    """A base trait for iterable, but immutable types"""
+    """A base trait for immutable container types"""
 
     _traits = None
 
@@ -2700,7 +2754,8 @@ class Collection(Container):
 
 
 class Sequence(Mutable, Container):
-    """A base trait for iterable and mutable types"""
+    """A base trait for mutable container types
+    """
 
     _trait = None
     allow_none = True
@@ -2887,6 +2942,8 @@ class List(Sequence):
 
 
 class Mapping(Mutable, Container):
+    """A base class for mapping types.
+    """
 
     _trait_mapping = None
     _value_trait = None
