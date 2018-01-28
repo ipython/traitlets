@@ -22,7 +22,8 @@ from traitlets import (
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, Container, Collection,
+    Sequence, Mapping,
 )
 
 import six
@@ -1515,6 +1516,69 @@ class TestTCPAddress(TraitTestBase):
     _default_value = ('127.0.0.1',0)
     _good_values = [('localhost',0),('192.168.0.1',1000),('www.google.com',80)]
     _bad_values = [(0,0),('localhost',10.0),('localhost',-1), None]
+
+
+class TestContainer(TestCase):
+
+    def test_validate_elements(self):
+
+        class MyContainer(Container):
+            klass = list
+            _cast_types = tuple
+            def validate_elements(self, obj, val):
+                # tuple gets converted back to list.
+                return tuple(int(x) for x in val)
+
+        class MyHasTraits(HasTraits):
+            mc = MyContainer()
+
+        mht = MyHasTraits()
+        mht.mc = [1.23, -4.56, 7]
+        assert mht.mc == [1, -4, 7]
+
+
+class CollectionType(object):
+
+    def __init__(self, x):
+        self.x = tuple(x)
+
+    def __len__(self):
+        return len(self.x)
+
+    def __iter__(self):
+        return iter(self.x)
+
+    def __eq__(self, other):
+        return self.x == other
+
+
+class CollectionTrait(HasTraits):
+
+    value = Collection(
+        Int(allow_none=True),
+        klass=CollectionType,
+        default_value=(1,),
+        castable=(tuple, list))
+
+
+class TestCollectionTrait(TraitTestBase):
+
+    obj = CollectionTrait()
+
+    _default_value = (1,)
+    _good_values = [(1,), (0,), [1]]
+    _bad_values = [10, (1, 2), ('a'), (), None]
+
+    def coerce(self, value):
+        if value is not None:
+            value = tuple(value)
+        return value
+
+    def test_invalid_args(self):
+        self.assertRaises(TraitError, Collection, 5)
+        self.assertRaises(TraitError, Collection, default_value='hello')
+        t = Collection(Int(), CBytes(), default_value=(1,5), klass=tuple)
+
 
 class ListTrait(HasTraits):
 

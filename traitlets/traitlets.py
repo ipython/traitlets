@@ -1773,7 +1773,7 @@ class Instance(ClassBasedTraitType):
     Subclasses can declare default classes by overriding the klass attribute
     """
 
-    klass = Undefined
+    klass = None
     info_text = None
     _cast_types = ()
 
@@ -1812,7 +1812,7 @@ class Instance(ClassBasedTraitType):
         self._cast_types = kwargs.pop("castable", self._cast_types)
         if not isinstance(self._cast_types, tuple):
             self._cast_types = (self._cast_types,)
-        if self.klass is Undefined:
+        if self.klass is None:
             klass, ar, kw = args + (
                 kwargs.pop("klass", None),
                 kwargs.pop("args", None),
@@ -2753,7 +2753,7 @@ class Collection(Container):
                 self.error(obj, v, error)
             else:
                 new.append(v)
-        return new
+        return tuple(new)
 
 
 class Sequence(Mutable, Container):
