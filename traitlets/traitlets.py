@@ -641,17 +641,13 @@ class TraitType(BaseDescriptor):
         Parameters
         ----------
         obj: HasTraits or None
-            The instance which owns the trait. If not
-            object is given, then an object agnostic
-            error will be raised.
+            This is a legacy argument that is not used.
         value: any
             The value that caused the error.
         error: Exception (default: None)
-            An error that was raised by a child trait.
+            An error that was caused by the value.
         info: str (default: None)
-            A description of the expected value. By
-            default this is infered from this trait's
-            ``info`` method.
+            The reason value caused an error.
         """
         if error is None:
             error = sys.exc_info()[1]
@@ -659,14 +655,22 @@ class TraitType(BaseDescriptor):
             if isinstance(error, TraitError):
                 raise
             else:
-                msg = "{value} caused {error} in {trait} because {info}.".format(
+                msg = (
+                    "{value} caused {error} in "
+                    "{trait} because {info}."
+                ).format(
+                    trait=self,
+                    info=info or error,
                     value=describe("the", value),
                     error=describe("a", type(error)),
-                    info=info or error,
-                    trait=self,
                 )
         else:
-            msg = "%s expected %s, not %r." % (self, info or self.info(), value)
+            if info is None:
+                info = self.info()
+                msg = "{trait} expeted {info}, not {value}."
+            else:
+                msg = "{value} caused an error in {trait} because {info}."
+            msg = msg.format(trait=self, value=value, info=info)
         raise TraitError(msg)
 
     def get_metadata(self, key, default=None):
@@ -1756,121 +1760,7 @@ class Type(ClassBasedTraitType):
             return repr('{}.{}'.format(value.__module__, value.__name__))
 
 
-class TypeCast(ClassBasedTraitType):
-    """Subclasses force values to be an instance of, or coerced to, a specified type.
-
-    Declare default classes, args, and kwargs by overriding the ``klass``,
-    ``default_args``, and ``default_kwargs`` attributes respectively.
-
-    Attributes
-    ----------
-    klass : class, str
-        The class that forms the basis for the trait.  Class names
-        can also be specified as strings, like 'foo.bar.Bar'.
-    default_args : tuple
-        Positional arguments for generating the default value.
-    default_kwargs : dict
-        Keyword arguments for generating the default value.
-    cast: callable or None
-        Cast values to the appropriate type. If given as
-        None, then values are cast with ``klass`` instead.
-    cast_types: tuple of classes and types, or None
-        The classes which are allowed to be cast to ``klass``.
-        Similar rules for specifying classes with strings
-        (e.g. 'foo.bar.Bar') apply. If given as None, then
-        only instances of ``klass`` are allowed.
-    """
-
-    klass = None
-    info_text = None
-    cast_types = ()
-
-    def __new__(cls, *args, **kwargs):
-        new = super(TypeCast, cls).__new__
-        if new is not object.__new__:
-            self = new(cls, *args, **kwargs)
-        else:
-            self = new(cls)
-        if not isinstance(self.cast_types, tuple):
-            self.cast_types = (self.cast_types,)
-        return self
-
-    def __init__(self, *args, **kwargs):
-        self.klass = kwargs.pop("klass", self.klass)
-        super(TypeCast, self).__init__(*args, **kwargs)
-        if self.default_value not in (Undefined, None) and self.klass is not None:
-            hold, self.name = self.name, "no-name"
-            # We use TypeCast.validate because other validation methods
-            # may require the owner of the trait to be provided. In this
-            # one case we can get away with just passing `None`.
-            self.default_value = TypeCast.validate(self, None, self.default_value)
-            self.name = hold
-
-    def cast(self, obj, value):
-        return self.klass(value)
-
-    def instance_init(self, obj):
-        self._resolve_classes()
-        super(TypeCast, self).instance_init(obj)
-
-    def _resolve_classes(self):
-        if isinstance(self.klass, six.string_types):
-            self.klass = self._resolve_string(self.klass)
-        self.cast_types = tuple(
-            self._resolve_string(c) if
-            isinstance(c, six.string_types)
-            else c for c in self.cast_types)
-
-    def validate(self, obj, value):
-        if isinstance(value, self.cast_types):
-            try:
-                value = self.cast(obj, value)
-            except Exception as e:
-                raise self.cast_error(obj, value, e)
-        if isinstance(value, self.klass):
-            return value
-        else:
-            self.error(obj, value)
-
-    def info(self):
-        if self.info_text:
-            return self.info_text
-
-        result = describe("a", self.klass)
-        if self.allow_none:
-            result += " or None"
-
-        cast_info = self._cast_info()
-        if cast_info is not None:
-            result += " (can cast %s)" % cast_info
-
-        return result
-
-    def cast_error(self, obj, value, error):
-        if self.name is not None and obj is not None:
-            raise TraitError("The '%s' trait of %s failed to cast "
-                "%s to %s because: %s" % (self.name, describe("the", obj),
-                describe("the", value), describe("a", self.klass), error))
-        else:
-            raise TraitError("The %s failed to cast %s to %s because: "
-                "%s" % (describe("the", self), describe("the", value),
-                describe("a", self.klass), error))
-
-    def _cast_info(self):
-        if len(self.cast_types):
-            castables = [
-                describe("a", c)
-                for c in self.cast_types
-            ]
-            if len(castables) > 1:
-                the_types = (', '.join(castables[:-1])
-                    + ', or %s' % castables[-1])
-            else:
-                the_types = castables[0]
-            return the_types
-
-
-class Instance(TypeCast):
+class Instance(ClassBasedTraitType):
     """A trait whose value must be an instance of a specified class.
 
     The value can also be an instance of a subclass of the specified class.
@@ -1878,9 +1768,11 @@ class Instance(TypeCast):
     Subclasses can declare default classes by overriding the klass attribute
     """
 
-    klass = None
+    klass = Undefined
+    info_text = None
+    _cast_types = ()
 
-    def __init__(self, klass=None, args=None, kw=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Construct an Instance trait.
 
         This trait allows values that are instances of a particular
@@ -1897,6 +1789,11 @@ class Instance(TypeCast):
             Positional arguments for generating the default value.
         kw : dict
             Keyword arguments for generating the default value.
+        castable : type or tuple of types
+            The classes which are allowed to be cast to ``klass``.
+            Similar rules for specifying classes with strings
+            (e.g. 'foo.bar.Bar') apply. If given as None, then
+            only instances of ``klass`` are allowed.
         allow_none : bool [ default False ]
             Indicates whether None is allowed as a value.
 
@@ -1907,42 +1804,88 @@ class Instance(TypeCast):
         created as ``klass(*args, **kw)``.  If exactly one of ``args`` or ``kw`` is
         None, the None is replaced by ``()`` or ``{}``, respectively.
         """
-        if klass is None:
-            klass = self.klass
-
-        if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, six.string_types)):
+        self._cast_types = kwargs.pop("castable", self._cast_types)
+        if not isinstance(self._cast_types, tuple):
+            self._cast_types = (self._cast_types,)
+        if self.klass is Undefined:
+            klass, ar, kw = args + (
+                kwargs.pop("klass", None),
+                kwargs.pop("args", None),
+                kwargs.pop("kw", None)
+            )[len(args):]
+            args = args[3:]
+            if klass is None:
+                raise TraitError("No class was given")
+            elif not (inspect.isclass(klass) or isinstance(klass, six.string_types)):
+                raise TraitError("Expected a class or import string, not %r" % klass)
+            if (kw is not None) and not isinstance(kw, dict):
+                raise TraitError("The 'kw' argument must be a dict or None.")
+            if (ar is not None) and not isinstance(ar, tuple):
+                raise TraitError("The 'args' argument must be a tuple or None.")
             self.klass = klass
+            self.default_args = ar
+            self.default_kwargs = kw
         else:
-            raise TraitError('The klass attribute must be a class'
-                                ' not: %r' % klass)
-
-        if (kw is not None) and not isinstance(kw, dict):
-            raise TraitError("The 'kw' argument must be a dict or None.")
-        if (args is not None) and not isinstance(args, tuple):
-            raise TraitError("The 'args' argument must be a tuple or None.")
-
-        self.default_args = args
-        self.default_kwargs = kw
-
-        if "cast_types" in kwargs:
-            self.cast_types = kwargs["cast_types"]
-
-        super(Instance, self).__init__(**kwargs)
+            self.default_args = None
+            self.default_kwargs = None
+        super(Instance, self).__init__(*args, **kwargs)
+        if Undefined not in (self.default_value, self.klass):
+            if not (self.allow_none and self.default_value is None):
+                if not isinstance(self.default_value, self.klass):
+                    if isinstance(self.default_value, self._cast_types):
+                        self.default_value = self.cast(self.default_value)
+                    if not isinstance(self.default_value, self.klass):
+                        self.error(None, self.default_value)
 
     def validate(self, obj, value):
+        if self.castable(value):
+            try:
+                value = self.cast(value)
+            except:
+                raise self.cast_error(value)
         if isinstance(value, self.klass):
             return value
         else:
             self.error(obj, value)
 
-    def info(self):
-        if isinstance(self.klass, six.string_types):
-            result = add_article(self.klass)
+    def cast(self, value):
+        return self.klass(value)
+
+    def castable(self, value):
+        return isinstance(value, self._cast_types)
+
+    def cast_error(self, value, error=None):
+        error = error or sys.exc_info()[1]
+        if error is None:
+            raise TraitError("%s failed to cast %s to %s." % (
+                self, describe("the", value), describe("a", self.klass)))
         else:
-            result = describe("a", self.klass)
+            raise TraitError("%s failed to cast %s to %s because: %s" % (
+                self, describe("the", value), describe("a", self.klass), error))
+
+    def info(self):
+        if self.info_text:
+            return self.info_text
+        result = describe("a", self.klass)
         if self.allow_none:
-            result += ' or None'
+            result += " or None"
+        cast_info = self._cast_info()
+        if cast_info is not None:
+            result += " (but could cast %s)" % cast_info
         return result
+
+    def _cast_info(self):
+        if len(self._cast_types):
+            castables = [
+                describe("a", c)
+                for c in self._cast_types
+            ]
+            if len(castables) > 1:
+                the_types = (', '.join(castables[:-1])
+                    + ', or %s' % castables[-1])
+            else:
+                the_types = castables[0]
+            return the_types
 
     def instance_init(self, obj):
         self._resolve_classes()
@@ -1951,15 +1894,23 @@ class Instance(TypeCast):
     def _resolve_classes(self):
         if isinstance(self.klass, six.string_types):
             self.klass = self._resolve_string(self.klass)
+        self._cast_types = tuple(
+            self._resolve_string(c) if
+            isinstance(c, six.string_types)
+            else c for c in self._cast_types)
 
     def make_dynamic_default(self):
-        if (self.default_args is None) and (self.default_kwargs is None):
-            return None
-        return self.klass(*(self.default_args or ()),
-                          **(self.default_kwargs or {}))
+        if (self.default_args, self.default_kwargs) != (None, None):
+            a = self.default_args or ()
+            kw = self.default_kwargs or {}
+            return self.klass(*a, **kw)
 
     def default_value_repr(self):
-        return repr(self.make_dynamic_default())
+        if self.default_value is not Undefined:
+            val = self.default_value
+        else:
+            val = self.make_dynamic_default()
+        return repr(val)
 
 
 class ForwardDeclaredMixin(object):
@@ -2087,7 +2038,7 @@ class Any(TraitType):
     info_text = 'any value'
 
 
-class NumberBase(TypeCast):
+class NumberBase(Instance):
 
     def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', None)
@@ -2129,7 +2080,7 @@ class Int(NumberBase):
 
 class CInt(Int):
     """A casting version of the int trait."""
-    cast_types = object
+    _cast_types = object
 
 
 if six.PY2:
@@ -2137,13 +2088,13 @@ if six.PY2:
         """A long integer trait."""
 
         klass = long
-        cast_types = int
+        _cast_types = int
         default_value = 0
 
 
     class CLong(Long):
         """A casting version of the long integer trait."""
-        cast_types = object
+        _cast_types = object
 
 
     class Integer(NumberBase):
@@ -2154,9 +2105,9 @@ if six.PY2:
         # downcast longs that fit in int:
         if sys.platform == 'cli':
             from System import Int64
-            cast_types = (long, Int64)
+            _cast_types = (long, Int64)
         else:
-            cast_types = long
+            _cast_types = long
 
         def validate(self, obj, value):
             if isinstance(value, long) and isinstance(int(value), long):
@@ -2178,19 +2129,19 @@ class Float(NumberBase):
 
     default_value = 0.0
     klass = float
-    cast_types = int
+    _cast_types = int
 
 
 class CFloat(Float):
     """A casting version of the float trait."""
-    cast_types = object
+    _cast_types = object
 
 
 class Complex(NumberBase):
     """A trait for complex numbers."""
 
     klass = complex
-    cast_types = (float, int)
+    _cast_types = (float, int)
 
     default_value = 0.0 + 0.0j
     info_text = 'a complex number'
@@ -2198,13 +2149,13 @@ class Complex(NumberBase):
 
 class CComplex(Complex):
     """A casting version of the complex number trait."""
-    cast_types = object
+    _cast_types = object
 
 
 # We should always be explicit about whether we're using bytes or unicode, both
 # for Python 3 conversion and for reliable unicode behaviour on Python 2. So
 # we don't have a Str type.
-class Bytes(TypeCast):
+class Bytes(Instance):
     """A trait for byte strings."""
 
     default_value = b''
@@ -2213,19 +2164,19 @@ class Bytes(TypeCast):
 
 class CBytes(Bytes):
     """A casting version of the byte string trait."""
-    cast_types = object
+    _cast_types = object
 
 
-class Unicode(TypeCast):
+class Unicode(Instance):
     """A trait for unicode strings."""
 
     default_value = u''
     info_text = 'a unicode string'
     klass = six.text_type
 
-    cast_types = (bytes,)
+    _cast_types = (bytes,)
 
-    def cast(self, obj, value):
+    def cast(self, value):
         try:
             return value.decode('ascii', 'strict')
         except UnicodeDecodeError:
@@ -2234,11 +2185,11 @@ class Unicode(TypeCast):
 
 class CUnicode(Unicode):
     """A casting version of the unicode trait."""
-    cast_types = object
-    cast = TypeCast.cast
+    _cast_types = object
+    cast = Instance.cast
 
 
-class ObjectName(TypeCast):
+class ObjectName(Instance):
     """A string holding a valid object name in this version of Python.
 
     This does not check that the name exists in any scope."""
@@ -2249,10 +2200,8 @@ class ObjectName(TypeCast):
 
     if six.PY2:
 
-        cast_types = unicode
-
-        def cast(self, obj, value):
-            return str(value)
+        cast = str
+        _cast_types = unicode
 
     def validate(self, obj, value):
         value = super(ObjectName, self).validate(obj, value)
@@ -2270,7 +2219,7 @@ class DottedObjectName(ObjectName):
         return value
 
 
-class Bool(TypeCast):
+class Bool(Instance):
     """A boolean (True, False) trait."""
     klass = bool
     default_value = False
@@ -2278,7 +2227,7 @@ class Bool(TypeCast):
 
 class CBool(Bool):
     """A casting version of the boolean trait."""
-    cast_types = object
+    _cast_types = object
 
 
 class Enum(TraitType):
@@ -2555,7 +2504,7 @@ class Afterback(Callback):
         notify.send()
 
 
-class Mutable(TypeCast):
+class Mutable(Instance):
     """A trait which can track changes to mutable data types.
 
     This trait provides a generic API for defining descriptors that can respond
@@ -2660,9 +2609,14 @@ class Mutable(TypeCast):
                 self.unregister(getattr(obj, self.name))
             return super(Mutable, self).set(obj, val)
 
-    def cast(self, owner, value):
-        """Returns a value whose mutations are observable."""
-        value = super(Mutable, self).cast(owner, value)
+    def validate(self, owner, value):
+        value = super(Mutable, self).validate(owner, value)
+        if self.eventful and value is not None:
+            self.register_events(owner, value)
+        return value
+
+    def cast(self, value):
+        value = super(Mutable, self).cast(value)
         if self.eventful and value is not None:
             if not spectate.watchable(value):
                 cls = type(value)
@@ -2672,14 +2626,13 @@ class Mutable(TypeCast):
                     value.__class__ = wtype
                 except TypeError:
                     value = wtype(value)
-            self.register_events(owner, value)
         return value
 
     def _validate_mutation(self, change):
         return change
 
 
-class Container(TypeCast):
+class Container(Instance):
 
     def validate(self, obj, value):
         validate = super(Container, self).validate
@@ -2835,14 +2788,14 @@ class MutableSequence(Mutable, BaseSequence):
 class Tuple(Collection):
 
     klass = tuple
-    cast_types = list
+    _cast_types = list
     default_value = ()
 
 
 class Set(Mutable, Sequence):
 
     klass = set
-    cast_types = (list, tuple)
+    _cast_types = (list, tuple)
     default_value = set()
 
     events = {
@@ -2860,13 +2813,13 @@ class Set(Mutable, Sequence):
         new = value.difference(answer.before)
         old = answer.before.difference(value)
         if new or old:
-            notify("item", new=new, old=old)
+            notify("mutation", new=new, old=old)
 
 
 class List(MutableSequence):
 
     klass = list
-    cast_types = tuple
+    _cast_types = tuple
     default_value = []
     events = {
         'append': 'append',
@@ -2889,14 +2842,14 @@ class List(MutableSequence):
         return super(List, self).validate_elements(obj, value)
 
     def _after_append(self, value, answer, notify):
-        notify("item", index=len(value) - 1, old=Undefined, new=value[-1])
+        notify("mutation", index=len(value) - 1, old=Undefined, new=value[-1])
 
     def _before_extend(self, value, call, notify):
         return len(value)
 
     def _after_extend(self, value, answer, notify):
         for i in range(answer.before, len(value)):
-            notify("item", index=i, old=Undefined, new=value[i])
+            notify("mutation", index=i, old=Undefined, new=value[i])
 
     def _before_remove(self, value, call, notify):
         i = value.index(call.args[0])
@@ -2908,7 +2861,7 @@ class List(MutableSequence):
             new = value[index]
         except IndexError:
             new = Undefined
-        notify("item", index=index, old=old, new=new)
+        notify("mutation", index=index, old=old, new=new)
 
     def _before_reverse(self, value, call, notify):
         return self.rearrangement(value)
@@ -2922,7 +2875,7 @@ class List(MutableSequence):
         def after_rearangement(returned, notify):
             for i, v in enumerate(old):
                 if v != new[i]:
-                    notify("item", index=i, old=v, new=new[i])
+                    notify("mutation", index=i, old=v, new=new[i])
         return after_rearangement
 
 
@@ -3152,7 +3105,7 @@ class Dict(Mapping):
         key, old = answer.before
         new = value[key]
         if new != old:
-            notify("item", key=key, old=old, new=new)
+            notify("mutation", key=key, old=old, new=new)
 
     @staticmethod
     def _before_delitem(value, call, notify):
@@ -3163,7 +3116,7 @@ class Dict(Mapping):
             pass
         else:
             def _after(returned, notify):
-                notify("item", key=key, old=old, new=Undefined)
+                notify("mutation", key=key, old=old, new=Undefined)
 
     def _before_update(self, value, call, notify):
         if len(call.args):
@@ -3177,14 +3130,14 @@ class Dict(Mapping):
     def _after_update(self, value, answer, notify):
         for k, v in answer.before.items():
             if value[k] != v:
-                notify("item", key=k, old=v, new=value[k])
+                notify("mutation", key=k, old=v, new=value[k])
 
     def _before_clear(self, value, call, notify):
         return value.copy()
 
     def _after_clear(self, value, answer, notify):
         for k, v in answer.before.items():
-            notify("item", key=k, old=v, new=Undefined)
+            notify("mutation", key=k, old=v, new=Undefined)
 
     def _validate_mutation(self, change):
         # TODO: implement this validation to cast
