@@ -2377,7 +2377,7 @@ class Notifier(object):
                 owner=self.callback.owner,
                 events=list(map(Bunch, data)),
                 name=lineage[-1].name,
-                depth=len(lineage),
+                depth=len(lineage) - 1,
                 value=self.value,
                 type="mutation",
             ))
@@ -2507,11 +2507,11 @@ class Afterback(Callback):
 class Mutable(Instance):
     """A trait which can track changes to mutable data types.
 
-    This trait provides a generic API for defining descriptors that can respond
-    to method calls on the instance which get assigned to it. For example,
-    standard traits do not response when users calls ``list.append`` to mutate
-    a list attached to a ``HasTraits`` object. A ``Mutable`` trait on the other
-    hand provided it has defined the appropriate attributes and methods.
+    This trait provides a generic API for responding to method calls on its
+    values. For example, standard traits do not react when users calls
+    ``list.append`` to mutate a list attached to a ``HasTraits`` object. A
+    ``Mutable`` trait on the other hand, provided it has the appropriate
+    attributes, can.
 
     In order to report an event that has occurred on a trait value, we need
     an ``events`` dictionary, and callback methods. The ``events`` dictionary
@@ -2520,8 +2520,8 @@ class Mutable(Instance):
     ["__setitem__", "setdefault"]}``. With this in place we can then define
     callbacks that trigger before or after the methods we specified in ``events``.
     The callbacks (hereafter referred to as Beforebacks and Afterbacks respectively)
-    should be named ``_before_setitem`` and/or ``_after_setitem`` on Mutable
-    subclasses that correspond to key in the ``events`` dictionary. It's these
+    should be named ``_before_<nickname>`` and/or ``_after_<nickname>`` where the
+    ``nickname`` should correspons to a key in the ``events`` dictionary. It's these
     Beforebacks and Afterbacks that give you the tools to create notifications:
 
     + Beforeback:
@@ -2553,11 +2553,11 @@ class Mutable(Instance):
     ----------
     events : dict of strings or lists
         A dictionary which maps nicknames to one or many method names in the
-        form ``{nickname: method_1}`` or ``{nickname: [method_1, method_2]}``.
-    _before_<nickname> :
-        Methods of the form ``(self, value, call, notify)``.
-    _after_<nickname> :
-        Methods of the form ``(self, value, answer, notify)``.
+        form ``{nickname: "method_1"}`` or ``{nickname: ["method_1", "method_2"]}``.
+    _before_<nickname> : callable
+        Methods of the form ``(value, call, notify)``.
+    _after_<nickname> : callable
+        Methods of the form ``(value, answer, notify)``.
     """
 
     events = {}
@@ -2628,6 +2628,7 @@ class Mutable(Instance):
 
 
 class Container(Instance):
+    """A base class for iterable types"""
 
     def validate(self, obj, value):
         validate = super(Container, self).validate
@@ -2641,6 +2642,7 @@ class Container(Instance):
 
 
 class Collection(Container):
+    """A base trait for iterable, but immutable types"""
 
     _traits = None
 
@@ -2695,6 +2697,7 @@ class Collection(Container):
 
 
 class Sequence(Mutable, Container):
+    """A base trait for iterable and mutable types"""
 
     _trait = None
     allow_none = True
