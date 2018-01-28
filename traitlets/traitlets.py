@@ -2837,7 +2837,7 @@ class Set(Sequence):
             except TraitError as error:
                 self.error(obj, original, error)
             else:
-                if new != original:
+                if new is not original:
                     value.symmetric_difference_update({new, original})
         return value
 
@@ -2875,7 +2875,7 @@ class List(Sequence):
             except TraitError as error:
                 self.error(obj, original, error)
             else:
-                if new != original:
+                if new is not original:
                     value[i] = new
         return value
 
@@ -2892,7 +2892,7 @@ class List(Sequence):
     def _after_setitem(value, answer, notify):
         index, old = answer.before
         new = value[index]
-        if new != old:
+        if new is not old:
             notify("mutation", index=index, old=old, new=new)
 
     @staticmethod
