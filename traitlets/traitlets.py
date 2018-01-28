@@ -449,6 +449,7 @@ class TraitType(BaseDescriptor):
     """A base class for all trait types.
     """
 
+    eventful = False
     metadata = {}
     allow_none = False
     read_only = False
@@ -607,6 +608,7 @@ class TraitType(BaseDescriptor):
             self.set(obj, value)
 
     def _validate(self, obj, value):
+        original = value
         if value is None and self.allow_none:
             return value
         if hasattr(self, 'validate'):
@@ -670,7 +672,7 @@ class TraitType(BaseDescriptor):
                 msg = "{trait} expeted {info}, not {value}."
             else:
                 msg = "{value} caused an error in {trait} because {info}."
-            msg = msg.format(trait=self, value=value, info=info)
+            msg = msg.format(trait=self, value=describe("the", value), info=info)
         raise TraitError(msg)
 
     def get_metadata(self, key, default=None):
@@ -1154,6 +1156,8 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 else:
                     if past_changes[-1]['type'] == 'change' and change.type == 'change':
                         past_changes[-1]['new'] = change.new
+                    elif past_changes[-1]['type'] == 'mutation' and change.type == 'mutation':
+                        past_changes[-1].events.extend(change.events)
                     else:
                         # In case of changes other than 'change', append the notification.
                         past_changes.append(change)
@@ -2359,7 +2363,7 @@ from weakref import ref
 from collections import defaultdict
 
 
-class Notifier(object):
+class _Notifier(object):
 
     def __init__(self, cb, v):
         self.callback = cb
@@ -2369,25 +2373,25 @@ class Notifier(object):
     def __call__(self, etype, **data):
         self._events[etype].append(data)
 
-    def send(self):
+    def send(self, validate=False):
         lineage = list(self.callback.trait._lineage())
-        validate = self.callback.trait._validate_mutation
-        for etype, data in self._events.items():
-            mutation = validate(Bunch(
-                owner=self.callback.owner,
-                events=list(map(Bunch, data)),
-                name=lineage[-1].name,
-                depth=len(lineage) - 1,
-                value=self.value,
-                type="mutation",
-            ))
-            self.callback.owner.notify_change(mutation)
-            change.type = "nested"
-            self.callback.owner.notify_change(mutation)
-        self._events.clear()
+        with self.callback.owner.hold_trait_notifications():
+            for etype, data in self._events.items():
+                self.callback.owner.notify_change(Bunch(
+                    owner=self.callback.owner,
+                    events=list(map(Bunch, data)),
+                    name=lineage[-1].name,
+                    depth=len(lineage) - 1,
+                    value=self.value,
+                    type="mutation",
+                ))
+            self._events.clear()
+            if validate:
+                self.callback.trait._validate_mutation(
+                    self.callback.owner, self.value)
 
 
-class Callback(object):
+class _Callback(object):
     """A wrapper for the callbacks of an :class:`Eventful` subclass.
     """
 
@@ -2416,7 +2420,7 @@ class Callback(object):
         a check is made to see if it is the function of this
         callback instead.
         """
-        if not isinstance(other, Callback):
+        if not isinstance(other, _Callback):
             return self.function == other
         else:
             return other is self
@@ -2436,7 +2440,7 @@ class Callback(object):
         return o
 
 
-class Beforeback(Callback):
+class _Beforeback(_Callback):
 
     def __call__(self, value, call):
         """A callback that responds before a method call has been made.
@@ -2465,13 +2469,13 @@ class Beforeback(Callback):
         See :mod:`spectate` for more info on beforebacks and afterbacks.
         """
         if self.function is not None:
-            notify = Notifier(self, value)
+            notify = _Notifier(self, value)
             result = self.function(value, call, notify)
             notify.send()
             return result
 
 
-class Afterback(Callback):
+class _Afterback(_Callback):
 
     def __call__(self, value, answer):
         """A callback that responds before a method call has been made
@@ -2495,13 +2499,13 @@ class Afterback(Callback):
 
         See :mod:`spectate` for more info on beforebacks and afterbacks.
         """
-        notify = Notifier(self, value)
+        notify = _Notifier(self, value)
         if self.function is None:
             if callable(answer.before):
                 answer.before(answer.value, notify)
         else:
             self.function(value, answer, notify)
-        notify.send()
+        notify.send(validate=True)
 
 
 class Mutable(Instance):
@@ -2580,8 +2584,8 @@ class Mutable(Instance):
         for method, before, after in self.iter_events():
             if not (before is None and after is None):
                 spectator.callback(method,
-                    Beforeback(owner, self, before),
-                    Afterback(owner, self, after)
+                    _Beforeback(owner, self, before),
+                    _Afterback(owner, self, after)
                 )
 
     def unregister_events(self, old):
@@ -2601,12 +2605,13 @@ class Mutable(Instance):
                 )
 
     def set(self, obj, val):
-        if self.eventful and type(val).__module__ == "__builtin__":
-            msg = "Cannot set builtins like %r on eventful traits."
-            raise TraitError(msg % type(val))
+        if self.eventful and type(val) in (list, set, dict):
+            raise TraitError(
+                "%r is a mutable builtin type, and cannot "
+                "be assigned to eventful traits." % val)
         else:
             if self.eventful:
-                self.unregister(getattr(obj, self.name))
+                self.unregister_events(getattr(obj, self.name))
             return super(Mutable, self).set(obj, val)
 
     def validate(self, owner, value):
@@ -2633,9 +2638,7 @@ class Container(Instance):
     def validate(self, obj, value):
         validate = super(Container, self).validate
         value = self.validate_elements(obj, validate(obj, value))
-        if not isinstance(value, self.klass):
-            value = validate(obj, value)
-        return value
+        return validate(obj, value)
 
     def validate_elements(self, obj, value):
         raise NotImplementedError()
@@ -2742,29 +2745,8 @@ class Sequence(Mutable, Container):
             self.error(obj, length, info=info)
         return value
 
-    def validate_elements(self, obj, value):
-        if not self._trait:
-            return value
-        new = []
-        for v in value:
-            try:
-                v = self._trait._validate(obj, v)
-            except TraitError as error:
-                self.error(obj, v, error)
-            else:
-                new.append(v)
-        return new
-
-    def _validate_mutation(self, change):
-        if self._trait is not None:
-            for e in change.events:
-                if e.new is not self._trait._validate(change.owner, e.new):
-                    if type(e.new).__module__ == "__builtin__":
-                        msg = "Builtin types cannot be assigned to eventful traits."
-                    else:
-                        msg = "Eventful containers don't support coercive traits."
-                    raise TraitError(msg)
-        return change
+    def _validate_mutation(self, owner, value):
+        self.validate_elements(owner, value)
 
 
 class Tuple(Collection):
@@ -2787,6 +2769,19 @@ class Set(Sequence):
             "symmetric_difference_update", "discard",
         )
     }
+
+    def validate_elements(self, obj, value):
+        if not self._trait:
+            return value
+        for original in value:
+            try:
+                new = self._trait._validate(obj, original)
+            except TraitError as error:
+                self.error(obj, original, error)
+            else:
+                if new != original:
+                    value.symmetric_difference_update({new, original})
+        return value
 
     def _before_update(self, value, call, notify):
         return value.copy()
@@ -2814,16 +2809,16 @@ class List(Sequence):
     }
 
     def validate_elements(self, obj, value):
-        value = super(List, self).validate_elements(obj, value)
         if not self._trait:
             return value
-        for i, v in enumerate(value):
+        for i, original in enumerate(value):
             try:
-                v = self._trait._validate(obj, v)
+                new = self._trait._validate(obj, original)
             except TraitError as error:
-                self.error(obj, v, error)
+                self.error(obj, original, error)
             else:
-                value[i] = v
+                if new != original:
+                    value[i] = new
         return value
 
     @staticmethod
