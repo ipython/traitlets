@@ -1058,6 +1058,22 @@ class TestInstance(TestCase):
         c = C()
         self.assertTrue(c.inst is None)
 
+    def test_typed_subclass_default(self):
+
+        class Foo(object): pass
+
+        class MyInstance(Instance):
+            # so long as we have a statically defined
+            # class we can pass an instance in the
+            # first argument just like in TraitType
+            klass = Foo
+
+        try:
+            class MyClass(HasTraits):
+                mi = MyInstance(Foo())
+        except TraitError:
+            assert False
+
     def test_bad_default(self):
         class Foo(object): pass
 
@@ -2598,7 +2614,7 @@ def test_override_default():
         a = Unicode('hard default')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2609,7 +2625,7 @@ def test_override_default_decorator():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2620,8 +2636,7 @@ def test_override_default_instance():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     c = C()
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
-

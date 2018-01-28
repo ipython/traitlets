@@ -1834,11 +1834,14 @@ class Instance(ClassBasedTraitType):
             self.default_args = None
             self.default_kwargs = None
         super(Instance, self).__init__(*args, **kwargs)
-        if Undefined not in (self.default_value, self.klass):
-            if not (self.allow_none and self.default_value is None):
-                if not isinstance(self.default_value, self.klass):
-                    if isinstance(self.default_value, self._cast_types):
-                        self.default_value = self.cast(self.default_value)
+        # validate a static default value if one was given
+        # and attempt to coerce it if that's needed.
+        default = self.default_value
+        if Undefined not in (default, self.klass):
+            if not (self.allow_none and default is None):
+                if not isinstance(default, self.klass):
+                    if self.castable(default):
+                        self.default_value = self.cast(default)
                     if not isinstance(self.default_value, self.klass):
                         self.error(None, self.default_value)
 
