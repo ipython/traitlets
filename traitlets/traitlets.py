@@ -2373,7 +2373,7 @@ class Notifier(object):
         lineage = list(self.callback.trait._lineage())
         validate = self.callback.trait._validate_mutation
         for etype, data in self._events.items():
-            change = validate(Bunch(
+            mutation = validate(Bunch(
                 owner=self.callback.owner,
                 events=list(map(Bunch, data)),
                 name=lineage[-1].name,
@@ -2381,9 +2381,9 @@ class Notifier(object):
                 value=self.value,
                 type="mutation",
             ))
-            self.callback.owner.notify_change(change)
+            self.callback.owner.notify_change(mutation)
             change.type = "nested"
-            self.callback.owner.notify_change(change)
+            self.callback.owner.notify_change(mutation)
         self._events.clear()
 
 
