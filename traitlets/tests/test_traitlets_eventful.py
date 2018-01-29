@@ -164,3 +164,61 @@ class TestEventfulList(TestEventfulBase):
         with self.event_tester("l_of_l", self.obj.l_of_l[0], 1, "mutation") as t:
             self.obj.l_of_l[0].append(1)
             t(index=0, old=Undefined, new=1)
+
+
+class TestEventfulSet(TestEventfulBase):
+
+    _s = Set(eventful=True)
+
+    def test_add(self):
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.add(1)
+            t(old=set(), new={1})
+
+    def test_update(self):
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.update([1, 2, 3])
+            t(old=set(), new={1, 2, 3})
+
+    def test_clear(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.clear()
+            t(new=set(), old={1, 2, 3})
+
+    def test_remove(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.remove(1)
+            t(new=set(), old={1})
+
+    def test_pop(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            x = self.obj.s.pop()
+            t(new=set(), old={x})
+
+    def test_discard(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.discard(1)
+            self.obj.s.discard(4)
+            t(new=set(), old={1})
+
+    def test_difference_update(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.difference_update([1, 2, 4])
+            t(new=set(), old={1, 2})
+
+    def test_intersection_update(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.intersection_update([2, 4])
+            t(new=set(), old={1, 3})
+
+    def test_symmetric_difference_update(self):
+        self.obj.s.update([1, 2, 3])
+        with self.event_tester("s", self.obj.s, 0, "mutation") as t:
+            self.obj.s.symmetric_difference_update([2, 4])
+            t(new={4}, old={2})
