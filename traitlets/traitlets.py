@@ -2873,6 +2873,7 @@ class List(Sequence):
     events = {
         'append': 'append',
         'extend': 'extend',
+        'insert': 'insert',
         'setitem': '__setitem__',
         'remove': "remove",
         'delitem': '__delitem__',
@@ -2919,6 +2920,18 @@ class List(Sequence):
         else:
             def _after(returned, notify):
                 notify("mutation", index=index, old=old, new=Undefined)
+
+    @staticmethod
+    def _before_insert(value, call, notify):
+        index = call.args[0]
+        return index, value[index:]
+
+    @staticmethod
+    def _after_insert(value, answer, notify):
+        index, old = answer.before
+        for i, x in enumerate(old):
+            notify("mutation", index=(index + i), old=old[i], new=value[index + i])
+        notify("mutation", index=len(value), old=Undefined, new=value[-1])
 
     def _after_append(self, value, answer, notify):
         notify("mutation", index=len(value) - 1, old=Undefined, new=value[-1])
