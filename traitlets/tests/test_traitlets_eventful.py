@@ -67,26 +67,38 @@ class TestEventfulBase(TestCase):
 class TestEventfulList(TestEventfulBase):
 
     _l = List(
-        eventful=True)
+        eventful=True,
+    )
     _l_of_i = List(
         Int(castable=float),
-        eventful=True)
-    _l_of_l_of_i = List(
-        List(
-            Int(castable=float),
-            eventful=True),
-        eventful=True)
+        eventful=True,
+    )
+    _l_of_l = List(
+        List(eventful=True),
+        default_value=[[]],
+        eventful=True,
+    )
 
     def test_setitem(self):
         self.obj.l.append(1)
-        with self.event_tester("l", self.obj.l, 0, "mutation") as m:
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
             self.obj.l[0] = 2
-            m(old=1, new=2, index=0)
+            t(old=1, new=2, index=0)
+
+    def test_delitem(self):
+        self.obj.l.extend([1, 2])
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
+            del self.obj.l[0]
+            t(index=0, old=1, new=2)
+            t(index=1, old=2, new=Undefined)
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
+            del self.obj.l[0]
+            t(index=0, old=2, new=Undefined)
 
     def test_append(self):
-        with self.event_tester("l", self.obj.l, 0, "mutation") as m:
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
             self.obj.l.append(1)
-            m(old=Undefined, new=1, index=0)
+            t(old=Undefined, new=1, index=0)
 
     def test_extend(self):
         new = [1, 2, 3]
@@ -94,6 +106,25 @@ class TestEventfulList(TestEventfulBase):
             self.obj.l.extend(new)
             for i, x in enumerate(new):
                 t(old=Undefined, new=x, index=i)
+
+    def test_insert(self):
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
+            self.obj.l.insert(0, 2)
+            t(index=0, old=Undefined, new=2)
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
+            self.obj.l.insert(0, 1)
+            t(index=0, old=2, new=1)
+            t(index=1, old=Undefined, new=2)
+
+    def test_remove(self):
+        self.obj.l.extend([1, 2])
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
+            self.obj.l.remove(1)
+            t(index=0, old=1, new=2)
+            t(index=1, old=2, new=Undefined)
+        with self.event_tester("l", self.obj.l, 0, "mutation") as t:
+            self.obj.l.remove(2)
+            t(index=0, old=2, new=Undefined)
 
     def test_sort(self):
         self.obj.l.extend([1, 2, 3])
@@ -116,3 +147,20 @@ class TestEventfulList(TestEventfulBase):
             self.obj.l.reverse()
             t(old=1, new=3, index=0)
             t(old=3, new=1, index=2)
+
+    def test_coercive_subtrait(self):
+        with self.event_tester("l_of_i", self.obj.l_of_i, 0, "mutation") as t:
+            self.obj.l_of_i.append(1.5)
+            t(index=0, old=Undefined, new=1.5)
+            t(index=0, old=1.5, new=1)
+
+    def test_coercive_subtrait(self):
+        with self.event_tester("l_of_i", self.obj.l_of_i, 0, "mutation") as t:
+            self.obj.l_of_i.append(1.5)
+            t(index=0, old=Undefined, new=1.5)
+            t(index=0, old=1.5, new=1)
+
+    def test_nested_eventful(self):
+        with self.event_tester("l_of_l", self.obj.l_of_l[0], 1, "mutation") as t:
+            self.obj.l_of_l[0].append(1)
+            t(index=0, old=Undefined, new=1)

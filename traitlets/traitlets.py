@@ -2766,6 +2766,8 @@ class Sequence(Mutable, Container):
         if default_value is Undefined and not is_trait(trait):
             if trait is not None or kwargs.get("allow_none", False):
                 kwargs['default_value'], trait = trait, None
+        self._trait = trait
+        super(Sequence, self).__init__(default_value=default_value, **kwargs)
 
         if inspect.isclass(trait) and issubclass(trait, TraitType):
             warn("Traits should be given as instances, not types "
@@ -2948,16 +2950,10 @@ class List(Sequence):
             notify("mutation", index=i, old=Undefined, new=value[i])
 
     def _before_remove(self, value, call, notify):
-        i = value.index(call.args[0])
-        return i, value[i]
+        index = value.index(call.args[0])
+        return index, value[index:]
 
-    def _after_remove(self, value, answer, notify):
-        index, old = answer.before
-        try:
-            new = value[index]
-        except IndexError:
-            new = Undefined
-        notify("mutation", index=index, old=old, new=new)
+    _after_remove = _after_delitem
 
     def _before_reverse(self, value, call, notify):
         return self.rearrangement(value)
