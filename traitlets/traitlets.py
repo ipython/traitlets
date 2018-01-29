@@ -3188,10 +3188,7 @@ class Dict(Mapping):
     @staticmethod
     def _before_setitem(value, call, notify):
         key = call.args[0]
-        try:
-            old = value[key]
-        except KeyError:
-            old = Undefined
+        old = value.get(key, Undefined)
         return key, old
 
     @staticmethod
@@ -3211,6 +3208,7 @@ class Dict(Mapping):
         else:
             def _after(returned, notify):
                 notify("mutation", key=key, old=old, new=Undefined)
+            return _after
 
     def _before_update(self, value, call, notify):
         if len(call.args):
@@ -3218,7 +3216,7 @@ class Dict(Mapping):
             new.update(call.kwargs)
         else:
             new = call.kwargs
-        old = {k: value[k] for k in new}
+        old = {k: value.get(k, Undefined) for k in new}
         return old
 
     def _after_update(self, value, answer, notify):
@@ -3233,10 +3231,10 @@ class Dict(Mapping):
         for k, v in answer.before.items():
             notify("mutation", key=k, old=v, new=Undefined)
 
-    def _validate_mutation(self, change):
+    def _validate_mutation(self, owner, value):
         # TODO: implement this validation to cast
         # keys and values to their appropriate types.
-        return change
+        pass
 
 
 class TCPAddress(TraitType):

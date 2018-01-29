@@ -47,7 +47,7 @@ class TestEventfulBase(TestCase):
         finally:
             self.obj.unobserve(f, name, etype)
 
-        assert len(log) == 1, "get more events than expected"
+        assert len(log) == 1, "expected 1 event, got %s instead" % len(log)
 
         logged_events = log[0].pop("events")
         test_events = event.pop("events")
@@ -170,6 +170,11 @@ class TestEventfulSet(TestEventfulBase):
 
     _s = Set(eventful=True)
 
+    _s_of_i = Set(
+        Int(castable=float),
+        eventful=True,
+    )
+
     def test_add(self):
         with self.event_tester("s", self.obj.s, 0, "mutation") as t:
             self.obj.s.add(1)
@@ -222,3 +227,52 @@ class TestEventfulSet(TestEventfulBase):
         with self.event_tester("s", self.obj.s, 0, "mutation") as t:
             self.obj.s.symmetric_difference_update([2, 4])
             t(new={4}, old={2})
+
+    def test_coercive_subtrait(self):
+        with self.event_tester("s_of_i", self.obj.s_of_i, 0, "mutation") as t:
+            self.obj.s_of_i.add(1.5)
+            t(new={1.5}, old=set())
+            t(new={1}, old={1.5})
+
+
+class TestEventfulDict(TestEventfulBase):
+
+    _d = Dict(eventful=True)
+
+    def test_setitem(self):
+        with self.event_tester("d", self.obj.d, 0, "mutation") as t:
+            self.obj.d["a"] = 1
+            t(key="a", old=Undefined, new=1)
+
+    def test_setdefault(self):
+        with self.event_tester("d", self.obj.d, 0, "mutation") as t:
+            self.obj.d.setdefault("a", 1)
+            self.obj.d.setdefault("a", 2)
+            t(key="a", old=Undefined, new=1)
+
+    def test_delitem(self):
+        self.obj.d["a"] = 1
+        with self.event_tester("d", self.obj.d, 0, "mutation") as t:
+            del self.obj.d["a"]
+            t(key="a", old=1, new=Undefined)
+
+    def test_pop(self):
+        self.obj.d["a"] = 1
+        with self.event_tester("d", self.obj.d, 0, "mutation") as t:
+            self.obj.d.pop("a")
+            self.obj.d.pop("a", None)
+            t(key="a", old=1, new=Undefined)
+
+    def test_update(self):
+        self.obj.d["b"] = 0
+        with self.event_tester("d", self.obj.d, 0, "mutation") as t:
+            self.obj.d.update(a=1, b=2)
+            t(key="a", old=Undefined, new=1)
+            t(key="b", old=0, new=2)
+
+    def test_clear(self):
+        self.obj.d.update(a=1, b=2)
+        with self.event_tester("d", self.obj.d, 0, "mutation") as t:
+            self.obj.d.clear()
+            t(key="a", old=1, new=Undefined)
+            t(key="b", old=2, new=Undefined)
