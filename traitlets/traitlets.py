@@ -2652,26 +2652,16 @@ class Mutable(Instance):
                     getattr(self, "_after_" + name, None),
                 )
 
-    def set(self, obj, val):
-        """Mutable builtins (e.g. list, dict, set) are dissalowed for eventful traits.
-
-        The events of this trait will also be removed from a previous value
-        exists if it is eventful.
-        """
-        if self.eventful and type(val) in MutableBuiltins:
-            raise TraitError(
-                "%r is a mutable builtin type, and cannot "
-                "be assigned to eventful traits." % val)
-        else:
-            if self.eventful:
-                self.unregister_events(getattr(obj, self.name))
-            return super(Mutable, self).set(obj, val)
-
     def validate(self, owner, value):
         """Registers the events this trait defines if it is eventful.
+
+        Also unregisters events from an old value if it existed.
         """
+        if self.name in owner._trait_values:
+            self._test_mutable_builtin(value)
+        old = owner._trait_values.get(self.name, Undefined)
         value = super(Mutable, self).validate(owner, value)
-        if self.eventful and value is not None:
+        if self.eventful and value is not None and value is not old:
             if not spectate.watchable(value):
                 cls = type(value)
                 methods = set(e[0] for e in self.iter_events())
@@ -2681,12 +2671,19 @@ class Mutable(Instance):
                 except TypeError:
                     value = wtype(value)
             self.register_events(owner, value)
+            self.unregister_events(old)
         return value
 
     def _validate_mutation(self, change):
         """Called after an eventful notification is sent.
         """
         return change
+
+    def _test_mutable_builtin(self, value):
+        if self.eventful and type(value) in MutableBuiltins:
+            raise TraitError(
+                "%r is a mutable builtin type, and cannot "
+                "be assigned to eventful traits." % value)
 
 
 class Container(Instance):

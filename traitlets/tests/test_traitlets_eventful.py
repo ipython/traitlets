@@ -66,8 +66,11 @@ class TestEventfulBase(TestCase):
 
 class TestEventfulList(TestEventfulBase):
 
-    _l = List(eventful=True)
-    _l_of_i = List(Int(castable=float), eventful=True)
+    _l = List(
+        eventful=True)
+    _l_of_i = List(
+        Int(castable=float),
+        eventful=True)
     _l_of_l_of_i = List(
         List(
             Int(castable=float),
