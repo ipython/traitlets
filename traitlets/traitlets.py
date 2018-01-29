@@ -2766,8 +2766,10 @@ class Sequence(Mutable, Container):
         if default_value is Undefined and not is_trait(trait):
             if trait is not None or kwargs.get("allow_none", False):
                 kwargs['default_value'], trait = trait, None
+        else:
+            kwargs['default_value'] = default_value
         self._trait = trait
-        super(Sequence, self).__init__(default_value=default_value, **kwargs)
+        super(Sequence, self).__init__(**kwargs)
 
         if inspect.isclass(trait) and issubclass(trait, TraitType):
             warn("Traits should be given as instances, not types "
