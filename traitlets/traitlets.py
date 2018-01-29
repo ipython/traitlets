@@ -2698,7 +2698,7 @@ class Container(Instance):
         return validate(obj, value)
 
     def validate_elements(self, obj, value):
-        raise NotImplementedError()
+        return value
 
 
 class Collection(Container):
@@ -2805,6 +2805,20 @@ class Sequence(Mutable, Container):
 
     def _validate_mutation(self, owner, value):
         self.validate_elements(owner, value)
+
+    def validate_elements(self, obj, value):
+        if not self._trait:
+            return value
+        for original in value:
+            try:
+                new = self._trait._validate(obj, original)
+            except TraitError as error:
+                self.error(obj, original, error)
+            else:
+                if original is not new:
+                    raise TraitError("The base Sequence class "
+                        "does not support element coercion")
+        return value
 
 
 class Tuple(Collection):

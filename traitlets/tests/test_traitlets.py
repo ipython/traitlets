@@ -1537,26 +1537,11 @@ class TestContainer(TestCase):
         assert mht.mc == [1, -4, 7]
 
 
-class CollectionType(object):
-
-    def __init__(self, x):
-        self.x = tuple(x)
-
-    def __len__(self):
-        return len(self.x)
-
-    def __iter__(self):
-        return iter(self.x)
-
-    def __eq__(self, other):
-        return self.x == other
-
-
 class CollectionTrait(HasTraits):
 
     value = Collection(
         Int(allow_none=True),
-        klass=CollectionType,
+        klass=tuple,
         default_value=(1,),
         castable=(tuple, list))
 
@@ -1580,13 +1565,17 @@ class TestCollectionTrait(TraitTestBase):
         t = Collection(Int(), CBytes(), default_value=(1,5), klass=tuple)
 
 
-class ListTrait(HasTraits):
+class SequenceTrait(HasTraits):
 
-    value = List(Int())
+    value = Sequence(
+        Int(),
+        klass=list,
+        castable=tuple)
 
-class TestList(TraitTestBase):
 
-    obj = ListTrait()
+class TestSequence(TraitTestBase):
+
+    obj = SequenceTrait()
 
     _default_value = []
     _good_values = [[], [1], list(range(10)), (1,2)]
@@ -1596,6 +1585,54 @@ class TestList(TraitTestBase):
         if value is not None:
             value = list(value)
         return value
+
+    def test_retained_reference(self):
+        l = [1, 2, 3]
+        self.obj.value = l
+        assert self.obj.value is l
+
+
+class LenSequenceTrait(HasTraits):
+
+    value = Sequence(
+        Int(castable=float),
+        [0], minlen=1, maxlen=2,
+        klass=list, castable=tuple)
+
+
+class TestLenSequence(TraitTestBase):
+
+    obj = LenSequenceTrait()
+
+    _default_value = [0]
+    _good_values = [[1], [1,2], (1,2)]
+    _bad_values = [10, [1,'a'], 'a', [], list(range(3))]
+
+    def coerce(self, value):
+        if value is not None:
+            value = list(value)
+        return value
+
+
+class ListTrait(HasTraits):
+
+    value = List(Int())
+
+
+class TestList(TestSequence):
+
+    obj = ListTrait()
+
+
+class LenListTrait(HasTraits):
+
+    value = List(Int(), [0], minlen=1, maxlen=2)
+
+
+class TestLenList(TestLenSequence):
+
+    obj = LenListTrait()
+
 
 class Foo(object):
     pass
@@ -1641,23 +1678,6 @@ class TestUnionListTrait(TraitTestBase):
     _good_values = [[True, 1], [False, True]]
     _bad_values = [[1, 'True'], False]
 
-
-class LenListTrait(HasTraits):
-
-    value = List(Int(), [0], minlen=1, maxlen=2)
-
-class TestLenList(TraitTestBase):
-
-    obj = LenListTrait()
-
-    _default_value = [0]
-    _good_values = [[1], [1,2], (1,2)]
-    _bad_values = [10, [1,'a'], 'a', [], list(range(3))]
-
-    def coerce(self, value):
-        if value is not None:
-            value = list(value)
-        return value
 
 class TupleTrait(HasTraits):
 
