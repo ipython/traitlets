@@ -74,6 +74,12 @@ class TestEventfulList(TestEventfulBase):
             eventful=True),
         eventful=True)
 
+    def test_setitem(self):
+        self.obj.l.append(1)
+        with self.event_tester("l", self.obj.l, 0, "mutation") as m:
+            self.obj.l[0] = 2
+            m(old=1, new=2, index=0)
+
     def test_append(self):
         with self.event_tester("l", self.obj.l, 0, "mutation") as m:
             self.obj.l.append(1)

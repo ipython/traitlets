@@ -2913,13 +2913,17 @@ class List(Sequence):
     @staticmethod
     def _before_delitem(value, call, notify):
         index = call.args[0]
-        try:
-            old = value[index]
-        except KeyError:
-            pass
-        else:
-            def _after(returned, notify):
-                notify("mutation", index=index, old=old, new=Undefined)
+        return index, value[index:]
+
+    @staticmethod
+    def _after_delitem(value, answer, notify):
+        index, old = answer.before
+        for i, x in enumerate(old):
+            try:
+                new = value[index + i]
+            except IndexError:
+                new = Undefined
+            notify("mutation", index=(i + index), old=x, new=new)
 
     @staticmethod
     def _before_insert(value, call, notify):
@@ -2929,9 +2933,12 @@ class List(Sequence):
     @staticmethod
     def _after_insert(value, answer, notify):
         index, old = answer.before
-        for i, x in enumerate(old):
-            notify("mutation", index=(index + i), old=old[i], new=value[index + i])
-        notify("mutation", index=len(value), old=Undefined, new=value[-1])
+        for i in range(index, len(value)):
+            try:
+                o = old[i]
+            except IndexError:
+                o = Undefined
+            notify("mutation", index=i, old=o, new=value[i])
 
     def _after_append(self, value, answer, notify):
         notify("mutation", index=len(value) - 1, old=Undefined, new=value[-1])
