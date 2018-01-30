@@ -69,7 +69,7 @@ def describe(article, value, name=None, verbose=False, capital=False):
             if article is not None:
                 final = add_article(result, True, capital)
             else:
-                final = result.strip()
+                final = result
         else:
             tick_wrap = False
             if inspect.isclass(value):

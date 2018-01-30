@@ -609,7 +609,6 @@ class TraitType(BaseDescriptor):
             self.set(obj, value)
 
     def _validate(self, obj, value):
-        original = value
         if value is None and self.allow_none:
             return value
         if hasattr(self, 'validate'):
@@ -652,8 +651,6 @@ class TraitType(BaseDescriptor):
         info: str (default: None)
             The reason value caused an error.
         """
-        if error is None:
-            error = sys.exc_info()[1]
         if error is not None:
             if isinstance(error, TraitError):
                 raise
@@ -1912,6 +1909,8 @@ class Instance(ClassBasedTraitType):
             a = self.default_args or ()
             kw = self.default_kwargs or {}
             return self.klass(*a, **kw)
+        elif not self.allow_none:
+            return Undefined
 
     def default_value_repr(self):
         if self.default_value is not Undefined:
@@ -2452,10 +2451,7 @@ class _Callback(object):
             return other is self
 
     def __repr__(self):
-        if self.index is not None:
-            return "%s(%s, %s)" % (type(self).__name__, self.index, self.function)
-        else:
-            return "%s(%s)" % (type(self).__name__, self.function)
+        return "%s(%s)" % (type(self).__name__, self.function)
 
     @property
     def owner(self):
@@ -2599,7 +2595,7 @@ class Mutable(Instance):
 
     def default(self, obj=None):
         if self.default_value is not Undefined:
-            return self.klass(self.default_value)
+            return copy.copy(self.default_value)
         elif hasattr(self, "make_dynamic_default"):
             return self.make_dynamic_default()
         else:
@@ -2652,14 +2648,21 @@ class Mutable(Instance):
                     getattr(self, "_after_" + name, None),
                 )
 
+    def set(self, obj, val):
+        if self.eventful:
+            self._test_mutable_builtin(val)
+        super(Mutable, self).set(obj, val)
+
     def validate(self, owner, value):
         """Registers the events this trait defines if it is eventful.
 
         Also unregisters events from an old value if it existed.
         """
-        if self.name in owner._trait_values:
+        if owner.trait_has_value(self.name):
             self._test_mutable_builtin(value)
-        old = owner._trait_values.get(self.name, Undefined)
+            old = getattr(owner, self.name)
+        else:
+            old = Undefined
         value = super(Mutable, self).validate(owner, value)
         if self.eventful and value is not None and value is not old:
             if not spectate.watchable(value):
@@ -2674,10 +2677,10 @@ class Mutable(Instance):
             self.unregister_events(old)
         return value
 
-    def _validate_mutation(self, change):
+    def _validate_mutation(self, owner, value):
         """Called after an eventful notification is sent.
         """
-        return change
+        pass
 
     def _test_mutable_builtin(self, value):
         if self.eventful and type(value) in MutableBuiltins:

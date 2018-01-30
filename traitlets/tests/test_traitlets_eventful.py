@@ -1,3 +1,4 @@
+import spectate
 from unittest import TestCase
 from traitlets import *
 from traitlets.utils.bunch import Bunch
@@ -62,6 +63,171 @@ class TestEventfulBase(TestCase):
                 assert False, e
         if logged_events:
             assert False, "extra events occured - %r" % logged_events
+
+
+class TestMutable(TestEventfulBase):
+
+    def test_eventful_flag(self):
+        assert Mutable(list, eventful=True).eventful is True
+        assert Mutable(list).eventful is False
+
+    def test_copy_default(self):
+        class MyClass(HasTraits):
+            l1 = Mutable(list, default_value=[])
+            l2 = Mutable(list, default_value=[])
+        mc = MyClass()
+        assert mc.l1 == []
+        assert mc.l2 == []
+        assert mc.l1 is not mc.l2
+
+    def test_iter_events(self):
+
+        class MyMutableTrait(Mutable):
+
+            events = {
+                "nickname_1": "method_1",
+                "nickname_2": ["method_1", "method_2"],
+            }
+
+            def _before_nickname_1(self, value, call, notify): pass
+            def _before_nickname_2(self, value, call, notify): pass
+            def _after_nickname_2(self, value, call, notify): pass
+
+        mmt = MyMutableTrait(object)
+
+        assert set(mmt.iter_events()) == {
+            ("method_1", mmt._before_nickname_1, None),
+            ("method_1", mmt._before_nickname_2, mmt._after_nickname_2),
+            ("method_2", mmt._before_nickname_2, mmt._after_nickname_2),
+        }
+
+    def test_register_events(self):
+
+        class EventfulElements(Mutable):
+
+            events = {
+                "setitem": "__setitem__",
+                "delitem": "__delitem__",
+            }
+
+            def _before_setitem(self, value, call, notify): pass
+            def _after_setitem(self, value, call, notify): pass
+            def _before_delitem(self, value, call, notify): pass
+            def _after_delitem(self, value, call, notify): pass
+
+        class MyClass(HasTraits):
+            l = EventfulElements(list, eventful=True, default_value=[])
+
+        mc = MyClass()
+        spectator = spectate.watcher(mc.l)
+        spectator._callback_registry["__setitem__"] == [
+            (MyClass.l._before_setitem, MyClass.l._after_setitem)
+        ]
+        spectator._callback_registry["__delitem__"] == [
+            (MyClass.l._before_delitem, MyClass.l._after_delitem)
+        ]
+
+    def test_unregister_events(self):
+        class my_list(list): pass
+        class EventfulElements(Mutable):
+
+            events = {
+                "setitem": "__setitem__",
+                "delitem": "__delitem__",
+            }
+
+            def _before_setitem(self, value, call, notify): pass
+            def _after_setitem(self, value, call, notify): pass
+            def _before_delitem(self, value, call, notify): pass
+            def _after_delitem(self, value, call, notify): pass
+
+        class MyClass(HasTraits):
+            l = EventfulElements(my_list,
+                eventful=True, castable=list,
+                default_value=[])
+
+        mc = MyClass()
+        old = mc.l
+        mc.l = my_list()
+        assert not spectate.watcher(old)._callback_registry
+
+    def test_no_eventful_setattr_for_mutable_builtins(self):
+        class MyClass(HasTraits):
+            l = Mutable(list, eventful=True, default_value=[])
+        with self.assertRaises(TraitError):
+            MyClass().l = []
+
+    def test_notify(self):
+
+        validated = []
+
+        class EventfulElements(Mutable):
+
+            events = {
+                "append": "append",
+            }
+
+            def _before_append(self, value, call, notify):
+                notify("before", info=0)
+                notify("before", info=1)
+
+            def _after_append(self, value, answer, notify):
+                notify("after", info=0)
+
+            def _validate_mutation(self, owner, value):
+                validated.append(True)
+
+        before = []
+        after = []
+
+        class MyClass(HasTraits):
+            l = EventfulElements(list, eventful=True, default_value=[])
+
+            @observe("l", type="before")
+            def _before(self, change):
+                change.value = change.value[:]
+                before.append(change)
+
+            @observe("l", type="after")
+            def _after(self, change):
+                change.value = change.value[:]
+                after.append(change)
+
+        mc = MyClass()
+        mc.l.append(1)
+
+        assert validated
+        assert len(before) == 1
+        assert len(after) == 1
+
+        before = before[0]
+        after = after[0]
+
+        assert len(before.events) == 2
+        assert len(after.events) == 1
+
+        assert before.events[0] == {"info": 0}
+        assert before.events[1] == {"info": 1}
+        assert after.events[0] == {"info": 0}
+
+        del before["events"]
+        del after["events"]
+
+        assert before == dict(
+            name="l",
+            value=[],
+            depth=0,
+            owner=mc,
+            type="before",
+        )
+
+        assert after == dict(
+            name="l",
+            value=[1],
+            depth=0,
+            owner=mc,
+            type="after",
+        )
 
 
 class TestEventfulList(TestEventfulBase):
