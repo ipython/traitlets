@@ -49,6 +49,7 @@ import sys
 import types
 import copy
 import enum
+import itertools
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -2418,7 +2419,10 @@ class _Notifier(object):
 
 
 class _Callback(object):
-    """A wrapper for the callbacks of an :class:`Eventful` subclass."""
+    """A wrapper for the callbacks of a :class:`Mutable` subclass.
+
+    This object will not be seen by the user unless they disect a value's spectator.
+    """
 
     notify = False
 
@@ -3217,7 +3221,11 @@ class Dict(Mapping):
 
     def _before_update(self, value, call, notify):
         if len(call.args):
-            new = call.args[0]
+            args = call.args[0]
+            if inspect.isgenerator(arg):
+                # copy generator so it doesn't get exhausted
+                arg = itertools.tee(arg)[1]
+            new = dict(arg)
             new.update(call.kwargs)
         else:
             new = call.kwargs
