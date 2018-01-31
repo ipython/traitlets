@@ -50,6 +50,9 @@ import types
 import copy
 import enum
 import itertools
+import spectate
+from weakref import ref
+from collections import defaultdict
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -1855,9 +1858,14 @@ class Instance(ClassBasedTraitType):
             self.error(obj, value)
 
     def cast(self, value):
+        """Return a value that will pass validation.
+
+        This is only triggered if the value in question is :meth:`castable`.
+        """
         return self.klass(value)
 
     def castable(self, value):
+        """Returns a boolean indicating whether or not a value can be cast."""
         return isinstance(value, self._cast_types)
 
     def cast_error(self, value, error=None):
@@ -2046,17 +2054,18 @@ class Any(TraitType):
     info_text = 'any value'
 
 
-class NumberBase(Instance):
+class Bounded(Instance):
+    """A base trait for values with min and max boundaries."""
 
     def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', None)
         self.max = kwargs.pop('max', None)
-        super(NumberBase, self).__init__(
+        super(Bounded, self).__init__(
             default_value=default_value,
             allow_none=allow_none, **kwargs)
 
     def validate(self, obj, value):
-        value = super(NumberBase, self).validate(obj, value)
+        value = super(Bounded, self).validate(obj, value)
         return self._validate_bounds(obj, value)
 
     def _validate_bounds(self, obj, value):
@@ -2079,7 +2088,7 @@ class NumberBase(Instance):
         return value
 
 
-class Int(NumberBase):
+class Int(Bounded):
     """An int trait."""
 
     klass = int
@@ -2092,7 +2101,7 @@ class CInt(Int):
 
 
 if six.PY2:
-    class Long(NumberBase):
+    class Long(Bounded):
         """A long integer trait."""
 
         klass = long
@@ -2105,7 +2114,7 @@ if six.PY2:
         _cast_types = object
 
 
-    class Integer(NumberBase):
+    class Integer(Bounded):
         """An integer trait.
         Longs that are unnecessary (<= sys.maxint) are cast to ints."""
 
@@ -2132,7 +2141,7 @@ else:
     Integer = Int
 
 
-class Float(NumberBase):
+class Float(Bounded):
     """A float trait."""
 
     default_value = 0.0
@@ -2145,7 +2154,7 @@ class CFloat(Float):
     _cast_types = object
 
 
-class Complex(NumberBase):
+class Complex(Bounded):
     """A trait for complex numbers."""
 
     klass = complex
@@ -2358,13 +2367,6 @@ class FuzzyEnum(Enum):
 
     def info_rst(self):
         return self._info(as_rst=True)
-
-
-import sys
-import types
-import spectate
-from weakref import ref
-from collections import defaultdict
 
 
 class _Notifier(object):
