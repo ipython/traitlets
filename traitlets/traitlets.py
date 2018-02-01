@@ -443,7 +443,7 @@ class BaseDescriptor(object):
                 ["the " + type(self).__name__] +
                 [describe("a", t) for t in lineage[1:]]
             )
-            class_name = describe(None, self.this_class, verbose=True)
+            class_name = describe(None, self.this_class)
             info += " at %s.%s" % (class_name, absolute_name)
         else:
             info = super(BaseDescriptor, self).__str__()
