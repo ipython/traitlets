@@ -857,6 +857,24 @@ class TestHasTraits(TestCase):
         # should raise TypeError if no positional arg given
         self.assertRaises(TypeError, A)
 
+    def test_clear(self):
+        class A(HasTraits):
+            i = Int().tag(key="this")
+            j = Int().tag(key="this")
+            k = Int().tag(key="that")
+
+        a = A(i=1, j=2, k=3)
+        a.clear()
+        assert a.i == 0
+        assert a.j == 0
+        assert a.k == 0
+
+        a = A(i=1, j=2, k=3)
+        a.clear(key="this")
+        assert a.i == 0
+        assert a.j == 0
+        assert a.k == 3
+
 #-----------------------------------------------------------------------------
 # Tests for specific trait types
 #-----------------------------------------------------------------------------
@@ -2598,7 +2616,7 @@ def test_override_default():
         a = Unicode('hard default')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2609,7 +2627,7 @@ def test_override_default_decorator():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2620,8 +2638,7 @@ def test_override_default_instance():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     c = C()
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
-
