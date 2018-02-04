@@ -1644,14 +1644,18 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                         events[k] = v
         return events
 
-    def clear(self, **metadata):
+    def clear(self, *names, **metadata):
         """Remove the values of traits with certain metadata.
 
         If not metadata is given, then all trait values are cleared.
         """
-        for name in self.traits(**metadata):
+        if not metadata and not names:
+            names = self.trait_names(**metadata) + list(names)
+        elif not names and metadata:
+            names = self.trait_names(**metadata)
+        for n in names:
             try:
-                del self._trait_values[name]
+                del self._trait_values[n]
             except KeyError:
                 pass
 

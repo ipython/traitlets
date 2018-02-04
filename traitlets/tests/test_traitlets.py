@@ -875,6 +875,12 @@ class TestHasTraits(TestCase):
         assert a.j == 0
         assert a.k == 3
 
+        a = A(i=1, j=2, k=3)
+        a.clear("i", "j")
+        assert a.i == 0
+        assert a.j == 0
+        assert a.k == 3
+
 #-----------------------------------------------------------------------------
 # Tests for specific trait types
 #-----------------------------------------------------------------------------
