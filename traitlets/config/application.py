@@ -132,8 +132,15 @@ class Application(SingletonConfigurable):
     keyvalue_description = Unicode(keyvalue_description)
     subcommand_description = Unicode(subcommand_description)
 
+    #: .. deprecated:: 5.0.0
+    #:     Replaced by `supported_cfg_loaders` ordered-map.
     python_config_loader_class = PyFileConfigLoader
     json_config_loader_class = JSONFileConfigLoader
+
+    supported_cfg_loaders = OrderedDict([
+        ('.py', PyFileConfigLoader),
+        ('.json', JSONFileConfigLoader)])
+
 
     # The usage and example string that goes at the end of the help string.
     examples = Unicode()
@@ -705,34 +712,17 @@ class Application(SingletonConfigurable):
         self.extra_args = loader.extra_args
 
     @classmethod
-    def _make_loaders(cls, basefilename, path=None, **kw):
-        """
-        Builds the list of config-loaders to try.
-
-        :param str basefilename:
-            The config filename without extension (`.py` or `.json`).
-        :param path:
-            The dirpath to search for the config file on, or a sequence of
-            paths to try in order.
-        :type path: str, list, tuple
-        :param kw:
-            Other params for :class:`FileConfigLoader` such as `log`.
-        :return:
-            a list, currently `python-load, json-loader].
-        """
-        pyloader = cls.python_config_loader_class(basefilename+'.py',
-                                                  path=path, **kw)
-        jsonloader = cls.json_config_loader_class(basefilename+'.json',
-                                                  path=path, **kw)
-
-        return [pyloader, jsonloader]
-
-    @classmethod
     def _load_config_files(cls, basefilename, path=None, log=None, raise_config_file_errors=False):
         """Load config files (py,json) by filename and path.
 
         yield each config object in turn.
         """
+
+        def new_loader(name, path):
+            for ext, loader in cls.supported_cfg_loaders.items():
+                if name.endswith(ext):
+                    return loader(name, path, log=log)
+            raise AssertionError("Unknown file-extension in config-file %r!" % name)
 
         if not isinstance(path, list):
             path = [path]
@@ -740,11 +730,19 @@ class Application(SingletonConfigurable):
             # path list is in descending priority order, so load files backwards:
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
-            loaders = cls._make_loaders(basefilename, path=path, log=log)
+            loaders = [new_loader(basefilename + ext, path=path)
+                       for ext in cls.supported_cfg_loaders]
+            # load conf.d/config files in lorder
+            conf_d = os.path.join(path, basefilename + '.d')
+            if os.path.isdir(conf_d):
+                supported_cfg_extensions = tuple(cls.supported_cfg_loaders)
+                for filename in sorted(os.listdir(conf_d)):
+                    if filename.endswith(supported_cfg_extensions):
+                        loaders.append(new_loader(filename, path=conf_d))
+            config = None
             loaded = []
             filenames = []
             for loader in loaders:
-                config = None
                 try:
                     config = loader.load_config()
                 except ConfigFileNotFound:
