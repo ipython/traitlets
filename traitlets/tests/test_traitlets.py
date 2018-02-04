@@ -861,7 +861,7 @@ class TestHasTraits(TestCase):
         class A(HasTraits):
             i = Int().tag(key="this")
             j = Int().tag(key="this")
-            k = Int().tag(key="that")
+            k = Int()
 
         a = A(i=1, j=2, k=3)
         a.clear()
@@ -880,6 +880,12 @@ class TestHasTraits(TestCase):
         assert a.i == 0
         assert a.j == 0
         assert a.k == 3
+
+        a = A(i=1, j=2, k=3)
+        a.clear("k", key="this")
+        assert a.i == 0
+        assert a.j == 0
+        assert a.k == 0
 
 #-----------------------------------------------------------------------------
 # Tests for specific trait types

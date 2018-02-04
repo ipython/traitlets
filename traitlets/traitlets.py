@@ -1647,12 +1647,12 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
     def clear(self, *names, **metadata):
         """Remove the values of listed traits or those with certain metadata.
 
-        If no metadata or names are given, then all trait values are cleared.
+        If no metadata and no names are given, then all trait values are cleared.
         """
-        if not metadata and not names:
+        if metadata:
             names = self.trait_names(**metadata) + list(names)
-        elif not names and metadata:
-            names = self.trait_names(**metadata)
+        elif not names:
+            names = self.trait_names()
         for n in names:
             try:
                 del self._trait_values[n]
