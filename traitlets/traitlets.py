@@ -1564,7 +1564,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         return list(self.traits(**metadata))
 
     def traits(self, **metadata):
-        """Get a ``dict`` of all the traits of this class.  The dictionary
+        """Get a ``dict`` of all the traits of this class. The dictionary
         is keyed on the name and the values are the TraitType objects.
 
         The TraitTypes returned don't know anything about the values
@@ -1643,6 +1643,17 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                     if cls.trait_names(**v.tags):
                         events[k] = v
         return events
+
+    def clear(self, **metadata):
+        """Remove the values of traits with certain metadata.
+
+        If not metadata is given, then all trait values are cleared.
+        """
+        for name in self.traits(**metadata):
+            try:
+                del self._trait_values[name]
+            except KeyError:
+                pass
 
 #-----------------------------------------------------------------------------
 # Actual TraitTypes implementations/subclasses
