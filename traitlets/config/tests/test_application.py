@@ -264,6 +264,20 @@ class TestApplication(TestCase):
             assert app.config.TestApp.value == 'cli'
             assert app.value == 'cli'
 
+    def test_modify_config_loaders(self):
+        class TestApp(Application):
+            supported_cfg_loaders = {'.myext': Application.json_config_loader_class}
+            config_file_loaded = Bool().tag(config=True)
+
+        name = 'config.myext'
+        app = TestApp()
+        with TemporaryDirectory() as td:
+            config_file = pjoin(td, name)
+            with open(config_file, 'w') as f:
+                f.write('{"TestApp": {"config_file_loaded": true}}')
+            app.load_config_file(name, path=[td])
+            assert app.config_file_loaded
+
     def test_flags(self):
         app = MyApp()
         app.parse_command_line(["--disable"])
@@ -418,7 +432,7 @@ class TestApplication(TestCase):
     def test_generate_config_file_classes_to_include(self):
         class NotInConfig(HasTraits):
             from_hidden = Unicode('x', help="""From hidden class
-            
+
             Details about from_hidden.
             """).tag(config=True)
 
@@ -611,7 +625,7 @@ def test_show_config(capsys):
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
     app.start()
     out, err = capsys.readouterr()
@@ -624,7 +638,7 @@ def test_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
     app.start()
     out, err = capsys.readouterr()
