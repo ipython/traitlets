@@ -1644,7 +1644,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                         events[k] = v
         return events
 
-    def clear(self, *names, **metadata):
+    def clear_traits(self, *names, **metadata):
         """Remove the values of listed traits or those with certain metadata.
 
         If no metadata and no names are given, then all trait values are cleared.
