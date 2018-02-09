@@ -1,18 +1,30 @@
 language: python
 python:
-    - "nightly"
-    - 3.6
-    - 3.5
-    - 3.4
-    - 2.7
+  - "nightly"
+  - 3.6
+  - 3.5
+  - 3.4
+  - 2.7
 sudo: false
 install:
-    - pip install --upgrade pip && pip install .
-    - pip install traitlets[test] pytest-cov codecov pytest-warnings --upgrade
+  - pip install --upgrade pip
+  - pip install .
+  - pip install --pre --upgrade traitlets[test] pytest-cov codecov pytest-warnings
+  - test -z ${TEST_DEPS} || pip install --upgrade ${TEST_DEPS}
+
 script:
-    - py.test --cov traitlets -v traitlets
+  - ${TEST:-py.test --cov traitlets -v traitlets}
 after_success:
-    - codecov
+  - codecov
 matrix:
-    allow_failures:
-        - python: "nightly"
+  allow_failures:
+    - python: "nightly"
+  include:
+    - python: 3.6
+      env:
+        - TEST_DEPS=ipython[test]
+        - TEST=iptest
+    - python: 3.6
+      env:
+        - TEST_DEPS=nbconvert[test]
+        - TEST="py.test --pyargs nbconvert"
