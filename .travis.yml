@@ -28,3 +28,7 @@ matrix:
       env:
         - TEST_DEPS=nbconvert[test]
         - TEST="py.test --pyargs nbconvert"
+    - python: 3.6
+      env:
+        - TEST_DEPS=notebook[test]
+        - TEST="nosetests notebook"
