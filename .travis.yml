@@ -36,3 +36,7 @@ matrix:
       env:
         - TEST_DEPS=ipywidgets[test]
         - TEST="nosetests ipywidgets"
+    - python: 3.6
+      env:
+        - TEST_DEPS=traittypes[test]
+        - TEST="nosetests traittypes"
