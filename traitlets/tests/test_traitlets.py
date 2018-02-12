@@ -864,7 +864,7 @@ class TestHasTraits(TestCase):
             k = Int()
 
         a = A(i=1, j=2, k=3)
-        a.trait_clear()
+        a.clear_traits()
         assert a.i == 0
         assert a.j == 0
         assert a.k == 0
