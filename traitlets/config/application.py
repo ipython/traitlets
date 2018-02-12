@@ -722,7 +722,7 @@ class Application(SingletonConfigurable):
             for ext, loader in cls.supported_cfg_loaders.items():
                 if name.endswith(ext):
                     return loader(name, path, log=log)
-            raise AssertionError("Unknown file-extension in config-file %r!" % name)
+            raise ValueError("Unknown file-extension in config-file %r!" % name)
 
         if not isinstance(path, list):
             path = [path]
