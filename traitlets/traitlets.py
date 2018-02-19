@@ -439,12 +439,8 @@ class BaseDescriptor(object):
         if self.this_class is not None:
             lineage = list(self._lineage())
             absolute_name = lineage[-1].name
-            info = " of ".join(
-                ["the " + type(self).__name__] +
-                [describe("a", t) for t in lineage[1:]]
-            )
-            class_name = describe(None, self.this_class)
-            info += " at %s.%s" % (class_name, absolute_name)
+            info = " ".join(map(lambda t: describe("the", t, "of"), lineage))
+            info += " %s.%s" % (self.this_class.__name__, absolute_name)
         else:
             info = super(BaseDescriptor, self).__str__()
         return info
@@ -528,6 +524,7 @@ class TraitType(BaseDescriptor):
 
     def get_default_value(self):
         """DEPRECATED: Retrieve the static default value for this trait.
+
         Use self.default_value instead
         """
         warn("get_default_value is deprecated in traitlets 4.0: use the .default_value attribute", DeprecationWarning,
@@ -644,6 +641,7 @@ class TraitType(BaseDescriptor):
 
     def error(self, obj, value, error=None, info=None):
         """Raise a TraitError
+
         Parameters
         ----------
         obj: HasTraits or None
@@ -912,7 +910,7 @@ def validate(*names):
 
 
 def default(name):
-    """ A decorator which assigns a dynamic default for a Trait on a HasTraits object.
+    """A decorator which assigns a dynamic default for a Trait on a HasTraits object.
 
     Parameters
     ----------
@@ -1745,7 +1743,7 @@ class Type(ClassBasedTraitType):
             klass = self.klass.__module__ + '.' + self.klass.__name__
         result = "a subclass of '%s'" % klass
         if self.allow_none:
-            return result + ' or None'
+            return result + ' (or None)'
         return result
 
     def instance_init(self, obj):
@@ -1881,11 +1879,14 @@ class Instance(ClassBasedTraitType):
         if self.info_text:
             return self.info_text
         result = describe("a", self.klass)
-        if self.allow_none:
-            result += " or None"
         cast_info = self._cast_info()
         if cast_info is not None:
-            result += " (but could cast %s)" % cast_info
+            if self.allow_none:
+                result += " (or None, or %s)" % cast_info
+            else:
+                result += " (or %s)" % cast_info
+        elif self.allow_none:
+            result += " (or None)"
         return result
 
     def _cast_info(self):
