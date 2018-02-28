@@ -1845,15 +1845,16 @@ class Instance(ClassBasedTraitType):
                         self.error(None, self.default_value)
 
     def validate(self, obj, value):
-        if self.castable(value):
+        if isinstance(value, self.klass):
+            return value
+        elif self.castable(value):
             try:
                 value = self.cast(value)
             except:
-                raise self.cast_error(value)
-        if isinstance(value, self.klass):
-            return value
-        else:
-            self.error(obj, value)
+                self.cast_error(value)
+            if isinstance(value, self.klass):
+                return value
+        self.error(obj, value)
 
     def cast(self, value):
         """Return a value that will pass validation.
