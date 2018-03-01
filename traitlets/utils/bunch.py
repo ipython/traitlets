@@ -22,4 +22,3 @@ class Bunch(dict):
         names = dir({})
         names.extend(self.keys())
         return names
-

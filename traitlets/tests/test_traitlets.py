@@ -22,7 +22,8 @@ from traitlets import (
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    observe_compat, BaseDescriptor, HasDescriptors, Container, Collection,
+    Sequence, Mapping,
 )
 
 import six
@@ -1058,6 +1059,22 @@ class TestInstance(TestCase):
         c = C()
         self.assertTrue(c.inst is None)
 
+    def test_typed_subclass_default(self):
+
+        class Foo(object): pass
+
+        class MyInstance(Instance):
+            # so long as we have a statically defined
+            # class we can pass an instance in the
+            # first argument just like in TraitType
+            klass = Foo
+
+        try:
+            class MyClass(HasTraits):
+                mi = MyInstance(Foo())
+        except TraitError:
+            assert False
+
     def test_bad_default(self):
         class Foo(object): pass
 
@@ -1500,13 +1517,65 @@ class TestTCPAddress(TraitTestBase):
     _good_values = [('localhost',0),('192.168.0.1',1000),('www.google.com',80)]
     _bad_values = [(0,0),('localhost',10.0),('localhost',-1), None]
 
-class ListTrait(HasTraits):
 
-    value = List(Int())
+class TestContainer(TestCase):
 
-class TestList(TraitTestBase):
+    def test_validate_elements(self):
 
-    obj = ListTrait()
+        class MyContainer(Container):
+            klass = list
+            _cast_types = tuple
+            def validate_elements(self, obj, val):
+                # tuple gets converted back to list.
+                return tuple(int(x) for x in val)
+
+        class MyHasTraits(HasTraits):
+            mc = MyContainer()
+
+        mht = MyHasTraits()
+        mht.mc = [1.23, -4.56, 7]
+        assert mht.mc == [1, -4, 7]
+
+
+class CollectionTrait(HasTraits):
+
+    value = Collection(
+        Int(allow_none=True),
+        klass=tuple,
+        default_value=(1,),
+        castable=(tuple, list))
+
+
+class TestCollectionTrait(TraitTestBase):
+
+    obj = CollectionTrait()
+
+    _default_value = (1,)
+    _good_values = [(1,), (0,), [1]]
+    _bad_values = [10, (1, 2), ('a'), (), None]
+
+    def coerce(self, value):
+        if value is not None:
+            value = tuple(value)
+        return value
+
+    def test_invalid_args(self):
+        self.assertRaises(TraitError, Collection, 5)
+        self.assertRaises(TraitError, Collection, default_value='hello')
+        t = Collection(Int(), CBytes(), default_value=(1,5), klass=tuple)
+
+
+class SequenceTrait(HasTraits):
+
+    value = Sequence(
+        Int(),
+        klass=list,
+        castable=tuple)
+
+
+class TestSequence(TraitTestBase):
+
+    obj = SequenceTrait()
 
     _default_value = []
     _good_values = [[], [1], list(range(10)), (1,2)]
@@ -1516,6 +1585,54 @@ class TestList(TraitTestBase):
         if value is not None:
             value = list(value)
         return value
+
+    def test_retained_reference(self):
+        l = [1, 2, 3]
+        self.obj.value = l
+        assert self.obj.value is l
+
+
+class LenSequenceTrait(HasTraits):
+
+    value = Sequence(
+        Int(castable=float),
+        [0], minlen=1, maxlen=2,
+        klass=list, castable=tuple)
+
+
+class TestLenSequence(TraitTestBase):
+
+    obj = LenSequenceTrait()
+
+    _default_value = [0]
+    _good_values = [[1], [1,2], (1,2)]
+    _bad_values = [10, [1,'a'], 'a', [], list(range(3))]
+
+    def coerce(self, value):
+        if value is not None:
+            value = list(value)
+        return value
+
+
+class ListTrait(HasTraits):
+
+    value = List(Int())
+
+
+class TestList(TestSequence):
+
+    obj = ListTrait()
+
+
+class LenListTrait(HasTraits):
+
+    value = List(Int(), [0], minlen=1, maxlen=2)
+
+
+class TestLenList(TestLenSequence):
+
+    obj = LenListTrait()
+
 
 class Foo(object):
     pass
@@ -1562,23 +1679,6 @@ class TestUnionListTrait(TraitTestBase):
     _bad_values = [[1, 'True'], False]
 
 
-class LenListTrait(HasTraits):
-
-    value = List(Int(), [0], minlen=1, maxlen=2)
-
-class TestLenList(TraitTestBase):
-
-    obj = LenListTrait()
-
-    _default_value = [0]
-    _good_values = [[1], [1,2], (1,2)]
-    _bad_values = [10, [1,'a'], 'a', [], list(range(3))]
-
-    def coerce(self, value):
-        if value is not None:
-            value = list(value)
-        return value
-
 class TupleTrait(HasTraits):
 
     value = Tuple(Int(allow_none=True), default_value=(1,))
@@ -1597,8 +1697,8 @@ class TestTupleTrait(TraitTestBase):
         return value
 
     def test_invalid_args(self):
-        self.assertRaises(TypeError, Tuple, 5)
-        self.assertRaises(TypeError, Tuple, default_value='hello')
+        self.assertRaises(TraitError, Tuple, 5)
+        self.assertRaises(TraitError, Tuple, default_value='hello')
         t = Tuple(Int(), CBytes(), default_value=(1,5))
 
 class LooseTupleTrait(HasTraits):
@@ -1619,8 +1719,8 @@ class TestLooseTupleTrait(TraitTestBase):
         return value
 
     def test_invalid_args(self):
-        self.assertRaises(TypeError, Tuple, 5)
-        self.assertRaises(TypeError, Tuple, default_value='hello')
+        self.assertRaises(TraitError, Tuple, 5)
+        self.assertRaises(TraitError, Tuple, default_value='hello')
         t = Tuple(Int(), CBytes(), default_value=(1,5))
 
 
@@ -2598,7 +2698,7 @@ def test_override_default():
         a = Unicode('hard default')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2609,7 +2709,7 @@ def test_override_default_decorator():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     C._a_default = lambda self: 'overridden'
     c = C()
     assert c.a == 'overridden'
@@ -2620,8 +2720,7 @@ def test_override_default_instance():
         @default('a')
         def _a_default(self):
             return 'default method'
-    
+
     c = C()
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
-
