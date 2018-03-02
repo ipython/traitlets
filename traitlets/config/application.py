@@ -286,22 +286,18 @@ class Application(SingletonConfigurable):
     _loaded_config_files = List()
 
     show_config = Bool(
-        help="Instead of starting the Application, dump configuration to stdout"
+        help="Dump configuration to stdout while starting application"
     ).tag(config=True)
 
     show_config_json = Bool(
-        help="Instead of starting the Application, dump configuration to stdout (as JSON)"
+        help="Dump configuration to stdout while starting application (as JSON)"
     ).tag(config=True)
 
-    @observe('show_config_json')
-    def _show_config_json_changed(self, change):
-        self.show_config = change.new
-
-    @observe('show_config')
+    @observe('show_config', 'show_config_json')
     def _show_config_changed(self, change):
-        if change.new:
-            self._save_start = self.start
-            self.start = self.start_show_config
+        if change.new and not hasattr(self, '_original_start'):
+            self._original_start = self.start
+            self.start = self._dump_config_and_start
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
@@ -338,7 +334,7 @@ class Application(SingletonConfigurable):
         if self.subapp is not None:
             return self.subapp.start()
 
-    def start_show_config(self):
+    def _dump_config_and_start(self):
         """start function used when show_config is True"""
         config = self.config.copy()
         # exclude show_config flags from displayed config
@@ -353,29 +349,31 @@ class Application(SingletonConfigurable):
                       indent=1, sort_keys=True, default=repr)
             # add trailing newline
             sys.stdout.write('\n')
-            return
 
-        if self._loaded_config_files:
-            print("Loaded config files:")
-            for f in self._loaded_config_files:
-                print('  ' + f)
-            print()
+        else:
+            if self._loaded_config_files:
+                print("Loaded config files:")
+                for f in self._loaded_config_files:
+                    print('  ' + f)
+                print()
+    
+            for classname in sorted(config):
+                class_config = config[classname]
+                if not class_config:
+                    continue
+                print(classname)
+                pformat_kwargs = dict(indent=4)
+                if sys.version_info >= (3,4):
+                    # use compact pretty-print on Pythons that support it
+                    pformat_kwargs['compact'] = True
+                for traitname in sorted(class_config):
+                    value = class_config[traitname]
+                    print('  .{} = {}'.format(
+                        traitname,
+                        pprint.pformat(value, **pformat_kwargs),
+                    ))
 
-        for classname in sorted(config):
-            class_config = config[classname]
-            if not class_config:
-                continue
-            print(classname)
-            pformat_kwargs = dict(indent=4)
-            if sys.version_info >= (3,4):
-                # use compact pretty-print on Pythons that support it
-                pformat_kwargs['compact'] = True
-            for traitname in sorted(class_config):
-                value = class_config[traitname]
-                print('  .{} = {}'.format(
-                    traitname,
-                    pprint.pformat(value, **pformat_kwargs),
-                ))
+        return self._original_start()
 
     def print_alias_help(self):
         """Print the alias parts of the help."""
