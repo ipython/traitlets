@@ -85,7 +85,7 @@ install_requires = setuptools_args['install_requires'] = [
 ]
 
 extras_require = setuptools_args['extras_require'] = {
-    'test': ['pytest'],
+    'test': ['pytest', 'pytest-mock'],
     'test:python_version=="2.7"': ["mock"],
     # -- SUPPORT UNIFORM-WHEELS: Extra packages for Python 2.7
     # SEE: https://bitbucket.org/pypa/wheel/ , CHANGES.txt (v0.24.0)

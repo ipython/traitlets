@@ -418,7 +418,7 @@ class TestApplication(TestCase):
     def test_generate_config_file_classes_to_include(self):
         class NotInConfig(HasTraits):
             from_hidden = Unicode('x', help="""From hidden class
-            
+
             Details about from_hidden.
             """).tag(config=True)
 
@@ -611,8 +611,9 @@ def test_show_config(capsys):
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
+    app.initialize([])
     app.start()
     out, err = capsys.readouterr()
     assert 'MyApp' in out
@@ -624,12 +625,32 @@ def test_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
+    app.initialize([])
     app.start()
     out, err = capsys.readouterr()
     displayed = json.loads(out)
     assert Config(displayed) == cfg
+
+
+@mark.parametrize('flag', ['--show-config', '--show-config-json'])
+def test_show_config_calls_start(flag, mocker):
+    def my_launch(app, *argv):
+        app.initialize(argv)
+        app.start()
+
+    ## Sanity check.
+    #
+    app = Application()
+    start_stub = mocker.patch.object(app, 'start')
+    my_launch(app)
+    start_stub.assert_called_once_with()
+
+    app = Application()
+    start_stub = mocker.patch.object(app, 'start')
+    my_launch(app, flag)
+    start_stub.assert_called_once_with()
 
 
 if __name__ == '__main__':
