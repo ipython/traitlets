@@ -293,12 +293,6 @@ class Application(SingletonConfigurable):
         help="Dump configuration to stdout while starting application (as JSON)"
     ).tag(config=True)
 
-    @observe('show_config', 'show_config_json')
-    def _show_config_changed(self, change):
-        if change.new and not hasattr(self, '_original_start'):
-            self._original_start = self.start
-            self.start = self._dump_config_and_start
-
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
         # Ensure my class is in self.classes, so my attributes appear in command line
@@ -324,7 +318,9 @@ class Application(SingletonConfigurable):
         Override in subclasses.
         """
         self.parse_command_line(argv)
-
+        if self.subapp is None and (
+                self.show_config or self.show_config_json):
+            self._dump_config()
 
     def start(self):
         """Start the app mainloop.
@@ -334,7 +330,7 @@ class Application(SingletonConfigurable):
         if self.subapp is not None:
             return self.subapp.start()
 
-    def _dump_config_and_start(self):
+    def _dump_config(self):
         """start function used when show_config is True"""
         config = self.config.copy()
         # exclude show_config flags from displayed config
@@ -356,7 +352,7 @@ class Application(SingletonConfigurable):
                 for f in self._loaded_config_files:
                     print('  ' + f)
                 print()
-    
+
             for classname in sorted(config):
                 class_config = config[classname]
                 if not class_config:
@@ -372,8 +368,6 @@ class Application(SingletonConfigurable):
                         traitname,
                         pprint.pformat(value, **pformat_kwargs),
                     ))
-
-        return self._original_start()
 
     def print_alias_help(self):
         """Print the alias parts of the help."""

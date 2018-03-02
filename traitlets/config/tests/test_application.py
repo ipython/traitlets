@@ -611,8 +611,9 @@ def test_show_config(capsys):
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
+    app.initialize([])
     app.start()
     out, err = capsys.readouterr()
     assert 'MyApp' in out
@@ -624,8 +625,9 @@ def test_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
+    app.initialize([])
     app.start()
     out, err = capsys.readouterr()
     displayed = json.loads(out)
