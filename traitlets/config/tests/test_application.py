@@ -29,7 +29,7 @@ from traitlets.config.loader import Config
 from traitlets.tests.utils import get_output_error_code, check_help_output, check_help_all_output
 
 from traitlets.config.application import (
-    Application, DumpConfigAndStop
+    Application, DumpConfigAndStop, DumpConfig
 )
 
 from ipython_genutils.tempdir import TemporaryDirectory
@@ -636,12 +636,13 @@ def test_DumpConfigAndStop_show_config_json(capsys):
     assert not err
 
 
+def _my_launch(app, *argv):
+    app.initialize(argv)
+    app.start()
+
+
 @mark.parametrize('flag', ['--show-config', '--show-config-json'])
 def test_DumpConfigAndStop_application_start_called(flag):
-    def my_launch(app, *argv):
-        app.initialize(argv)
-        app.start()
-
     class MyApp(DumpConfigAndStop, Application):
         pass
 
@@ -650,7 +651,7 @@ def test_DumpConfigAndStop_application_start_called(flag):
     m = mock.Mock()  # @UndefinedVariable
     with mock.patch.object(Application, 'start', m):  # @UndefinedVariable
         app = MyApp()
-        my_launch(app)
+        _my_launch(app)
     assert m.call_count == 1
 
 
@@ -659,8 +660,30 @@ def test_DumpConfigAndStop_application_start_called(flag):
     m = mock.Mock()                                     # @UndefinedVariable
     with mock.patch.object(Application, 'start', m):    # @UndefinedVariable
         app = MyApp()
-        my_launch(app, flag)
+        _my_launch(app, flag)
     assert not m.called
+
+
+@mark.parametrize('flag', ['--show-config', '--show-config-json'])
+def test_DumpConfig_application_start_called(flag):
+    class MyApp(DumpConfig, Application):
+        pass
+
+    ## Check `start()` called without flag.
+    #
+    m = mock.Mock()  # @UndefinedVariable
+    with mock.patch.object(Application, 'start', m):  # @UndefinedVariable
+        app = MyApp()
+        _my_launch(app)
+    assert m.call_count == 1
+
+    ## Check `start()` CALLED aso WITH flag.
+    #
+    m = mock.Mock()                                     # @UndefinedVariable
+    with mock.patch.object(Application, 'start', m):    # @UndefinedVariable
+        app = MyApp()
+        _my_launch(app, flag)
+    assert m.call_count == 1
 
 
 

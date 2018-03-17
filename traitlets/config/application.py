@@ -893,6 +893,16 @@ class DumpConfigAndStop(_DumpConfigBase):
             return super(DumpConfigAndStop, self).start()
 
 
+class DumpConfig(_DumpConfigBase):
+    """
+    Application mixin that dumpsconfigs when `--show-config(-json)` given.
+    """
+    def start(self):
+        if self.show_config or self.show_config_json:
+            self._dump_config()
+        return super(DumpConfig, self).start()
+
+
 
 if __name__ == '__main__':
     Application.launch_instance()
