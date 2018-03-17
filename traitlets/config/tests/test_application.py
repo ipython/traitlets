@@ -29,7 +29,7 @@ from traitlets.config.loader import Config
 from traitlets.tests.utils import get_output_error_code, check_help_output, check_help_all_output
 
 from traitlets.config.application import (
-    Application
+    Application, DumpConfigAndStop
 )
 
 from ipython_genutils.tempdir import TemporaryDirectory
@@ -59,7 +59,7 @@ class Bar(Configurable):
     bdict = Dict().tag(config=True)
 
 
-class MyApp(Application):
+class MyApp(DumpConfigAndStop, Application):
 
     name = Unicode(u'myapp')
     running = Bool(False, help="Is the app running?").tag(config=True)
@@ -69,32 +69,31 @@ class MyApp(Application):
     warn_tpyo = Unicode(u"yes the name is wrong on purpose", config=True,
             help="Should print a warning if `MyApp.warn-typo=...` command is passed")
 
-    aliases = {}
-    aliases.update(Application.aliases)
+    aliases = dict(Application.aliases)
     aliases.update({
-                    ('fooi', 'i') : 'Foo.i',
-                    ('j', 'fooj') : ('Foo.j', "`j` terse help msg"),
-                    'name' : 'Foo.name',
-                    'la': 'Foo.la',
-                    'tb': 'Bar.tb',
-                    'D': 'Bar.bdict',
-                    'enabled' : 'Bar.enabled',
-                    'enable' : 'Bar.enabled',
-                    'log-level' : 'Application.log_level',
-                })
+        ('fooi', 'i') : 'Foo.i',
+        ('j', 'fooj') : ('Foo.j', "`j` terse help msg"),
+        'name' : 'Foo.name',
+        'la': 'Foo.la',
+        'tb': 'Bar.tb',
+        'D': 'Bar.bdict',
+        'enabled' : 'Bar.enabled',
+        'enable' : 'Bar.enabled',
+        'log-level' : 'Application.log_level',
+    })
 
-    flags = {}
-    flags.update(Application.flags)
-    flags.update({('enable', 'e'):
-                        ({'Bar': {'enabled' : True}},
-                         "Set Bar.enabled to True"),
-                  ('d', 'disable'):
-                        ({'Bar': {'enabled' : False}},
-                         "Set Bar.enabled to False"),
-                  'crit':
-                        ({'Application' : {'log_level' : logging.CRITICAL}},
-                        "set level=CRITICAL"),
-            })
+    flags = dict(DumpConfigAndStop.flags)
+    flags.update({
+        ('enable', 'e'):
+              ({'Bar': {'enabled' : True}},
+               "Set Bar.enabled to True"),
+        ('d', 'disable'):
+              ({'Bar': {'enabled' : False}},
+               "Set Bar.enabled to False"),
+        'crit':
+              ({'Application' : {'log_level' : logging.CRITICAL}},
+              "set level=CRITICAL"),
+    })
 
     def init_foo(self):
         self.foo = Foo(parent=self)
@@ -418,7 +417,7 @@ class TestApplication(TestCase):
     def test_generate_config_file_classes_to_include(self):
         class NotInConfig(HasTraits):
             from_hidden = Unicode('x', help="""From hidden class
-            
+
             Details about from_hidden.
             """).tag(config=True)
 
@@ -594,44 +593,77 @@ def test_help_output():
     check_help_all_output(__name__)
 
 
-def test_show_config_cli():
-    out, err, ec = get_output_error_code([sys.executable, '-m', __name__, '--show-config'])
-    assert ec == 0
+def test_DumpConfigAndStop_show_config_cli():
+    out, err, ec = get_output_error_code([sys.executable, '-m', __name__,
+                                          '--show-config'])
+    assert ec == 0, (out, err)
     assert 'show_config' not in out
+    assert not err
 
-
-def test_show_config_json_cli():
-    out, err, ec = get_output_error_code([sys.executable, '-m', __name__, '--show-config-json'])
-    assert ec == 0
+def test_DumpConfigAndStop_show_config_json_cli():
+    out, err, ec = get_output_error_code([sys.executable, '-m', __name__,
+                                          '--show-config-json'])
+    assert ec == 0, (out, err)
     assert 'show_config' not in out
+    assert not err
 
 
-def test_show_config(capsys):
+def test_DumpConfigAndStop_show_config(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
     app.start()
     out, err = capsys.readouterr()
     assert 'MyApp' in out
     assert 'i = 5' in out
     assert 'OtherApp' not in out
+    assert not err
 
 
-def test_show_config_json(capsys):
+def test_DumpConfigAndStop_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
     app.start()
     out, err = capsys.readouterr()
     displayed = json.loads(out)
     assert Config(displayed) == cfg
+    assert not err
+
+
+@mark.parametrize('flag', ['--show-config', '--show-config-json'])
+def test_DumpConfigAndStop_application_start_called(flag):
+    def my_launch(app, *argv):
+        app.initialize(argv)
+        app.start()
+
+    class MyApp(DumpConfigAndStop, Application):
+        pass
+
+    ## Check `start()` called without flag.
+    #
+    m = mock.Mock()  # @UndefinedVariable
+    with mock.patch.object(Application, 'start', m):  # @UndefinedVariable
+        app = MyApp()
+        my_launch(app)
+    assert m.call_count == 1
+
+
+    ## Check `start()` NOT called WITH flag.
+    #
+    m = mock.Mock()                                     # @UndefinedVariable
+    with mock.patch.object(Application, 'start', m):    # @UndefinedVariable
+        app = MyApp()
+        my_launch(app, flag)
+    assert not m.called
+
 
 
 if __name__ == '__main__':
-    # for test_help_output:
+    # for test_help_output & --show-config:
     MyApp.launch_instance()
