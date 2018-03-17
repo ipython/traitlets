@@ -408,6 +408,15 @@ application, simply pass ``-h`` or ``--help``. And to see the full list of
 configurable options (*very* long), pass ``--help-all``.
 
 
+Mixins
+======
+- :class:`~traitlets.config.DumpConfig`: a :class:`~traitlets.config.Application`
+  mixin that dumps configurations and continue with launching the app as normal.
+- :class:`~traitlets.config.DumpConfig`: a :class:`~traitlets.config.Application`
+  mixin that dumps configurations, but stops app after dumping them
+  (just return from :meth:`~traitlets.config.Application.start()`).
+
+
 Design requirements
 ===================
 
