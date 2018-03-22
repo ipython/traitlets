@@ -818,7 +818,9 @@ def get_config():
 
 class _DumpConfigBase(six.with_metaclass(MetaHasTraits)):
     """
-    Baseclass for Application mixins that dumps configs on `--show-config(-json)` flags.
+    Abstract base for Application mixins that dump configs on `--show-config(-json)` flags.
+    
+    Subclasses need to override ``start_show_config()`` method.
     """
 
     show_config = Bool(
@@ -841,6 +843,16 @@ class _DumpConfigBase(six.with_metaclass(MetaHasTraits)):
             },
         }, "Show the application's configuration (json format)"),
     })
+
+    @observe('show_config_json')
+    def _show_config_json_changed(self, change):
+        self.show_config = change.new
+
+    @observe('show_config')
+    def _show_config_changed(self, change):
+        if change.new:
+            self._save_start = self.start
+            self.start = self.start_show_config
 
     def _dump_config(self):
         """start function used when show_config is True"""
@@ -886,22 +898,17 @@ class DumpConfigAndStop(_DumpConfigBase):
     """
     Application mixin that dumps configs & stops when `--show-config(-json)` given.
     """
-    def start(self):
-        if self.show_config or self.show_config_json:
-            self._dump_config()
-        else:
-            return super(DumpConfigAndStop, self).start()
+    def start_show_config(self):
+        self._dump_config()
 
 
 class DumpConfig(_DumpConfigBase):
     """
     Application mixin that dumpsconfigs when `--show-config(-json)` given.
     """
-    def start(self):
-        if self.show_config or self.show_config_json:
-            self._dump_config()
-        return super(DumpConfig, self).start()
-
+    def start_show_config(self):
+        self._dump_config()
+        return self._save_start()
 
 
 if __name__ == '__main__':

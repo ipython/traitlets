@@ -600,6 +600,7 @@ def test_DumpConfigAndStop_show_config_cli():
     assert 'show_config' not in out
     assert not err
 
+
 def test_DumpConfigAndStop_show_config_json_cli():
     out, err, ec = get_output_error_code([sys.executable, '-m', __name__,
                                           '--show-config-json'])
@@ -636,9 +637,21 @@ def test_DumpConfigAndStop_show_config_json(capsys):
     assert not err
 
 
-def _my_launch(app, *argv):
+def _my_launch(app_cls, *argv, **config):
+    kwds = {}
+    if config:
+        cls_name = app_cls.__name__
+        kwds['config'] = Config({cls_name: config})
+
+    app = app_cls(**kwds)
     app.initialize(argv)
     app.start()
+
+    return app
+
+
+def _flag2param(flag):
+    return flag.lstrip('-').replace('-', '_')
 
 
 @mark.parametrize('flag', ['--show-config', '--show-config-json'])
@@ -650,17 +663,16 @@ def test_DumpConfigAndStop_application_start_called(flag):
     #
     m = mock.Mock()  # @UndefinedVariable
     with mock.patch.object(Application, 'start', m):  # @UndefinedVariable
-        app = MyApp()
-        _my_launch(app)
+        app = _my_launch(MyApp)
+    assert getattr(app, _flag2param(flag)) is False
     assert m.call_count == 1
-
 
     ## Check `start()` NOT called WITH flag.
     #
     m = mock.Mock()                                     # @UndefinedVariable
     with mock.patch.object(Application, 'start', m):    # @UndefinedVariable
-        app = MyApp()
-        _my_launch(app, flag)
+        app = _my_launch(MyApp, flag)
+    assert getattr(app, _flag2param(flag)) is True
     assert not m.called
 
 
@@ -673,18 +685,79 @@ def test_DumpConfig_application_start_called(flag):
     #
     m = mock.Mock()  # @UndefinedVariable
     with mock.patch.object(Application, 'start', m):  # @UndefinedVariable
-        app = MyApp()
-        _my_launch(app)
+        app = _my_launch(MyApp)
+    assert getattr(app, _flag2param(flag)) is False
     assert m.call_count == 1
 
     ## Check `start()` CALLED aso WITH flag.
     #
     m = mock.Mock()                                     # @UndefinedVariable
     with mock.patch.object(Application, 'start', m):    # @UndefinedVariable
-        app = MyApp()
-        _my_launch(app, flag)
+        app = _my_launch(MyApp, flag)
+    assert getattr(app, _flag2param(flag)) is True
     assert m.call_count == 1
 
+
+@mark.parametrize('flag', ['--show-config', '--show-config-json'])
+def test_DumpConfigAndStop_subcmd_start_called(flag, capsys):
+    class BaseApp(DumpConfigAndStop, Application):
+        base_trait = Bool(config=True)
+
+        def start(self, *args):
+            raise AssertionError()
+
+    class SubApp(BaseApp):
+        sub_trait = Bool(config=True)
+
+        def start(self, *args):
+            raise AssertionError()
+
+    app = _my_launch(BaseApp, flag, base_trait=True)
+    assert getattr(app, _flag2param(flag)) is True
+    out, err = capsys.readouterr()
+    assert not err
+    assert 'base_trait' in out
+    assert 'sub_trait' not in out
+
+    app = _my_launch(SubApp, flag, base_trait=True, sub_trait=True)
+    assert getattr(app, _flag2param(flag)) is True
+    out, err = capsys.readouterr()
+    assert 'base_trait' in out
+    assert 'sub_trait' in out  # check sub-cmd configs included
+    assert not err
+
+
+@mark.parametrize('flag', ['--show-config', '--show-config-json'])
+def test_DumpConfig_subcmd_start_called(flag, capsys):
+    ncalls = [0]  # sorry, no `local` keyword for PY2.
+
+    class BaseApp(DumpConfig, Application):
+        base_trait = Bool(config=True)
+
+        def start(self, *args):
+            ncalls[0] += 1
+
+    class SubApp(BaseApp):
+        sub_trait = Bool(config=True)
+
+        def start(self, *args):
+            ncalls[0] += 1
+
+    app = _my_launch(BaseApp, flag, base_trait=True)
+    assert getattr(app, _flag2param(flag)) is True
+    assert ncalls[0] == 1
+    out, err = capsys.readouterr()
+    assert not err
+    assert 'base_trait' in out
+    assert 'sub_trait' not in out
+
+    app = _my_launch(SubApp, flag, base_trait=True, sub_trait=True)
+    assert getattr(app, _flag2param(flag)) is True
+    assert ncalls[0] == 2
+    out, err = capsys.readouterr()
+    assert 'base_trait' in out
+    assert 'sub_trait' in out  # check sub-cmd configs included
+    assert not err
 
 
 if __name__ == '__main__':
