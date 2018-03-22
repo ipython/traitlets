@@ -19,6 +19,7 @@ init:
 
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - "%CMD_IN_ENV%  python -m pip install -U pip"
   - "%CMD_IN_ENV%  pip install --upgrade setuptools pip"
   - "%CMD_IN_ENV%  pip install .[test]"
   - "%CMD_IN_ENV%  mkdir results"
