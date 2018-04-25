@@ -19,7 +19,8 @@ value generation of attributes on :class:`traitlets.HasTraits`
 subclasses:
 
 .. code:: python
-
+    
+    from traitlets import HasTraits, Int, Unicode
     import getpass
 
     class Identity(HasTraits):
