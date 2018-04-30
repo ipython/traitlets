@@ -587,10 +587,18 @@ class Application(SingletonConfigurable):
 
         ## Cannot issubclass() on a non-type (SOhttp://stackoverflow.com/questions/8692430)
         if isinstance(subapp, type) and issubclass(subapp, Application):
-            # Clear existing instances before...
-            self.__class__.clear_instance()
+            if Application.initialized() and Application.instance() is self:
+                # if we are the global Application instance,
+                # make the subapp the global instance
+                self.__class__.clear_instance()
+                make_subapp = subapp.instance
+            else:
+                # we aren't the global instance,
+                # don't make the subapp a global instance
+                # which could take over from another instance
+                make_subapp = subapp
             # instantiating subapp...
-            self.subapp = subapp.instance(parent=self)
+            self.subapp = make_subapp(parent=self)
         elif callable(subapp):
             # or ask factory to create it...
             self.subapp = subapp(self)

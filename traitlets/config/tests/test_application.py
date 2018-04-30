@@ -418,7 +418,7 @@ class TestApplication(TestCase):
     def test_generate_config_file_classes_to_include(self):
         class NotInConfig(HasTraits):
             from_hidden = Unicode('x', help="""From hidden class
-            
+
             Details about from_hidden.
             """).tag(config=True)
 
@@ -523,6 +523,7 @@ class TestApplication(TestCase):
         self.assertIsInstance(app.subapp, Sub1)
         ## Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
+        assert Application.instance() is app.subapp
 
         Root.clear_instance()
         Sub1.clear_instance()  # Otherwise, replaced spuriously and hierarchy check fails.
@@ -534,6 +535,7 @@ class TestApplication(TestCase):
         ## Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)
+        assert Application.instance() is app.subapp.subapp
 
         Root.clear_instance()
         Sub1.clear_instance()  # Otherwise, replaced spuriously and hierarchy check fails.
@@ -546,6 +548,20 @@ class TestApplication(TestCase):
         ## Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)     # Set by factory.
+
+
+    def test_subcommands_no_instance(self):
+        inst = Root.instance()
+        app = Root()
+        assert Application.instance() is not app
+        app.parse_command_line(['sub1'])
+        assert isinstance(app.subapp, Sub1)
+        assert app.subapp.parent is app
+        # subapp shouldn't take over instance
+        assert Application.instance() is inst
+
+        # cleanup
+        Root.clear_instance()
 
 
 class Root(Application):
@@ -611,7 +627,7 @@ def test_show_config(capsys):
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
     app.start()
     out, err = capsys.readouterr()
@@ -624,7 +640,7 @@ def test_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
     app.start()
     out, err = capsys.readouterr()
