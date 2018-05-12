@@ -40,3 +40,15 @@ matrix:
       env:
         - TEST_DEPS=traittypes[test]
         - TEST="nosetests traittypes"
+    - python: "3.7"
+      env:
+        - TEST_DEPS=notebook[test]
+        - TEST="nosetests notebook"
+    - python: "3.7"
+      env:
+        - TEST_DEPS=ipywidgets[test]
+        - TEST="nosetests ipywidgets"
+    - python: "3.7"
+      env:
+        - TEST_DEPS=traittypes[test]
+        - TEST="nosetests traittypes"
