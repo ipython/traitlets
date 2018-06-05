@@ -20,7 +20,7 @@ subclasses:
 
 .. code:: python
     
-    from traitlets import HasTraits, Int, Unicode
+    from traitlets import HasTraits, Int, Unicode, default
     import getpass
 
     class Identity(HasTraits):
