@@ -429,7 +429,6 @@ class TestApplication(TestCase):
         app.classes.append(NoTraits)
 
         conf_txt = app.generate_config_file()
-        print(conf_txt)
         self.assertIn('The integer b.', conf_txt)
         self.assertIn('# Foo(Configurable)', conf_txt)
         self.assertNotIn('# Configurable', conf_txt)

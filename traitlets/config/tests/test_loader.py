@@ -250,7 +250,6 @@ class TestKeyValueCL(TestCase):
     def test_basic(self):
         cl = self.klass(log=log)
         argv = [ '--' + s[2:] for s in pyfile.split('\n') if s.startswith('c.') ]
-        print(argv)
         config = cl.load_config(argv)
         self.assertEqual(config.a, 10)
         self.assertEqual(config.b, 20)
@@ -534,4 +533,3 @@ class TestConfig(TestCase):
         self.assertIs(c.Foo, c2.Foo)
         self.assertEqual(c.Foo.trait, [1])
         self.assertEqual(c2.Foo.trait, [1])
-
