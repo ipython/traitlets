@@ -450,6 +450,15 @@ class TestConfig(TestCase):
         self.assertEqual(c1.Foo.bar, 1)
         self.assertEqual(c1.Foo.baz, 2)
         self.assertNotIn('baz', c2.Foo)
+        
+    def test_dictmerge(self):
+        c1 = Config({'Foo' : {'baz' : 2}})
+        c2 = {'Foo' : {'bar' : 1}}
+        c1.merge(c2)
+        self.assertEqual(c1.Foo.__class__, Config)
+        self.assertEqual(c1.Foo.bar, 1)
+        self.assertEqual(c1.Foo.baz, 2)
+        self.assertNotIn('baz', c2['Foo'])
 
     def test_contains(self):
         c1 = Config({'Foo' : {'baz' : 2}})
