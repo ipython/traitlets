@@ -190,7 +190,7 @@ class Config(dict):
     def merge(self, other):
         """merge another config object into this one"""
         to_update = {}
-        for k, v in other.items():
+        for k, v in Config(other).items():
             if k not in self:
                 to_update[k] = v
             else: # I have this key
