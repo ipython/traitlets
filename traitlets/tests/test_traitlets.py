@@ -2724,3 +2724,18 @@ def test_override_default_instance():
     c = C()
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
+
+
+def test_copy_HasTraits():
+    from copy import copy
+
+    class C(HasTraits):
+        a = Int()
+
+    c = C(a=1)
+    assert c.a == 1
+
+    cc = copy(c)
+    cc.a = 2
+    assert cc.a == 2
+    assert c.a == 1

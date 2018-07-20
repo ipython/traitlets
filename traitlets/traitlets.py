@@ -1094,6 +1094,9 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
         # recall of instance_init during __setstate__
         d['_trait_notifiers'] = {}
         d['_trait_validators'] = {}
+        d['_trait_values'] = self._trait_values.copy()
+        d['_cross_validation_lock'] = False  # FIXME: raise if cloning locked!
+
         return d
 
     def __setstate__(self, state):
