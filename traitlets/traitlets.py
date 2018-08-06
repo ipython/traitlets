@@ -3406,9 +3406,9 @@ class Callable(TraitType):
             self.error(obj, value)
 
 def _add_all():
-    """add all trait types to `__all__`
+    """Add all trait types to `__all__`
 
-    do in a function to avoid iterating through globals while defining local variables
+    Do in a function to avoid iterating through globals while defining local variables
     """
     for _name, _value in globals().items():
         if not _name.startswith('_') and isinstance(_value, type) and issubclass(_value, TraitType):
