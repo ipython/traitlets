@@ -2701,20 +2701,71 @@ class Mutable(Instance):
 
 
 class Container(Instance):
-    """A base class for iterable types"""
+    """A base trait for container types
+    """
+
+    _trait = None
+    allow_none = True
+
+    def __init__(self, trait=None, default_value=Undefined,
+                 minlen=0, maxlen=sys.maxsize, **kwargs):
+        self._minlen, self._maxlen = minlen, maxlen
+        if default_value is Undefined and not is_trait(trait):
+            if trait is not None or kwargs.get("allow_none", False):
+                kwargs['default_value'], trait = trait, None
+        else:
+            kwargs['default_value'] = default_value
+        self._trait = trait
+        super(Container, self).__init__(**kwargs)
+
+        if inspect.isclass(trait) and issubclass(trait, TraitType):
+            warn("Traits should be given as instances, not types "
+                 "(for example, `Int()`, not `Int`). Passing "
+                 "types is deprecated in traitlets 4.1.",
+                 DeprecationWarning, stacklevel=3)
+            trait = trait()
+        if not isinstance(trait, TraitType) and trait is not None:
+            raise TypeError("The argument 'trait' must be %s, not %s." %
+                (describe("a", TraitType), describe("the", trait)))
+        self._trait = trait
+        super(Container, self).__init__(**kwargs)
+
+    def class_init(self, cls, name, parent=None):
+        if isinstance(self._trait, TraitType):
+            self._trait.class_init(cls, None, self)
+        super(Container, self).class_init(cls, name, parent)
+
+    def instance_init(self, obj):
+        if isinstance(self._trait, TraitType):
+            self._trait.instance_init(obj)
+        super(Container, self).instance_init(obj)
 
     def validate(self, obj, value):
         validate = super(Container, self).validate
         value = self.validate_elements(obj, validate(obj, value))
+        length = len(value)
+        if length < self._minlen:
+            info = "a length <= %i" % self._minlen
+            self.error(obj, length, info=info)
+        elif length > self._maxlen:
+            info = "a length >= %i" % self._maxlen
+            self.error(obj, length, info=info)
         return validate(obj, value)
 
+    def _validate_mutation(self, owner, value):
+        self.validate_elements(owner, value)
+
     def validate_elements(self, obj, value):
-        return value
+        if not self._trait:
+            return value
+        return self.klass(self._trait._validate(obj, x) for x in value)
 
 
-class Collection(Container):
-    """A base trait for immutable container types"""
+class Tuple(Container):
 
+    klass = tuple
+    _cast_types = list
+    default_value = ()
     _traits = None
 
     def __init__(self, *traits, **kwargs):
@@ -2736,19 +2787,19 @@ class Collection(Container):
             else:
                 self._traits.append(trait)
 
-        super(Collection, self).__init__(**kwargs)
+        super(Tuple, self).__init__(**kwargs)
 
     def class_init(self, cls, name, parent=None):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.class_init(cls, None, self)
-        super(Container, self).class_init(cls, name, parent)
+        super(Tuple, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.instance_init(obj)
-        super(Container, self).instance_init(obj)
+        super(Tuple, self).instance_init(obj)
 
     def validate_elements(self, obj, value):
         if not self._traits:
@@ -2764,86 +2815,10 @@ class Collection(Container):
                 self.error(obj, v, error)
             else:
                 new.append(v)
-        return tuple(new)
+        return self.klass(new)
 
 
-class Sequence(Mutable, Container):
-    """A base trait for mutable container types
-    """
-
-    _trait = None
-    allow_none = True
-
-    def __init__(self, trait=None, default_value=Undefined,
-                 minlen=0, maxlen=sys.maxsize, **kwargs):
-        self._minlen, self._maxlen = minlen, maxlen
-        if default_value is Undefined and not is_trait(trait):
-            if trait is not None or kwargs.get("allow_none", False):
-                kwargs['default_value'], trait = trait, None
-        else:
-            kwargs['default_value'] = default_value
-        self._trait = trait
-        super(Sequence, self).__init__(**kwargs)
-
-        if inspect.isclass(trait) and issubclass(trait, TraitType):
-            warn("Traits should be given as instances, not types "
-                 "(for example, `Int()`, not `Int`). Passing "
-                 "types is deprecated in traitlets 4.1.",
-                 DeprecationWarning, stacklevel=3)
-            trait = trait()
-        if not isinstance(trait, TraitType) and trait is not None:
-            raise TypeError("The argument 'trait' must be %s, not %s." %
-                (describe("a", TraitType), describe("the", trait)))
-        self._trait = trait
-        super(Sequence, self).__init__(**kwargs)
-
-    def class_init(self, cls, name, parent=None):
-        if isinstance(self._trait, TraitType):
-            self._trait.class_init(cls, None, self)
-        super(Sequence, self).class_init(cls, name, parent)
-
-    def instance_init(self, obj):
-        if isinstance(self._trait, TraitType):
-            self._trait.instance_init(obj)
-        super(Sequence, self).instance_init(obj)
-
-    def validate(self, obj, value):
-        value = super(Sequence, self).validate(obj, value)
-        length = len(value)
-        if length < self._minlen:
-            info = "a length <= %i" % self._minlen
-            self.error(obj, length, info=info)
-        elif length > self._maxlen:
-            info = "a length >= %i" % self._maxlen
-            self.error(obj, length, info=info)
-        return value
-
-    def _validate_mutation(self, owner, value):
-        self.validate_elements(owner, value)
-
-    def validate_elements(self, obj, value):
-        if not self._trait:
-            return value
-        for original in value:
-            try:
-                new = self._trait._validate(obj, original)
-            except TraitError as error:
-                self.error(obj, original, error)
-            else:
-                if original is not new:
-                    raise TraitError("The base Sequence class "
-                        "does not support element coercion")
-        return value
-
-
-class Tuple(Collection):
-
-    klass = tuple
-    _cast_types = list
-    default_value = ()
-
-
-class Set(Sequence):
+class Set(Mutable, Container):
 
     klass = set
     _cast_types = (list, tuple)
@@ -2880,7 +2855,7 @@ class Set(Sequence):
             notify("mutation", new=new, old=old)
 
 
-class List(Sequence):
+class List(Mutable, Container):
 
     klass = list
     _cast_types = tuple

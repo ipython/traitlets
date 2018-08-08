@@ -22,8 +22,7 @@ from traitlets import (
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors, Container, Collection,
-    Sequence, Mapping,
+    observe_compat, BaseDescriptor, HasDescriptors, Container, Mapping,
 )
 
 import six
@@ -1518,64 +1517,17 @@ class TestTCPAddress(TraitTestBase):
     _bad_values = [(0,0),('localhost',10.0),('localhost',-1), None]
 
 
-class TestContainer(TestCase):
+class ContainerTrait(HasTraits):
 
-    def test_validate_elements(self):
-
-        class MyContainer(Container):
-            klass = list
-            _cast_types = tuple
-            def validate_elements(self, obj, val):
-                # tuple gets converted back to list.
-                return tuple(int(x) for x in val)
-
-        class MyHasTraits(HasTraits):
-            mc = MyContainer()
-
-        mht = MyHasTraits()
-        mht.mc = [1.23, -4.56, 7]
-        assert mht.mc == [1, -4, 7]
-
-
-class CollectionTrait(HasTraits):
-
-    value = Collection(
-        Int(allow_none=True),
-        klass=tuple,
-        default_value=(1,),
-        castable=(tuple, list))
-
-
-class TestCollectionTrait(TraitTestBase):
-
-    obj = CollectionTrait()
-
-    _default_value = (1,)
-    _good_values = [(1,), (0,), [1]]
-    _bad_values = [10, (1, 2), ('a'), (), None]
-
-    def coerce(self, value):
-        if value is not None:
-            value = tuple(value)
-        return value
-
-    def test_invalid_args(self):
-        self.assertRaises(TraitError, Collection, 5)
-        self.assertRaises(TraitError, Collection, default_value='hello')
-        t = Collection(Int(), CBytes(), default_value=(1,5), klass=tuple)
-
-
-class SequenceTrait(HasTraits):
-
-    value = Sequence(
+    value = Container(
         Int(),
         klass=list,
         castable=tuple)
 
 
-class TestSequence(TraitTestBase):
+class TestContainer(TraitTestBase):
 
-    obj = SequenceTrait()
+    obj = ContainerTrait()
 
     _default_value = []
     _good_values = [[], [1], list(range(10)), (1,2)]
@@ -1586,23 +1538,18 @@ class TestSequence(TraitTestBase):
             value = list(value)
         return value
 
-    def test_retained_reference(self):
-        l = [1, 2, 3]
-        self.obj.value = l
-        assert self.obj.value is l
 
+class LenContainerTrait(HasTraits):
 
-class LenSequenceTrait(HasTraits):
-
-    value = Sequence(
+    value = Container(
         Int(castable=float),
         [0], minlen=1, maxlen=2,
         klass=list, castable=tuple)
 
 
-class TestLenSequence(TraitTestBase):
+class TestLenContainer(TraitTestBase):
 
-    obj = LenSequenceTrait()
+    obj = LenContainerTrait()
 
     _default_value = [0]
     _good_values = [[1], [1,2], (1,2)]
@@ -1619,7 +1566,7 @@ class ListTrait(HasTraits):
     value = List(Int())
 
 
-class TestList(TestSequence):
+class TestList(TestContainer):
 
     obj = ListTrait()
 
@@ -1629,7 +1576,7 @@ class LenListTrait(HasTraits):
     value = List(Int(), [0], minlen=1, maxlen=2)
 
 
-class TestLenList(TestLenSequence):
+class TestLenList(TestLenContainer):
 
     obj = LenListTrait()
 
