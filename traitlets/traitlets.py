@@ -2712,11 +2712,11 @@ class Container(Instance):
         self._minlen, self._maxlen = minlen, maxlen
         if default_value is Undefined and not is_trait(trait):
             if trait is not None or kwargs.get("allow_none", False):
-                kwargs['default_value'], trait = trait, None
-        else:
-            kwargs['default_value'] = default_value
+                default_value, trait = trait, None
         self._trait = trait
-        super(Container, self).__init__(**kwargs)
+        super(Container, self).__init__(default_value=default_value, **kwargs)
+        if self.default_value is Undefined and self.klass is not None:
+            self.default_value = self.klass()
 
         if inspect.isclass(trait) and issubclass(trait, TraitType):
             warn("Traits should be given as instances, not types "
