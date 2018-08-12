@@ -10,22 +10,23 @@
 import pickle
 import re
 import sys
-from ._warnings import expected_warnings
-
+from distutils.util import strtobool
 from unittest import TestCase
+
 import pytest
+import six
 from pytest import mark
 
 from traitlets import (
-    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
+    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBool, CBytes, Dict, Enum,
     Int, CInt, Long, CLong, Integer, Float, CFloat, Complex, Bytes, Unicode,
     TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors,
 )
+from ._warnings import expected_warnings
 
-import six
 
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
@@ -1456,6 +1457,17 @@ class TestUnicode(TraitTestBase):
                       [10], ['ten'], [u'ten'], {'ten': 10},(10,), None]
     if not six.PY3:
         _bad_values.extend([long(10), long(-10)])
+
+class CBoolTrait(HasTraits):
+    value = CBool(True)
+
+class TestCBool(TraitTestBase):
+    obj = CBoolTrait()
+    _good_values = [True, False, 1, 0, "true", "false", "yes", "no"]
+    def coerce(self, n):
+        if isinstance(n, str):
+            return strtobool(n)
+        return bool(n)
 
 
 class ObjectNameTrait(HasTraits):

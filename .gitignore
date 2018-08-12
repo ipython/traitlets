@@ -18,3 +18,5 @@ __pycache__
 .#*
 .coverage
 .cache
+.idea
+.pytest_cache

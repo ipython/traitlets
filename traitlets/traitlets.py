@@ -41,12 +41,13 @@ Inheritance diagram:
 # also under the terms of the Modified BSD License.
 
 import contextlib
+import enum
 import inspect
 import os
 import re
 import sys
 import types
-import enum
+
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
@@ -61,6 +62,7 @@ from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
 from .utils.bunch import Bunch
 from .utils.descriptions import describe, class_of, add_article, repr_type
+from distutils.util import strtobool
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -2262,6 +2264,8 @@ class CBool(Bool):
 
     def validate(self, obj, value):
         try:
+            if isinstance(value, str):
+                return strtobool(value)
             return bool(value)
         except:
             self.error(obj, value)
