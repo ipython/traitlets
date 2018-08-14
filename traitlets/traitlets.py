@@ -2264,7 +2264,7 @@ class CBool(Bool):
 
     def validate(self, obj, value):
         try:
-            if isinstance(value, str):
+            if isinstance(value, six.string_types):
                 return strtobool(value)
             return bool(value)
         except:

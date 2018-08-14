@@ -1463,9 +1463,11 @@ class CBoolTrait(HasTraits):
 
 class TestCBool(TraitTestBase):
     obj = CBoolTrait()
-    _good_values = [True, False, 1, 0, "true", "false", "yes", "no"]
+    _good_values = [True, False, 1, 0, "true", "false", "yes", "no", b'yes', b'no']
+    _bad_values = ["I am not a crook!"]
+
     def coerce(self, n):
-        if isinstance(n, str):
+        if isinstance(n, six.string_types):
             return strtobool(n)
         return bool(n)
 
