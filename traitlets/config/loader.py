@@ -11,6 +11,7 @@ import os
 import re
 import sys
 import json
+import yaml
 from ast import literal_eval
 
 from ipython_genutils.path import filefind
@@ -445,6 +446,52 @@ class JSONFileConfigLoader(FileConfigLoader):
         json_config = json.dumps(self.config, indent=2)
         with open(self.full_filename, 'w') as f:
             f.write(json_config)
+
+
+class YAMLFileConfigLoader(FileConfigLoader):
+    """A YAML file loader for config                                                
+    Can also act as a context manager that rewrite the configuration file to disk on exit.                                                                            
+    Example::        
+        with YAMLFileConfigLoader('myapp.yaml','/home/jupyter/configurations/') as c:
+            c.MyNewConfigurable.new_value = 'Updated'     
+    """
+    def load_config(self):
+        """Load the config from a file and return it as a Config object."""
+        self.clear()
+        try:
+            self._find_file()
+        except IOError as e:
+            raise ConfigFileNotFound(str(e))
+        dct = self._read_file_as_dict()
+        self.config = self._convert_to_config(dct)
+        return self.config
+
+    def _read_file_as_dict(self):
+        with open(self.full_filename) as f:
+            return yaml.load(f)
+
+    def _convert_to_config(self, dictionary):
+        c = Config(dictionary)
+
+        ## Hand-made sub-config handle since the standard one doesn't work here. 
+        for key, value in c.items():
+            if isinstance(value, dict) and not isinstance(value, Config):
+                setattr(c, key, Config(value))
+        return c
+
+    def __enter__(self):
+        self.load_config()
+        return self.config
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """                                                                           
+        Exit the context manager but do not handle any errors.                        
+                                                                                      
+        In case of any error, we do not want to write the potentially broken          
+        configuration to disk.                                                        
+        """
+        with open(self.full_filename, 'w') as f:
+            yaml.dump(self.config, f, default_flow_style=False)
 
 
 
