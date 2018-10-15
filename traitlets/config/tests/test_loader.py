@@ -18,6 +18,7 @@ from traitlets.config.loader import (
     LazyConfigValue,
     PyFileConfigLoader,
     JSONFileConfigLoader,
+    YAMLFileConfigLoader,
     KeyValueConfigLoader,
     ArgParseConfigLoader,
     KVArgParseConfigLoader,
@@ -57,6 +58,20 @@ json1file = """
 }
 """
 
+yaml1file = """  
+version: 1
+a: 10
+b: 20
+Foo: 
+  Bam:
+    value: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+  Bar: 
+    value: 10
+D:
+  C:
+    value: "hi there"
+"""
+
 # should not load
 json2file = """
 {
@@ -94,6 +109,16 @@ class TestFileCL(TestCase):
         f.close()
         # Unlink the file
         cl = JSONFileConfigLoader(fname, log=log)
+        config = cl.load_config()
+        self._check_conf(config)
+
+    def test_yaml(self):
+        fd, fname = mkstemp('.yaml', prefix=u'μnïcø∂e')
+        f = os.fdopen(fd, 'w')
+        f.write(yaml1file)
+        f.close()
+        # Unlink the file
+        cl = YAMLFileConfigLoader(fname, log=log)
         config = cl.load_config()
         self._check_conf(config)
 
