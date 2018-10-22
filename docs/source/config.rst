@@ -120,10 +120,10 @@ subclass
     from traitlets import Int, Float, Unicode, Bool
 
     class MyClass(Configurable):
-        name = Unicode(u'defaultname'
+        name = Unicode(u'defaultname',
             help="the name of the object"
         ).tag(config=True)
-        ranking = Integer(0, help="the class's ranking").tag(config=True)
+        ranking = Int(0, help="the class's ranking").tag(config=True)
         value = Float(99.0)
         # The rest of the class implementation would go here..
 
@@ -244,7 +244,7 @@ to be reflected in the configuration system.  Here is a simple example::
 
     class Bar(Foo):
         name = Unicode(u'barname', config=True)
-        othervalue = Int(0, config=True)
+        othervalue = Integer(0, config=True)
 
 Now, we can create a configuration file to configure instances of :class:`Foo`
 and :class:`Bar`::
