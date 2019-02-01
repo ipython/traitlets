@@ -50,7 +50,7 @@ import enum
 try:
     from types import ClassType, InstanceType
     ClassTypes = (ClassType, type)
-except:
+except Exception:
     ClassTypes = (type,)
 from warnings import warn, warn_explicit
 
@@ -564,7 +564,7 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = new_value
         try:
             silent = bool(old_value == new_value)
-        except:
+        except Exception:
             # if there is an error in comparing, default to notify
             silent = False
         if silent is not True:
@@ -1725,7 +1725,7 @@ class Type(ClassBasedTraitType):
         try:
             if issubclass(value, self.klass):
                 return value
-        except:
+        except Exception:
             pass
 
         self.error(obj, value)
@@ -2021,7 +2021,7 @@ class CInt(Int):
     def validate(self, obj, value):
         try:
             value = int(value)
-        except:
+        except Exception:
             self.error(obj, value)
         return _validate_bounds(self, obj, value)
 
@@ -2058,7 +2058,7 @@ if six.PY2:
         def validate(self, obj, value):
             try:
                 value = long(value)
-            except:
+            except Exception:
                 self.error(obj, value)
             return _validate_bounds(self, obj, value)
 
@@ -2127,7 +2127,7 @@ class CFloat(Float):
     def validate(self, obj, value):
         try:
             value = float(value)
-        except:
+        except Exception:
             self.error(obj, value)
         return _validate_bounds(self, obj, value)
 
@@ -2152,7 +2152,7 @@ class CComplex(Complex):
     def validate (self, obj, value):
         try:
             return complex(value)
-        except:
+        except Exception:
             self.error(obj, value)
 
 # We should always be explicit about whether we're using bytes or unicode, both
@@ -2176,7 +2176,7 @@ class CBytes(Bytes):
     def validate(self, obj, value):
         try:
             return bytes(value)
-        except:
+        except Exception:
             self.error(obj, value)
 
 
@@ -2204,7 +2204,7 @@ class CUnicode(Unicode):
     def validate(self, obj, value):
         try:
             return six.text_type(value)
-        except:
+        except Exception:
             self.error(obj, value)
 
 
@@ -2263,7 +2263,7 @@ class CBool(Bool):
     def validate(self, obj, value):
         try:
             return bool(value)
-        except:
+        except Exception:
             self.error(obj, value)
 
 
@@ -2887,7 +2887,7 @@ class CRegExp(TraitType):
     def validate(self, obj, value):
         try:
             return re.compile(value)
-        except:
+        except Exception:
             self.error(obj, value)
 
 
