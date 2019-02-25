@@ -159,7 +159,6 @@ def add_article(name, definite=False, capital=False):
         return result[0].upper() + result[1:]
     else:
         return result
-    return result
 
 
 def repr_type(obj):
