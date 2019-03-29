@@ -9,7 +9,7 @@ sudo: false
 install:
   - pip install --upgrade pip
   - pip install .
-  - pip install --pre --upgrade traitlets[test] pytest-cov codecov pytest-warnings
+  - pip install --pre --upgrade traitlets[test] pytest pytest-cov codecov
   - test -z ${TEST_DEPS} || pip install --upgrade ${TEST_DEPS}
 
 script:
