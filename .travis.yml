@@ -31,7 +31,7 @@ matrix:
     - python: 3.6
       env:
         - TEST_DEPS=notebook[test]
-        - TEST="nosetests notebook"
+        - TEST="nosetests --exclude selenium notebook"
     - python: 3.6
       env:
         - TEST_DEPS=ipywidgets[test]
