@@ -435,6 +435,8 @@ class LoggingConfigurable(Configurable):
     log = Instance('logging.Logger')
     @default('log')
     def _log_default(self):
+        if isinstance(self.parent, LoggingConfigurable):
+            return self.parent.log
         from traitlets import log
         return log.get_logger()
 

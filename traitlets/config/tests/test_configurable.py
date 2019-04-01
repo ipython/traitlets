@@ -16,7 +16,7 @@ from traitlets.config.configurable import (
     LoggingConfigurable,
     SingletonConfigurable,
 )
-
+from traitlets.log import get_logger
 from traitlets.traitlets import (
     Integer, Float, Unicode, List, Dict, Set, Enum, FuzzyEnum,
     CaselessStrEnum, _deprecations_shown, validate,
@@ -333,6 +333,31 @@ class TestSingletonConfigurable(TestCase):
         self.assertEqual(bam, Bam._instance)
         self.assertEqual(bam, Bar._instance)
         self.assertEqual(SingletonConfigurable._instance, None)
+
+
+class TestLoggingConfigurable(TestCase):
+
+    def test_parent_logger(self):
+        class Parent(LoggingConfigurable): pass
+        class Child(LoggingConfigurable): pass
+        log = get_logger().getChild("TestLoggingConfigurable")
+
+        parent = Parent(log=log)
+        child = Child(parent=parent)
+        self.assertEqual(parent.log, log)
+        self.assertEqual(child.log, log)
+
+        parent = Parent()
+        child = Child(parent=parent, log=log)
+        self.assertEqual(parent.log, get_logger())
+        self.assertEqual(child.log, log)
+
+    def test_parent_not_logging_configurable(self):
+        class Parent(Configurable): pass
+        class Child(LoggingConfigurable): pass
+        parent = Parent()
+        child = Child(parent=parent)
+        self.assertEqual(child.log, get_logger())
 
 
 class MyParent(Configurable):
