@@ -1399,8 +1399,13 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
 
     def add_traits(self, **traits):
         """Dynamically add trait attributes to the HasTraits instance."""
-        self.__class__ = type(self.__class__.__name__, (self.__class__,),
-                              traits)
+        cls = self.__class__
+        attrs = {"__module__": cls.__module__}
+        if hasattr(cls, "__qualname__"):
+          # __qualname__ introduced in Python 3.3 (see PEP 3155)
+          attrs["__qualname__"] = cls.__qualname__
+        attrs.update(traits)
+        self.__class__ = type(cls.__name__, (cls,), attrs)
         for trait in traits.values():
             trait.instance_init(self)
 
