@@ -15,6 +15,7 @@ import os
 import pprint
 import re
 import sys
+import time
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
@@ -315,6 +316,9 @@ class Application(SingletonConfigurable):
             else:
                 self.classes.insert(0, self.__class__)
 
+        self.last_config_update = int(time.time())
+        self.dynamic_configurables = {}
+
     @observe('config')
     @observe_compat
     def _config_changed(self, change):
@@ -328,7 +332,6 @@ class Application(SingletonConfigurable):
         Override in subclasses.
         """
         self.parse_command_line(argv)
-
 
     def start(self):
         """Start the app mainloop.
@@ -763,7 +766,8 @@ class Application(SingletonConfigurable):
             raise_config_file_errors=self.raise_config_file_errors,
         ):
             new_config.merge(config)
-            self._loaded_config_files.append(filename)
+            if filename not in self._loaded_config_files:  # only add if not there (support reloads)
+                self._loaded_config_files.append(filename)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
@@ -819,6 +823,60 @@ class Application(SingletonConfigurable):
     def exit(self, exit_status=0):
         self.log.debug("Exiting application: %s" % self.name)
         sys.exit(exit_status)
+
+    def _config_files_updated(self):
+        """
+        Checks the currently loaded config file modification times to see if any are
+        more recent than the last update.  If newer files are detected, True is returned.
+        :return: bool
+        """
+        updated = False
+        for file in self._loaded_config_files:
+            mod_time = int(os.path.getmtime(file))
+            if mod_time > self.last_config_update:
+                self.log.debug("Config file was updated: {}!".format(file))
+                self.last_config_update = mod_time
+                updated = True
+                # Rather than break here, exhaust all files so last_config_update is the latest.
+        return updated
+
+    def update_dynamic_configurables(self):
+        """
+        Called periodically, this method checks if configuration file updates have occurred.  If
+        updates where detected (last mod time changed), reload the configuration files and update
+        the list of configurables participating in dynamic updates.
+        :return: True if files were updated
+        """
+        updated = False
+        configs = []
+        if self._config_files_updated():
+            # If files were updated, reload the config files into self.config, then
+            # update the config of each configurable from the newly loaded values.
+            # Note: We must be explicit when calling load_config_file() so as to not conflict
+            # with child class implementations (that are not overrides, e.g., JupyterApp).
+            for file in self._loaded_config_files:
+                Application.load_config_file(self, file)
+
+            for config_name, configurable in self.dynamic_configurables.items():
+                configurable.update_config(self.config)
+                configs.append(config_name)
+
+            updated = True
+            self.log.info("Configuration file changes detected.  Instances for the following "
+                          "configurables have been updated: {}".format(configs))
+        return updated
+
+    def add_dynamic_configurable(self, config_name, configurable):
+        """
+        Adds the configurable instance associated with the given name to the list of Configurables
+        that can have their configurations updated when configuration file updates are detected.
+        :param config_name: the name of the config within this application
+        :param configurable: the configurable instance corresponding to that config
+        """
+        if not isinstance(configurable, Configurable):
+            raise RuntimeError("'{}' is not a subclass of Configurable!".format(configurable))
+
+        self.dynamic_configurables[config_name] = configurable
 
     @classmethod
     def launch_instance(cls, argv=None, **kwargs):
