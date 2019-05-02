@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import sys
+import time
 from io import StringIO
 from unittest import TestCase, skip
 
@@ -358,7 +359,6 @@ class TestApplication(TestCase):
         self.assertIn("warn_typo", stream.getvalue())
         self.assertIn("warn_tpyo", stream.getvalue())
 
-
     def test_flatten_flags(self):
         cfg = Config()
         cfg.MyApp.log_level = logging.WARN
@@ -546,6 +546,52 @@ class TestApplication(TestCase):
         ## Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)     # Set by factory.
+
+    def test_dynamic_updates(self):
+        app = MyApp()
+        s1 = time.time()
+        app.log = logging.getLogger()
+        name = 'config.py'
+        with TemporaryDirectory('_1') as td1:
+            with open(pjoin(td1, name), 'w') as f:
+                f.writelines([
+                    "c.MyApp.running = True\n",
+                    "c.MyApp.Bar.b = 1\n"
+                ])
+
+            app.load_config_file(name, path=[td1])
+            app.init_bar()
+            app.add_dynamic_configurable("MyApp", app)
+            app.add_dynamic_configurable("Bar", app.bar)
+            with self.assertRaises(RuntimeError):
+                app.add_dynamic_configurable("Bogus", app.log)
+
+            app.start()
+            self.assertEqual(app.running, True)
+            self.assertEqual(app.bar.b, 1)
+
+            # Ensure file update doesn't happen during same second as initial value.
+            # This is necessary on test systems that don't have finer-grained
+            # timestamps (of less than a second).
+            s2 = time.time()
+            if s2 - s1 < 1.0:
+                time.sleep(1.0 - (s2-s1))
+            # update config file
+            with open(pjoin(td1, name), 'w') as f:
+                f.writelines([
+                    "c.MyApp.running = False\n",
+                    "c.MyApp.Bar.b = 2\n"
+                ])
+
+            # trigger reload and verify updates
+            app.update_dynamic_configurables()
+            self.assertEqual(app.running, False)
+            self.assertEqual(app.bar.b, 2)
+
+            # repeat to ensure no unexpected changes occurred
+            app.update_dynamic_configurables()
+            self.assertEqual(app.running, False)
+            self.assertEqual(app.bar.b, 2)
 
 
 class Root(Application):

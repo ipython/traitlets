@@ -316,7 +316,7 @@ class Application(SingletonConfigurable):
             else:
                 self.classes.insert(0, self.__class__)
 
-        self.last_config_update = int(time.time())
+        self.last_config_update = time.time()
         self.dynamic_configurables = {}
 
     @observe('config')
@@ -832,7 +832,7 @@ class Application(SingletonConfigurable):
         """
         updated = False
         for file in self._loaded_config_files:
-            mod_time = int(os.path.getmtime(file))
+            mod_time = os.path.getmtime(file)
             if mod_time > self.last_config_update:
                 self.log.debug("Config file was updated: {}!".format(file))
                 self.last_config_update = mod_time
