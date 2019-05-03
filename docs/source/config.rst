@@ -32,7 +32,7 @@ Application: :class:`~traitlets.config.Application`
     of the application and know how to configure themselves given the
     configuration object.
 
-    Applications always have a `log` attribute that is a configured Logger.
+    Applications always have a ``log`` attribute that is a configured Logger.
     This allows centralized logging configuration per-application.
 
 Configurable: :class:`~traitlets.config.Configurable`
@@ -406,6 +406,77 @@ instances, mapping *subcommand names* to two-tuples containing these:
 To see a list of the available aliases, flags, and subcommands for a configurable
 application, simply pass ``-h`` or ``--help``. And to see the full list of
 configurable options (*very* long), pass ``--help-all``.
+
+Dynamic Configurations
+======================
+
+Applications can choose to participate in *dynamic configurations* where updates
+made to configuration files are periodically included and reflected in their
+corresponding traitlet values.  This feature is meant for long-running, service-oriented,
+applications that cannot afford to be restarted if a change is configuration is
+desired. Examples of uses would include the toggling of ``DEBUG`` logging or updates to a
+whitelist of values.
+
+To enable this functionality, the application first registers itself, and any
+:class:`~traitlets.config.Configurable` instances it manages for which dynamic updates
+should be applied, by calling its :meth:`add_dynamic_configurable()` method.  The application
+then calls its :meth:`update_dynamic_configurables()` method at periodic intervals.  As a
+result, use of :meth:`IOLoop.periodicCallback()` is recommended.
+
+.. sourcecode:: python
+
+    self.add_dynamic_configurable('MyApp', self)
+    self.add_dynamic_configurable('MyConfigurableA', self.my_configurable_a)
+    self.add_dynamic_configurable('MyConfigurableB', self.my_configurable_b)
+    self.add_dynamic_configurable('MyConfigurableC', self.my_configurable_c)
+
+    self.dynamic_config_poller = ioloop.PeriodicCallback(self.update_dynamic_configurables,
+                                                         self.dynamic_config_interval * 1000)
+    self.dynamic_config_poller.start()
+
+Once registration has occurred, the application will have its configuration-based traitlets
+reflect any updates that have taken place within the previously loaded configuration files since
+the last update.
+
+    .. note::
+       There are some caveats that should be understood up front.
+
+       1. Command-line options (CLI) always take precedence over file-based options.  As a result,
+       CLI options updated within configuration files will not be reflected.
+
+       2. Some configurable options are used to control other execution paths - like their own periodic
+       intervals or applications may copy the value from the configurable trailet to another location.  If
+       it's desired to have those traitlets participate in dynamic configuration updates, an ``@observe``
+       handler should be implemented to reset the traitlet such that its associated behavior is affected
+       by the new value (see example below).
+
+Since dynamic configurations are periodic in nature, applications will tend to use an interval
+that a) enables dynamic configurations and b) indicates the period with which the changes should
+occur.  Here's an example of how an application may manage that interval, and changes to its value,
+via its ``dynamic_config_interval`` trailet.
+
+.. sourcecode:: python
+
+    dynamic_config_interval = Integer(0, config=True,
+                              help="""Specifies the number of seconds configuration files are
+                              polled for changes. A value of 0 or less disables dynamic config
+                              updates.""")
+
+    @observe('dynamic_config_interval')
+    def dynamic_config_interval_changed(self, event):
+        prev_val = event['old']
+        self.dynamic_config_interval = event['new']
+        if self.dynamic_config_interval != prev_val:
+            # Values are different. Stop the current poller. If new value is > 0, start a poller.
+            if self.dynamic_config_poller:
+                self.dynamic_config_poller.stop()
+                self.dynamic_config_poller = None
+
+            if self.dynamic_config_interval <= 0:
+                self.log.warning("Dynamic configuration updates have been disabled and
+                                 "cannot be re-enabled without restarting application!")
+            elif prev_val > 0:  # The interval has been changed, but still positive
+                self.init_dynamic_configurables()  # Restart the poller
 
 
 Design requirements
