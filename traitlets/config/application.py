@@ -16,6 +16,7 @@ import pprint
 import re
 import sys
 import time
+import weakref
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
@@ -876,7 +877,7 @@ class Application(SingletonConfigurable):
         if not isinstance(configurable, Configurable):
             raise RuntimeError("'{}' is not a subclass of Configurable!".format(configurable))
 
-        self.dynamic_configurables[config_name] = configurable
+        self.dynamic_configurables[config_name] = weakref.proxy(configurable)
 
     @classmethod
     def launch_instance(cls, argv=None, **kwargs):
