@@ -757,7 +757,7 @@ class Application(SingletonConfigurable):
     @property
     def loaded_config_files(self):
         """Currently loaded configuration files"""
-        return self._loaded_config_files.copy()
+        return self._loaded_config_files[:]
 
     @catch_config_error
     def load_config_file(self, filename, path=None):
