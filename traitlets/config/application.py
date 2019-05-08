@@ -754,6 +754,11 @@ class Application(SingletonConfigurable):
                     loaded.append(config)
                     filenames.append(loader.full_filename)
 
+    @property
+    def loaded_config_files(self):
+        """Currently loaded configuration files"""
+        return self._loaded_config_files.copy()
+
     @catch_config_error
     def load_config_file(self, filename, path=None):
         """Load config files by filename and path."""
@@ -763,7 +768,8 @@ class Application(SingletonConfigurable):
             raise_config_file_errors=self.raise_config_file_errors,
         ):
             new_config.merge(config)
-            self._loaded_config_files.append(filename)
+            if filename not in self._loaded_config_files:  # only add if not present (support reloads)
+                self._loaded_config_files.append(filename)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
