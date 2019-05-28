@@ -918,7 +918,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 if key in self.aliases:
                     alias_flags[self.aliases[key]] = value
                     continue
-                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                keys = ('-'+key, '--'+key) if len(key) == 1 else ('--'+key, )
                 paa(*keys, action=_FlagAction, flag=value)
 
         for keys, traitname in aliases.items():
@@ -943,7 +943,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     argparse_kwds['action'] = _FlagAction
                     argparse_kwds['flag'] = alias_flags[traitname]
                     argparse_kwds['alias'] = traitname
-                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
+                keys = ('-'+key, '--'+key) if len(key) == 1 else ('--'+key, )
                 paa(*keys, **argparse_kwds)
 
     def _convert_to_config(self):
