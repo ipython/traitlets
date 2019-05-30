@@ -768,7 +768,7 @@ class Application(SingletonConfigurable):
             raise_config_file_errors=self.raise_config_file_errors,
         ):
             new_config.merge(config)
-            if filename not in self._loaded_config_files:  # only add if not present (support reloads)
+            if filename not in self._loaded_config_files:  # only add to list of loaded files if not previously loaded
                 self._loaded_config_files.append(filename)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
