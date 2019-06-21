@@ -27,7 +27,7 @@ matrix:
         - TEST=iptest
     - python: 3.6
       env:
-        - TEST_DEPS=nbconvert[test]
+        - TEST_DEPS=git+https://github.com/jupyter/nbconvert.git#egg=nbconvert[test]
         - TEST="py.test --pyargs nbconvert"
     - python: 3.6
       env:
