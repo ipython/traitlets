@@ -521,9 +521,13 @@ class TraitType(BaseDescriptor):
             # Check for a dynamic initializer.
             default = obj.trait_defaults(self.name)
             if default is Undefined:
-                raise TraitError("No default value found for "
-                    "the '%s' trait named '%s' of %r" % (
-                    type(self).__name__, self.name, obj))
+                warn(
+                    "Explicit using of Undefined as the default value "
+                    "is deprecated in traitlets 4.4, and may cause "
+                    "exceptions in the future",
+                    DeprecationWarning,
+                    stacklevel=2
+                )
             with obj.cross_validation_lock:
                 value = self._validate(obj, default)
             obj._trait_values[self.name] = value

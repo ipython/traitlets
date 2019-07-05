@@ -56,8 +56,7 @@ class TestTraitType(TestCase):
         class A(HasTraits):
             a = TraitType
         a = A()
-        with self.assertRaises(TraitError):
-            a.a
+        assert a.a is Undefined
 
     def test_set(self):
         class A(HasTraitsStub):
