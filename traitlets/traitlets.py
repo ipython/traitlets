@@ -877,6 +877,7 @@ def validate(*names):
 
     The handler passed to the decorator must have one ``proposal`` dict argument.
     The proposal dictionary must hold the following keys:
+
     * ``owner`` : the HasTraits instance
     * ``value`` : the proposed value for the modified trait attribute
     * ``trait`` : the TraitType instance associated with the attribute
