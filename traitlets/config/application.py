@@ -267,6 +267,7 @@ class Application(SingletonConfigurable):
         """
     )
 
+    _loaded_config_files = List()
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
@@ -554,10 +555,10 @@ class Application(SingletonConfigurable):
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
             jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
-            config = None
             loaded = []
             filenames = []
             for loader in [pyloader, jsonloader]:
+                config = None
                 try:
                     config = loader.load_config()
                 except ConfigFileNotFound:
@@ -583,21 +584,20 @@ class Application(SingletonConfigurable):
                                 " {1} has higher priority: {2}".format(
                                 filename, loader.full_filename, json.dumps(collisions, indent=2),
                             ))
-                    yield config
+                    yield (config, loader.full_filename)
                     loaded.append(config)
                     filenames.append(loader.full_filename)
-            
-
 
     @catch_config_error
     def load_config_file(self, filename, path=None):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
-        for config in self._load_config_files(filename, path=path, log=self.log,
+        for (config, filename) in self._load_config_files(filename, path=path, log=self.log,
             raise_config_file_errors=self.raise_config_file_errors,
         ):
             new_config.merge(config)
+            self._loaded_config_files.append(filename)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
