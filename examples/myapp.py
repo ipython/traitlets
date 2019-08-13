@@ -44,7 +44,7 @@ class Foo(Configurable):
 
     i = Int(0, help="The integer i.").tag(config=True)
     j = Int(1, help="The integer j.").tag(config=True)
-    name = Unicode(u'Brian', help="First name.").tag(config=True)
+    name = Unicode(u'Brian', help="First name.").tag(config=True, shortname="B")
 
 
 class Bar(Configurable):
