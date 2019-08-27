@@ -349,6 +349,48 @@ class TestApplication(TestCase):
             with self.assertRaises(SyntaxError):
                 app.load_config_file(name, path=[td])
 
+    def test_loaded_config_files(self):
+        app = MyApp()
+        app.log = logging.getLogger()
+        name = 'config.py'
+        with TemporaryDirectory('_1') as td1:
+            config_file = pjoin(td1, name)
+            with open(config_file, 'w') as f:
+                f.writelines([
+                    "c.MyApp.running = True\n"
+                ])
+
+            app.load_config_file(name, path=[td1])
+            self.assertEqual(len(app.loaded_config_files), 1)
+            self.assertEquals(app.loaded_config_files[0], config_file)
+
+            app.start()
+            self.assertEqual(app.running, True)
+
+            # emulate an app that allows dynamic updates and update config file
+            with open(config_file, 'w') as f:
+                f.writelines([
+                    "c.MyApp.running = False\n"
+                ])
+
+            # reload and verify update, and that loaded_configs was not increased
+            app.load_config_file(name, path=[td1])
+            self.assertEqual(len(app.loaded_config_files), 1)
+            self.assertEqual(app.running, False)
+
+            # Attempt to update, ensure error...
+            with self.assertRaises(AttributeError):
+                app.loaded_config_files = "/foo"
+
+            # ensure it can't be udpated via append
+            app.loaded_config_files.append("/bar")
+            self.assertEqual(len(app.loaded_config_files), 1)
+
+            # repeat to ensure no unexpected changes occurred
+            app.load_config_file(name, path=[td1])
+            self.assertEqual(len(app.loaded_config_files), 1)
+            self.assertEqual(app.running, False)
+
 
 class DeprecatedApp(Application):
     override_called = False
