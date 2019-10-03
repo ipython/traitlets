@@ -4,6 +4,17 @@ Changes in Traitlets
 4.3
 ---
 
+4.3.3
+*****
+
+`4.3.3 on GitHub`_
+
+4.3.3 backports some small bugfixes and improvements:
+
+- Adds :attr:`Application.loaded_config_files` property for accessing config files that have been loaded
+  and makes the property idempotent on multiple loads.
+
+
 4.3.2
 *****
 
@@ -112,3 +123,4 @@ First release of traitlets as a standalone package.
 .. _`4.3.0 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3
 .. _`4.3.1 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.1
 .. _`4.3.2 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.2
+.. _`4.3.3 on GitHub`: https://github.com/ipython/traitlets/milestones/4.3.3
