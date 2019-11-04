@@ -6,13 +6,13 @@ except ImportError:
 
 from ...traitlets import HasTraits, Int, Unicode
 
-from ..decorators import expand_constructor_signature
+from ..decorators import signature_has_traits
 
 
 class TestExpandSignature(TestCase):
 
     def test_no_init(self):
-        @expand_constructor_signature
+        @signature_has_traits
         class Foo(HasTraits):
             number1 = Int()
             number2 = Int()
@@ -37,7 +37,7 @@ class TestExpandSignature(TestCase):
         self.assertEqual(f.value, 'World')
 
     def test_partial_init(self):
-        @expand_constructor_signature
+        @signature_has_traits
         class Foo(HasTraits):
             number1 = Int()
             number2 = Int()
@@ -68,7 +68,7 @@ class TestExpandSignature(TestCase):
         self.assertEqual(f.value, 'World')
 
     def test_duplicate_init(self):
-        @expand_constructor_signature
+        @signature_has_traits
         class Foo(HasTraits):
             number1 = Int()
             number2 = Int()
@@ -89,7 +89,7 @@ class TestExpandSignature(TestCase):
         self.assertEqual(f.number2, 36)
 
     def test_full_init(self):
-        @expand_constructor_signature
+        @signature_has_traits
         class Foo(HasTraits):
             number1 = Int()
             number2 = Int()
