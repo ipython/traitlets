@@ -51,7 +51,10 @@ def signature_has_traits(cls):
     # Unfortunately, if the old signature does not contain **kwargs, we can't do anything,
     # because it can't accept traits as keyword arguments
     if old_var_keyword_parameter is None:
-        return cls
+        raise RuntimeError(
+            'The {} constructor does not take **kwargs, which means that the signature can not be expanded with trait names'
+            .format(cls)
+        )
 
     new_parameters = []
 
