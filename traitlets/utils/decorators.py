@@ -10,7 +10,7 @@ except ImportError:
 from ..traitlets import Undefined
 
 
-def get_default(value):
+def _get_default(value):
     """Get default argument value, given the trait default value."""
     return Parameter.empty if value == Undefined else value
 
@@ -18,7 +18,7 @@ def get_default(value):
 def signature_has_traits(cls):
     """Return a decorated class with a constructor signature that contain Trait names as kwargs."""
     traits = [
-        (name, get_default(value.default_value))
+        (name, _get_default(value.default_value))
         for name, value in cls.class_traits().items()
         if not name.startswith('_')
     ]
