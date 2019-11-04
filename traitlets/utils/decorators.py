@@ -15,7 +15,7 @@ def get_default(value):
     return Parameter.empty if value == Undefined else value
 
 
-def expand_constructor_signature(cls):
+def signature_has_traits(cls):
     """Return a decorated class with a constructor signature that contain Trait names as kwargs."""
     traits = [
         (name, get_default(value.default_value))
