@@ -129,3 +129,13 @@ class TestExpandSignature(TestCase):
         self.assertEqual(f.number1, 32)
         self.assertEqual(f.number2, 0)
         self.assertEqual(f.value, 'World')
+
+    def test_no_kwargs(self):
+        with self.assertRaises(RuntimeError):
+            @signature_has_traits
+            class Foo(HasTraits):
+                number1 = Int()
+                number2 = Int()
+
+                def __init__(self, arg1, arg2=None):
+                    pass
