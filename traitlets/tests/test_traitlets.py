@@ -2551,7 +2551,7 @@ def test_super_bad_args():
         # Legacy Python, object.__init__ warns itself, instead of raising
         w = ['object.__init__']
     else:
-        w = ["Passing unrecoginized arguments"]
+        w = ["Passing unrecognized arguments"]
     with expected_warnings(w):
         obj = SuperHasTraits(a=1, b=2)
     assert obj.a ==  1
