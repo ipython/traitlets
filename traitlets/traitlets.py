@@ -1074,7 +1074,7 @@ class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
                 arg_s_list.append("%s=%r" % (k, v))
             arg_s = ', '.join(arg_s_list)
             warn(
-                "Passing unrecoginized arguments to super({classname}).__init__({arg_s}).\n"
+                "Passing unrecognized arguments to super({classname}).__init__({arg_s}).\n"
                 "{error}\n"
                 "This is deprecated in traitlets 4.2."
                 "This error will be raised in a future release of traitlets."
