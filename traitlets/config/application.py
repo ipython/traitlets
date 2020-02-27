@@ -283,6 +283,8 @@ class Application(SingletonConfigurable):
         """
     )
 
+    config_file = Unicode('application_config.py', help="The config file to load").tag(config=True)
+
     _loaded_config_files = List()
 
     show_config = Bool(
@@ -825,6 +827,40 @@ class Application(SingletonConfigurable):
     def exit(self, exit_status=0):
         self.log.debug("Exiting application: %s" % self.name)
         sys.exit(exit_status)
+
+    def write_config_file(self):
+        """Write our default config to a .py config file"""
+        config_file_dir = os.path.dirname(os.path.abspath(self.config_file))
+        if not os.path.isdir(config_file_dir):
+            self.exit(
+                "{} does not exist. The destination directory must exist before generating config file.".format(
+                    config_file_dir
+                )
+            )
+        if os.path.exists(self.config_file) and not self.answer_yes:
+            answer = ''
+
+            def ask():
+                prompt = "Overwrite %s with default config? [y/N]" % self.config_file
+                try:
+                    return input(prompt).lower() or 'n'
+                except KeyboardInterrupt:
+                    print('')  # empty line
+                    return 'n'
+
+            answer = ask()
+            while not answer.startswith(('y', 'n')):
+                print("Please answer 'yes' or 'no'")
+                answer = ask()
+            if answer.startswith('n'):
+                return
+
+        config_text = self.generate_config_file()
+        if isinstance(config_text, bytes):
+            config_text = config_text.decode('utf8')
+        print("Writing default config to: %s" % self.config_file)
+        with open(self.config_file, mode='w') as f:
+            f.write(config_text)
 
     @classmethod
     def launch_instance(cls, argv=None, **kwargs):
