@@ -295,24 +295,24 @@ and no spaces.
 
 .. note::
 
-    By default any error in configuration files with lead to this configuration
-    file be ignored by default.  Application subclasses may specify
+    Any error in configuration files wich lead to this configuration
+    file be ignored by default. Application subclasses may specify
     `raise_config_file_errors = True` to exit on failure to load config files,
     instead of the default of logging the failures.
 
 .. versionadded:: 4.3
 
     The environement variable ``TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR``
-    to ``'1'`` or ``'true'`` to change the defautl value of ``raise_config_file_errors``.
+    to ``'1'`` or ``'true'`` to change the default value of ``raise_config_file_errors``.
 
 
 Common Arguments
 ----------------
 
-Since the strictness and verbosity of the KVLoader above are not ideal for everyday
-use, common arguments can be specified as flags_ or aliases_.
+Since the strictness and verbosity of the :class:`~traitlets.config.loader.KeyValueLoader`
+above are not ideal for everyday use, common arguments can be specified as flags_ or aliases_.
 
-Flags and Aliases are handled by :mod:`argparse` instead, allowing for more flexible
+Flags and aliases are handled by :mod:`argparse` instead, allowing for more flexible
 parsing. In general, flags and aliases are prefixed by ``--``, except for those
 that are single characters, in which case they can be specified with a single ``-``, e.g.:
 
