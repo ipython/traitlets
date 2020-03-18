@@ -153,7 +153,7 @@ configuration attributes::
 
 Here, ``ClassName`` is the name of the class whose configuration attribute you
 want to set, ``attribute_name`` is the name of the attribute you want to set
-and ``attribute_value`` the the value you want it to have. The ``ClassName``
+and ``attribute_value`` the value you want it to have. The ``ClassName``
 attribute of ``c`` is not the actual class, but instead is another
 :class:`~traitlets.config.Config` instance.
 
