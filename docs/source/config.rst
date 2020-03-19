@@ -295,8 +295,8 @@ and no spaces.
 
 .. note::
 
-    Any error in configuration files wich lead to this configuration
-    file be ignored by default. Application subclasses may specify
+    Any error in configuration files which lead to this configuration
+    file will be ignored by default. Application subclasses may specify
     `raise_config_file_errors = True` to exit on failure to load config files,
     instead of the default of logging the failures.
 
