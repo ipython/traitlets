@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - conda
 dependencies:
-  - python==3.5
+  - python=3
   - ipython_genutils
   - sphinx
   - sphinx_rtd_theme
