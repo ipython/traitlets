@@ -801,7 +801,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 #
                 self.alias_flags[self.aliases[key]] = value
                 continue
-            if len(key) is 1:
+            if len(key) == 1:
                 paa('-'+key, '--'+key, action='append_const', dest='_flags', const=value)
             else:
                 paa('--'+key, action='append_const', dest='_flags', const=value)
