@@ -792,7 +792,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 nargs = '?'
             else:
                 nargs = None
-            if len(key) is 1:
+            if len(key) == 1:
                 paa('-'+key, '--'+key, type=text_type, dest=value, nargs=nargs)
             else:
                 paa('--'+key, type=text_type, dest=value, nargs=nargs)
