@@ -2688,3 +2688,19 @@ class UseEnum(TraitType):
         if self.allow_none:
             return result + " or None"
         return result
+
+class Callable(TraitType):
+    """A trait which is callable.
+
+    Notes
+    -----
+    Classes are callable, as are instances
+    with a __call__() method."""
+
+    info_text = 'a callable'
+
+    def validate(self, obj, value):
+        if six.callable(value):
+            return value
+        else:
+            self.error(obj, value)
