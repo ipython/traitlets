@@ -110,5 +110,7 @@ Miscellaneous
 .. autoclass:: Union
    :members: __init__
 
+.. autoclass:: Callable
+
 .. autoclass:: Any
 
