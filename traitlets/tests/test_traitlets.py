@@ -7,6 +7,7 @@
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+from __future__ import print_function
 import pickle
 import re
 import sys
