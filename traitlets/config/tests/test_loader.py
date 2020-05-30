@@ -526,3 +526,132 @@ class TestConfig(TestCase):
         self.assertEqual(c.Foo.trait, [1])
         self.assertEqual(c2.Foo.trait, [1])
 
+    
+    def test_merge_multi_lazy(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        If systemwide overwirte and user append, we want both in the right
+        order.
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait = [1]
+        c2.Foo.trait.append(2)
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait, [1,2] )
+
+
+    
+    def test_merge_multi_lazyII(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        If both are lazy we still want a lazy config.
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait.append(1)
+        c2.Foo.trait.append(2)
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait._extend, [1,2] )
+
+    def test_merge_multi_lazy_III(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        Prepend should prepend in the right order.
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait = [1]
+        c2.Foo.trait.prepend([0])
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait, [0, 1] )
+
+    def test_merge_multi_lazy_IV(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        Both prepending should be lazy
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait.prepend([1])
+        c2.Foo.trait.prepend([0])
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait._prepend, [0, 1] )
+
+    def test_merge_multi_lazy_update_I(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        dict update shoudl be in the right order.
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait = {'a' : 1, 'z': 26}
+        c2.Foo.trait.update({'a':0, 'b':1 })
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait, {'a':0, 'b':1, 'z':26} )
+
+    def test_merge_multi_lazy_update_II(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        Later dict overwrite lazyness
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait.update({'a':0, 'b':1 })
+        c2.Foo.trait = {'a' : 1, 'z': 26}
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait, {'a':1, 'z':26} )
+
+    def test_merge_multi_lazy_update_III(self):
+        """
+        With multiple config files (systemwide and users), we want compounding.
+
+        Later dict overwrite lazyness
+        """
+        c1 = Config()
+        c2 = Config()
+
+        c1.Foo.trait.update({'a':0, 'b':1 })
+        c2.Foo.trait.update({'a' : 1, 'z': 26})
+
+        c = Config()
+        c.merge(c1)
+        c.merge(c2)
+
+        self.assertEqual(c.Foo.trait._update, {'a':1, 'z':26, 'b':1} )
