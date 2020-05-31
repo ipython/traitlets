@@ -1,3 +1,4 @@
+os: linux
 language: python
 python:
   - "nightly"
@@ -17,7 +18,7 @@ script:
   - ${TEST:-py.test --cov traitlets -v traitlets}
 after_success:
   - codecov
-matrix:
+jobs:
   allow_failures:
     - python: "nightly"
   include:
@@ -25,7 +26,7 @@ matrix:
       env:
         - TEST_DEPS=ipython[test]
         - TEST=iptest
-    - python: 3.7
+    - python: 3.8
       env:
         - TEST_DEPS=git+https://github.com/jupyter/nbconvert.git#egg=nbconvert[test]
         - TEST="py.test --pyargs nbconvert"
@@ -37,7 +38,7 @@ matrix:
       env:
         - TEST_DEPS=ipywidgets[test]
         - TEST="pytest --pyargs ipywidgets"
-    - python: 3.7
+    - python: 3.8
       env:
         - TEST_DEPS=traittypes[test]
         - TEST="nosetests traittypes"
