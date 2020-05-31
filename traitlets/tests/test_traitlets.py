@@ -7,6 +7,7 @@
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+from __future__ import print_function
 import pickle
 import re
 import sys
@@ -19,7 +20,7 @@ from pytest import mark
 from traitlets import (
     HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
     Int, CInt, Long, CLong, Integer, Float, CFloat, Complex, Bytes, Unicode,
-    TraitError, Union, All, Undefined, Type, This, Instance, TCPAddress,
+    TraitError, Union, Callable, All, Undefined, Type, This, Instance, TCPAddress,
     List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
     ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
     observe_compat, BaseDescriptor, HasDescriptors,
@@ -1206,6 +1207,16 @@ class UnionTraitTest(TraitTestBase):
     obj = UnionTrait(value='ipython_genutils.ipstruct.Struct')
     _good_values = [int, float, True]
     _bad_values = [[], (0,), 1j]
+
+class CallableTrait(HasTraits):
+
+    value = Callable()
+
+class CallableTraitTest(TraitTestBase):
+
+    obj = CallableTrait(value=lambda x: type(x))
+    _good_values = [int, sorted, lambda x: print(x)]
+    _bad_values = [[], 1, '']
 
 class OrTrait(HasTraits):
 
