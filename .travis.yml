@@ -37,7 +37,3 @@ matrix:
       env:
         - TEST_DEPS=ipywidgets[test]
         - TEST="pytest --pyargs ipywidgets"
-    - python: 3.7
-      env:
-        - TEST_DEPS=traittypes[test]
-        - TEST="nosetests traittypes"
