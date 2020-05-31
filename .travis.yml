@@ -1,6 +1,8 @@
 language: python
 python:
   - "nightly"
+  - 3.8
+  - 3.7
   - 3.6
   - 3.5
   - 3.4
@@ -21,23 +23,23 @@ matrix:
   allow_failures:
     - python: "nightly"
   include:
-    - python: 3.6
+    - python: 3.7
       env:
         - TEST_DEPS=ipython[test]
         - TEST=iptest
-    - python: 3.6
+    - python: 3.7
       env:
         - TEST_DEPS=git+https://github.com/jupyter/nbconvert.git#egg=nbconvert[test]
         - TEST="py.test --pyargs nbconvert"
-    - python: 3.6
+    - python: 3.7
       env:
         - TEST_DEPS=notebook[test]
         - TEST="nosetests --exclude selenium notebook"
-    - python: 3.6
+    - python: 3.7
       env:
         - TEST_DEPS=ipywidgets[test]
         - TEST="pytest --pyargs ipywidgets"
-    - python: 3.6
+    - python: 3.7
       env:
         - TEST_DEPS=traittypes[test]
         - TEST="nosetests traittypes"
