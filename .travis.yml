@@ -1,3 +1,5 @@
+os: linux
+dist: focal
 language: python
 python:
   - "nightly"
@@ -12,12 +14,11 @@ install:
   - pip install --pre --upgrade traitlets[test] pytest pytest-cov codecov
   - test -z ${TEST_DEPS} || pip install --upgrade ${TEST_DEPS}
   - pip freeze
-
 script:
   - ${TEST:-py.test --cov traitlets -v traitlets}
 after_success:
   - codecov
-matrix:
+jobs:
   allow_failures:
     - python: "nightly"
   include:
@@ -25,7 +26,7 @@ matrix:
       env:
         - TEST_DEPS=ipython[test]
         - TEST=iptest
-    - python: 3.7
+    - python: 3.8
       env:
         - TEST_DEPS=git+https://github.com/jupyter/nbconvert.git#egg=nbconvert[test]
         - TEST="py.test --pyargs nbconvert"
