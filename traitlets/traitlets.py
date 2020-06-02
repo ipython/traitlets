@@ -2596,6 +2596,10 @@ class Set(List):
         """
         super(Set, self).__init__(trait, default_value, minlen, maxlen, **kwargs)
 
+    def default_value_repr(self):
+        # Ensure default value is sorted for a reproducible build
+        return repr(sorted(self.make_dynamic_default()))
+
 
 class Tuple(Container):
     """An instance of a Python tuple."""
