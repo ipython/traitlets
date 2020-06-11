@@ -386,6 +386,7 @@ instances, mapping *subcommand names* to two-tuples containing these:
 
 1. A subclass of :class:`Application` to handle the subcommand.
    This can be specified as:
+   
    - simply as a class, where its :meth:`SingletonConfigurable.instance()`
      will be invoked (straight-forward, but loads subclasses on import time);
    - as a string which can be imported to produce the above class;
