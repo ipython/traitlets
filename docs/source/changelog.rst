@@ -4,22 +4,19 @@ Changes in Traitlets
 Traitlets 5.0
 -------------
 
-:ghpull:`319` adds ability to introduce both shot and long version of aliases, allowing for short and long options ``-``
-and ``--``.
-:ghpull:`362` , ghpull:`361` introduces:
- - help for aliases , aliases dict values can now be a tuple with ('target', 'help string')
- - subcommands can now be arbitrary callable and do not need to be subclass of `Application`
-:ghpull:`333` introduces a `Callable` trait.
-:ghpull:`371` introduces a `FuzzyEnum` trait that allow case insensitive and unique prefix matching.
-:ghpull:`509` remove all base ``except:`` meaning traitlets will not catch a number of `BaseException` s anymore.
-:ghpull:`438` introduces ``.info_rst()`` to let traitlets overwrite the automatically generated rst documentation.
-:ghpull:`402` rewrite handling of error messages for nested traits.
-:ghpull:`322` rewrite commandline argument parsing to use argparse, and allow more flexibility in assingin literals
-without quoting.
-:ghpull:`341` introduces ``--Application.show_config=True``  which will make by default any application show it
-configuration, all the files it loaded configuration from, and exit.
-:ghpull:`340` Old way of passing containers in the command line is now deprecated, and will emit warnign on the command
-line.
+- :ghpull:`319` adds ability to introduce both shot and long version of aliases, allowing for short and long options ``-`` and ``--``.
+- :ghpull:`362` , :ghpull:`361` introduces:
+  - help for aliases , aliases dict values can now be a tuple with ('target', 'help string')
+  - subcommands can now be arbitrary callable and do not need to be subclass of :any:`Application`
+- :ghpull:`333` introduces a :any:`Callable` trait.
+- :ghpull:`371` introduces a :any:`FuzzyEnum` trait that allow case insensitive and unique prefix matching.
+- :ghpull:`509` remove all base ``except:`` meaning traitlets will not catch a number of :any:`BaseException` s anymore.
+- :ghpull:`438` introduces ``.info_rst()`` to let traitlets overwrite the automatically generated rst documentation.
+- :ghpull:`402` rewrite handling of error messages for nested traits.
+- :ghpull:`322` rewrite command line argument parsing to use argparse, and allow more flexibility in assigning literals without quoting.
+- :ghpull:`341` introduces ``--Application.show_config=True``  which will make by default any application show it
+- configuration, all the files it loaded configuration from, and exit.
+- :ghpull:`340` Old way of passing containers in the command line is now deprecated, and will emit warning on the command line.
 
 
 4.3
