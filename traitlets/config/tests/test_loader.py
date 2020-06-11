@@ -600,7 +600,7 @@ class TestConfig(TestCase):
         c.merge(c1)
         c.merge(c2)
 
-        self.assertEqual(c.Foo.trait._prepend, [0, 1] )
+        self.assertEqual(c.Foo.trait._prepend, [0, 1])
 
     def test_merge_multi_lazy_update_I(self):
         """
@@ -611,14 +611,14 @@ class TestConfig(TestCase):
         c1 = Config()
         c2 = Config()
 
-        c1.Foo.trait = {'a' : 1, 'z': 26}
-        c2.Foo.trait.update({'a':0, 'b':1 })
+        c1.Foo.trait = {"a": 1, "z": 26}
+        c2.Foo.trait.update({"a": 0, "b": 1})
 
         c = Config()
         c.merge(c1)
         c.merge(c2)
 
-        self.assertEqual(c.Foo.trait, {'a':0, 'b':1, 'z':26} )
+        self.assertEqual(c.Foo.trait, {"a": 0, "b": 1, "z": 26})
 
     def test_merge_multi_lazy_update_II(self):
         """
@@ -629,14 +629,14 @@ class TestConfig(TestCase):
         c1 = Config()
         c2 = Config()
 
-        c1.Foo.trait.update({'a':0, 'b':1 })
-        c2.Foo.trait = {'a' : 1, 'z': 26}
+        c1.Foo.trait.update({"a": 0, "b": 1})
+        c2.Foo.trait = {"a": 1, "z": 26}
 
         c = Config()
         c.merge(c1)
         c.merge(c2)
 
-        self.assertEqual(c.Foo.trait, {'a':1, 'z':26} )
+        self.assertEqual(c.Foo.trait, {"a": 1, "z": 26})
 
     def test_merge_multi_lazy_update_III(self):
         """
@@ -647,11 +647,11 @@ class TestConfig(TestCase):
         c1 = Config()
         c2 = Config()
 
-        c1.Foo.trait.update({'a':0, 'b':1 })
-        c2.Foo.trait.update({'a' : 1, 'z': 26})
+        c1.Foo.trait.update({"a": 0, "b": 1})
+        c2.Foo.trait.update({"a": 1, "z": 26})
 
         c = Config()
         c.merge(c1)
         c.merge(c2)
 
-        self.assertEqual(c.Foo.trait._update, {'a':1, 'z':26, 'b':1} )
+        self.assertEqual(c.Foo.trait._update, {"a": 1, "z": 26, "b": 1})
