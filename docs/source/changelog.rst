@@ -17,7 +17,11 @@ Traitlets 5.0
 - :ghpull:`341` introduces ``--Application.show_config=True``  which will make by default any application show it
 - configuration, all the files it loaded configuration from, and exit.
 - :ghpull:`340` Old way of passing containers in the command line is now deprecated, and will emit warning on the command line.
-
+- :ghpull:`516` a ``Sentinel`` Traitlets was made public by mistake and is now deprecated.
+- :ghpull:`355` fix a random ordering issues in command lines flags.
+- :ghpull:`356` allow both ``self`` and ``cls`` in ``__new__`` method for genericity.
+- :ghpull:`349` unify ability to declare default values across traitlets with a singular method ``default`` method.
+- :ghpull:`515` Add a class decorator to enable tab completion of keyword arguments in signature.
 
 4.3
 ---
