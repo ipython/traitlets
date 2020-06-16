@@ -4,24 +4,27 @@ Changes in Traitlets
 Traitlets 5.0
 -------------
 
-- :ghpull:`319` adds ability to introduce both shot and long version of aliases, allowing for short and long options ``-`` and ``--``.
 - :ghpull:`362` , :ghpull:`361` introduces:
   - help for aliases , aliases dict values can now be a tuple with ('target', 'help string')
   - subcommands can now be arbitrary callable and do not need to be subclass of :any:`Application`
-- :ghpull:`333` introduces a :any:`Callable` trait.
-- :ghpull:`371` introduces a :any:`FuzzyEnum` trait that allow case insensitive and unique prefix matching.
-- :ghpull:`509` remove all base ``except:`` meaning traitlets will not catch a number of :any:`BaseException` s anymore.
-- :ghpull:`438` introduces ``.info_rst()`` to let traitlets overwrite the automatically generated rst documentation.
-- :ghpull:`402` rewrite handling of error messages for nested traits.
+- :ghpull:`319` adds ability to introduce both shot and long version of aliases, allowing for short and long options ``-`` and ``--``.
 - :ghpull:`322` rewrite command line argument parsing to use argparse, and allow more flexibility in assigning literals without quoting.
-- :ghpull:`341` introduces ``--Application.show_config=True``  which will make by default any application show it
-- configuration, all the files it loaded configuration from, and exit.
+- :ghpull:`333` introduces a :any:`Callable` trait.
 - :ghpull:`340` Old way of passing containers in the command line is now deprecated, and will emit warning on the command line.
-- :ghpull:`516` a ``Sentinel`` Traitlets was made public by mistake and is now deprecated.
+- :ghpull:`341` introduces ``--Application.show_config=True``  which will make by default any application show it configuration, all the files it loaded configuration from, and exit.
+- :ghpull:`349` unify ability to declare default values across traitlets with a singular method ``default`` method.
 - :ghpull:`355` fix a random ordering issues in command lines flags.
 - :ghpull:`356` allow both ``self`` and ``cls`` in ``__new__`` method for genericity.
-- :ghpull:`349` unify ability to declare default values across traitlets with a singular method ``default`` method.
+- :ghpull:`360` Simplify overwriting and extending the command line argument parser.
+- :ghpull:`371` introduces a :any:`FuzzyEnum` trait that allow case insensitive and unique prefix matching.
+- :ghpull:`402` rewrite handling of error messages for nested traits.
+- :ghpull:`405` all function that use to print help now have an equivalent that yields the help lines.
+- :ghpull:`438` introduces ``.info_rst()`` to let traitlets overwrite the automatically generated rst documentation.
+- :ghpull:`458` Add a sphinx extension to automatically document options of `Application` instance in projects using traitlets.
+- :ghpull:`509` remove all base ``except:`` meaning traitlets will not catch a number of :any:`BaseException` s anymore.
 - :ghpull:`515` Add a class decorator to enable tab completion of keyword arguments in signature.
+- :ghpull:`516` a ``Sentinel`` Traitlets was made public by mistake and is now deprecated.
+- :ghpull:`522` Make loading config files idempotent and expose the list of loaded config files for long running services.
 
 4.3
 ---
