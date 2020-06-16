@@ -1,7 +1,6 @@
-import re
-import six
-import types
 import inspect
+import re
+import types
 
 
 def describe(article, value, name=None, verbose=False, capital=False):
@@ -73,7 +72,7 @@ def describe(article, value, name=None, verbose=False, capital=False):
 
     if article == "the" or (article is None and not inspect.isclass(value)):
         if name is not None:
-            result = "%s %s" % (typename, name)
+            result = "{} {}".format(typename, name)
             if article is not None:
                 return add_article(result, True, capital)
             else:
@@ -167,8 +166,5 @@ def repr_type(obj):
     error messages.
     """
     the_type = type(obj)
-    if six.PY2 and the_type is types.InstanceType:
-        # Old-style class.
-        the_type = obj.__class__
-    msg = '%r %r' % (obj, the_type)
+    msg = '{!r} {!r}'.format(obj, the_type)
     return msg
