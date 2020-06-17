@@ -285,8 +285,6 @@ class TestApplication(TestCase):
         app.init_bar()
         self.assertEqual(app.bar.enabled, True)
 
-    @mark.skipif(sys.version_info < (3, 4),
-                 reason="Missing `contextlib.redirect_stdout` in python < 3.4!")
     def test_flags_help_msg(self):
         app = MyApp()
         stdout = io.StringIO()
@@ -320,8 +318,6 @@ class TestApplication(TestCase):
         app.init_foo()
         self.assertEqual(app.foo.j, 10)
 
-    @mark.skipif(sys.version_info < (3, 4),
-                 reason="Missing `contextlib.redirect_stdout` in python < 3.4!")
     def test_aliases_help_msg(self):
         app = MyApp()
         stdout = io.StringIO()
