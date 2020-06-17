@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 # pylint: disable=missing-docstring, too-few-public-methods
 """
 Test the trait-type ``UseEnum``.
@@ -214,8 +213,7 @@ class TestUseEnum(unittest.TestCase):
             self.assertEqual(len(info.split('|')), len(choices), info.split('|'))
             self.assertIn('or `None`', info)
             ## Check no single `\` exists.
-            if sys.version_info >= (3, ):
-                self.assertNotRegex(info, r'\b\\\b')
+            self.assertNotRegex(info, r'\b\\\b')
 
             enum.allow_none = False
 
@@ -227,8 +225,7 @@ class TestUseEnum(unittest.TestCase):
             self.assertEqual(len(info.split('|')), len(choices), info.split('|'))
             self.assertNotIn('None', info)
             ## Check no single `\` exists.
-            if sys.version_info >= (3, ):
-                self.assertNotRegex(info, r'\b\\\b')
+            self.assertNotRegex(info, r'\b\\\b')
 
 
 

@@ -53,8 +53,6 @@ def all_warnings():
     del frame
 
     for mod_name, mod in list(sys.modules.items()):
-        if 'six.moves' in mod_name:
-            continue
         try:
             mod.__warningregistry__.clear()
         except AttributeError:
@@ -68,17 +66,19 @@ def all_warnings():
 
 @contextmanager
 def expected_warnings(matching):
-    """Context for use in testing to catch known warnings matching regexes
+    r"""Context for use in testing to catch known warnings matching regexes
     
     Parameters
     ----------
     matching : list of strings or compiled regexes
         Regexes for the desired warning to catch
+
     Examples
     --------
     >>> from skimage import data, img_as_ubyte, img_as_float
     >>> with expected_warnings(['precision loss']):
     ...     d = img_as_ubyte(img_as_float(data.coins()))
+
     Notes
     -----
     Uses `all_warnings` to ensure all warnings are raised.

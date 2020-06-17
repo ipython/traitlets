@@ -1,4 +1,3 @@
-# encoding: utf-8
 """Tests for traitlets.config.configurable"""
 
 # Copyright (c) IPython Development Team.
@@ -23,7 +22,6 @@ from traitlets.traitlets import (
 )
 
 from traitlets.config.loader import Config
-from six import PY3
 
 from ...tests._warnings import expected_warnings
 
@@ -52,9 +50,8 @@ mc_help_inst=u"""MyConfigurable(Configurable) options
     Current: 4.0"""
 
 # On Python 3, the Integer trait is a synonym for Int
-if PY3:
-    mc_help = mc_help.replace(u"<Integer>", u"<Int>")
-    mc_help_inst = mc_help_inst.replace(u"<Integer>", u"<Int>")
+mc_help = mc_help.replace("<Integer>", "<Int>")
+mc_help_inst = mc_help_inst.replace("<Integer>", "<Int>")
 
 class Foo(Configurable):
     a = Integer(0, help="The integer a.").tag(config=True)
