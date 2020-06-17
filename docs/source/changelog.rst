@@ -7,18 +7,29 @@ Traitlets 5.0
 - :ghpull:`362` , :ghpull:`361` introduces:
   - help for aliases , aliases dict values can now be a tuple with ('target', 'help string')
   - subcommands can now be arbitrary callable and do not need to be subclass of :any:`Application`
+- :ghpull:`306` Add compatibility with the ``trait`` package for Dictionaries and add the ``key_trait`` parameters
+  allowing to restrict the type of the key of a mapping. The constructor parameters ``trait`` and ``traits`` are renamed
+  to ``value_trait`` and ``per_key_traits``.
 - :ghpull:`319` adds ability to introduce both shot and long version of aliases, allowing for short and long options ``-`` and ``--``.
 - :ghpull:`322` rewrite command line argument parsing to use argparse, and allow more flexibility in assigning literals without quoting.
+- :ghpull:`332` Make it easier to redefined default values of parents classes.
 - :ghpull:`333` introduces a :any:`Callable` trait.
 - :ghpull:`340` Old way of passing containers in the command line is now deprecated, and will emit warning on the command line.
 - :ghpull:`341` introduces ``--Application.show_config=True``  which will make by default any application show it configuration, all the files it loaded configuration from, and exit.
-- :ghpull:`349` unify ability to declare default values across traitlets with a singular method ``default`` method.
+- :ghpull:`349` unify ability to declare default values across traitlets with a singular method ``default`` method, and :ghpull:`525` adds a warning that `Undefined` is deprecated.
 - :ghpull:`355` fix a random ordering issues in command lines flags.
 - :ghpull:`356` allow both ``self`` and ``cls`` in ``__new__`` method for genericity.
 - :ghpull:`360` Simplify overwriting and extending the command line argument parser.
 - :ghpull:`371` introduces a :any:`FuzzyEnum` trait that allow case insensitive and unique prefix matching.
+- :ghpull:`384` Ass a `trait_values` method to extra a mapping of trait and their values.
 - :ghpull:`402` rewrite handling of error messages for nested traits.
 - :ghpull:`405` all function that use to print help now have an equivalent that yields the help lines.
+- :ghpull:`413` traits now have a method `trait_has_value`, returning a boolean to know if a value has been assigned to
+  a trait (excluding the default), in order to help avoiding circular validation at initialisation.
+- :ghpull:`393` `Link` now have a transform attribute (taking two functions inverse of each other), that affect how a
+  value is mapped between a source and a target.
+- :ghpull:`394` `Link` now have a `link` method to re-link object after `unlink` has been called.
+- :ghpull:`416` Explicitly export traitlets  in ``__all__`` to avoid exposing implementation details.
 - :ghpull:`438` introduces ``.info_rst()`` to let traitlets overwrite the automatically generated rst documentation.
 - :ghpull:`458` Add a sphinx extension to automatically document options of `Application` instance in projects using traitlets.
 - :ghpull:`509` remove all base ``except:`` meaning traitlets will not catch a number of :any:`BaseException` s anymore.
