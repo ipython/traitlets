@@ -53,8 +53,6 @@ except Exception:
     ClassTypes = (type,)
 from warnings import warn, warn_explicit
 
-import six
-
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel

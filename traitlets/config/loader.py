@@ -15,7 +15,6 @@ from ast import literal_eval
 from ipython_genutils.path import filefind
 from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
-from six import text_type, string_types, PY3
 from traitlets.traitlets import (
     HasTraits, Container, List, Dict, Any, Undefined,
 )
@@ -491,12 +490,7 @@ class PyFileConfigLoader(FileConfigLoader):
             get_config=get_config,
             __file__=self.full_filename,
         )
-        # encode filename to bytes only on py2 on non-Windows:
-        if PY3 or sys.platform.startswith('win'):
-            conf_filename = self.full_filename
-        else:
-            fs_encoding = sys.getfilesystemencoding() or 'ascii'
-            conf_filename = self.full_filename.encode(fs_encoding)
+        conf_filename = self.full_filename
         py3compat.execfile(conf_filename, namespace)
 
 

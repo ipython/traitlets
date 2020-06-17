@@ -5,7 +5,6 @@ A simple utility to import something by its string name.
 # Distributed under the terms of the Modified BSD License.
 
 from ipython_genutils.py3compat import cast_bytes_py2
-from six import string_types
 
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.

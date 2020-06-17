@@ -25,8 +25,6 @@ from traitlets import (
     observe_compat, BaseDescriptor, HasDescriptors,
 )
 
-import six
-
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
     return dict(zip(change_names, ordered_values))
@@ -1239,8 +1237,6 @@ class TestInt(TraitTestBase):
     _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
                       10.1, -10.1, '10L', '-10L', '10.1', '-10.1', u'10L',
                       u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', -200]
-    if not six.PY3:
-        _bad_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
 
 
 class CIntTrait(HasTraits):
@@ -1271,48 +1267,38 @@ class TestMinBoundCInt(TestCInt):
 
 class LongTrait(HasTraits):
 
-    value = Long(99 if six.PY3 else long(99))
+    value = Long(99)
 
 class TestLong(TraitTestBase):
 
     obj = LongTrait()
 
-    _default_value = 99 if six.PY3 else long(99)
+    _default_value = 99
     _good_values   = [10, -10]
     _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
                       None, 1j, 10.1, -10.1, '10', '-10', '10L', '-10L', '10.1',
                       '-10.1', u'10', u'-10', u'10L', u'-10L', u'10.1',
                       u'-10.1']
-    if not six.PY3:
-        # maxint undefined on py3, because int == long
-        _good_values.extend([long(10), long(-10), 10*sys.maxint, -10*sys.maxint])
-        _bad_values.extend([[long(10)], (long(10),)])
-
-    @mark.skipif(six.PY3, reason="not relevant on py3")
-    def test_cast_small(self):
-        """Long casts ints to long"""
-        self.obj.value = 10
-        self.assertEqual(type(self.obj.value), long)
 
 
 class MinBoundLongTrait(HasTraits):
-    value = Long(99 if six.PY3 else long(99), min=5)
+    value = Long(99, min=5)
 
 class TestMinBoundLong(TraitTestBase):
     obj = MinBoundLongTrait()
 
-    _default_value = 99 if six.PY3 else long(99)
+    _default_value = 99
     _good_values   = [5, 10]
     _bad_values    = [4, -10]
 
 
 class MaxBoundLongTrait(HasTraits):
-    value = Long(5 if six.PY3 else long(5), max=10)
+    value = Long(5, max=10)
 
 class TestMaxBoundLong(TraitTestBase):
     obj = MaxBoundLongTrait()
 
-    _default_value = 5 if six.PY3 else long(5)
+    _default_value = 5
     _good_values   = [10, -2]
     _bad_values    = [11, 20]
 
@@ -1323,13 +1309,13 @@ class CLongTrait(HasTraits):
 class TestCLong(TraitTestBase):
     obj = CLongTrait()
 
-    _default_value = 5 if six.PY3 else long(5)
+    _default_value = 5
     _good_values   = ['10', '-10', u'10', u'-10', 10, 10.0, -10.0, 10.1]
     _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
                       None, 1j, '10.1', u'10.1']
 
     def coerce(self, n):
-        return int(n) if six.PY3 else long(n)
+        return int(n)
 
 
 class MaxBoundCLongTrait(HasTraits):
@@ -1338,7 +1324,7 @@ class MaxBoundCLongTrait(HasTraits):
 class TestMaxBoundCLong(TestCLong):
     obj = MaxBoundCLongTrait()
 
-    _default_value = 5 if six.PY3 else long(5)
+    _default_value = 5
     _good_values   = [10, '10', 10.3]
     _bad_values    = [11.0, '11']
 
@@ -1352,13 +1338,6 @@ class TestInteger(TestLong):
 
     def coerce(self, n):
         return int(n)
-
-    @mark.skipif(six.PY3, reason="not relevant on py3")
-    def test_cast_small(self):
-        """Integer casts small longs to int"""
-
-        self.obj.value = long(100)
-        self.assertEqual(type(self.obj.value), int)
 
 
 class MinBoundIntegerTrait(HasTraits):
@@ -1396,8 +1375,6 @@ class TestFloat(TraitTestBase):
     _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None,
                       1j, '10', '-10', '10L', '-10L', '10.1', '-10.1', u'10',
                       u'-10', u'10L', u'-10L', u'10.1', u'-10.1', 201.0]
-    if not six.PY3:
-        _bad_values.extend([long(10), long(-10)])
 
 
 class CFloatTrait(HasTraits):
@@ -1429,8 +1406,6 @@ class TestComplex(TraitTestBase):
     _good_values   = [10, -10, 10.1, -10.1, 10j, 10+10j, 10-10j,
                       10.1j, 10.1+10.1j, 10.1-10.1j]
     _bad_values    = [u'10L', u'-10L', 'ten', [10], {'ten': 10},(10,), None]
-    if not six.PY3:
-        _bad_values.extend([long(10), long(-10)])
 
 
 class BytesTrait(HasTraits):
@@ -1446,8 +1421,6 @@ class TestBytes(TraitTestBase):
                       b'-10L', b'10.1', b'-10.1', b'string']
     _bad_values    = [10, -10, 10.1, -10.1, 1j, [10],
                       ['ten'],{'ten': 10},(10,), None,  u'string']
-    if not six.PY3:
-        _bad_values.extend([long(10), long(-10)])
 
 
 class UnicodeTrait(HasTraits):
@@ -1463,8 +1436,6 @@ class TestUnicode(TraitTestBase):
                       '-10.1', '', u'', 'string', u'string', u"€"]
     _bad_values    = [10, -10, 10.1, -10.1, 1j,
                       [10], ['ten'], [u'ten'], {'ten': 10},(10,), None]
-    if not six.PY3:
-        _bad_values.extend([long(10), long(-10)])
 
 
 class ObjectNameTrait(HasTraits):

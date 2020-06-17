@@ -22,7 +22,6 @@ from traitlets.traitlets import (
 )
 
 from traitlets.config.loader import Config
-from six import PY3
 
 from ...tests._warnings import expected_warnings
 

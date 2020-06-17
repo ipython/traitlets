@@ -75,7 +75,6 @@ setuptools_args = {}
 
 install_requires = setuptools_args['install_requires'] = [
     'ipython_genutils',
-    'six',
     'funcsigs',
 ]
 
