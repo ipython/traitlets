@@ -172,8 +172,6 @@ class TestConfigurable(TestCase):
         self.assertEqual(c.b, 'and')
         self.assertEqual(c.c, 20.0)
 
-    @mark.skipif(sys.version_info < (3, ),
-                 reason="Set, Int in py2 get printed as 'set([])', 'Integer'!'")
     def test_help(self):
         self.assertEqual(MyConfigurable.class_get_help(), mc_help)
         self.assertEqual(Foo.class_get_help(), foo_help)
@@ -242,8 +240,6 @@ class TestConfigurable(TestCase):
         self.assertGreater(cls2_cfg.index(defaults_str),
                            cls2_cfg.index(enum_choices_str))
 
-    @mark.skipif(sys.version_info < (3, ),
-                 reason="Unicodes printed with `u` prefix in PY2!'")
     def test_generated_config_strenum_comments(self):
         help_str = "Many choices."
         defaults_str = "Default: 'choice2'"

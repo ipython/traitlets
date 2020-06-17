@@ -1448,10 +1448,7 @@ class TestObjectName(TraitTestBase):
     _good_values = ["a", "gh", "g9", "g_", "_G", u"a345_"]
     _bad_values = [1, "", u"€", "9g", "!", "#abc", "aj@", "a.b", "a()", "a[0]",
                                                         None, object(), object]
-    if sys.version_info[0] < 3:
-        _bad_values.append(u"þ")
-    else:
-        _good_values.append(u"þ")  # þ=1 is valid in Python 3 (PEP 3131).
+    _good_values.append(u"þ")  # þ=1 is valid in Python 3 (PEP 3131).
 
 
 class DottedObjectNameTrait(HasTraits):
@@ -1463,10 +1460,8 @@ class TestDottedObjectName(TraitTestBase):
     _default_value = "a.b"
     _good_values = ["A", "y.t", "y765.__repr__", "os.path.join", u"os.path.join"]
     _bad_values = [1, u"abc.€", "_.@", ".", ".abc", "abc.", ".abc.", None]
-    if sys.version_info[0] < 3:
-        _bad_values.append(u"t.þ")
-    else:
-        _good_values.append(u"t.þ")
+    
+    _good_values.append(u"t.þ")
 
 
 class TCPAddressTrait(HasTraits):

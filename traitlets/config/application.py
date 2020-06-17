@@ -363,10 +363,8 @@ class Application(SingletonConfigurable):
             if not class_config:
                 continue
             print(classname)
-            pformat_kwargs = dict(indent=4)
-            if sys.version_info >= (3,4):
-                # use compact pretty-print on Pythons that support it
-                pformat_kwargs['compact'] = True
+            pformat_kwargs = dict(indent=4, compact=True)
+
             for traitname in sorted(class_config):
                 value = class_config[traitname]
                 print('  .{} = {}'.format(
