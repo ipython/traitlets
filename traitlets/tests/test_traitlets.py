@@ -7,7 +7,6 @@
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
-from __future__ import print_function
 import pickle
 import re
 import sys
@@ -778,7 +777,7 @@ class TestHasTraits(TestCase):
         self.assertTrue(a.trait_has_value('f'))
 
     def test_trait_metadata_deprecated(self):
-        with expected_warnings(['metadata should be set using the \.tag\(\) method']):
+        with expected_warnings([r'metadata should be set using the \.tag\(\) method']):
             class A(HasTraits):
                 i = Int(config_key='MY_VALUE')
         a = A()
@@ -821,7 +820,7 @@ class TestHasTraits(TestCase):
         self.assertEqual(traits, dict(i=A.i, f=A.f, j=A.j))
 
     def test_traits_metadata_deprecated(self):
-        with expected_warnings(['metadata should be set using the \.tag\(\) method']*2):
+        with expected_warnings([r'metadata should be set using the \.tag\(\) method']*2):
             class A(HasTraits):
                 i = Int(config_key='VALUE1', other_thing='VALUE2')
                 f = Float(config_key='VALUE3', other_thing='VALUE2')
@@ -2557,11 +2556,7 @@ def test_super_bad_args():
     class SuperHasTraits(HasTraits):
         a = Integer()
 
-    if sys.version_info < (3,):
-        # Legacy Python, object.__init__ warns itself, instead of raising
-        w = ['object.__init__']
-    else:
-        w = ["Passing unrecognized arguments"]
+    w = ["Passing unrecognized arguments"]
     with expected_warnings(w):
         obj = SuperHasTraits(a=1, b=2)
     assert obj.a ==  1

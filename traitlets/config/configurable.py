@@ -1,10 +1,8 @@
-# encoding: utf-8
 """A base class for objects that are configurable."""
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-from __future__ import print_function, absolute_import
 
 from copy import deepcopy
 import warnings

@@ -1,4 +1,3 @@
-# encoding: utf-8
 """
 A lightweight Traits like module.
 
@@ -121,10 +120,7 @@ from ipython_genutils.py3compat import cast_unicode_py2
 _name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*$")
 
 def isidentifier(s):
-    if six.PY2:
-        return bool(_name_re.match(s))
-    else:
-        return s.isidentifier()
+    return s.isidentifier()
 
 _deprecations_shown = set()
 def _should_warn(key):
@@ -164,7 +160,7 @@ def _deprecated_method(method, cls, method_name, msg):
     try:
         fname = inspect.getsourcefile(method) or "<unknown>"
         lineno = inspect.getsourcelines(method)[1] or 0
-    except (IOError, TypeError) as e:
+    except (OSError, TypeError) as e:
         # Failed to inspect for some reason
         warn(warn_msg + ('\n(inspection failed) %s' % e), DeprecationWarning)
     else:
@@ -193,13 +189,13 @@ def parse_notifier_name(names):
     >>> parse_notifier_name(All)
     [All]
     """
-    if names is All or isinstance(names, six.string_types):
+    if names is All or isinstance(names, str):
         return [names]
     else:
         if not names or All in names:
             return [All]
         for n in names:
-            if not isinstance(n, six.string_types):
+            if not isinstance(n, str):
                 raise TypeError("names must be strings, not %r" % n)
         return names
 
@@ -839,7 +835,7 @@ def observe(*names, **kwargs):
     if not names:
         raise TypeError("Please specify at least one trait name to observe.")
     for name in names:
-        if name is not All and not isinstance(name, six.string_types):
+        if name is not All and not isinstance(name, str):
             raise TypeError("trait names to observe must be strings or All, not %r" % name)
     return ObserveHandler(names, type=kwargs.get('type', 'change'))
 
@@ -903,7 +899,7 @@ def validate(*names):
     if not names:
         raise TypeError("Please specify at least one trait name to validate.")
     for name in names:
-        if name is not All and not isinstance(name, six.string_types):
+        if name is not All and not isinstance(name, str):
             raise TypeError("trait names to validate must be strings or All, not %r" % name)
     return ValidateHandler(names)
 
@@ -946,7 +942,7 @@ def default(name):
                 return 3.0                 # ignored since it is defined in a
                                            # class derived from B.a.this_class.
     """
-    if not isinstance(name, six.string_types):
+    if not isinstance(name, str):
         raise TypeError("Trait name must be a string or All, not %r" % name)
     return DefaultHandler(name)
 
@@ -995,11 +991,11 @@ class DefaultHandler(EventHandler):
         self.trait_name = name
 
     def class_init(self, cls, name):
-        super(DefaultHandler, self).class_init(cls, name)
+        super().class_init(cls, name)
         cls._trait_default_generators[self.trait_name] = self
 
 
-class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
+class HasDescriptors(metaclass=MetaHasDescriptors):
     """The base class for all classes that have descriptors.
     """
 
@@ -1041,7 +1037,7 @@ class HasDescriptors(six.with_metaclass(MetaHasDescriptors, object)):
                     value.instance_init(self)
 
 
-class HasTraits(six.with_metaclass(MetaHasTraits, HasDescriptors)):
+class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
     def setup_instance(*args, **kwargs):
         # Pass self as args[0] to allow "self" as keyword argument
@@ -1717,16 +1713,16 @@ class Type(ClassBasedTraitType):
             else:
                 klass = default_value
 
-        if not (inspect.isclass(klass) or isinstance(klass, six.string_types)):
+        if not (inspect.isclass(klass) or isinstance(klass, str)):
             raise TraitError("A Type trait must specify a class.")
 
         self.klass = klass
 
-        super(Type, self).__init__(new_default_value, **kwargs)
+        super().__init__(new_default_value, **kwargs)
 
     def validate(self, obj, value):
         """Validates that the value is a valid object instance."""
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             try:
                 value = self._resolve_string(value)
             except ImportError:
@@ -1742,7 +1738,7 @@ class Type(ClassBasedTraitType):
 
     def info(self):
         """ Returns a description of the trait."""
-        if isinstance(self.klass, six.string_types):
+        if isinstance(self.klass, str):
             klass = self.klass
         else:
             klass = self.klass.__module__ + '.' + self.klass.__name__
@@ -1753,20 +1749,20 @@ class Type(ClassBasedTraitType):
 
     def instance_init(self, obj):
         self._resolve_classes()
-        super(Type, self).instance_init(obj)
+        super().instance_init(obj)
 
     def _resolve_classes(self):
-        if isinstance(self.klass, six.string_types):
+        if isinstance(self.klass, str):
             self.klass = self._resolve_string(self.klass)
-        if isinstance(self.default_value, six.string_types):
+        if isinstance(self.default_value, str):
             self.default_value = self._resolve_string(self.default_value)
 
     def default_value_repr(self):
         value = self.default_value
-        if isinstance(value, six.string_types):
+        if isinstance(value, str):
             return repr(value)
         else:
-            return repr('{}.{}'.format(value.__module__, value.__name__))
+            return repr(f'{value.__module__}.{value.__name__}')
 
 
 class Instance(ClassBasedTraitType):
@@ -1809,7 +1805,7 @@ class Instance(ClassBasedTraitType):
         if klass is None:
             klass = self.klass
 
-        if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, six.string_types)):
+        if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, str)):
             self.klass = klass
         else:
             raise TraitError('The klass attribute must be a class'
@@ -1832,7 +1828,7 @@ class Instance(ClassBasedTraitType):
             self.error(obj, value)
 
     def info(self):
-        if isinstance(self.klass, six.string_types):
+        if isinstance(self.klass, str):
             result = add_article(self.klass)
         else:
             result = describe("a", self.klass)
@@ -1842,10 +1838,10 @@ class Instance(ClassBasedTraitType):
 
     def instance_init(self, obj):
         self._resolve_classes()
-        super(Instance, self).instance_init(obj)
+        super().instance_init(obj)
 
     def _resolve_classes(self):
-        if isinstance(self.klass, six.string_types):
+        if isinstance(self.klass, str):
             self.klass = self._resolve_string(self.klass)
 
     def make_dynamic_default(self):
@@ -2036,79 +2032,8 @@ class CInt(Int):
         return _validate_bounds(self, obj, value)
 
 
-if six.PY2:
-    class Long(TraitType):
-        """A long integer trait."""
-
-        default_value = 0
-        info_text = 'a long'
-
-        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
-            self.min = kwargs.pop('min', None)
-            self.max = kwargs.pop('max', None)
-            super(Long, self).__init__(
-                default_value=default_value,
-                allow_none=allow_none, **kwargs)
-
-        def _validate_long(self, obj, value):
-            if isinstance(value, long):
-                return value
-            if isinstance(value, int):
-                return long(value)
-            self.error(obj, value)
-
-        def validate(self, obj, value):
-            value = self._validate_long(obj, value)
-            return _validate_bounds(self, obj, value)
-
-
-    class CLong(Long):
-        """A casting version of the long integer trait."""
-
-        def validate(self, obj, value):
-            try:
-                value = long(value)
-            except Exception:
-                self.error(obj, value)
-            return _validate_bounds(self, obj, value)
-
-
-    class Integer(TraitType):
-        """An integer trait.
-
-        Longs that are unnecessary (<= sys.maxint) are cast to ints."""
-
-        default_value = 0
-        info_text = 'an integer'
-
-        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
-            self.min = kwargs.pop('min', None)
-            self.max = kwargs.pop('max', None)
-            super(Integer, self).__init__(
-                default_value=default_value,
-                allow_none=allow_none, **kwargs)
-
-        def _validate_int(self, obj, value):
-            if isinstance(value, int):
-                return value
-            if isinstance(value, long):
-                # downcast longs that fit in int:
-                # note that int(n > sys.maxint) returns a long, so
-                # we don't need a condition on this cast
-                return int(value)
-            if sys.platform == "cli":
-                from System import Int64
-                if isinstance(value, Int64):
-                    return int(value)
-            self.error(obj, value)
-
-        def validate(self, obj, value):
-            value = self._validate_int(obj, value)
-            return _validate_bounds(self, obj, value)
-
-else:
-    Long, CLong = Int, CInt
-    Integer = Int
+Long, CLong = Int, CInt
+Integer = Int
 
 
 class Float(TraitType):
@@ -2193,11 +2118,11 @@ class CBytes(Bytes):
 class Unicode(TraitType):
     """A trait for unicode strings."""
 
-    default_value = u''
+    default_value = ''
     info_text = 'a unicode string'
 
     def validate(self, obj, value):
-        if isinstance(value, six.text_type):
+        if isinstance(value, str):
             return value
         if isinstance(value, bytes):
             try:
@@ -2213,7 +2138,7 @@ class CUnicode(Unicode):
 
     def validate(self, obj, value):
         try:
-            return six.text_type(value)
+            return str(value)
         except Exception:
             self.error(obj, value)
 
@@ -2224,23 +2149,12 @@ class ObjectName(TraitType):
     This does not check that the name exists in any scope."""
     info_text = "a valid object identifier in Python"
 
-    if six.PY2:
-        # Python 2:
-        def coerce_str(self, obj, value):
-            "In Python 2, coerce ascii-only unicode to str"
-            if isinstance(value, unicode):
-                try:
-                    return str(value)
-                except UnicodeEncodeError:
-                    self.error(obj, value)
-            return value
-    else:
-        coerce_str = staticmethod(lambda _,s: s)
+    coerce_str = staticmethod(lambda _,s: s)
 
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
 
-        if isinstance(value, six.string_types) and isidentifier(value):
+        if isinstance(value, str) and isidentifier(value):
             return value
         self.error(obj, value)
 
@@ -2249,7 +2163,7 @@ class DottedObjectName(ObjectName):
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
 
-        if isinstance(value, six.string_types) and all(isidentifier(a)
+        if isinstance(value, str) and all(isidentifier(a)
           for a in value.split('.')):
             return value
         self.error(obj, value)
@@ -2319,12 +2233,12 @@ class CaselessStrEnum(Enum):
 
     def __init__(self, values, default_value=Undefined, **kwargs):
         values = [cast_unicode_py2(value) for value in values]
-        super(CaselessStrEnum, self).__init__(values, default_value=default_value, **kwargs)
+        super().__init__(values, default_value=default_value, **kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, str):
             value = cast_unicode_py2(value)
-        if not isinstance(value, six.string_types):
+        if not isinstance(value, str):
             self.error(obj, value)
 
         for v in self.values:
@@ -2358,12 +2272,12 @@ class FuzzyEnum(Enum):
         self.case_sensitive = case_sensitive
         self.substring_matching = substring_matching
         values = [cast_unicode_py2(value) for value in values]
-        super(FuzzyEnum, self).__init__(values, default_value=default_value, **kwargs)
+        super().__init__(values, default_value=default_value, **kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, str):
             value = cast_unicode_py2(value)
-        if not isinstance(value, six.string_types):
+        if not isinstance(value, str):
             self.error(obj, value)
 
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
@@ -2888,7 +2802,7 @@ class TCPAddress(TraitType):
     def validate(self, obj, value):
         if isinstance(value, tuple):
             if len(value) == 2:
-                if isinstance(value[0], six.string_types) and isinstance(value[1], int):
+                if isinstance(value[0], str) and isinstance(value[1], int):
                     port = value[1]
                     if port >= 0 and port <= 65535:
                         return value
@@ -2960,7 +2874,7 @@ class UseEnum(TraitType):
 
     def select_by_name(self, value, default=Undefined):
         """Selects enum-value by using its name or scoped-name."""
-        assert isinstance(value, six.string_types)
+        assert isinstance(value, str)
         if value.startswith(self.name_prefix):
             # -- SUPPORT SCOPED-NAMES, like: "Color.red" => "red"
             value = value.replace(self.name_prefix, "", 1)
@@ -2974,7 +2888,7 @@ class UseEnum(TraitType):
             value2 = self.select_by_number(value)
             if value2 is not Undefined:
                 return value2
-        elif isinstance(value, six.string_types):
+        elif isinstance(value, str):
             # -- CONVERT: name or scoped_name (as string) => enum_value (item)
             value2 = self.select_by_name(value)
             if value2 is not Undefined:
@@ -3019,7 +2933,7 @@ class Callable(TraitType):
     info_text = 'a callable'
 
     def validate(self, obj, value):
-        if six.callable(value):
+        if callable(value):
             return value
         else:
             self.error(obj, value)

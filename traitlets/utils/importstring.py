@@ -1,4 +1,3 @@
-# encoding: utf-8
 """
 A simple utility to import something by its string name.
 """
@@ -24,7 +23,7 @@ def import_item(name):
     mod : module object
        The module that was imported.
     """
-    if not isinstance(name, string_types):
+    if not isinstance(name, str):
         raise TypeError("import_item accepts strings, not '%s'." % type(name))
     name = cast_bytes_py2(name)
     parts = name.rsplit('.', 1)

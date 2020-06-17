@@ -1,10 +1,8 @@
-# encoding: utf-8
 """A base class for a configurable application."""
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-from __future__ import print_function
 
 from collections import defaultdict, OrderedDict
 from copy import deepcopy
@@ -183,7 +181,7 @@ class Application(SingletonConfigurable):
     def _log_level_changed(self, change):
         """Adjust the log level when log_level is set."""
         new = change.new
-        if isinstance(new, six.string_types):
+        if isinstance(new, str):
             new = getattr(logging, new)
             self.log_level = new
         self.log.setLevel(new)
@@ -582,7 +580,7 @@ class Application(SingletonConfigurable):
         """Initialize a subcommand with argv."""
         subapp, _ = self.subcommands.get(subc)
 
-        if isinstance(subapp, six.string_types):
+        if isinstance(subapp, str):
             subapp = import_item(subapp)
 
         ## Cannot issubclass() on a non-type (SOhttp://stackoverflow.com/questions/8692430)

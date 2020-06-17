@@ -1,4 +1,3 @@
-# encoding: utf-8
 """A simple configuration system."""
 
 # Copyright (c) IPython Development Team.
@@ -530,7 +529,7 @@ class CommandLineConfigLoader(ConfigLoader):
           equivalent are `--C.a=4` and `--C.a='4'`.
         """
         if isinstance(trait, Dict):
-            if len(rhs) == 1 and isinstance(rhs[0], string_types):
+            if len(rhs) == 1 and isinstance(rhs[0], str):
                 # check for deprecated --Class.trait="{'a': 'b'}"
                 self.log.warning(
                     "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
@@ -651,7 +650,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         if enc is None:
             enc = DEFAULT_ENCODING
         for arg in argv:
-            if not isinstance(arg, text_type):
+            if not isinstance(arg, str):
                 # only decode if not already decoded
                 arg = arg.decode(enc)
             uargv.append(arg)
@@ -899,7 +898,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         for cls in classes:
             for traitname, trait in cls.class_traits(config=True).items():
                 argname = '%s.%s' % (cls.__name__, traitname)
-                argparse_kwds = {'type': text_type}
+                argparse_kwds = {'type': str}
                 if isinstance(trait, (Container, Dict)):
                     multiplicity = trait.metadata.get('multiplicity', 'append')
                     if multiplicity == 'append':
@@ -925,7 +924,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             if not isinstance(keys, tuple):
                 keys = (keys, )
             for key in keys:
-                argparse_kwds = {'type': text_type, 'dest': traitname}
+                argparse_kwds = {'type': str, 'dest': traitname}
                 if traitname in argparse_traits:
                     argparse_kwds.update(argparse_traits[traitname][1])
                     if 'action' in argparse_kwds and traitname in alias_flags:
