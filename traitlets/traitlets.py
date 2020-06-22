@@ -46,11 +46,6 @@ import re
 import sys
 import types
 import enum
-try:
-    from types import ClassType, InstanceType
-    ClassTypes = (ClassType, type)
-except Exception:
-    ClassTypes = (type,)
 from warnings import warn, warn_explicit
 
 from .utils.getargspec import getargspec
@@ -60,6 +55,9 @@ from .utils.bunch import Bunch
 from .utils.descriptions import describe, class_of, add_article, repr_type
 
 SequenceTypes = (list, tuple, set, frozenset)
+
+# backward compatibility, use to differ between Python 2 and 3.
+ClassTypes = (type,)
 
 # exports:
 
@@ -112,8 +110,6 @@ class TraitError(Exception):
 #-----------------------------------------------------------------------------
 # Utilities
 #-----------------------------------------------------------------------------
-
-from ipython_genutils.py3compat import cast_unicode_py2
 
 _name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*$")
 
@@ -2230,12 +2226,9 @@ class CaselessStrEnum(Enum):
     """An enum of strings where the case should be ignored."""
 
     def __init__(self, values, default_value=Undefined, **kwargs):
-        values = [cast_unicode_py2(value) for value in values]
         super().__init__(values, default_value=default_value, **kwargs)
 
     def validate(self, obj, value):
-        if isinstance(value, str):
-            value = cast_unicode_py2(value)
         if not isinstance(value, str):
             self.error(obj, value)
 
@@ -2269,12 +2262,9 @@ class FuzzyEnum(Enum):
                  case_sensitive=False, substring_matching=False, **kwargs):
         self.case_sensitive = case_sensitive
         self.substring_matching = substring_matching
-        values = [cast_unicode_py2(value) for value in values]
         super().__init__(values, default_value=default_value, **kwargs)
 
     def validate(self, obj, value):
-        if isinstance(value, str):
-            value = cast_unicode_py2(value)
         if not isinstance(value, str):
             self.error(obj, value)
 

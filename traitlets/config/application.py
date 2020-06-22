@@ -22,8 +22,8 @@ from traitlets.traitlets import (
     Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
 
-from ipython_genutils import py3compat
-from ipython_genutils.importstring import import_item
+from ..utils.importstring import import_item
+from ..utils import cast_unicode
 from ipython_genutils.text import indent, wrap_paragraphs, dedent
 
 
@@ -662,7 +662,7 @@ class Application(SingletonConfigurable):
     def parse_command_line(self, argv=None):
         """Parse the command line arguments."""
         argv = sys.argv[1:] if argv is None else argv
-        self.argv = [ py3compat.cast_unicode(arg) for arg in argv ]
+        self.argv = [cast_unicode(arg) for arg in argv ]
 
         if argv and argv[0] == 'help':
             # turn `ipython help notebook` into `ipython notebook -h`

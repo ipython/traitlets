@@ -12,8 +12,9 @@ import sys
 import json
 from ast import literal_eval
 
+from ..utils import cast_unicode
+
 from ipython_genutils.path import filefind
-from ipython_genutils import py3compat
 from ipython_genutils.encoding import DEFAULT_ENCODING
 from traitlets.traitlets import (
     HasTraits, Container, List, Dict, Any, Undefined,
@@ -59,6 +60,10 @@ class ArgumentParser(argparse.ArgumentParser):
 #-----------------------------------------------------------------------------
 # Config class for holding config information
 #-----------------------------------------------------------------------------
+
+def execfile(fname, glob):
+    with open(fname, 'rb') as f:
+        exec(compile(f.read(), fname, 'exec'), glob, glob)
 
 class LazyConfigValue(HasTraits):
     """Proxy object for exposing methods on configurable containers
@@ -491,7 +496,8 @@ class PyFileConfigLoader(FileConfigLoader):
             __file__=self.full_filename,
         )
         conf_filename = self.full_filename
-        py3compat.execfile(conf_filename, namespace)
+        with open(conf_filename, 'rb') as f:
+            exec(compile(f.read(), conf_filename, 'exec'), namespace, namespace)
 
 
 class CommandLineConfigLoader(ConfigLoader):
@@ -819,7 +825,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         """self.parser->self.parsed_data"""
         # decode sys.argv to support unicode command-line options
         enc = DEFAULT_ENCODING
-        uargs = [py3compat.cast_unicode(a, enc) for a in args]
+        uargs = [cast_unicode(a, enc) for a in args]
         self.parsed_data, self.extra_args = self.parser.parse_known_args(uargs)
 
     def _convert_to_config(self):
