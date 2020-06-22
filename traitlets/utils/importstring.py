@@ -4,7 +4,6 @@ A simple utility to import something by its string name.
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-from ipython_genutils.py3compat import cast_bytes_py2
 
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.
@@ -24,7 +23,6 @@ def import_item(name):
     """
     if not isinstance(name, str):
         raise TypeError("import_item accepts strings, not '%s'." % type(name))
-    name = cast_bytes_py2(name)
     parts = name.rsplit('.', 1)
     if len(parts) == 2:
         # called with 'foo.bar....'

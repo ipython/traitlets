@@ -5,7 +5,6 @@ Test the trait-type ``UseEnum``.
 
 import unittest
 import enum
-from ipython_genutils.py3compat import string_types
 from traitlets import HasTraits, TraitError, Enum, UseEnum, CaselessStrEnum, FuzzyEnum
 
 
@@ -74,7 +73,7 @@ class TestUseEnum(unittest.TestCase):
         # pylint: disable=no-member
         enum_names = [enum_val.name for enum_val in Color.__members__.values()]
         for value in enum_names:
-            self.assertIsInstance(value, string_types)
+            self.assertIsInstance(value, str)
             example = self.Example()
             enum_value = Color.__members__.get(value)
             example.color = value
