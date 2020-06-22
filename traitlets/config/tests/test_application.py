@@ -13,7 +13,17 @@ import logging
 import os
 import sys
 from io import StringIO
+from tempfile import TemporaryDirectory
 from unittest import TestCase, skip
+
+from pytest import mark
+
+from traitlets import Bool, Dict, HasTraits, Integer, List, Set, Tuple, Unicode
+from traitlets.config.application import Application
+from traitlets.config.configurable import Configurable
+from traitlets.config.loader import Config
+from traitlets.tests.utils import (check_help_all_output, check_help_output,
+                                   get_output_error_code)
 
 try:
     from unittest import mock
@@ -22,21 +32,9 @@ except ImportError:
 
 pjoin = os.path.join
 
-from pytest import mark
 
-from traitlets.config.configurable import Configurable
-from traitlets.config.loader import Config
-from traitlets.tests.utils import get_output_error_code, check_help_output, check_help_all_output
 
-from traitlets.config.application import (
-    Application
-)
 
-from ipython_genutils.tempdir import TemporaryDirectory
-from traitlets import (
-    HasTraits,
-    Bool, Unicode, Integer, List, Tuple, Set, Dict
-)
 
 class Foo(Configurable):
 

@@ -2,10 +2,7 @@
 
 import copy
 
-try:
-    from inspect import Signature, Parameter, signature
-except ImportError:
-    from funcsigs import Signature, Parameter, signature
+from inspect import Signature, Parameter, signature
 
 from ..traitlets import Undefined
 
