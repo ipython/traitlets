@@ -46,11 +46,6 @@ import re
 import sys
 import types
 import enum
-try:
-    from types import ClassType, InstanceType
-    ClassTypes = (ClassType, type)
-except Exception:
-    ClassTypes = (type,)
 from warnings import warn, warn_explicit
 
 from .utils.getargspec import getargspec
@@ -60,6 +55,9 @@ from .utils.bunch import Bunch
 from .utils.descriptions import describe, class_of, add_article, repr_type
 
 SequenceTypes = (list, tuple, set, frozenset)
+
+# backward compatibility, use to differ between Python 2 and 3.
+ClassTypes = (type,)
 
 # exports:
 

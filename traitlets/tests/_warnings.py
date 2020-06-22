@@ -3,16 +3,13 @@
 
 __all__ = ['all_warnings', 'expected_warnings']
 
-from contextlib import contextmanager
 import inspect
 import os
 import re
 import sys
 import warnings
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from contextlib import contextmanager
+from unittest import mock
 
 
 @contextmanager
