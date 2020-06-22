@@ -22,11 +22,11 @@ Traitlets 5.0
 - :ghpull:`360` Simplify overwriting and extending the command line argument parser.
 - :ghpull:`371` introduces a :any:`FuzzyEnum` trait that allow case insensitive and unique prefix matching.
 - :ghpull:`384` Ass a `trait_values` method to extra a mapping of trait and their values.
+- :ghpull:`393` `Link` now have a transform attribute (taking two functions inverse of each other), that affect how a
 - :ghpull:`402` rewrite handling of error messages for nested traits.
 - :ghpull:`405` all function that use to print help now have an equivalent that yields the help lines.
 - :ghpull:`413` traits now have a method `trait_has_value`, returning a boolean to know if a value has been assigned to
   a trait (excluding the default), in order to help avoiding circular validation at initialisation.
-- :ghpull:`393` `Link` now have a transform attribute (taking two functions inverse of each other), that affect how a
   value is mapped between a source and a target.
 - :ghpull:`394` `Link` now have a `link` method to re-link object after `unlink` has been called.
 - :ghpull:`416` Explicitly export traitlets  in ``__all__`` to avoid exposing implementation details.
@@ -35,6 +35,7 @@ Traitlets 5.0
 - :ghpull:`509` remove all base ``except:`` meaning traitlets will not catch a number of :any:`BaseException` s anymore.
 - :ghpull:`515` Add a class decorator to enable tab completion of keyword arguments in signature.
 - :ghpull:`516` a ``Sentinel`` Traitlets was made public by mistake and is now deprecated.
+- :ghpull:`517` use parent Logger within logggin configurable when possible.
 - :ghpull:`522` Make loading config files idempotent and expose the list of loaded config files for long running services.
 
 4.3
