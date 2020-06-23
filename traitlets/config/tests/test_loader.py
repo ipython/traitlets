@@ -21,15 +21,12 @@ from traitlets.config.loader import (
     KeyValueConfigLoader,
     ArgParseConfigLoader,
     KVArgParseConfigLoader,
-    ConfigError,
 )
 from traitlets import (
     HasTraits,
-    Union,
     List,
     Tuple,
     Dict,
-    Int,
     Unicode,
     Integer,
 )

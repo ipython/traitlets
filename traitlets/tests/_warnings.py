@@ -95,7 +95,7 @@ def expected_warnings(matching):
         # enter context
         yield w
         # exited user context, check the recorded warnings
-        remaining = [m for m in matching if not '\A\Z' in m.split('|')]
+        remaining = [m for m in matching if not r'\A\Z' in m.split('|')]
         for warn in w:
             found = False
             for match in matching:

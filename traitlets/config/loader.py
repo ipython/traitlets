@@ -347,7 +347,7 @@ class Config(dict):
             raise AttributeError(e)
 
 
-class DeferredConfigString(text_type):
+class DeferredConfigString(str):
     """Config value for loading config from a string
 
     Interpretation is deferred until it is loaded into the trait.
@@ -366,7 +366,7 @@ class DeferredConfigString(text_type):
     """
     def get_value(self, trait):
         """Get the value stored in this string"""
-        s = text_type(self)
+        s = str(self)
         try:
             return trait.from_string(s)
         except Exception:

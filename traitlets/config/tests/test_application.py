@@ -18,7 +18,17 @@ from unittest import TestCase
 
 from pytest import mark
 
-from traitlets import Bool, Dict, HasTraits, Integer, List, Set, Tuple, Unicode
+from traitlets import (
+    Bool,
+    Bytes,
+    Dict,
+    HasTraits,
+    Integer,
+    List,
+    Set,
+    Tuple,
+    Unicode,
+)
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config
