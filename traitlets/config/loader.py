@@ -80,6 +80,7 @@ class LazyConfigValue(HasTraits):
     # list methods
     _extend = List()
     _prepend = List()
+    _inserts = List()
 
     def append(self, obj):
         self._extend.append(obj)
@@ -91,7 +92,42 @@ class LazyConfigValue(HasTraits):
         """like list.extend, but for the front"""
         self._prepend[:0] = other
 
-    _inserts = List()
+
+    def merge_into(self, other):
+        """
+        Merge with another  earlier LazyConfig Value or an earlier container.
+        This is used when having global systemwide configuration file.
+
+        Self is expected to have higher precedence.
+
+        Parameters:
+        -----------
+
+        other: LazyConfigValue or container
+
+
+        Return: LazyConfigValue if ``other`` is also lazy, a reified container
+        otherwise.
+        """
+        if isinstance(other, LazyConfigValue):
+            other._extend.extend(self._extend)
+            self._extend = other._extend
+
+            self._prepend.extend(other._prepend)
+
+            other._inserts.extend(self._inserts)
+            self._inserts = other._inserts
+
+            if self._update:
+                other.update(self._update)
+                self._update = other._update
+            return self
+        else:
+            # other is a container, reify now.
+            return self.get_value(other)
+
+
+
     def insert(self, index, other):
         if not isinstance(index, int):
             raise TypeError("An integer is required")
@@ -200,6 +236,8 @@ class Config(dict):
                 if isinstance(v, Config) and isinstance(self[k], Config):
                     # Recursively merge common sub Configs
                     self[k].merge(v)
+                elif isinstance(v, LazyConfigValue):
+                    self[k] = v.merge_into(self[k])
                 else:
                     # Plain updates for non-Configs
                     to_update[k] = v
