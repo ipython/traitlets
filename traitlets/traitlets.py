@@ -2889,7 +2889,11 @@ class Dict(Instance):
 
         This is where we parse CLI configuration
         """
-        if len(s_list) == 1 and s_list[0].startswith("{") and s_list[0].startswith("}"):
+        if (
+            len(s_list) == 1
+            and s_list[0].startswith("{")
+            and s_list[0].endswith("}")
+        ):
             warn(
                 "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
                 "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(

@@ -355,6 +355,20 @@ class CSub(CBase):
 class TestArgParseKVCL(TestKeyValueCL):
     klass = KVArgParseConfigLoader
 
+    def test_no_cast_literals(self):
+        cl = self.klass(log=log)
+        # test ipython -c 1 doesn't cast to int
+        argv = ["-c", "1"]
+        config = cl.load_config(argv, aliases=dict(c="IPython.command_to_run"))
+        assert config.IPython.command_to_run == "1"
+
+    def test_int_literals(self):
+        cl = self.klass(log=log)
+        # test ipython -c 1 doesn't cast to int
+        argv = ["-c", "1"]
+        config = cl.load_config(argv, aliases=dict(c="IPython.command_to_run"))
+        assert config.IPython.command_to_run == "1"
+
     def test_unicode_alias(self):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']

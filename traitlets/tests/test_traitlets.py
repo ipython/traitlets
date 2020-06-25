@@ -2651,13 +2651,20 @@ def test_copy_HasTraits():
 
 def _from_string_test(traittype, s, expected):
     """Run a test of trait.from_string"""
-    trait = traittype()
+    if isinstance(traittype, TraitType):
+        trait = traittype
+    else:
+        trait = traittype()
+    if isinstance(s, list):
+        cast = trait.from_string_list
+    else:
+        cast = trait.from_string
     if type(expected) is type and issubclass(expected, Exception):
         with pytest.raises(expected):
-            value = trait.from_string(s)
+            value = cast(s)
             trait.validate(None, value)
     else:
-        value = trait.from_string(s)
+        value = cast(s)
         assert value == expected
 
 
@@ -2721,9 +2728,7 @@ def test_bool_from_string(s, expected):
 
 @pytest.mark.parametrize('s, expected', [
     ('{}', {}),
-    ('[]', TraitError),
     ('1', TraitError),
-    ('1/0', TraitError),
     ('{1: 2}', {1: 2}),
     ('{"key": "value"}', {"key": "value"}),
     ('x', TraitError),
@@ -2732,17 +2737,22 @@ def test_dict_from_string(s, expected):
     _from_string_test(Dict, s, expected)
 
 
-
 @pytest.mark.parametrize('s, expected', [
     ('[]', []),
     ('[1, 2, "x"]', [1, 2, 'x']),
-    ('{}', TraitError),
-    ('1', TraitError),
-    ('1/0', TraitError),
-    ('x', TraitError),
+    (["1", "x"], ["1", "x"])
 ])
 def test_list_from_string(s, expected):
     _from_string_test(List, s, expected)
+
+
+@pytest.mark.parametrize('s, expected, value_trait', [
+    (["1", "2", "3"], [1, 2, 3], Integer()),
+    (["x"], ValueError, Integer()),
+    (["1", "x"], ["1", "x"], Unicode())
+])
+def test_list_from_string(s, expected, value_trait):
+    _from_string_test(List(value_trait), s, expected)
 
 
 @pytest.mark.parametrize('s, expected', [
