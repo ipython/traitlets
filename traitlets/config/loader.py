@@ -61,9 +61,11 @@ class ArgumentParser(argparse.ArgumentParser):
 # Config class for holding config information
 #-----------------------------------------------------------------------------
 
+
 def execfile(fname, glob):
     with open(fname, 'rb') as f:
         exec(compile(f.read(), fname, 'exec'), glob, glob)
+
 
 class LazyConfigValue(HasTraits):
     """Proxy object for exposing methods on configurable containers
@@ -82,6 +84,15 @@ class LazyConfigValue(HasTraits):
     _prepend = List()
     _inserts = List()
 
+    def __bool__(self):
+        # be falsy if we're empty
+        return bool(
+            self._extend
+            or self._prepend
+            or self._inserts
+            or self._update
+        )
+
     def append(self, obj):
         self._extend.append(obj)
 
@@ -91,7 +102,6 @@ class LazyConfigValue(HasTraits):
     def prepend(self, other):
         """like list.extend, but for the front"""
         self._prepend[:0] = other
-
 
     def merge_into(self, other):
         """
@@ -125,8 +135,6 @@ class LazyConfigValue(HasTraits):
         else:
             # other is a container, reify now.
             return self.get_value(other)
-
-
 
     def insert(self, index, other):
         if not isinstance(index, int):
@@ -272,7 +280,15 @@ class Config(dict):
                 return False
             return remainder in self[first]
 
-        return super(Config, self).__contains__(key)
+        if super(Config, self).__contains__(key):
+            item = self[key]
+            if isinstance(item, LazyConfigValue) and not item:
+                # don't consider empty lazy config present
+                # since it doesn't contain anything
+                return False
+            return True
+        return False
+
 
     # .has_key is deprecated for dictionaries.
     has_key = __contains__
