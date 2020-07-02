@@ -49,6 +49,18 @@ class ArgumentError(ConfigLoaderError):
 # to do.  So we override the print_help method with one that defaults to
 # stdout and use our class instead.
 
+
+class _Sentinel:
+    def __repr__(self):
+        return "<Sentinel deprecated>"
+
+    def __str__(self):
+        return "<deprecated>"
+
+
+_deprecated = _Sentinel()
+
+
 class ArgumentParser(argparse.ArgumentParser):
     """Simple argparse subclass that prints help to stdout by default."""
 
@@ -104,11 +116,11 @@ class LazyConfigValue(HasTraits):
 
         Parameters
         ----------
-        other: LazyConfigValue or container
+        other : LazyConfigValue or container
 
         Returns
         -------
-        LazyConfigValue 
+        LazyConfigValue
             if ``other`` is also lazy, a reified container otherwise.
         """
         if isinstance(other, LazyConfigValue):
@@ -689,6 +701,7 @@ flag_pattern = re.compile(r'\-\-?\w+[\-\w]*$')
 
 class _KVAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
+        values = ["-" if v is _DASH_REPLACEMENT else v for v in values]
         items = getattr(namespace, self.dest, None)
         if items is None:
             items = DeferredConfigList()
@@ -699,7 +712,7 @@ class _KVAction(argparse.Action):
 
 
 _DOT_REPLACEMENT = "__DOT__"
-
+_DASH_REPLACEMENT = "__DASH__"
 
 class _DefaultOptionDict(dict):
     """Like the default options dict
@@ -754,7 +767,7 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         ipython --InteractiveShell.autocall=False
     """
 
-    def __init__(self, argv=None, classes=None, **kw):
+    def __init__(self, argv=None, classes=None, aliases=None, **kw):
         """Create a key value pair config loader.
 
         Parameters
@@ -784,8 +797,11 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         super(KeyValueConfigLoader, self).__init__(**kw)
         if argv is None:
             argv = sys.argv[1:]
+        for a in argv:
+            assert isinstance(a, str)
         self.argv = argv
         self.classes = classes or ()
+        self.aliases = aliases
 
 
     def clear(self):
@@ -819,13 +835,12 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                     return parent.class_traits().get(trait_name)
         return None
 
-    def load_config(self, argv=None, aliases=None, flags=None):
+    def load_config(self, argv=None, aliases=None, flags=_deprecated):
         """Parse the configuration and generate the Config object.
 
-        After loading, any arguments that are not key-value or
-        flags will be stored in self.extra_args - a list of
-        unparsed command-line arguments.  This is used for
-        arguments such as input files or subcommands.
+        After loading, any arguments that are not key-value will be stored in
+        self.extra_args - a list of unparsed command-line arguments. This is
+        used for arguments such as input files or subcommands.
 
         Parameters
         ----------
@@ -837,9 +852,10 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
         self.clear()
         if argv is None:
             argv = self.argv
+        assert isinstance(argv, list)
         if aliases:
             raise ValueError("%s does not support aliases" % self.__class__.__name__)
-        if flags:
+        if flags is not _deprecated:
             raise ValueError("%s does not support flags" % self.__class__.__name__)
 
         parser = _KVArgParser()
@@ -850,6 +866,8 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
             extra_args = []
         else:
             argv, extra_args = argv[:idx], argv[idx+1:]
+
+        argv = [_DASH_REPLACEMENT if a == "-" else a for a in argv]
 
         options = parser.parse_args(argv)
 
@@ -869,7 +887,6 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
                 self._exec_config_str(lhs, rhs, trait)
             except Exception:
                 raise ArgumentError("Invalid argument: '%s=%s'" % (lhs, rhs))
-
         return self.config
 
 
@@ -915,19 +932,32 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         kwargs.update(parser_kw)
         self.parser_kw = kwargs
 
-    def load_config(self, argv=None, aliases=None, flags=None, classes=None):
+    def load_config(self, argv=None, aliases=None, flags=_deprecated, classes=None):
         """Parse command line arguments and return as a Config object.
 
         Parameters
         ----------
-        args : optional, list
+        argv : optional, list
             If given, a list with the structure of sys.argv[1:] to parse
             arguments from. If not given, the instance's self.argv attribute
-            (given at construction time) is used."""
+            (given at construction time) is used.
+        flags
+            Deprecated in traitlets 5.0, instanciate the config loader with the flags.
+
+        """
+
+        if flags is not _deprecated:
+            wanring.warn(
+                "The `flag` argument to load_config is deprecated since Traitlets "
+                "5.0 and will be ignored, pass flags the `{type(self)}` constructor.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         self.clear()
         if argv is None:
             argv = self.argv
-        self._create_parser(aliases, flags, classes)
+        self._create_parser(aliases, self.flags, classes)
         self._parse_args(argv)
         self._convert_to_config()
         return self.config
@@ -938,7 +968,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         else:
             return []
 
-    def _create_parser(self, aliases=None, flags=None, classes=None):
+    def _create_parser(self, aliases, flags, classes):
         self.parser = ArgumentParser(*self.parser_args, **self.parser_kw)
         self._add_arguments(aliases, flags, classes)
 
@@ -950,6 +980,35 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         # decode sys.argv to support unicode command-line options
         enc = DEFAULT_ENCODING
         uargs = [cast_unicode(a, enc) for a in args]
+
+        unpacked_aliases = {}
+        if self.aliases:
+            unpacked_aliases = {}
+            for k, v in self.aliases.items():
+                if k in self.flags:
+                    continue
+                if not isinstance(k, tuple):
+                    k1, k2 = k, None
+                else:
+                    k1, k2 = k
+                for al in (k1, k2):
+                    if al is None:
+                        continue
+                    if len(al) == 1:
+                        unpacked_aliases["-" + al] = "--" + v
+                    else:
+                        unpacked_aliases["--" + al] = "--" + v
+
+        def _replace(arg):
+            for k, v in unpacked_aliases.items():
+                if arg == k:
+                    return v
+                if arg.startswith(k + "="):
+                    return v + "=" + arg[len(k) + 1 :]
+            return arg
+
+        uargs = [_replace(a) for a in uargs]
+
         self.parsed_data, self.extra_args = self.parser.parse_known_args(uargs)
 
     def _convert_to_config(self):
@@ -988,7 +1047,6 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
     def _add_arguments(self, aliases=None, flags=None, classes=None):
         alias_flags = {}
-        # print aliases, flags
         if aliases is None:
             aliases = self.aliases
         if flags is None:
@@ -1073,7 +1131,9 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             self._load_flag(subc)
 
         if self.extra_args:
-            sub_parser = KeyValueConfigLoader(log=self.log, classes=self.classes)
+            sub_parser = KeyValueConfigLoader(
+                log=self.log, classes=self.classes, aliases=self.aliases
+            )
             sub_parser.load_config(self.extra_args)
             self.config.merge(sub_parser.config)
             self.extra_args = sub_parser.extra_args

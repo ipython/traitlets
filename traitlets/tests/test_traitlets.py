@@ -17,12 +17,49 @@ import pytest
 from pytest import mark
 
 from traitlets import (
-    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
-    Int, CInt, Long, CLong, Integer, Float, CFloat, Complex, Bytes, Unicode,
-    TraitError, Union, Callable, All, Undefined, Type, This, Instance, TCPAddress,
-    List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    HasTraits,
+    MetaHasTraits,
+    TraitType,
+    Any,
+    Bool,
+    CBytes,
+    Dict,
+    Enum,
+    Int,
+    CInt,
+    Long,
+    CLong,
+    Integer,
+    Float,
+    CFloat,
+    Complex,
+    Bytes,
+    Unicode,
+    TraitError,
+    Union,
+    Callable,
+    All,
+    Undefined,
+    Type,
+    This,
+    Instance,
+    TCPAddress,
+    List,
+    Tuple,
+    ObjectName,
+    DottedObjectName,
+    CRegExp,
+    link,
+    directional_link,
+    ForwardDeclaredType,
+    ForwardDeclaredInstance,
+    validate,
+    observe,
+    default,
+    observe_compat,
+    BaseDescriptor,
+    HasDescriptors,
+    CUnicode,
 )
 
 def change_dict(*ordered_values):
@@ -102,7 +139,7 @@ class TestTraitType(TestCase):
 
     def test_error(self):
         class A(HasTraits):
-            tt = TraitType
+            tt = TraitType()
         a = A()
         self.assertRaises(TraitError, A.tt.error, a, 10)
 
@@ -2624,14 +2661,18 @@ def _from_string_test(traittype, s, expected):
         assert value == expected
 
 
-@pytest.mark.parametrize('s, expected', [
-    ('xyz', 'xyz'),
-    ('1', '1'),
-    ('"xx"', '"xx"'),
-    ("'abc'", "'abc'"),
-])
+@pytest.mark.parametrize(
+    "s, expected", [("xyz", "xyz"), ("1", "1"), ('"xx"', "xx"), ("'abc'", "abc"),]
+)
 def test_unicode_from_string(s, expected):
     _from_string_test(Unicode, s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected", [("xyz", "xyz"), ("1", "1"), ('"xx"', "xx"), ("'abc'", "abc"),]
+)
+def test_cunicode_from_string(s, expected):
+    _from_string_test(CUnicode, s, expected)
 
 
 @pytest.mark.parametrize('s, expected', [

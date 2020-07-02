@@ -316,17 +316,6 @@ class TestKeyValueCL(TestCase):
         print(config)
         self.assertEqual(config.a, u'épsîlön')
 
-    def test_unicode_bytes_args(self):
-        uarg = u'--a=é'
-        try:
-            barg = uarg.encode(sys.stdin.encoding)
-        except (TypeError, UnicodeEncodeError):
-            raise skip("sys.stdin.encoding can't handle 'é'")
-
-        cl = self.klass(log=log)
-        config = cl.load_config([barg])
-        self.assertEqual(config.a, u'é')
-
     def test_list_append(self):
         cl = self.klass(log=log)
         argv = ["--C.list_trait", "x", "--C.list_trait", "y"]

@@ -165,7 +165,7 @@ def _safe_literal_eval(s):
     """Safely evaluate an expression
 
     Returns original string if eval fails.
-    
+
     Use only where types are ambiguous.
     """
     try:
@@ -635,13 +635,13 @@ class TraitType(BaseDescriptor):
 
         Parameters
         ----------
-        obj: HasTraits or None
+        obj : HasTraits or None
             The instance which owns the trait. If not
             object is given, then an object agnostic
             error will be raised.
-        value: any
+        value : any
             The value that caused the error.
-        error: Exception (default: None)
+        error : Exception (default: None)
             An error that was raised by a child trait.
             The arguments of this exception should be
             of the form ``(value, info, *traits)``.
@@ -651,7 +651,7 @@ class TraitType(BaseDescriptor):
             of :class:`TraitType` instances that are
             "children" of this one (the first being
             the deepest).
-        info: str (default: None)
+        info : str (default: None)
             A description of the expected value. By
             default this is infered from this trait's
             ``info`` method.
@@ -844,7 +844,7 @@ def observe(*names, **kwargs):
     ----------
     *names
         The str names of the Traits to observe on the object.
-    type: str, kwarg-only
+    type : str, kwarg-only
         The type of event to observe (e.g. 'change')
     """
     if not names:
@@ -1646,7 +1646,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
         Parameters
         ----------
-        name: str (default: None)
+        name : str (default: None)
             The name of a trait of this class. If name is ``None`` then all
             the event handlers of this class will be returned instead.
 
@@ -1932,7 +1932,7 @@ class Union(TraitType):
 
         Parameters
         ----------
-        trait_types: sequence
+        trait_types : sequence
             The list of trait types of length at least 1.
 
         Notes
@@ -2169,8 +2169,8 @@ class Unicode(TraitType):
                     old_s = s
                     s = s[1:-1]
                     warn(
-                        "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
-                        "Use %r instead of %r" % (s, old_s),
+                        "Supporting extra quotes around Unicode is deprecated in traitlets 5.0. "
+                        "Use %r instead of %r – or use CUnicode." % (s, old_s),
                         FutureWarning)
         return s
 
@@ -2470,7 +2470,13 @@ class Container(Instance):
 
     def from_string(self, s):
         """Load value from a single string"""
-        return self.from_string_list([s])
+        if not isinstance(s, str):
+            raise TraitError(f"Expected string, got {s!r}")
+        try:
+            test = literal_eval(s)
+        except Exception:
+            test = None
+        return self.validate(None, test)
 
     def from_string_list(self, s_list):
         """Return the value from a list of config strings
@@ -2868,7 +2874,15 @@ class Dict(Instance):
 
     def from_string(self, s):
         """Load value from a single string"""
-        return self.from_string_list([s])
+        if not isinstance(s, str):
+            raise TypeError(f"from_string expects a list, got {repr(s)} of type {type(s)}")
+        try:
+            return self.from_string_list([s])
+        except Exception:
+            test = _safe_literal_eval(s)
+            if isinstance(test, dict):
+                return test
+            raise
 
     def from_string_list(self, s_list):
         """Return the value from a list of config strings
@@ -2901,12 +2915,11 @@ class Dict(Instance):
 
         Returns a one-key dictionary
         """
+
         if '=' not in s:
             raise TraitError(
-                "'%s' options must have the form 'key=value', got %s" % (
-                    self.__class__.__name__,
-                    s,
-                )
+                "'%s' options must have the form 'key=value', got %s"
+                % (self.__class__.__name__, repr(s),)
             )
         key, value = s.split("=", 1)
 

@@ -305,9 +305,9 @@ class Configurable(HasTraits):
 
         Parameters
         ----------
-        trait: Trait
+        trait : Trait
             The trait to look for
-        classes: list
+        classes : list
             The list of other classes to consider for redundancy.
             Will return `cls` even if it is not defined on `cls`
             if the defining class is not in `classes`.
@@ -326,7 +326,7 @@ class Configurable(HasTraits):
 
         Parameters
         ----------
-        classes: list, optional
+        classes : list, optional
             The list of other classes in the config file.
             Used to reduce redundant information.
         """

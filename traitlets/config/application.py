@@ -661,6 +661,7 @@ class Application(SingletonConfigurable):
     @catch_config_error
     def parse_command_line(self, argv=None):
         """Parse the command line arguments."""
+        assert not isinstance(argv, str)
         argv = sys.argv[1:] if argv is None else argv
         self.argv = [cast_unicode(arg) for arg in argv ]
 

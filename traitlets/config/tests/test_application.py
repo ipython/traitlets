@@ -188,9 +188,9 @@ class TestApplication(TestCase):
         app.parse_command_line("--li 1 --li 3 --la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 S2 S1".split())
         config = app.config
         assert config.Foo.li == [1, 3]
-        assert config.Foo.la == ['1', 'ab']
-        assert config.Bar.tb == ['AB', '2']
-        self.assertEqual(config.Bar.aset, 'S1 S2 S1'.split())
+        assert config.Foo.la == ["1", "ab"]
+        assert config.Bar.tb == ("AB", "2")
+        self.assertEqual(config.Bar.aset, {"S1", "S2"})
         app.init_foo()
         assert app.foo.li == [1, 3]
         assert app.foo.la == ['1', 'ab']
@@ -420,8 +420,10 @@ class TestApplication(TestCase):
         self.assertEqual(app.extra_args, ['extra', '--disable', 'args'])
 
         app = MyApp()
-        app.parse_command_line(['-', '--disable', '--Bar.b=1', '-', 'extra'])
-        self.assertEqual(app.extra_args, ['-', '-', 'extra'])
+        app.parse_command_line(
+            ["--disable", "--la", "-", "-", "--Bar.b=1", "--", "-", "extra"]
+        )
+        self.assertEqual(app.extra_args, ["-", "extra"])
 
     def test_unicode_argv(self):
         app = MyApp()
@@ -580,7 +582,7 @@ class TestApplication(TestCase):
 
             app.load_config_file(name, path=[td1])
             self.assertEqual(len(app.loaded_config_files), 1)
-            self.assertEquals(app.loaded_config_files[0], config_file)
+            self.assertEqual(app.loaded_config_files[0], config_file)
 
             app.start()
             self.assertEqual(app.running, True)
