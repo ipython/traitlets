@@ -361,6 +361,9 @@ class Config(dict):
         except KeyError as e:
             raise AttributeError(e)
 
+    def __repr__(self):
+        return 'Config('+super().__repr__()+')'
+
 
 #-----------------------------------------------------------------------------
 # Config loading classes
