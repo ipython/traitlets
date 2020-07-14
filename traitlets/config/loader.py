@@ -100,12 +100,9 @@ class LazyConfigValue(HasTraits):
 
         Self is expected to have higher precedence.
 
-        Parameters:
-        -----------
-
+        Parameters
+        ----------
         other: LazyConfigValue or container
-
-
         Return: LazyConfigValue if ``other`` is also lazy, a reified container
         otherwise.
         """
@@ -379,7 +376,6 @@ class ConfigLoader(object):
 
         Examples
         --------
-
         >>> cl = ConfigLoader()
         >>> config = cl.load_config()
         >>> config
@@ -662,7 +658,6 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
 
         Examples
         --------
-
             >>> from traitlets.config.loader import KeyValueConfigLoader
             >>> cl = KeyValueConfigLoader()
             >>> d = cl.load_config(["--A.name='brian'","--B.number=0"])
@@ -786,22 +781,18 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
 
         Parameters
         ----------
-
         classes : optional, list
-          The classes to scan for *container* config-traits and decide
-          for their "multiplicity" when adding them as *argparse* arguments.
-
+            The classes to scan for *container* config-traits and decide
+            for their "multiplicity" when adding them as *argparse* arguments.
         argv : optional, list
-          If given, used to read command-line arguments from, otherwise
-          sys.argv[1:] is used.
-
+            If given, used to read command-line arguments from, otherwise
+            sys.argv[1:] is used.
         parser_args : tuple
-          A tuple of positional arguments that will be passed to the
-          constructor of :class:`argparse.ArgumentParser`.
-
+            A tuple of positional arguments that will be passed to the
+            constructor of :class:`argparse.ArgumentParser`.
         parser_kw : dict
-          A tuple of keyword arguments that will be passed to the
-          constructor of :class:`argparse.ArgumentParser`.
+            A tuple of keyword arguments that will be passed to the
+            constructor of :class:`argparse.ArgumentParser`.
 
         Returns
         -------
@@ -828,11 +819,10 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
 
         Parameters
         ----------
-
         args : optional, list
-          If given, a list with the structure of sys.argv[1:] to parse
-          arguments from. If not given, the instance's self.argv attribute
-          (given at construction time) is used."""
+            If given, a list with the structure of sys.argv[1:] to parse
+            arguments from. If not given, the instance's self.argv attribute
+            (given at construction time) is used."""
         self.clear()
         if argv is None:
             argv = self.argv
@@ -1009,7 +999,7 @@ def load_pyconfig_files(config_files, path):
     """Load multiple Python config files, merging each of them in turn.
 
     Parameters
-    ==========
+    ----------
     config_files : list of str
         List of config files names to load and merge into the config.
     path : unicode

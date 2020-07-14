@@ -843,7 +843,6 @@ def boolean_flag(name, configurable, set_help='', unset_help=''):
 
     Parameters
     ----------
-
     name : str
         The name of the flag.
     configurable : str
@@ -855,7 +854,6 @@ def boolean_flag(name, configurable, set_help='', unset_help=''):
 
     Returns
     -------
-
     cfg : dict
         A dict with two keys: 'name', and 'no-name', for setting and unsetting
         the trait, respectively.

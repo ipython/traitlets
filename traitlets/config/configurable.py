@@ -486,7 +486,6 @@ class SingletonConfigurable(LoggingConfigurable):
 
         Examples
         --------
-
         Create a singleton class using instance, and retrieve it::
 
             >>> from traitlets.config.configurable import SingletonConfigurable
