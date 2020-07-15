@@ -64,7 +64,7 @@ def all_warnings():
 @contextmanager
 def expected_warnings(matching):
     r"""Context for use in testing to catch known warnings matching regexes
-    
+
     Parameters
     ----------
     matching : list of strings or compiled regexes
@@ -73,7 +73,7 @@ def expected_warnings(matching):
     Examples
     --------
     >>> from skimage import data, img_as_ubyte, img_as_float
-    >>> with expected_warnings(['precision loss']):
+    >>> with expected_warnings(["precision loss"]):
     ...     d = img_as_ubyte(img_as_float(data.coins()))
 
     Notes

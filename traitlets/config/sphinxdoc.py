@@ -136,7 +136,6 @@ def write_doc(path, title, app, preamble=None):
 
     Parameters
     ----------
-
     path : str
         The file to be written
     title : str

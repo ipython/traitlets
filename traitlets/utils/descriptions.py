@@ -34,7 +34,6 @@ def describe(article, value, name=None, verbose=False, capital=False):
 
     Examples
     --------
-
     Indefinite description:
 
     >>> describe("a", object())
@@ -43,7 +42,7 @@ def describe(article, value, name=None, verbose=False, capital=False):
     'an object'
     >>> describe("a", type(object))
     'a type'
-    
+
     Definite description:
 
     >>> describe("the", object())

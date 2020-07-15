@@ -173,12 +173,11 @@ def parse_notifier_name(names):
 
     Examples
     --------
-
     >>> parse_notifier_name([])
     [All]
-    >>> parse_notifier_name('a')
+    >>> parse_notifier_name("a")
     ['a']
-    >>> parse_notifier_name(['a', 'b'])
+    >>> parse_notifier_name(["a", "b"])
     ['a', 'b']
     >>> parse_notifier_name(All)
     [All]
@@ -923,11 +922,9 @@ def default(name):
             def get_bar_default(self):
                 return 11
 
-
         class B(A):
             bar = Float()  # This trait ignores the default generator defined in
                            # the base class A
-
 
         class C(B):
 
@@ -2327,18 +2324,14 @@ class Container(Instance):
 
         Parameters
         ----------
-
         trait : TraitType [ optional ]
             the type for restricting the contents of the Container.  If unspecified,
             types are not checked.
-
         default_value : SequenceType [ optional ]
             The default value for the Trait.  Must be list/tuple/set, and
             will be cast to the container type.
-
         allow_none : bool [ default False ]
             Whether to allow the value to be None
-
         **kwargs : any
             further keys for extensions to the Trait (e.g. config)
 
@@ -2422,18 +2415,14 @@ class List(Container):
 
         Parameters
         ----------
-
         trait : TraitType [ optional ]
             the type for restricting the contents of the Container.
             If unspecified, types are not checked.
-
         default_value : SequenceType [ optional ]
             The default value for the Trait.  Must be list/tuple/set, and
             will be cast to the container type.
-
         minlen : Int [ default 0 ]
             The minimum length of the input list
-
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
@@ -2478,18 +2467,14 @@ class Set(List):
 
         Parameters
         ----------
-
         trait : TraitType [ optional ]
             the type for restricting the contents of the Container.
             If unspecified, types are not checked.
-
         default_value : SequenceType [ optional ]
             The default value for the Trait.  Must be list/tuple/set, and
             will be cast to the container type.
-
         minlen : Int [ default 0 ]
             The minimum length of the input list
-
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
@@ -2519,13 +2504,11 @@ class Tuple(Container):
 
         Parameters
         ----------
-
         `*traits` : TraitTypes [ optional ]
             the types for restricting the contents of the Tuple.  If unspecified,
             types are not checked. If specified, then each positional argument
             corresponds to an element of the tuple.  Tuples defined with traits
             are of fixed length.
-
         default_value : SequenceType [ optional ]
             The default value for the Tuple.  Must be list/tuple/set, and
             will be cast to a tuple. If ``traits`` are specified,
@@ -2616,20 +2599,16 @@ class Dict(Instance):
 
         Parameters
         ----------
-
         value_trait : TraitType [ optional ]
             The specified trait type to check and use to restrict the values of
             the dict. If unspecified, values are not checked.
-
         per_key_traits : Dictionary of {keys:trait types} [ optional, keyword-only ]
             A Python dictionary containing the types that are valid for
             restricting the values of the dict on a per-key basis.
             Each value in this dict should be a Trait for validating
-
         key_trait : TraitType [ optional, keyword-only ]
             The type for restricting the keys of the dict. If
             unspecified, the types of the keys are not checked.
-
         default_value : SequenceType [ optional, keyword-only ]
             The default value for the Dict.  Must be dict, tuple, or None, and
             will be cast to a dict if not None. If any key or value traits are specified,
@@ -2637,11 +2616,10 @@ class Dict(Instance):
 
         Examples
         --------
-
         >>> d = Dict(Unicode())
         a dict whose values must be text
 
-        >>> d2 = Dict(per_key_traits={'n': Integer(), 's': Unicode()})
+        >>> d2 = Dict(per_key_traits={"n": Integer(), "s": Unicode()})
         d2['n'] must be an integer
         d2['s'] must be text
 
