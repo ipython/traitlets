@@ -658,11 +658,11 @@ class KeyValueConfigLoader(CommandLineConfigLoader):
 
         Examples
         --------
-            >>> from traitlets.config.loader import KeyValueConfigLoader
-            >>> cl = KeyValueConfigLoader()
-            >>> d = cl.load_config(["--A.name='brian'","--B.number=0"])
-            >>> sorted(d.items())
-            [('A', {'name': 'brian'}), ('B', {'number': 0})]
+        >>> from traitlets.config.loader import KeyValueConfigLoader
+        >>> cl = KeyValueConfigLoader()
+        >>> d = cl.load_config(["--A.name='brian'", "--B.number=0"])
+        >>> sorted(d.items())
+        [('A', {'name': 'brian'}), ('B', {'number': 0})]
         """
         super(KeyValueConfigLoader, self).__init__(**kw)
         if argv is None:
