@@ -34,7 +34,7 @@ def recursive_update(target, new):
 
 class BaseJSONConfigManager(LoggingConfigurable):
     """General JSON config manager
-    
+
     Deals with persisting/storing config in a json file
     """
 

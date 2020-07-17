@@ -245,8 +245,7 @@ class link(object):
 
     Examples
     --------
-
-    >>> c = link((src, 'value'), (tgt, 'value'))
+    >>> c = link((src, "value"), (tgt, "value"))
     >>> src.value = 5  # updates other objects as well
     """
     updating = False
@@ -314,8 +313,7 @@ class directional_link(object):
 
     Examples
     --------
-
-    >>> c = directional_link((src, 'value'), (tgt, 'value'))
+    >>> c = directional_link((src, "value"), (tgt, "value"))
     >>> src.value = 5  # updates target objects
     >>> tgt.value = 6  # does not update source object
     """
