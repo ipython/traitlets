@@ -103,8 +103,11 @@ class LazyConfigValue(HasTraits):
         Parameters
         ----------
         other: LazyConfigValue or container
-        Return: LazyConfigValue if ``other`` is also lazy, a reified container
-        otherwise.
+
+        Returns
+        -------
+        LazyConfigValue 
+            if ``other`` is also lazy, a reified container otherwise.
         """
         if isinstance(other, LazyConfigValue):
             other._extend.extend(self._extend)
