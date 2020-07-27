@@ -39,7 +39,7 @@ Configurable: :class:`~traitlets.config.Configurable`
     A configurable is a regular Python class that serves as a base class for
     all main classes in an application. The
     :class:`~traitlets.config.Configurable` base class is
-    lightweight and only does one things.
+    lightweight and only does one thing.
 
     This :class:`~traitlets.config.Configurable` is a subclass
     of :class:`~traitlets.HasTraits` that knows how to configure
