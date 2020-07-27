@@ -31,12 +31,12 @@ Major changes are:
 - :ghpull:`371` introduces a :any:`FuzzyEnum` trait that allow case insensitive and unique prefix matching.
 - :ghpull:`384` Ass a `trait_values` method to extra a mapping of trait and their values.
 - :ghpull:`393` `Link` now have a transform attribute (taking two functions inverse of each other), that affect how a
+  value is mapped between a source and a target.
 - :ghpull:`394` `Link` now have a `link` method to re-link object after `unlink` has been called.
 - :ghpull:`402` rewrite handling of error messages for nested traits.
 - :ghpull:`405` all function that use to print help now have an equivalent that yields the help lines.
 - :ghpull:`413` traits now have a method `trait_has_value`, returning a boolean to know if a value has been assigned to
   a trait (excluding the default), in order to help avoiding circular validation at initialisation.
-  value is mapped between a source and a target.
 - :ghpull:`416` Explicitly export traitlets  in ``__all__`` to avoid exposing implementation details.
 - :ghpull:`438` introduces ``.info_rst()`` to let traitlets overwrite the automatically generated rst documentation.
 - :ghpull:`458` Add a sphinx extension to automatically document options of `Application` instance in projects using traitlets.
