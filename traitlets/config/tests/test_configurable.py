@@ -62,7 +62,9 @@ class Bar(Foo):
     b = Unicode('gotit', help="The string b.").tag(config=False)
     c = Float(help="The string c.").tag(config=True)
     bset = Set([]).tag(config=True, multiplicity='+')
+    bset_values = Set([2,1,5]).tag(config=True, multiplicity='+')
     bdict = Dict().tag(config=True, multiplicity='+')
+    bdict_values = Dict({1:'a','0':'b',5:'c'}).tag(config=True, multiplicity='+')
 
 foo_help=u"""Foo(Configurable) options
 -------------------------
@@ -83,8 +85,12 @@ bar_help=u"""Bar(Foo) options
     Default: 0
 --Bar.bdict <key-1>=<value-1>...
     Default: {}
+--Bar.bdict_values <key-1>=<value-1>...
+    Default: {1: 'a', '0': 'b', 5: 'c'}
 --Bar.bset <set-item-1>...
     Default: set()
+--Bar.bset_values <set-item-1>...
+    Default: {1, 2, 5}
 --Bar.c=<Float>
     The string c.
     Default: 0.0

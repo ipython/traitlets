@@ -2598,7 +2598,10 @@ class Set(List):
 
     def default_value_repr(self):
         # Ensure default value is sorted for a reproducible build
-        return repr(sorted(self.make_dynamic_default()))
+        list_repr = repr(sorted(self.make_dynamic_default()))
+        if list_repr == '[]':
+            return 'set()'
+        return '{'+list_repr[1:-1]+'}'
 
 
 class Tuple(Container):
