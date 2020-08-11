@@ -39,6 +39,7 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+from ast import literal_eval
 import contextlib
 import inspect
 import os
@@ -160,6 +161,17 @@ def _deprecated_method(method, cls, method_name, msg):
     else:
         warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
+def _safe_literal_eval(s):
+    """Safely evaluate an expression
+
+    Returns original string if eval fails.
+
+    Use only where types are ambiguous.
+    """
+    try:
+        return literal_eval(s)
+    except (NameError, SyntaxError, ValueError):
+        return s
 
 def is_trait(t):
     """ Returns whether the given value is an instance or subclass of TraitType.
@@ -468,6 +480,20 @@ class TraitType(BaseDescriptor):
         if help is not None:
             self.metadata['help'] = help
 
+    def from_string(self, s):
+        """Get a value from a config string
+
+        such as an environment variable or CLI arguments.
+
+        Traits can override this method to define their own
+        parsing of config strings.
+
+        .. seealso:: item_from_string
+
+        .. versionadded:: 5.0
+        """
+        return s
+
     def default(self, obj=None):
         """The default generator for this trait
 
@@ -609,13 +635,13 @@ class TraitType(BaseDescriptor):
 
         Parameters
         ----------
-        obj: HasTraits or None
+        obj : HasTraits or None
             The instance which owns the trait. If not
             object is given, then an object agnostic
             error will be raised.
-        value: any
+        value : any
             The value that caused the error.
-        error: Exception (default: None)
+        error : Exception (default: None)
             An error that was raised by a child trait.
             The arguments of this exception should be
             of the form ``(value, info, *traits)``.
@@ -625,7 +651,7 @@ class TraitType(BaseDescriptor):
             of :class:`TraitType` instances that are
             "children" of this one (the first being
             the deepest).
-        info: str (default: None)
+        info : str (default: None)
             A description of the expected value. By
             default this is infered from this trait's
             ``info`` method.
@@ -799,8 +825,6 @@ class MetaHasTraits(MetaHasDescriptors):
         super(MetaHasTraits, cls).setup_class(classdict)
 
 
-
-
 def observe(*names, **kwargs):
     """A decorator which can be used to observe Traits on a class.
 
@@ -820,7 +844,7 @@ def observe(*names, **kwargs):
     ----------
     *names
         The str names of the Traits to observe on the object.
-    type: str, kwarg-only
+    type : str, kwarg-only
         The type of event to observe (e.g. 'change')
     """
     if not names:
@@ -1622,7 +1646,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
         Parameters
         ----------
-        name: str (default: None)
+        name : str (default: None)
             The name of a trait of this class. If name is ``None`` then all
             the event handlers of this class will be returned instead.
 
@@ -1842,6 +1866,9 @@ class Instance(ClassBasedTraitType):
     def default_value_repr(self):
         return repr(self.make_dynamic_default())
 
+    def from_string(self, s):
+        return _safe_literal_eval(s)
+
 
 class ForwardDeclaredMixin(object):
     """
@@ -1905,7 +1932,7 @@ class Union(TraitType):
 
         Parameters
         ----------
-        trait_types: sequence
+        trait_types : sequence
             The list of trait types of length at least 1.
 
         Notes
@@ -2009,6 +2036,9 @@ class Int(TraitType):
             self.error(obj, value)
         return _validate_bounds(self, obj, value)
 
+    def from_string(self, s):
+        return int(s)
+
 
 class CInt(Int):
     """A casting version of the int trait."""
@@ -2044,6 +2074,9 @@ class Float(TraitType):
             self.error(obj, value)
         return _validate_bounds(self, obj, value)
 
+    def from_string(self, s):
+        return float(s)
+
 
 class CFloat(Float):
     """A casting version of the float trait."""
@@ -2069,6 +2102,9 @@ class Complex(TraitType):
             return complex(value)
         self.error(obj, value)
 
+    def from_string(self, s):
+        return complex(s)
+
 
 class CComplex(Complex):
     """A casting version of the complex number trait."""
@@ -2092,6 +2128,9 @@ class Bytes(TraitType):
         if isinstance(value, bytes):
             return value
         self.error(obj, value)
+
+    def from_string(self, s):
+        return s.encode('utf8')
 
 
 class CBytes(Bytes):
@@ -2121,6 +2160,21 @@ class Unicode(TraitType):
                 raise TraitError(msg.format(value, self.name, class_of(obj)))
         self.error(obj, value)
 
+    def from_string(self, s):
+        s = os.path.expanduser(s)
+        if len(s) >= 2:
+            # handle deprecated "1"
+            for c in ('"', "'"):
+                if s[0] == s[-1] == c:
+                    old_s = s
+                    s = s[1:-1]
+                    warn(
+                        "Supporting extra quotes around Unicode is deprecated in traitlets 5.0. "
+                        "Use %r instead of %r – or use CUnicode." % (s, old_s),
+                        FutureWarning)
+        return s
+
+
 
 class CUnicode(Unicode):
     """A casting version of the unicode trait."""
@@ -2147,6 +2201,9 @@ class ObjectName(TraitType):
             return value
         self.error(obj, value)
 
+    def from_string(self, s):
+        return s
+
 class DottedObjectName(ObjectName):
     """A string holding a valid dotted object name in Python, such as A.b3._c"""
     def validate(self, obj, value):
@@ -2167,7 +2224,21 @@ class Bool(TraitType):
     def validate(self, obj, value):
         if isinstance(value, bool):
             return value
+        elif isinstance(value, int):
+            if value == 1:
+                return True
+            elif value == 0:
+                return False
         self.error(obj, value)
+
+    def from_string(self, s):
+        s = s.lower()
+        if s in {'true', '1'}:
+            return True
+        elif s in {'false', '0'}:
+            return False
+        else:
+            raise ValueError("%r is not 1, 0, true, or false")
 
 
 class CBool(Bool):
@@ -2215,6 +2286,12 @@ class Enum(TraitType):
 
     def info_rst(self):
         return self._info(as_rst=True)
+
+    def from_string(self, s):
+        try:
+            return self.validate(None, s)
+        except TraitError:
+            return _safe_literal_eval(s)
 
 
 class CaselessStrEnum(Enum):
@@ -2355,7 +2432,7 @@ class Container(Instance):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
-        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
+        super(Container, self).__init__(klass=self.klass, args=args, **kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
@@ -2390,6 +2467,47 @@ class Container(Instance):
         if isinstance(self._trait, TraitType):
             self._trait.instance_init(obj)
         super(Container, self).instance_init(obj)
+
+    def from_string(self, s):
+        """Load value from a single string"""
+        if not isinstance(s, str):
+            raise TraitError(f"Expected string, got {s!r}")
+        try:
+            test = literal_eval(s)
+        except Exception:
+            test = None
+        return self.validate(None, test)
+
+    def from_string_list(self, s_list):
+        """Return the value from a list of config strings
+
+        This is where we parse CLI configuration
+        """
+        if len(s_list) == 1:
+            # check for deprecated --Class.trait="['a', 'b', 'c']"
+            r = s_list[0]
+            if (
+                (r[0] == '[' and r[-1] == ']') or
+                (r[0] == '(' and r[-1] == ')')
+            ):
+                warn(
+                    "--{0}={1} for containers is deprecated in traitlets 5.0. "
+                    "You can pass --{0} item ... multiple times to add items to a list.".format(
+                        self.name, r),
+                    FutureWarning
+                )
+                return self.klass(literal_eval(r))
+        return self.klass([self.item_from_string(s) for s in s_list])
+
+    def item_from_string(self, s):
+        """Cast a single item from a string
+
+        Evaluated when parsing CLIconfiguration from a string
+        """
+        if self._trait:
+            return self._trait.from_string(s)
+        else:
+            return s
 
 
 class List(Container):
@@ -2754,6 +2872,72 @@ class Dict(Instance):
         super(Dict, self).instance_init(obj)
 
 
+    def from_string(self, s):
+        """Load value from a single string"""
+        if not isinstance(s, str):
+            raise TypeError(f"from_string expects a list, got {repr(s)} of type {type(s)}")
+        try:
+            return self.from_string_list([s])
+        except Exception:
+            test = _safe_literal_eval(s)
+            if isinstance(test, dict):
+                return test
+            raise
+
+    def from_string_list(self, s_list):
+        """Return the value from a list of config strings
+
+        This is where we parse CLI configuration
+        """
+        if (
+            len(s_list) == 1
+            and s_list[0].startswith("{")
+            and s_list[0].endswith("}")
+        ):
+            warn(
+                "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
+                "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
+                    self.name,
+                    s_list[0],
+                ),
+                FutureWarning,
+            )
+
+            return literal_eval(s_list[0])
+
+        combined = {}
+        for d in [self.item_from_string(s) for s in s_list]:
+            combined.update(d)
+        return combined
+
+    def item_from_string(self, s):
+        """Cast a single item from a string
+
+        Evaluated when parsing CLIconfiguration from a string
+
+        Dicts expect strings of the form key=value
+
+        Returns a one-key dictionary
+        """
+
+        if '=' not in s:
+            raise TraitError(
+                "'%s' options must have the form 'key=value', got %s"
+                % (self.__class__.__name__, repr(s),)
+            )
+        key, value = s.split("=", 1)
+
+        # cast key with key trait, if defined
+        if self._key_trait:
+            key = self._key_trait.from_string(key)
+
+        # cast value with value trait, if defined (per-key or global)
+        value_trait = (self._per_key_traits or {}).get(key, self._value_trait)
+        if value_trait:
+            value = value_trait.from_string(value)
+        return {key: value}
+
+
 class TCPAddress(TraitType):
     """A trait for an (ip, port) tuple.
 
@@ -2771,6 +2955,14 @@ class TCPAddress(TraitType):
                     if port >= 0 and port <= 65535:
                         return value
         self.error(obj, value)
+
+    def from_string(self, s):
+        if ':' not in s:
+            raise ValueError('Require `ip:port`, got %r' % s)
+        ip, port = s.split(':', 1)
+        port = int(port)
+        return (ip, port)
+
 
 class CRegExp(TraitType):
     """A casting compiled regular expression trait.
@@ -2886,6 +3078,7 @@ class UseEnum(TraitType):
         return self._info(as_rst=True)
 
 
+
 class Callable(TraitType):
     """A trait which is callable.
 
@@ -2901,6 +3094,7 @@ class Callable(TraitType):
             return value
         else:
             self.error(obj, value)
+
 
 def _add_all():
     """add all trait types to `__all__`

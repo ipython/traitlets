@@ -7,11 +7,11 @@
 import copy
 import os
 import pickle
-import sys
+from itertools import chain
 from tempfile import mkstemp
 from unittest import TestCase
 
-from pytest import skip
+import pytest
 
 from traitlets.config.loader import (
     Config,
@@ -21,9 +21,14 @@ from traitlets.config.loader import (
     KeyValueConfigLoader,
     ArgParseConfigLoader,
     KVArgParseConfigLoader,
-    ConfigError,
 )
-from traitlets import (HasTraits, Union, List, Tuple, Dict, Int, Unicode)
+from traitlets import (
+    List,
+    Tuple,
+    Dict,
+    Unicode,
+    Integer,
+)
 from traitlets.config import Configurable
 
 
@@ -68,8 +73,8 @@ import logging
 log = logging.getLogger('devnull')
 log.setLevel(0)
 
-class TestFileCL(TestCase):
 
+class TestFileCL(TestCase):
     def _check_conf(self, config):
         self.assertEqual(config.a, 10)
         self.assertEqual(config.b, 20)
@@ -173,11 +178,13 @@ class TestFileCL(TestCase):
         with self.assertRaises(ValueError):
             cl.load_config()
 
+
 def _parse_int_or_str(v):
     try:
         return int(v)
     except:
         return str(v)
+
 
 class MyLoader1(ArgParseConfigLoader):
     def _add_arguments(self, aliases=None, flags=None, classes=None):
@@ -189,13 +196,15 @@ class MyLoader1(ArgParseConfigLoader):
         p.add_argument('--list1', action='append', type=_parse_int_or_str)
         p.add_argument('--list2', nargs='+', type=int)
 
+
 class MyLoader2(ArgParseConfigLoader):
     def _add_arguments(self, aliases=None, flags=None, classes=None):
         subparsers = self.parser.add_subparsers(dest='subparser_name')
         subparser1 = subparsers.add_parser('1')
-        subparser1.add_argument('-x',dest='Global.x')
+        subparser1.add_argument('-x', dest='Global.x')
         subparser2 = subparsers.add_parser('2')
         subparser2.add_argument('y')
+
 
 class TestArgParseCL(TestCase):
 
@@ -237,94 +246,153 @@ class TestArgParseCL(TestCase):
         self.assertEqual(config.list2, [1, 2, 3])
 
 
+class C(Configurable):
+    str_trait = Unicode(config=True)
+    int_trait = Integer(config=True)
+    list_trait = List(config=True)
+    list_of_ints = List(Integer(), config=True)
+    dict_trait = Dict(config=True)
+    dict_of_ints = Dict(
+        key_trait=Integer(),
+        value_trait=Integer(),
+        config=True,
+    )
+    dict_multi = Dict(
+        key_trait=Unicode(),
+        per_key_traits={
+            "int": Integer(),
+            "str": Unicode(),
+        },
+        config=True,
+    )
+
+
 class TestKeyValueCL(TestCase):
     klass = KeyValueConfigLoader
 
     def test_eval(self):
         cl = self.klass(log=log)
-        config = cl.load_config('--Class.str_trait=all --Class.int_trait=5 --Class.list_trait=["hello",5]'.split())
-        self.assertEqual(config.Class.str_trait, 'all')
-        self.assertEqual(config.Class.int_trait, 5)
-        self.assertEqual(config.Class.list_trait, ["hello", 5])
+        config = cl.load_config('--C.str_trait=all --C.int_trait=5 --C.list_trait=["hello",5]'.split())
+        c = C(config=config)
+        assert c.str_trait == 'all'
+        assert c.int_trait == 5
+        assert c.list_trait == ["hello", 5]
 
     def test_basic(self):
         cl = self.klass(log=log)
         argv = [ '--' + s[2:] for s in pyfile.split('\n') if s.startswith('c.') ]
-        print(argv)
         config = cl.load_config(argv)
-        self.assertEqual(config.a, 10)
-        self.assertEqual(config.b, 20)
-        self.assertEqual(config.Foo.Bar.value, 10)
+        assert config.a == '10'
+        assert config.b == '20'
+        assert config.Foo.Bar.value == '10'
         # non-literal expressions are not evaluated
         self.assertEqual(config.Foo.Bam.value, 'list(range(10))')
-        self.assertEqual(config.D.C.value, 'hi there')
+        self.assertEqual(Unicode().from_string(config.D.C.value), 'hi there')
 
     def test_expanduser(self):
         cl = self.klass(log=log)
         argv = ['--a=~/1/2/3', '--b=~', '--c=~/', '--d="~/"']
         config = cl.load_config(argv)
-        self.assertEqual(config.a, os.path.expanduser('~/1/2/3'))
-        self.assertEqual(config.b, os.path.expanduser('~'))
-        self.assertEqual(config.c, os.path.expanduser('~/'))
-        self.assertEqual(config.d, '~/')
+        u = Unicode()
+        self.assertEqual(u.from_string(config.a), os.path.expanduser('~/1/2/3'))
+        self.assertEqual(u.from_string(config.b), os.path.expanduser('~'))
+        self.assertEqual(u.from_string(config.c), os.path.expanduser('~/'))
+        self.assertEqual(u.from_string(config.d), '~/')
 
     def test_extra_args(self):
         cl = self.klass(log=log)
-        config = cl.load_config(['--a=5', 'b', '--c=10', 'd'])
+        config = cl.load_config(['--a=5', 'b', 'd', '--c=10'])
         self.assertEqual(cl.extra_args, ['b', 'd'])
-        self.assertEqual(config.a, 5)
-        self.assertEqual(config.c, 10)
+        assert config.a == '5'
+        assert config.c == '10'
         config = cl.load_config(['--', '--a=5', '--c=10'])
         self.assertEqual(cl.extra_args, ['--a=5', '--c=10'])
 
         cl = self.klass(log=log)
-        config = cl.load_config(['-', 'extra', '--a=2', '--c=1', '-'])
-        self.assertEqual(cl.extra_args, ['-', 'extra', '-'])
+        config = cl.load_config(['extra', '--a=2', '--c=1', '--', '-'])
+        self.assertEqual(cl.extra_args, ['extra', '-'])
 
     def test_unicode_args(self):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']
         config = cl.load_config(argv)
+        print(config, cl.extra_args)
         self.assertEqual(config.a, u'épsîlön')
 
-    def test_unicode_bytes_args(self):
-        uarg = u'--a=é'
-        try:
-            barg = uarg.encode(sys.stdin.encoding)
-        except (TypeError, UnicodeEncodeError):
-            raise skip("sys.stdin.encoding can't handle 'é'")
-
+    def test_list_append(self):
         cl = self.klass(log=log)
-        config = cl.load_config([barg])
-        self.assertEqual(config.a, u'é')
+        argv = ["--C.list_trait", "x", "--C.list_trait", "y"]
+        config = cl.load_config(argv)
+        assert config.C.list_trait == ["x", "y"]
+        c = C(config=config)
+        assert c.list_trait == ["x", "y"]
 
-    def test_unicode_alias(self):
+    def test_dict(self):
         cl = self.klass(log=log)
-        argv = [u'--a=épsîlön']
-        config = cl.load_config(argv, aliases=dict(a='A.a'))
-        self.assertEqual(config.A.a, u'épsîlön')
+        argv = ["--C.dict_trait", "x=5", "--C.dict_trait", "y=10"]
+        config = cl.load_config(argv)
+        c = C(config=config)
+        assert c.dict_trait == {"x": "5", "y": "10"}
+
+    def test_dict_key_traits(self):
+        cl = self.klass(log=log)
+        argv = ["--C.dict_of_ints", "1=2", "--C.dict_of_ints", "3=4"]
+        config = cl.load_config(argv)
+        c = C(config=config)
+        assert c.dict_of_ints == {1: 2, 3: 4}
 
 
-class CBase(HasTraits):
+class CBase(Configurable):
     a = List().tag(config=True)
-    b = List().tag(config=True, multiplicity='*')
+    b = List(Integer()).tag(config=True, multiplicity='*')
     c = List().tag(config=True, multiplicity='append')
     adict = Dict().tag(config=True)
+
 
 class CSub(CBase):
     d = Tuple().tag(config=True)
     e = Tuple().tag(config=True, multiplicity='+')
     bdict = Dict().tag(config=True, multiplicity='*')
 
+
 class TestArgParseKVCL(TestKeyValueCL):
     klass = KVArgParseConfigLoader
+
+    def test_no_cast_literals(self):
+        cl = self.klass(log=log)
+        # test ipython -c 1 doesn't cast to int
+        argv = ["-c", "1"]
+        config = cl.load_config(argv, aliases=dict(c="IPython.command_to_run"))
+        assert config.IPython.command_to_run == "1"
+
+    def test_int_literals(self):
+        cl = self.klass(log=log)
+        # test ipython -c 1 doesn't cast to int
+        argv = ["-c", "1"]
+        config = cl.load_config(argv, aliases=dict(c="IPython.command_to_run"))
+        assert config.IPython.command_to_run == "1"
+
+    def test_unicode_alias(self):
+        cl = self.klass(log=log)
+        argv = [u'--a=épsîlön']
+        config = cl.load_config(argv, aliases=dict(a='A.a'))
+        print(dict(config))
+        print(cl.extra_args)
+        print(cl.aliases)
+        self.assertEqual(config.A.a, u'épsîlön')
 
     def test_expanduser2(self):
         cl = self.klass(log=log)
         argv = ['-a', '~/1/2/3', '--b', "'~/1/2/3'"]
         config = cl.load_config(argv, aliases=dict(a='A.a', b='A.b'))
-        self.assertEqual(config.A.a, os.path.expanduser('~/1/2/3'))
-        self.assertEqual(config.A.b, '~/1/2/3')
+
+        class A(Configurable):
+            a = Unicode(config=True)
+            b = Unicode(config=True)
+
+        a = A(config=config)
+        self.assertEqual(a.a, os.path.expanduser('~/1/2/3'))
+        self.assertEqual(a.b, '~/1/2/3')
 
     def test_eval(self):
         cl = self.klass(log=log)
@@ -335,15 +403,16 @@ class TestArgParseKVCL(TestKeyValueCL):
     def test_seq_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
         aliases = {'a3': 'CBase.c', 'a5': 'CSub.e'}
-        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --a3 AA --CBase.c BB "
-                "--CSub.d 1 --CSub.d BBB --CSub.e 1 a bcd").split()
+        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 --CBase.b 3 --a3 AA --CBase.c BB "
+                "--CSub.d 1 --CSub.d BBB --CSub.e 1 --CSub.e=bcd a b c ").split()
         config = cl.load_config(argv, aliases=aliases)
-        self.assertEqual(config.CBase.a, ['A', 2])
-        self.assertEqual(config.CBase.b, [1, 2, 3])
+        assert cl.extra_args == ["a", "b", "c"]
+        assert config.CBase.a == ['A', '2']
+        assert config.CBase.b == [1, 3]
         self.assertEqual(config.CBase.c, ['AA', 'BB'])
 
-        self.assertEqual(config.CSub.d, [1, 'BBB'])
-        self.assertEqual(config.CSub.e, [1, 'a', 'bcd'])
+        assert config.CSub.d == ('1', 'BBB')
+        assert config.CSub.e == ('1', 'bcd')
 
     def test_seq_traits_single_empty_string(self):
         cl = self.klass(log=log, classes=(CBase, ))
@@ -355,12 +424,33 @@ class TestArgParseKVCL(TestKeyValueCL):
     def test_dict_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
         aliases = {'D': 'CBase.adict', 'E': 'CSub.bdict'}
-        argv = ["--CBase.adict", "k1=v1", "-D=k2=2", "-D", "k3=v 3", "-E", "k=v", "22=222"]
+        argv = ["-D", "k1=v1", "-D=k2=2", "-D", "k3=v 3", "-E", "k=v", "-E", "22=222"]
         config = cl.load_config(argv, aliases=aliases)
-        self.assertDictEqual(config.CBase.adict,
-                {'k1': 'v1', 'k2': 2, 'k3': 'v 3'})
-        self.assertEqual(config.CSub.bdict,
-                {'k': 'v', '22': 222})
+        c = CSub(config=config)
+        assert c.adict == {'k1': 'v1', 'k2': '2', 'k3': 'v 3'}
+        assert c.bdict == {'k': 'v', '22': '222'}
+
+    def test_mixed_seq_positional(self):
+        aliases = {"c": "Class.trait"}
+        cl = self.klass(log=log, aliases=aliases)
+        assignments = [("-c", "1"), ("--Class.trait=2",), ("--c=3",), ("--Class.trait", "4")]
+        positionals = ["a", "b", "c"]
+        # test with positionals at any index
+        for idx in range(len(assignments) + 1):
+            argv_parts = assignments[:]
+            argv_parts[idx:idx] = (positionals,)
+            argv = list(chain(*argv_parts))
+
+            config = cl.load_config(argv)
+            assert config.Class.trait == ["1", "2", "3", "4"]
+            assert cl.extra_args == ["a", "b", "c"]
+
+    def test_split_positional(self):
+        """Splitting positionals across flags is no longer allowed in traitlets 5"""
+        cl = self.klass(log=log)
+        argv = ["a", "--Class.trait=5", "b"]
+        with pytest.raises(SystemExit):
+            cl.load_config(argv)
 
 
 class TestConfig(TestCase):

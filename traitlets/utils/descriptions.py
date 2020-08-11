@@ -8,7 +8,7 @@ def describe(article, value, name=None, verbose=False, capital=False):
 
     Parameters
     ----------
-    article: str or None
+    article : str or None
         A definite or indefinite article. If the article is
         indefinite (i.e. "a" or "an") the appropriate one
         will be infered. Thus, the arguments of ``describe``
@@ -17,18 +17,18 @@ def describe(article, value, name=None, verbose=False, capital=False):
         will be prepended to the result. For non-articled
         description, values that are instances are treated
         definitely, while classes are handled indefinitely.
-    value: any
+    value : any
         The value which will be named.
-    name: str or None (default: None)
+    name : str or None (default: None)
         Only applies when ``article`` is "the" - this
         ``name`` is a definite reference to the value.
         By default one will be infered from the value's
         type and repr methods.
-    verbose: bool (default: False)
+    verbose : bool (default: False)
         Whether the name should be concise or verbose. When
         possible, verbose names include the module, and/or
         class name where an object was defined.
-    capital: bool (default: False)
+    capital : bool (default: False)
         Whether the first letter of the article should
         be capitalized or not. By default it is not.
 
@@ -137,11 +137,11 @@ def add_article(name, definite=False, capital=False):
 
     Parameters
     ----------
-    definite: bool (default: False)
+    definite : bool (default: False)
         Whether the article is definite or not.
         Indefinite articles being 'a' and 'an',
         while 'the' is definite.
-    capital: bool (default: False)
+    capital : bool (default: False)
         Whether the added article should have
         its first letter capitalized or not.
     """

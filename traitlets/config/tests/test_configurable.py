@@ -4,8 +4,6 @@
 # Distributed under the terms of the Modified BSD License.
 
 import logging
-import sys
-import warnings
 from unittest import TestCase
 
 from pytest import mark
@@ -31,7 +29,7 @@ class MyConfigurable(Configurable):
     c = Unicode('no config')
 
 
-mc_help=u"""MyConfigurable(Configurable) options
+mc_help = u"""MyConfigurable(Configurable) options
 ------------------------------------
 --MyConfigurable.a=<Integer>
     The integer a.
@@ -426,26 +424,24 @@ class TestParentConfigurable(TestCase):
 
     def test_multi_parent_priority(self):
         cfg = Config({
-            'MyConfigurable' : {
-                'b' : 2.0,
+            'MyConfigurable': {
+                'b': 2.0,
             },
-            'MyParent' : {
-                'MyConfigurable' : {
-                    'b' : 3.0,
-                }
+            'MyParent': {
+                'MyConfigurable': {
+                    'b': 3.0,
+                },
             },
-            'MyParent2' : {
-                'MyConfigurable' : {
-                    'b' : 4.0,
-                }
+            'MyParent2': {
+                'MyConfigurable': {
+                    'b': 4.0,
+                },
+                'MyParent': {
+                    'MyConfigurable': {
+                        'b': 5.0,
+                    },
+                },
             },
-            'MyParent2' : {
-                'MyParent' : {
-                    'MyConfigurable' : {
-                        'b' : 5.0,
-                    }
-                }
-            }
         })
         parent2 = MyParent2(config=cfg)
         parent = MyParent2(parent=parent2)

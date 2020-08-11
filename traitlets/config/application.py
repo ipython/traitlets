@@ -661,6 +661,7 @@ class Application(SingletonConfigurable):
     @catch_config_error
     def parse_command_line(self, argv=None):
         """Parse the command line arguments."""
+        assert not isinstance(argv, str)
         argv = sys.argv[1:] if argv is None else argv
         self.argv = [cast_unicode(arg) for arg in argv ]
 
@@ -693,10 +694,15 @@ class Application(SingletonConfigurable):
             self.exit(0)
 
         # flatten flags&aliases, so cl-args get appropriate priority:
-        flags,aliases = self.flatten_flags()
+        flags, aliases = self.flatten_flags()
         classes = tuple(self._classes_with_config_traits())
         loader = self._create_loader(argv, aliases, flags, classes=classes)
-        self.cli_config = deepcopy(loader.load_config())
+        try:
+            self.cli_config = deepcopy(loader.load_config())
+        except SystemExit:
+            # print help output on error
+            self.print_help()
+            raise
         self.update_config(self.cli_config)
         # store unparsed args in extra_args
         self.extra_args = loader.extra_args

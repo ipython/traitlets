@@ -10,7 +10,9 @@ import os
 import re
 import sys
 import json
+import warnings
 from ast import literal_eval
+from collections import defaultdict
 
 from ..utils import cast_unicode
 
@@ -46,6 +48,18 @@ class ArgumentError(ConfigLoaderError):
 # line, since one must know how to pipe stderr, which many users don't know how
 # to do.  So we override the print_help method with one that defaults to
 # stdout and use our class instead.
+
+
+class _Sentinel:
+    def __repr__(self):
+        return "<Sentinel deprecated>"
+
+    def __str__(self):
+        return "<deprecated>"
+
+
+_deprecated = _Sentinel()
+
 
 class ArgumentParser(argparse.ArgumentParser):
     """Simple argparse subclass that prints help to stdout by default."""
@@ -102,11 +116,11 @@ class LazyConfigValue(HasTraits):
 
         Parameters
         ----------
-        other: LazyConfigValue or container
+        other : LazyConfigValue or container
 
         Returns
         -------
-        LazyConfigValue 
+        LazyConfigValue
             if ``other`` is also lazy, a reified container otherwise.
         """
         if isinstance(other, LazyConfigValue):
@@ -126,8 +140,6 @@ class LazyConfigValue(HasTraits):
             # other is a container, reify now.
             return self.get_value(other)
 
-
-
     def insert(self, index, other):
         if not isinstance(index, int):
             raise TypeError("An integer is required")
@@ -136,6 +148,7 @@ class LazyConfigValue(HasTraits):
     # dict methods
     # update is used for both dict and set
     _update = Any()
+
     def update(self, other):
         if self._update is None:
             if isinstance(other, dict):
@@ -346,6 +359,87 @@ class Config(dict):
             raise AttributeError(e)
 
 
+class DeferredConfig:
+    """Class for deferred-evaluation of config from CLI"""
+    pass
+
+    def get_value(self, trait):
+        raise NotImplementedError("Implement in subclasses")
+
+
+class DeferredConfigString(str, DeferredConfig):
+    """Config value for loading config from a string
+
+    Interpretation is deferred until it is loaded into the trait.
+
+    Subclass of str for backward compatibility.
+
+    This class is only used for values that are not listed
+    in the configurable classes.
+
+    When config is loaded, `trait.from_string` will be used.
+
+    If an error is raised in `.from_string`,
+    the original string is returned.
+
+    .. versionadded:: 5.0
+    """
+    def get_value(self, trait):
+        """Get the value stored in this string"""
+        s = str(self)
+        try:
+            return trait.from_string(s)
+        except Exception:
+            # exception casting from string,
+            # let the original string lie.
+            # this will raise a more informative error when config is loaded.
+            return s
+
+    def __repr__(self):
+        super_repr = super(DeferredConfigString, self).__repr__()
+        return '%s(%s)' % (self.__class__.__name__, super_repr)
+
+
+class DeferredConfigList(list, DeferredConfig):
+    """Config value for loading config from a list of strings
+
+    Interpretation is deferred until it is loaded into the trait.
+
+    This class is only used for values that are not listed
+    in the configurable classes.
+
+    When config is loaded, `trait.from_string_list` will be used.
+
+    If an error is raised in `.from_string_list`,
+    the original string list is returned.
+
+    .. versionadded:: 5.0
+    """
+    def get_value(self, trait):
+        """Get the value stored in this string"""
+        if hasattr(trait, "from_string_list"):
+            src = list(self)
+            cast = trait.from_string_list
+        else:
+            # only allow one item
+            if len(self) > 1:
+                raise ValueError("Multiply defined option: %s" % trait.name)
+            src = self[0]
+            cast = trait.from_string
+
+        try:
+            return cast(src)
+        except Exception:
+            # exception casting from string,
+            # let the original value lie.
+            # this will raise a more informative error when config is loaded.
+            return src
+
+    def __repr__(self):
+        super_repr = super(DeferredConfigList, self).__repr__()
+        return '%s(%s)' % (self.__class__.__name__, super_repr)
+
+
 #-----------------------------------------------------------------------------
 # Config loading classes
 #-----------------------------------------------------------------------------
@@ -374,7 +468,7 @@ class ConfigLoader(object):
         """A base class for config loaders.
 
         log : instance of :class:`logging.Logger` to use.
-              By default loger of :meth:`traitlets.config.application.Application.instance()`
+              By default logger of :meth:`traitlets.config.application.Application.instance()`
               will be used
 
         Examples
@@ -544,239 +638,125 @@ class CommandLineConfigLoader(ConfigLoader):
     here.
     """
 
-    def _parse_config_value(self, rhs):
-        """Python-evaluates any cmd-line argument values."""
-        rhs = os.path.expanduser(rhs)
-        try:
-            # Try to see if regular Python syntax will work. This
-            # won't handle strings as the quote marks are removed
-            # by the system shell.
-            value = literal_eval(rhs)
-        except (NameError, SyntaxError, ValueError):
-            # This case happens if the rhs is a string.
-            value = rhs
-        return value
-
     def _exec_config_str(self, lhs, rhs, trait=None):
         """execute self.config.<lhs> = <rhs>
 
         * expands ~ with expanduser
-        * tries to assign with literal_eval, otherwise assigns with just the string,
-          allowing `--C.a=foobar` and `--C.a="foobar"` to be equivalent.  *Not*
-          equivalent are `--C.a=4` and `--C.a='4'`.
+        * interprets value with trait if available
         """
-        if isinstance(trait, Dict):
-            if len(rhs) == 1 and isinstance(rhs[0], str):
-                # check for deprecated --Class.trait="{'a': 'b'}"
-                self.log.warning(
-                    "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
-                    "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
-                        lhs, rhs[0])
-                )
-                value = self._parse_config_value(rhs[0])
-            else:
-                value = {k: self._parse_config_value(v) for k,v in rhs}
-
-        elif isinstance(rhs, (list, tuple)):
-            value = None
-            if len(rhs) == 1 and len(rhs[0]) > 0:
-                # check for deprecated --Class.trait="['a', 'b', 'c']"
-                r = rhs[0]
-                if (
-                    (r[0] == '[' and r[-1] == ']') or
-                    (r[0] == '(' and r[-1] == ')')
-                ):
-                    self.log.warning(
-                        "--{0}={1} for containers is deprecated in traitlets 5.0. "
-                        "You can pass --{0} item ... multiple times to add items to a list.".format(
-                            lhs, rhs)
-                    )
-                    value = self._parse_config_value(r)
-
-            if value is None:
-                value = [self._parse_config_value(r) for r in rhs]
+        value = rhs
+        if isinstance(value, DeferredConfig):
+            if trait:
+                # trait available, reify config immediately
+                value = value.get_value(trait)
+            elif isinstance(rhs, DeferredConfigList) and len(rhs) == 1:
+                # single item, make it a deferred str
+                value = DeferredConfigString(os.path.expanduser(rhs[0]))
         else:
-            value = self._parse_config_value(rhs)
+            if trait:
+                value = trait.from_string(value)
+            else:
+                value = DeferredConfigString(value)
 
-        exec(u'self.config.%s = value' % lhs, None, locals())
+        *path, key = lhs.split(".")
+        section = self.config
+        for part in path:
+            section = section[part]
+        section[key] = value
+        return
 
     def _load_flag(self, cfg):
         """update self.config from a flag, which can be a dict or Config"""
         if isinstance(cfg, (dict, Config)):
             # don't clobber whole config sections, update
             # each section from config:
-            for sec,c in cfg.items():
+            for sec, c in cfg.items():
                 self.config[sec].update(c)
         else:
             raise TypeError("Invalid flag: %r" % cfg)
 
-# raw --identifier=value pattern
-# but *also* accept '-' as wordsep, for aliases
-# accepts:  --foo=a
-#           --Class.trait=value
-#           --alias-name=value
-# rejects:  -foo=value
-#           --foo
-#           --Class.trait
-kv_pattern = re.compile(r'\-\-[A-Za-z][\w\-]*(\.[\w\-]+)*\=.*')
+# match --Class.trait keys for argparse
+# matches:
+# --Class.trait
+# --x
+# -x
 
-# just flags, no assignments, with two *or one* leading '-'
-# accepts:  --foo
-#           -foo-bar-again
-# rejects:  --anything=anything
-#           --two.word
+class_trait_opt_pattern = re.compile(r'^\-?\-[A-Za-z][\w]*(\.[\w]+)*$')
 
-flag_pattern = re.compile(r'\-\-?\w+[\-\w]*$')
+_DOT_REPLACEMENT = "__DOT__"
+_DASH_REPLACEMENT = "__DASH__"
 
-class KeyValueConfigLoader(CommandLineConfigLoader):
-    """A config loader that loads key value pairs from the command line.
 
-    This allows command line options to be gives in the following form::
+class _KVAction(argparse.Action):
+    """Custom argparse action for handling --Class.trait=x
 
-        ipython --profile="foo" --InteractiveShell.autocall=False
+    Always
     """
-
-    def __init__(self, argv=None, aliases=None, flags=None, **kw):
-        """Create a key value pair config loader.
-
-        Parameters
-        ----------
-        argv : list
-            A list that has the form of sys.argv[1:] which has unicode
-            elements of the form u"key=value". If this is None (default),
-            then sys.argv[1:] will be used.
-        aliases : dict
-            A dict of aliases for configurable traits.
-            Keys are the short aliases, Values are the resolved trait.
-            Of the form: `{'alias' : 'Configurable.trait'}`
-        flags : dict
-            A dict of flags, keyed by str name. Vaues can be Config objects,
-            dicts, or "key=value" strings.  If Config or dict, when the flag
-            is triggered, The flag is loaded as `self.config.update(m)`.
-
-        Returns
-        -------
-        config : Config
-            The resulting Config object.
-
-        Examples
-        --------
-        >>> from traitlets.config.loader import KeyValueConfigLoader
-        >>> cl = KeyValueConfigLoader()
-        >>> d = cl.load_config(["--A.name='brian'", "--B.number=0"])
-        >>> sorted(d.items())
-        [('A', {'name': 'brian'}), ('B', {'number': 0})]
-        """
-        super(KeyValueConfigLoader, self).__init__(**kw)
-        if argv is None:
-            argv = sys.argv[1:]
-        self.argv = argv
-        self.aliases = aliases or {}
-        self.flags = flags or {}
+    def __call__(self, parser, namespace, values, option_string=None):
+        if isinstance(values, str):
+            values = [values]
+        values = ["-" if v is _DASH_REPLACEMENT else v for v in values]
+        items = getattr(namespace, self.dest, None)
+        if items is None:
+            items = DeferredConfigList()
+        else:
+            items = DeferredConfigList(items)
+        items.extend(values)
+        setattr(namespace, self.dest, items)
 
 
-    def clear(self):
-        super(KeyValueConfigLoader, self).clear()
-        self.extra_args = []
+class _DefaultOptionDict(dict):
+    """Like the default options dict
+
+    but acts as if all --Class.trait options are predefined
+    """
+    def _add_kv_action(self, key):
+        self[key] = _KVAction(
+            option_strings=[key],
+            dest=key.lstrip("-").replace(".", _DOT_REPLACEMENT),
+            # use metavar for display purposes
+            metavar=key.lstrip("-"),
+        )
+
+    def __contains__(self, key):
+        if '=' in key:
+            return False
+        if super().__contains__(key):
+            return True
+
+        if key.startswith("-") and class_trait_opt_pattern.match(key):
+            self._add_kv_action(key)
+            return True
+        return False
+
+    def __getitem__(self, key):
+        if key in self:
+            return super().__getitem__(key)
+        else:
+            raise KeyError(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
 
-    def _decode_argv(self, argv, enc=None):
-        """decode argv if bytes, using stdin.encoding, falling back on default enc"""
-        uargv = []
-        if enc is None:
-            enc = DEFAULT_ENCODING
-        for arg in argv:
-            if not isinstance(arg, str):
-                # only decode if not already decoded
-                arg = arg.decode(enc)
-            uargv.append(arg)
-        return uargv
-
-
-    def load_config(self, argv=None, aliases=None, flags=None):
-        """Parse the configuration and generate the Config object.
-
-        After loading, any arguments that are not key-value or
-        flags will be stored in self.extra_args - a list of
-        unparsed command-line arguments.  This is used for
-        arguments such as input files or subcommands.
-
-        Parameters
-        ----------
-        argv : list, optional
-            A list that has the form of sys.argv[1:] which has unicode
-            elements of the form u"key=value". If this is None (default),
-            then self.argv will be used.
-        aliases : dict
-            A dict of aliases for configurable traits.
-            Keys are the short aliases, Values are the resolved trait.
-            Of the form: `{'alias' : 'Configurable.trait'}`
-        flags : dict
-            A dict of flags, keyed by str name. Values can be Config objects
-            or dicts.  When the flag is triggered, The config is loaded as
-            `self.config.update(cfg)`.
-        """
-        self.clear()
-        if argv is None:
-            argv = self.argv
-        if aliases is None:
-            aliases = self.aliases
-        if flags is None:
-            flags = self.flags
-
-        # ensure argv is a list of unicode strings:
-        uargv = self._decode_argv(argv)
-        for idx, raw in enumerate(uargv):
-            if raw == '--':
-                # Don't parse arguments after '--'.
-                # This is useful for relaying arguments to scripts, e.g.:
-                #     ipython -i foo.py --matplotlib=qt -- args after '--' go-to-foo.py
-                self.extra_args.extend(uargv[idx + 1:])
-                break
-
-            # strip leading '-'
-            item = raw.lstrip('-')
-
-            if not item:
-                ## It was either a lone '-' (i.e. denoting STDIN),
-                #  or more than 3 '---'; append it as is.
-                self.extra_args.append(raw)
-                continue
-
-            if kv_pattern.match(raw):
-                lhs, rhs = item.split('=', 1)
-                # Substitute longnames for aliases.
-                if lhs in aliases:
-                    lhs = aliases[lhs]
-                if '.' not in lhs:
-                    # probably a mistyped alias, but not technically illegal
-                    self.log.warning("Unrecognized alias: '%s', it will probably have no effect.", raw)
-                try:
-                    self._exec_config_str(lhs, rhs)
-                except Exception:
-                    raise ArgumentError("Invalid argument: '%s'" % raw)
-
-            elif flag_pattern.match(raw):
-                if item in flags:
-                    cfg, _ = flags[item]
-                    self._load_flag(cfg)
-                else:
-                    raise ArgumentError("Unrecognized flag: '%s'" % raw)
-            elif raw.startswith('-'):
-                kv = '--' + item
-                if kv_pattern.match(kv):
-                    raise ArgumentError("Invalid argument: '%s', did you mean '%s'?" % (raw, kv))
-                else:
-                    raise ArgumentError("Invalid argument: '%s'" % raw)
-            else:
-                # keep all args that aren't valid in a list,
-                # in case our parent knows what to do with them.
-                self.extra_args.append(item)
-        return self.config
+class _KVArgParser(argparse.ArgumentParser):
+    """subclass of ArgumentParser where any --Class.trait option is implicitly defined"""
+    def parse_known_args(self, args=None, namespace=None):
+        # must be done immediately prior to parsing because if we do it in init,
+        # registration of explicit actions via parser.add_option will fail during setup
+        for container in (self, self._optionals):
+            container._option_string_actions = _DefaultOptionDict(
+                container._option_string_actions)
+        return super().parse_known_args(args, namespace)
 
 
 class ArgParseConfigLoader(CommandLineConfigLoader):
     """A loader that uses the argparse module to load from the command line."""
+
+    parser_class = ArgumentParser
 
     def __init__(self, argv=None, aliases=None, flags=None, log=None, classes=(),
                  *parser_args, **parser_kw):
@@ -817,19 +797,36 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         kwargs.update(parser_kw)
         self.parser_kw = kwargs
 
-    def load_config(self, argv=None, aliases=None, flags=None, classes=None):
+    def load_config(self, argv=None, aliases=None, flags=_deprecated, classes=None):
         """Parse command line arguments and return as a Config object.
 
         Parameters
         ----------
-        args : optional, list
+        argv : optional, list
             If given, a list with the structure of sys.argv[1:] to parse
             arguments from. If not given, the instance's self.argv attribute
-            (given at construction time) is used."""
+            (given at construction time) is used.
+        flags
+            Deprecated in traitlets 5.0, instanciate the config loader with the flags.
+
+        """
+
+        if flags is not _deprecated:
+            warnings.warn(
+                "The `flag` argument to load_config is deprecated since Traitlets "
+                f"5.0 and will be ignored, pass flags the `{type(self)}` constructor.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         self.clear()
         if argv is None:
             argv = self.argv
-        self._create_parser(aliases, flags, classes)
+        if aliases is not None:
+            self.aliases = aliases
+        if classes is not None:
+            self.classes = classes
+        self._create_parser()
         self._parse_args(argv)
         self._convert_to_config()
         return self.config
@@ -840,16 +837,11 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         else:
             return []
 
-    def _create_parser(self, aliases=None, flags=None, classes=None):
-        self.parser = ArgumentParser(*self.parser_args, **self.parser_kw)
-        self._add_arguments(aliases, flags, classes)
+    def _create_parser(self):
+        self.parser = self.parser_class(*self.parser_args, **self.parser_kw)
+        self._add_arguments(self.aliases, self.flags, self.classes)
 
-    def _parse_config_traits(self):
-        for cls in self.classes:
-            for trait, traitname in cls.class_traits(config=True).items():
-                yield ()
-
-    def _add_arguments(self, aliases=None, flags=None, classes=None):
+    def _add_arguments(self, aliases, flags, classes):
         raise NotImplementedError("subclasses must implement _add_arguments")
 
     def _parse_args(self, args):
@@ -857,30 +849,54 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         # decode sys.argv to support unicode command-line options
         enc = DEFAULT_ENCODING
         uargs = [cast_unicode(a, enc) for a in args]
-        self.parsed_data, self.extra_args = self.parser.parse_known_args(uargs)
+
+        unpacked_aliases = {}
+        if self.aliases:
+            unpacked_aliases = {}
+            for alias, alias_target in self.aliases.items():
+                if alias in self.flags:
+                    continue
+                if not isinstance(alias, tuple):
+                    short_alias, alias = alias, None
+                else:
+                    short_alias, alias = alias
+                for al in (short_alias, alias):
+                    if al is None:
+                        continue
+                    if len(al) == 1:
+                        unpacked_aliases["-" + al] = "--" + alias_target
+                    unpacked_aliases["--" + al] = "--" + alias_target
+
+        def _replace(arg):
+            if arg == "-":
+                return _DASH_REPLACEMENT
+            for k, v in unpacked_aliases.items():
+                if arg == k:
+                    return v
+                if arg.startswith(k + "="):
+                    return v + "=" + arg[len(k) + 1:]
+            return arg
+
+        if '--' in uargs:
+            idx = uargs.index('--')
+            extra_args = uargs[idx+1:]
+            to_parse = uargs[:idx]
+        else:
+            extra_args = []
+            to_parse = uargs
+        to_parse = [_replace(a) for a in to_parse]
+
+        self.parsed_data = self.parser.parse_args(to_parse)
+        self.extra_args = extra_args
 
     def _convert_to_config(self):
         """self.parsed_data->self.config"""
         for k, v in vars(self.parsed_data).items():
-            exec("self.config.%s = v"%k, locals(), globals())
-
-## For Dict traits, describes the cmd-line option as `key=value`
-_kv_opt_pattern = re.compile(r'^([^=]+)=(.*)$')
-
-def _kv_opt(traitname, opt_value):
-    """
-    Used as `type` when adding args into :meth:`ArgumentParser.add_argument()`
-    corresponding to config Dict-traits.
-    """
-    if opt_value[0] == '{' and opt_value[-1] == '}' and ':' in opt_value:
-        # leave opt_value as a string for parsing later
-        return opt_value
-
-    m = _kv_opt_pattern.match(opt_value)
-    if not m:
-        raise ArgumentError("Expecting <key>=<value> for Dict-trait '%s', got %r!"
-                            % (traitname, opt_value))
-    return m.groups()
+            *path, key = k.split(".")
+            section = self.config
+            for p in path:
+                section = section[p]
+            setattr(section, key, v)
 
 
 class _FlagAction(argparse.Action):
@@ -894,7 +910,6 @@ class _FlagAction(argparse.Action):
         super(_FlagAction, self).__init__(*args, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        key = option_string.lstrip('-')
         if self.nargs == 0 or values is Undefined:
             namespace._flags.append(self.flag)
         else:
@@ -907,17 +922,13 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     of common args, such as `ipython -c 'print 5'`, but still gets
     arbitrary config with `ipython --InteractiveShell.autoindent=False`"""
 
-    def _add_arguments(self, aliases=None, flags=None, classes=None):
+    parser_class = _KVArgParser
+
+    def _add_arguments(self, aliases, flags, classes):
         alias_flags = {}
-        # print aliases, flags
-        if aliases is None:
-            aliases = self.aliases
-        if flags is None:
-            flags = self.flags
-        if classes is None:
-            classes = self.classes
         paa = self.parser.add_argument
         self.parser.set_defaults(_flags=[])
+        paa("extra_args", nargs="*")
 
         ## An index of all container traits collected::
         #
@@ -936,26 +947,28 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                         argparse_kwds['action'] = multiplicity
                     else:
                         argparse_kwds['nargs'] = multiplicity
-                    if isinstance(trait, Dict):
-                        argparse_kwds['type'] = fnt.partial(_kv_opt, traitname)
                 argparse_traits[argname] = (trait, argparse_kwds)
-                paa('--'+argname, **argparse_kwds)
 
         for keys, (value, _) in flags.items():
             if not isinstance(keys, tuple):
-                keys = (keys, )
+                keys = (keys,)
             for key in keys:
-                if key in self.aliases:
-                    alias_flags[self.aliases[key]] = value
+                if key in aliases:
+                    alias_flags[aliases[key]] = value
                     continue
-                keys = ('-'+key, '--'+key) if len(key) == 1 else ('--'+key, )
+                keys = ('-' + key, '--' + key) if len(key) == 1 else ('--' + key,)
                 paa(*keys, action=_FlagAction, flag=value)
 
         for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):
-                keys = (keys, )
+                keys = (keys,)
+
             for key in keys:
-                argparse_kwds = {'type': str, 'dest': traitname}
+                argparse_kwds = {
+                    'type': str,
+                    'dest': traitname.replace(".", _DOT_REPLACEMENT),
+                    'metavar': traitname,
+                }
                 if traitname in argparse_traits:
                     argparse_kwds.update(argparse_traits[traitname][1])
                     if 'action' in argparse_kwds and traitname in alias_flags:
@@ -973,29 +986,59 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     argparse_kwds['action'] = _FlagAction
                     argparse_kwds['flag'] = alias_flags[traitname]
                     argparse_kwds['alias'] = traitname
-                keys = ('-'+key, '--'+key) if len(key) == 1 else ('--'+key, )
+                keys = ('-' + key, '--' + key) if len(key) == 1 else ('--'+ key,)
                 paa(*keys, **argparse_kwds)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
-        for k, v in vars(self.parsed_data).items():
-            if k == '_flags':
+        extra_args = self.extra_args
+
+        for lhs, rhs in vars(self.parsed_data).items():
+            if lhs == "extra_args":
+                self.extra_args = ["-" if a == _DASH_REPLACEMENT else a for a in rhs] + extra_args
+                continue
+            elif lhs == '_flags':
                 # _flags will be handled later
                 continue
-            trait = self.argparse_traits.get(k)
+
+            lhs = lhs.replace(_DOT_REPLACEMENT, ".")
+            if '.' not in lhs:
+                # probably a mistyped alias, but not technically illegal
+                self.log.warning("Unrecognized alias: '%s', it will have no effect.", lhs)
+                trait = None
+
+            if isinstance(rhs, list):
+                rhs = DeferredConfigList(rhs)
+            elif isinstance(rhs, str):
+                rhs = DeferredConfigString(rhs)
+
+            trait = self.argparse_traits.get(lhs)
             if trait:
                 trait = trait[0]
+
             # eval the KV assignment
-            self._exec_config_str(k, v, trait=trait)
+            try:
+                self._exec_config_str(lhs, rhs, trait)
+            except Exception:
+                raise ArgumentError("Invalid argument: '%s=%s'" % (lhs, rhs))
 
         for subc in self.parsed_data._flags:
             self._load_flag(subc)
 
-        if self.extra_args:
-            sub_parser = KeyValueConfigLoader(log=self.log)
-            sub_parser.load_config(self.extra_args)
-            self.config.merge(sub_parser.config)
-            self.extra_args = sub_parser.extra_args
+
+class KeyValueConfigLoader(KVArgParseConfigLoader):
+    """Deprecated in traitlets 5.0
+
+    Use KVArgParseConfigLoader
+    """
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "KeyValueConfigLoader is deprecated since Traitlets 5.0."
+            " Use KVArgParseConfigLoader instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 def load_pyconfig_files(config_files, path):

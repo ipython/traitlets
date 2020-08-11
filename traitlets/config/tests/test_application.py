@@ -14,16 +14,29 @@ import os
 import sys
 from io import StringIO
 from tempfile import TemporaryDirectory
-from unittest import TestCase, skip
+from unittest import TestCase
 
 from pytest import mark
 
-from traitlets import Bool, Dict, HasTraits, Integer, List, Set, Tuple, Unicode
+from traitlets import (
+    Bool,
+    Bytes,
+    Dict,
+    HasTraits,
+    Integer,
+    List,
+    Set,
+    Tuple,
+    Unicode,
+)
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config
-from traitlets.tests.utils import (check_help_all_output, check_help_output,
-                                   get_output_error_code)
+from traitlets.tests.utils import (
+    check_help_all_output,
+    check_help_output,
+    get_output_error_code,
+)
 
 try:
     from unittest import mock
@@ -31,9 +44,6 @@ except ImportError:
     import mock
 
 pjoin = os.path.join
-
-
-
 
 
 class Foo(Configurable):
@@ -46,7 +56,9 @@ class Foo(Configurable):
     j = Integer(1, help="The integer j.").tag(config=True)
     name = Unicode(u'Brian', help="First name.").tag(config=True)
     la = List([]).tag(config=True)
+    li = List(Integer()).tag(config=True)
     fdict = Dict().tag(config=True, multiplicity='+')
+
 
 class Bar(Configurable):
 
@@ -55,6 +67,8 @@ class Bar(Configurable):
     tb = Tuple(()).tag(config=True, multiplicity='*')
     aset = Set().tag(config=True, multiplicity='+')
     bdict = Dict().tag(config=True)
+    idict = Dict(value_trait=Integer()).tag(config=True)
+    key_dict = Dict(per_key_traits={'i': Integer(), 'b': Bytes()}).tag(config=True)
 
 
 class MyApp(Application):
@@ -74,6 +88,7 @@ class MyApp(Application):
                     ('j', 'fooj') : ('Foo.j', "`j` terse help msg"),
                     'name' : 'Foo.name',
                     'la': 'Foo.la',
+                    'li': 'Foo.li',
                     'tb': 'Bar.tb',
                     'D': 'Bar.bdict',
                     'enabled' : 'Bar.enabled',
@@ -106,7 +121,6 @@ def class_to_names(classes):
 
 
 class TestApplication(TestCase):
-
     def test_log(self):
         stream = StringIO()
         app = MyApp(log_level=logging.INFO)
@@ -117,6 +131,12 @@ class TestApplication(TestCase):
         app.log_datefmt = "%Y-%m-%d %H:%M"
         app.log.info("hello")
         assert "hello" in stream.getvalue()
+
+    def test_no_eval_cli_text(self):
+        app = MyApp()
+        app.initialize(['--Foo.name=1'])
+        app.init_foo()
+        assert app.foo.name == '1'
 
     def test_basic(self):
         app = MyApp()
@@ -156,40 +176,53 @@ class TestApplication(TestCase):
 
     def test_config(self):
         app = MyApp()
-        app.parse_command_line(["--i=10","--Foo.j=10","--enable=False","--log-level=50"])
+        app.parse_command_line([
+            "--i=10",
+            "--Foo.j=10",
+            "--enable=False",
+            "--log-level=50",
+        ])
         config = app.config
+        print(config)
         self.assertEqual(config.Foo.i, 10)
         self.assertEqual(config.Foo.j, 10)
         self.assertEqual(config.Bar.enabled, False)
-        self.assertEqual(config.MyApp.log_level,50)
+        self.assertEqual(config.MyApp.log_level, 50)
 
     def test_config_seq_args(self):
         app = MyApp()
-        app.parse_command_line("--la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 S2 S1".split())
+        app.parse_command_line("--li 1 --li 3 --la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 --Bar.aset S2 --Bar.aset S1".split())
+        assert app.extra_args == ["2"]
         config = app.config
-        self.assertEqual(config.Foo.la, [1, 'ab'])
-        self.assertEqual(config.Bar.tb, ['AB', 2])
-        self.assertEqual(config.Bar.aset, 'S1 S2 S1'.split())
+        assert config.Foo.li == [1, 3]
+        assert config.Foo.la == ["1", "ab"]
+        assert config.Bar.tb == ("AB",)
+        self.assertEqual(config.Bar.aset, {"S1", "S2"})
         app.init_foo()
-        self.assertEqual(app.foo.la, [1, 'ab'])
+        assert app.foo.li == [1, 3]
+        assert app.foo.la == ['1', 'ab']
         app.init_bar()
         self.assertEqual(app.bar.aset, {'S1', 'S2'})
-        self.assertEqual(app.bar.tb, ('AB', 2))
+        assert app.bar.tb == ('AB',)
 
     def test_config_dict_args(self):
         app = MyApp()
         app.parse_command_line(
-            "--Foo.fdict a=1 b=b c=3 "
+            "--Foo.fdict a=1 --Foo.fdict b=b --Foo.fdict c=3 "
             "--Bar.bdict k=1 -D=a=b -D 22=33 "
+            "--Bar.idict k=1 --Bar.idict b=2 --Bar.idict c=3 "
             .split())
-        fdict = {'a': 1, 'b': 'b', 'c': 3}
-        bdict = {'k': 1, 'a': 'b', '22': 33}
+        fdict = {'a': '1', 'b': 'b', 'c': '3'}
+        bdict = {'k': '1', 'a': 'b', '22': '33'}
+        idict = {'k': 1, 'b': 2, 'c': 3}
         config = app.config
+        assert config.Bar.idict == idict
         self.assertDictEqual(config.Foo.fdict, fdict)
         self.assertDictEqual(config.Bar.bdict, bdict)
         app.init_foo()
         self.assertEqual(app.foo.fdict, fdict)
         app.init_bar()
+        assert app.bar.idict == idict
         self.assertEqual(app.bar.bdict, bdict)
 
     def test_config_propagation(self):
@@ -380,7 +413,7 @@ class TestApplication(TestCase):
     def test_extra_args(self):
 
         app = MyApp()
-        app.parse_command_line(["--Bar.b=5", 'extra', "--disable", 'args'])
+        app.parse_command_line(["--Bar.b=5", 'extra', 'args', "--disable"])
         app.init_bar()
         self.assertEqual(app.bar.enabled, False)
         self.assertEqual(app.bar.b, 5)
@@ -394,8 +427,10 @@ class TestApplication(TestCase):
         self.assertEqual(app.extra_args, ['extra', '--disable', 'args'])
 
         app = MyApp()
-        app.parse_command_line(['-', '--disable', '--Bar.b=1', '-', 'extra'])
-        self.assertEqual(app.extra_args, ['-', '-', 'extra'])
+        app.parse_command_line(
+            ["--disable", "--la", "-", "-", "--Bar.b=1", "--", "-", "extra"]
+        )
+        self.assertEqual(app.extra_args, ["-", "-", "extra"])
 
     def test_unicode_argv(self):
         app = MyApp()
@@ -554,7 +589,7 @@ class TestApplication(TestCase):
 
             app.load_config_file(name, path=[td1])
             self.assertEqual(len(app.loaded_config_files), 1)
-            self.assertEquals(app.loaded_config_files[0], config_file)
+            self.assertEqual(app.loaded_config_files[0], config_file)
 
             app.start()
             self.assertEqual(app.running, True)

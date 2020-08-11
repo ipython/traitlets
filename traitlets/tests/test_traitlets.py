@@ -17,12 +17,49 @@ import pytest
 from pytest import mark
 
 from traitlets import (
-    HasTraits, MetaHasTraits, TraitType, Any, Bool, CBytes, Dict, Enum,
-    Int, CInt, Long, CLong, Integer, Float, CFloat, Complex, Bytes, Unicode,
-    TraitError, Union, Callable, All, Undefined, Type, This, Instance, TCPAddress,
-    List, Tuple, ObjectName, DottedObjectName, CRegExp, link, directional_link,
-    ForwardDeclaredType, ForwardDeclaredInstance, validate, observe, default,
-    observe_compat, BaseDescriptor, HasDescriptors,
+    HasTraits,
+    MetaHasTraits,
+    TraitType,
+    Any,
+    Bool,
+    CBytes,
+    Dict,
+    Enum,
+    Int,
+    CInt,
+    Long,
+    CLong,
+    Integer,
+    Float,
+    CFloat,
+    Complex,
+    Bytes,
+    Unicode,
+    TraitError,
+    Union,
+    Callable,
+    All,
+    Undefined,
+    Type,
+    This,
+    Instance,
+    TCPAddress,
+    List,
+    Tuple,
+    ObjectName,
+    DottedObjectName,
+    CRegExp,
+    link,
+    directional_link,
+    ForwardDeclaredType,
+    ForwardDeclaredInstance,
+    validate,
+    observe,
+    default,
+    observe_compat,
+    BaseDescriptor,
+    HasDescriptors,
+    CUnicode,
 )
 
 def change_dict(*ordered_values):
@@ -102,7 +139,7 @@ class TestTraitType(TestCase):
 
     def test_error(self):
         class A(HasTraits):
-            tt = TraitType
+            tt = TraitType()
         a = A()
         self.assertRaises(TraitError, A.tt.error, a, 10)
 
@@ -2596,6 +2633,7 @@ def test_override_default_instance():
     c._a_default = lambda self: 'overridden'
     assert c.a == 'overridden'
 
+
 def test_copy_HasTraits():
     from copy import copy
 
@@ -2609,3 +2647,129 @@ def test_copy_HasTraits():
     cc.a = 2
     assert cc.a == 2
     assert c.a == 1
+
+
+def _from_string_test(traittype, s, expected):
+    """Run a test of trait.from_string"""
+    if isinstance(traittype, TraitType):
+        trait = traittype
+    else:
+        trait = traittype()
+    if isinstance(s, list):
+        cast = trait.from_string_list
+    else:
+        cast = trait.from_string
+    if type(expected) is type and issubclass(expected, Exception):
+        with pytest.raises(expected):
+            value = cast(s)
+            trait.validate(None, value)
+    else:
+        value = cast(s)
+        assert value == expected
+
+
+@pytest.mark.parametrize(
+    "s, expected", [("xyz", "xyz"), ("1", "1"), ('"xx"', "xx"), ("'abc'", "abc"),]
+)
+def test_unicode_from_string(s, expected):
+    _from_string_test(Unicode, s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected", [("xyz", "xyz"), ("1", "1"), ('"xx"', "xx"), ("'abc'", "abc"),]
+)
+def test_cunicode_from_string(s, expected):
+    _from_string_test(CUnicode, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('x', ValueError),
+    ('1', 1),
+    ('123', 123),
+    ('2.0', ValueError),
+])
+def test_int_from_string(s, expected):
+    _from_string_test(Integer, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('x', ValueError),
+    ('1', 1.0),
+    ('123.5', 123.5),
+    ('2.5', 2.5),
+])
+def test_float_from_string(s, expected):
+    _from_string_test(Float, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('x', ValueError),
+    ('1', 1.0),
+    ('123.5', 123.5),
+    ('2.5', 2.5),
+    ('1+2j', 1+2j),
+])
+def test_complex_from_string(s, expected):
+    _from_string_test(Complex, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('true', True),
+    ('TRUE', True),
+    ('1', True),
+    ('0', False),
+    ('False', False),
+    ('false', False),
+    ('1.0', ValueError),
+])
+def test_bool_from_string(s, expected):
+    _from_string_test(Bool, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('{}', {}),
+    ('1', TraitError),
+    ('{1: 2}', {1: 2}),
+    ('{"key": "value"}', {"key": "value"}),
+    ('x', TraitError),
+])
+def test_dict_from_string(s, expected):
+    _from_string_test(Dict, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('[]', []),
+    ('[1, 2, "x"]', [1, 2, 'x']),
+    (["1", "x"], ["1", "x"])
+])
+def test_list_from_string(s, expected):
+    _from_string_test(List, s, expected)
+
+
+@pytest.mark.parametrize('s, expected, value_trait', [
+    (["1", "2", "3"], [1, 2, 3], Integer()),
+    (["x"], ValueError, Integer()),
+    (["1", "x"], ["1", "x"], Unicode())
+])
+def test_list_from_string(s, expected, value_trait):
+    _from_string_test(List(value_trait), s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('x', 'x'),
+    ('mod.submod', 'mod.submod'),
+    ('not an identifier', TraitError),
+    ('1', '1'),
+])
+def test_object_from_string(s, expected):
+    _from_string_test(DottedObjectName, s, expected)
+
+
+@pytest.mark.parametrize('s, expected', [
+    ('127.0.0.1:8000', ('127.0.0.1', 8000)),
+    ('host.tld:80', ('host.tld', 80)),
+    ('host:notaport', ValueError),
+    ('127.0.0.1', ValueError),
+])
+def test_tcp_from_string(s, expected):
+    _from_string_test(TCPAddress, s, expected)
