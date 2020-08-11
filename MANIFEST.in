@@ -1,6 +1,10 @@
 include CONTRIBUTING.md
 include COPYING.md
 include README.md
+include CHANGES.txt
+include MANIFEST.in
+include pyproject.toml
+include pytest.ini
 
 # Documentation
 graft docs

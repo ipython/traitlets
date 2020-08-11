@@ -153,3 +153,10 @@ with parity_check.hold_trait_notifications():
 
 However, we **recommend** that custom cross-validators don't modify the state
 of the HasTraits instance.
+
+### Release build:
+
+```bash
+$ pip install pep517
+$ python -m pep517.build .
+```
