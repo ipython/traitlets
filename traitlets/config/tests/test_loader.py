@@ -7,11 +7,11 @@
 import copy
 import os
 import pickle
-import sys
+from itertools import chain
 from tempfile import mkstemp
 from unittest import TestCase
 
-from pytest import skip
+import pytest
 
 from traitlets.config.loader import (
     Config,
@@ -196,13 +196,15 @@ class MyLoader1(ArgParseConfigLoader):
         p.add_argument('--list1', action='append', type=_parse_int_or_str)
         p.add_argument('--list2', nargs='+', type=int)
 
+
 class MyLoader2(ArgParseConfigLoader):
     def _add_arguments(self, aliases=None, flags=None, classes=None):
         subparsers = self.parser.add_subparsers(dest='subparser_name')
         subparser1 = subparsers.add_parser('1')
-        subparser1.add_argument('-x',dest='Global.x')
+        subparser1.add_argument('-x', dest='Global.x')
         subparser2 = subparsers.add_parser('2')
         subparser2.add_argument('y')
+
 
 class TestArgParseCL(TestCase):
 
@@ -242,6 +244,7 @@ class TestArgParseCL(TestCase):
         self.assertEqual(config.Global.bam, 'wow')
         self.assertEqual(config.list1, [1, 'B'])
         self.assertEqual(config.list2, [1, 2, 3])
+
 
 class C(Configurable):
     str_trait = Unicode(config=True)
@@ -313,7 +316,7 @@ class TestKeyValueCL(TestCase):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']
         config = cl.load_config(argv)
-        print(config)
+        print(config, cl.extra_args)
         self.assertEqual(config.a, u'épsîlön')
 
     def test_list_append(self):
@@ -373,6 +376,9 @@ class TestArgParseKVCL(TestKeyValueCL):
         cl = self.klass(log=log)
         argv = [u'--a=épsîlön']
         config = cl.load_config(argv, aliases=dict(a='A.a'))
+        print(dict(config))
+        print(cl.extra_args)
+        print(cl.aliases)
         self.assertEqual(config.A.a, u'épsîlön')
 
     def test_expanduser2(self):
@@ -397,15 +403,16 @@ class TestArgParseKVCL(TestKeyValueCL):
     def test_seq_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
         aliases = {'a3': 'CBase.c', 'a5': 'CSub.e'}
-        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 2 3 --a3 AA --CBase.c BB "
-                "--CSub.d 1 --CSub.d BBB --CSub.e 1 a bcd").split()
+        argv = ("--CBase.a A --CBase.a 2 --CBase.b 1 --CBase.b 3 --a3 AA --CBase.c BB "
+                "--CSub.d 1 --CSub.d BBB --CSub.e 1 --CSub.e=bcd a b c ").split()
         config = cl.load_config(argv, aliases=aliases)
+        assert cl.extra_args == ["a", "b", "c"]
         assert config.CBase.a == ['A', '2']
-        assert config.CBase.b == [1, 2, 3]
-        self.assertEqual(config.CBase.c, ['BB'])
+        assert config.CBase.b == [1, 3]
+        self.assertEqual(config.CBase.c, ['AA', 'BB'])
 
         assert config.CSub.d == ('1', 'BBB')
-        assert config.CSub.e == ('1', 'a', 'bcd')
+        assert config.CSub.e == ('1', 'bcd')
 
     def test_seq_traits_single_empty_string(self):
         cl = self.klass(log=log, classes=(CBase, ))
@@ -417,11 +424,33 @@ class TestArgParseKVCL(TestKeyValueCL):
     def test_dict_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
         aliases = {'D': 'CBase.adict', 'E': 'CSub.bdict'}
-        argv = ["-D", "k1=v1", "-D=k2=2", "-D", "k3=v 3", "-E", "k=v", "22=222"]
+        argv = ["-D", "k1=v1", "-D=k2=2", "-D", "k3=v 3", "-E", "k=v", "-E", "22=222"]
         config = cl.load_config(argv, aliases=aliases)
         c = CSub(config=config)
         assert c.adict == {'k1': 'v1', 'k2': '2', 'k3': 'v 3'}
         assert c.bdict == {'k': 'v', '22': '222'}
+
+    def test_mixed_seq_positional(self):
+        aliases = {"c": "Class.trait"}
+        cl = self.klass(log=log, aliases=aliases)
+        assignments = [("-c", "1"), ("--Class.trait=2",), ("--c=3",), ("--Class.trait", "4")]
+        positionals = ["a", "b", "c"]
+        # test with positionals at any index
+        for idx in range(len(assignments) + 1):
+            argv_parts = assignments[:]
+            argv_parts[idx:idx] = (positionals,)
+            argv = list(chain(*argv_parts))
+
+            config = cl.load_config(argv)
+            assert config.Class.trait == ["1", "2", "3", "4"]
+            assert cl.extra_args == ["a", "b", "c"]
+
+    def test_split_positional(self):
+        """Splitting positionals across flags is no longer allowed in traitlets 5"""
+        cl = self.klass(log=log)
+        argv = ["a", "--Class.trait=5", "b"]
+        with pytest.raises(SystemExit):
+            cl.load_config(argv)
 
 
 class TestConfig(TestCase):
