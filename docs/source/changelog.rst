@@ -4,11 +4,67 @@ Changes in Traitlets
 Traitlets 5.0
 -------------
 
+(This is an in-progress changelog, please let us know if something is missing/or could be phrased better)
+
+Traitlets 5.0 is a new version of traitlets that accumulate changes over a period of more close to four years; A number of
+internal refactoring made the internal code structure cleaner and simpler, and greatly improved the diagnostic error
+messages as well has help and documentation generation.
+
+We expect no code change needed for any consumer of the Python API (ipywidgets, and alike), though CLI argument parsing
+have seen a complete rewrite, so if you have an application that does use the parsing logic of traitlets you may see
+changes in behavior, and have now access to more features.
+
+We also want to thanks in particular a number of regular contributor through the years that have patiently waited for
+their often large contribution to be available, if **rough** order of number of contribution:
+
+  - Ryan Morshead - @rmorshea - For serving as a maintainer of the 4.x branch and providing a number of bug fix through
+    the years.
+  - Kostis Anagnostopoulos - @ankostis - Who push a major refactor of the CLI paring, as well as many help-generating
+    function.
+  - Benjamin Ragan-Kelley – @minrk – for reviewing and help fixing edge case in most of the above
+  - Matthias Bussonnier – @carreau
+  - Sylvain Corlay
+  - Francisco de la Peña
+  - Martin Renou
+  - Yves Delley
+  - Thomas Kluyver
+  - hristian Clauss
+  - maartenbreddels
+  - Aliaksei Urbanski
+  - Kevin Bates
+  - David Brochart
+
+As well as many of the passer-by, and less frequent contributors:
+
+  - Tim Paine
+  - Jake VanderPlas
+  - Frédéric Chapoton
+  - Dan Allan
+  - Adam Chainz
+  - William Krinsman
+  - Travis DePrato
+  - Todd
+  - Thomas Aarholt
+  - Lumir Balhar
+  - Leonardo Uieda
+  - Leo Gallucci
+  - Kyle Kelley
+  - Jeroen Demeyer
+  - Jason Grout
+  - Hans Moritz Günther
+  - FredInChina
+  - Conner Cowling
+  - Carol Willing
+  - Albert Zeyer
+
+
 Major changes are:
 
- - remove support for Python 2, and Python 3 version up to 3.6.
- - remove six as a dependency
- - remove funcsig as a dependency.
+ - Removal of Python 2 support,
+ - Removal of Python 3.0-3.6 support
+ - we now follow NEP 29, and are thus Python 3.7+ only.
+ - remove ``six`` as a dependency
+ - remove ``funcsig`` as a dependency.
 
 
 
