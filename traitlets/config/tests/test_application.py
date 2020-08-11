@@ -176,32 +176,39 @@ class TestApplication(TestCase):
 
     def test_config(self):
         app = MyApp()
-        app.parse_command_line(["--i=10","--Foo.j=10","--enable=False","--log-level=50"])
+        app.parse_command_line([
+            "--i=10",
+            "--Foo.j=10",
+            "--enable=False",
+            "--log-level=50",
+        ])
         config = app.config
+        print(config)
         self.assertEqual(config.Foo.i, 10)
         self.assertEqual(config.Foo.j, 10)
         self.assertEqual(config.Bar.enabled, False)
-        self.assertEqual(config.MyApp.log_level,50)
+        self.assertEqual(config.MyApp.log_level, 50)
 
     def test_config_seq_args(self):
         app = MyApp()
-        app.parse_command_line("--li 1 --li 3 --la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 S2 S1".split())
+        app.parse_command_line("--li 1 --li 3 --la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 --Bar.aset S2 --Bar.aset S1".split())
+        assert app.extra_args == ["2"]
         config = app.config
         assert config.Foo.li == [1, 3]
         assert config.Foo.la == ["1", "ab"]
-        assert config.Bar.tb == ("AB", "2")
+        assert config.Bar.tb == ("AB",)
         self.assertEqual(config.Bar.aset, {"S1", "S2"})
         app.init_foo()
         assert app.foo.li == [1, 3]
         assert app.foo.la == ['1', 'ab']
         app.init_bar()
         self.assertEqual(app.bar.aset, {'S1', 'S2'})
-        assert app.bar.tb == ('AB', '2')
+        assert app.bar.tb == ('AB',)
 
     def test_config_dict_args(self):
         app = MyApp()
         app.parse_command_line(
-            "--Foo.fdict a=1 b=b c=3 "
+            "--Foo.fdict a=1 --Foo.fdict b=b --Foo.fdict c=3 "
             "--Bar.bdict k=1 -D=a=b -D 22=33 "
             "--Bar.idict k=1 --Bar.idict b=2 --Bar.idict c=3 "
             .split())
@@ -406,7 +413,7 @@ class TestApplication(TestCase):
     def test_extra_args(self):
 
         app = MyApp()
-        app.parse_command_line(["--Bar.b=5", 'extra', "--disable", 'args'])
+        app.parse_command_line(["--Bar.b=5", 'extra', 'args', "--disable"])
         app.init_bar()
         self.assertEqual(app.bar.enabled, False)
         self.assertEqual(app.bar.b, 5)
@@ -423,7 +430,7 @@ class TestApplication(TestCase):
         app.parse_command_line(
             ["--disable", "--la", "-", "-", "--Bar.b=1", "--", "-", "extra"]
         )
-        self.assertEqual(app.extra_args, ["-", "extra"])
+        self.assertEqual(app.extra_args, ["-", "-", "extra"])
 
     def test_unicode_argv(self):
         app = MyApp()
