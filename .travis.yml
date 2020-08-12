@@ -7,7 +7,9 @@ python:
   - 3.7
 install:
   - pip install --upgrade pip
-  - pip install .
+  - pip install pep517
+  - python -m pep517.build .
+  - pip install dist/traitlets*.whl
   - pip install --pre --upgrade traitlets[test] pytest pytest-cov codecov
   - test -z ${TEST_DEPS} || pip install --upgrade ${TEST_DEPS}
   - pip freeze
