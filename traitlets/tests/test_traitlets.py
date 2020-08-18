@@ -389,7 +389,7 @@ class TestHasDescriptors(TestCase):
 
             def setup_instance(self, *args, **kwargs):
                 self.foo = kwargs.get('foo', None)
-                super(HasFooDescriptors, self).setup_instance(*args, **kwargs)
+                super().setup_instance(*args, **kwargs)
 
         hfd = HasFooDescriptors(foo='bar')
 
@@ -560,7 +560,7 @@ class TestHasTraitsNotify(TestCase):
             b = 0
 
             def __init__(self, **kwargs):
-                super(A, self).__init__(**kwargs)
+                super().__init__(**kwargs)
                 self.on_trait_change(self.listener1, ['a'])
 
             def listener1(self, name, old, new):
@@ -572,7 +572,7 @@ class TestHasTraitsNotify(TestCase):
             d = 0
 
             def __init__(self, **kwargs):
-                super(B, self).__init__(**kwargs)
+                super().__init__(**kwargs)
                 self.on_trait_change(self.listener2)
 
             def listener2(self, name, old, new):
@@ -756,7 +756,7 @@ class TestObserveDecorator(TestCase):
             b = 0
 
             def __init__(self, **kwargs):
-                super(A, self).__init__(**kwargs)
+                super().__init__(**kwargs)
                 self.observe(self.listener1, ['a'])
 
             def listener1(self, change):
@@ -768,7 +768,7 @@ class TestObserveDecorator(TestCase):
             d = 0
 
             def __init__(self, **kwargs):
-                super(B, self).__init__(**kwargs)
+                super().__init__(**kwargs)
                 self.observe(self.listener2)
 
             def listener2(self, change):
@@ -883,7 +883,7 @@ class TestHasTraits(TestCase):
         class A(HasTraits):
             i = Int(0)
             def __init__(self, i):
-                super(A, self).__init__()
+                super().__init__()
                 self.i = i
 
         a = A(5)
@@ -2194,7 +2194,7 @@ class OrderTraits(HasTraits):
 
     def __init__(self, **kwargs):
         self.on_trait_change(self._notify)
-        super(OrderTraits, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 def test_notification_order():
     d = {c:c for c in 'abcdefghijkl'}
@@ -2428,7 +2428,7 @@ class SubClass(TransitionalClass):
     subclass_super = False
     def _calls_super_changed(self, name, old, new):
         self.subclass_super = True
-        super(SubClass, self)._calls_super_changed(name, old, new)
+        super()._calls_super_changed(name, old, new)
 
     subclass_override = False
     def _overrides_changed(self, name, old, new):

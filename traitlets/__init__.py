@@ -10,7 +10,7 @@ from ._version import version_info, __version__
 
 class Sentinel(traitlets.Sentinel):
     def __init__(self, *args, **kwargs):
-        super(Sentinel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         warn(
             """
             Sentinel is not a public part of the traitlets API.

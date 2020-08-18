@@ -67,7 +67,7 @@ class ArgumentParser(argparse.ArgumentParser):
     def print_help(self, file=None):
         if file is None:
             file = sys.stdout
-        return super(ArgumentParser, self).print_help(file)
+        return super().print_help(file)
 
     print_help.__doc__ = argparse.ArgumentParser.print_help.__doc__
 
@@ -285,7 +285,7 @@ class Config(dict):
                 return False
             return remainder in self[first]
 
-        return super(Config, self).__contains__(key)
+        return super().__contains__(key)
 
     # .has_key is deprecated for dictionaries.
     has_key = __contains__
@@ -396,7 +396,7 @@ class DeferredConfigString(str, DeferredConfig):
             return s
 
     def __repr__(self):
-        super_repr = super(DeferredConfigString, self).__repr__()
+        super_repr = super().__repr__()
         return '%s(%s)' % (self.__class__.__name__, super_repr)
 
 
@@ -436,7 +436,7 @@ class DeferredConfigList(list, DeferredConfig):
             return src
 
     def __repr__(self):
-        super_repr = super(DeferredConfigList, self).__repr__()
+        super_repr = super().__repr__()
         return '%s(%s)' % (self.__class__.__name__, super_repr)
 
 
@@ -517,7 +517,7 @@ class FileConfigLoader(ConfigLoader):
             The path to search for the config file on, or a sequence of
             paths to try in order.
         """
-        super(FileConfigLoader, self).__init__(**kw)
+        super().__init__(**kw)
         self.filename = filename
         self.path = path
         self.full_filename = ''
@@ -782,7 +782,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         config : Config
             The resulting Config object.
         """
-        super(CommandLineConfigLoader, self).__init__(log=log)
+        super().__init__(log=log)
         self.clear()
         if argv is None:
             argv = sys.argv[1:]
@@ -907,7 +907,7 @@ class _FlagAction(argparse.Action):
         kwargs['const'] = Undefined
         if not self.alias:
             kwargs['nargs'] = 0
-        super(_FlagAction, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
         if self.nargs == 0 or values is Undefined:

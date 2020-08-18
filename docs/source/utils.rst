@@ -25,7 +25,7 @@ Example:
         def __init__(self, arg1, **kwargs):
             self.arg1 = arg1
 
-            super(Foo, self).__init__(**kwargs)
+            super().__init__(**kwargs)
 
     print(signature(Foo))  # <Signature (arg1, *, number1=0, number2=0, value='Hello', **kwargs)>
 

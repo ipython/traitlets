@@ -794,11 +794,11 @@ class MetaHasDescriptors(type):
                 classdict[k] = v()
             # ----------------------------------------------------------------
 
-        return super(MetaHasDescriptors, mcls).__new__(mcls, name, bases, classdict)
+        return super().__new__(mcls, name, bases, classdict)
 
     def __init__(cls, name, bases, classdict):
         """Finish initializing the HasDescriptors class."""
-        super(MetaHasDescriptors, cls).__init__(name, bases, classdict)
+        super().__init__(name, bases, classdict)
         cls.setup_class(classdict)
 
     def setup_class(cls, classdict):
@@ -822,7 +822,7 @@ class MetaHasTraits(MetaHasDescriptors):
 
     def setup_class(cls, classdict):
         cls._trait_default_generators = {}
-        super(MetaHasTraits, cls).setup_class(classdict)
+        super().setup_class(classdict)
 
 
 def observe(*names, **kwargs):
@@ -1019,7 +1019,7 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
 
         # This is needed because object.__new__ only accepts
         # the cls argument.
-        new_meth = super(HasDescriptors, cls).__new__
+        new_meth = super().__new__
         if new_meth is object.__new__:
             inst = new_meth(cls)
         else:
@@ -1060,7 +1060,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
-        super(HasTraits, self).setup_instance(*args, **kwargs)
+        super().setup_instance(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         # Allow trait values to be set using keyword arguments.
@@ -1076,7 +1076,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     # passthrough args that don't set traits to super
                     super_kwargs[key] = value
         try:
-            super(HasTraits, self).__init__(*super_args, **super_kwargs)
+            super().__init__(*super_args, **super_kwargs)
         except TypeError as e:
             arg_s_list = [ repr(arg) for arg in super_args ]
             for k, v in super_kwargs.items():
@@ -1482,7 +1482,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
         Works like `class_traits`, except for excluding traits from parents.
         """
-        sup = super(cls, cls)
+        sup = super()
         return {n: t for (n, t) in cls.class_traits(**metadata).items()
                 if getattr(sup, n, None) is not t}
 
@@ -1636,7 +1636,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
         Works like ``event_handlers``, except for excluding traits from parents.
         """
-        sup = super(cls, cls)
+        sup = super()
         return {n: e for (n, e) in cls.events(name).items()
                 if getattr(sup, n, None) is not e}
 
@@ -1832,7 +1832,7 @@ class Instance(ClassBasedTraitType):
         self.default_args = args
         self.default_kwargs = kw
 
-        super(Instance, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, self.klass):
@@ -1908,7 +1908,7 @@ class This(ClassBasedTraitType):
     info_text = 'an instance of the same type as the receiver or None'
 
     def __init__(self, **kwargs):
-        super(This, self).__init__(None, **kwargs)
+        super().__init__(None, **kwargs)
 
     def validate(self, obj, value):
         # What if value is a superclass of obj.__class__?  This is
@@ -1942,10 +1942,10 @@ class Union(TraitType):
         """
         self.trait_types = list(trait_types)
         self.info_text = " or ".join([tt.info() for tt in self.trait_types])
-        super(Union, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def default(self, obj=None):
-        default = super(Union, self).default(obj)
+        default = super().default(obj)
         for t in self.trait_types:
             if default is Undefined:
                 default = t.default(obj)
@@ -1956,12 +1956,12 @@ class Union(TraitType):
     def class_init(self, cls, name):
         for trait_type in reversed(self.trait_types):
             trait_type.class_init(cls, None)
-        super(Union, self).class_init(cls, name)
+        super().class_init(cls, name)
 
     def instance_init(self, obj):
         for trait_type in reversed(self.trait_types):
             trait_type.instance_init(obj)
-        super(Union, self).instance_init(obj)
+        super().instance_init(obj)
 
     def validate(self, obj, value):
         with obj.cross_validation_lock:
@@ -2028,8 +2028,8 @@ class Int(TraitType):
     def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', None)
         self.max = kwargs.pop('max', None)
-        super(Int, self).__init__(default_value=default_value,
-                                  allow_none=allow_none, **kwargs)
+        super().__init__(default_value=default_value,
+                         allow_none=allow_none, **kwargs)
 
     def validate(self, obj, value):
         if not isinstance(value, int):
@@ -2064,8 +2064,8 @@ class Float(TraitType):
     def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
         self.min = kwargs.pop('min', -float('inf'))
         self.max = kwargs.pop('max', float('inf'))
-        super(Float, self).__init__(default_value=default_value,
-                                    allow_none=allow_none, **kwargs)
+        super().__init__(default_value=default_value,
+                         allow_none=allow_none, **kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, int):
@@ -2258,7 +2258,7 @@ class Enum(TraitType):
         self.values = values
         if kwargs.get('allow_none', False) and default_value is Undefined:
             default_value = None
-        super(Enum, self).__init__(default_value, **kwargs)
+        super().__init__(default_value, **kwargs)
 
     def validate(self, obj, value):
         if value in self.values:
@@ -2432,12 +2432,12 @@ class Container(Instance):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
-        super(Container, self).__init__(klass=self.klass, args=args, **kwargs)
+        super().__init__(klass=self.klass, args=args, **kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
             value = self.klass(value)
-        value = super(Container, self).validate(obj, value)
+        value = super().validate(obj, value)
         if value is None:
             return value
 
@@ -2461,12 +2461,12 @@ class Container(Instance):
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
             self._trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
+        super().class_init(cls, name)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
             self._trait.instance_init(obj)
-        super(Container, self).instance_init(obj)
+        super().instance_init(obj)
 
     def from_string(self, s):
         """Load value from a single string"""
@@ -2544,8 +2544,8 @@ class List(Container):
         """
         self._minlen = minlen
         self._maxlen = maxlen
-        super(List, self).__init__(trait=trait, default_value=default_value,
-                                   **kwargs)
+        super().__init__(trait=trait, default_value=default_value,
+                         **kwargs)
 
     def length_error(self, obj, value):
         e = "The '%s' trait of %s instance must be of length %i <= L <= %i, but a value of %s was specified." \
@@ -2557,7 +2557,7 @@ class List(Container):
         if length < self._minlen or length > self._maxlen:
             self.length_error(obj, value)
 
-        return super(List, self).validate_elements(obj, value)
+        return super().validate_elements(obj, value)
 
 
 class Set(List):
@@ -2594,7 +2594,7 @@ class Set(List):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        super(Set, self).__init__(trait, default_value, minlen, maxlen, **kwargs)
+        super().__init__(trait, default_value, minlen, maxlen, **kwargs)
 
     def default_value_repr(self):
         # Ensure default value is sorted for a reproducible build
@@ -2662,7 +2662,7 @@ class Tuple(Container):
         if self._traits and default_value is None:
             # don't allow default to be an empty container if length is specified
             args = None
-        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
+        super().__init__(klass=self.klass, args=args, **kwargs)
 
     def validate_elements(self, obj, value):
         if not self._traits:
@@ -2687,13 +2687,13 @@ class Tuple(Container):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.class_init(cls, None)
-        super(Container, self).class_init(cls, name)
+        super().class_init(cls, name)
 
     def instance_init(self, obj):
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.instance_init(obj)
-        super(Container, self).instance_init(obj)
+        super().instance_init(obj)
 
 
 class Dict(Instance):
@@ -2819,7 +2819,7 @@ class Dict(Instance):
 
         self._per_key_traits = per_key_traits
 
-        super(Dict, self).__init__(klass=dict, args=args, **kwargs)
+        super().__init__(klass=dict, args=args, **kwargs)
 
     def element_error(self, obj, element, validator, side='Values'):
         e = side + " of the '%s' trait of %s instance must be %s, but a value of %s was specified." \
@@ -2827,7 +2827,7 @@ class Dict(Instance):
         raise TraitError(e)
 
     def validate(self, obj, value):
-        value = super(Dict, self).validate(obj, value)
+        value = super().validate(obj, value)
         if value is None:
             return value
         value = self.validate_elements(obj, value)
@@ -2866,7 +2866,7 @@ class Dict(Instance):
         if self._per_key_traits is not None:
             for trait in self._per_key_traits.values():
                 trait.class_init(cls, None)
-        super(Dict, self).class_init(cls, name)
+        super().class_init(cls, name)
 
     def instance_init(self, obj):
         if isinstance(self._value_trait, TraitType):
@@ -2876,7 +2876,7 @@ class Dict(Instance):
         if self._per_key_traits is not None:
             for trait in self._per_key_traits.values():
                 trait.instance_init(obj)
-        super(Dict, self).instance_init(obj)
+        super().instance_init(obj)
 
 
     def from_string(self, s):
@@ -3021,7 +3021,7 @@ class UseEnum(TraitType):
         allow_none = kwargs.get("allow_none", False)
         if default_value is None and not allow_none:
             default_value = list(enum_class.__members__.values())[0]
-        super(UseEnum, self).__init__(default_value=default_value, **kwargs)
+        super().__init__(default_value=default_value, **kwargs)
         self.enum_class = enum_class
         self.name_prefix = enum_class.__name__ + "."
 

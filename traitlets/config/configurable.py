@@ -61,7 +61,7 @@ class Configurable(HasTraits):
 
             class MyConfigurable(Configurable):
                 def __init__(self, config=None):
-                    super(MyConfigurable, self).__init__(config=config)
+                    super().__init__(config=config)
                     # Then any other code you need to finish initialization.
 
         This ensures that instances will be configured properly.
@@ -76,7 +76,7 @@ class Configurable(HasTraits):
         config = kwargs.pop('config', None)
 
         # load kwarg traits, other than config
-        super(Configurable, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # record traits set by config
         config_override_names = set()

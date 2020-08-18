@@ -113,7 +113,7 @@ class LevelFormatter(logging.Formatter):
             record.highlevel = self.highlevel_format % record.__dict__
         else:
             record.highlevel = ""
-        return super(LevelFormatter, self).format(record)
+        return super().format(record)
 
 
 class Application(SingletonConfigurable):
@@ -315,7 +315,7 @@ class Application(SingletonConfigurable):
     @observe('config')
     @observe_compat
     def _config_changed(self, change):
-        super(Application, self)._config_changed(change)
+        super()._config_changed(change)
         self.log.debug('Config changed: %r', change.new)
 
     @catch_config_error

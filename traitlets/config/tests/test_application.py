@@ -648,7 +648,7 @@ class DeprecatedApp(Application):
         def _capture(*args):
             self.parent_called = True
         with mock.patch.object(self.log, 'debug', _capture):
-            super(DeprecatedApp, self)._config_changed(name, old, new)
+            super()._config_changed(name, old, new)
 
 
 def test_deprecated_notifier():

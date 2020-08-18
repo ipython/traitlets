@@ -44,7 +44,7 @@ class TestExpandSignature(TestCase):
             def __init__(self, arg1, **kwargs):
                 self.arg1 = arg1
 
-                super(Foo, self).__init__(**kwargs)
+                super().__init__(**kwargs)
 
         parameters = signature(Foo).parameters
         parameter_names = list(parameters)
@@ -74,7 +74,7 @@ class TestExpandSignature(TestCase):
             def __init__(self, number1, **kwargs):
                 self.test = number1
 
-                super(Foo, self).__init__(number1=number1, **kwargs)
+                super().__init__(number1=number1, **kwargs)
 
         parameters = signature(Foo).parameters
         parameter_names = list(parameters)
@@ -99,7 +99,7 @@ class TestExpandSignature(TestCase):
                 self.pos_args = pos_args
                 self.kw_args = kw_args
 
-                super(Foo, self).__init__(*pos_args, **kw_args)
+                super().__init__(*pos_args, **kw_args)
 
         parameters = signature(Foo).parameters
         parameter_names = list(parameters)
