@@ -71,9 +71,9 @@ if _release['version_info'][-1] == 'dev':
 master_doc = 'index'
 
 # General information about the project.
-project = u'traitlets'
-copyright = u'2015, The IPython Development Team'
-author = u'The IPython Development Team'
+project = 'traitlets'
+copyright = '2015, The IPython Development Team'
+author = 'The IPython Development Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -252,8 +252,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'traitlets.tex', u'traitlets Documentation',
-   u'The IPython Development Team', 'manual'),
+  (master_doc, 'traitlets.tex', 'traitlets Documentation',
+   'The IPython Development Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -282,7 +282,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'traitlets', u'traitlets Documentation',
+    (master_doc, 'traitlets', 'traitlets Documentation',
      [author], 1)
 ]
 
@@ -296,7 +296,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'traitlets', u'traitlets Documentation',
+  (master_doc, 'traitlets', 'traitlets Documentation',
    author, 'traitlets', 'One line description of project.',
    'Miscellaneous'),
 ]

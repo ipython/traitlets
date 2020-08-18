@@ -29,7 +29,7 @@ class MyConfigurable(Configurable):
     c = Unicode('no config')
 
 
-mc_help = u"""MyConfigurable(Configurable) options
+mc_help = """MyConfigurable(Configurable) options
 ------------------------------------
 --MyConfigurable.a=<Integer>
     The integer a.
@@ -38,7 +38,7 @@ mc_help = u"""MyConfigurable(Configurable) options
     The integer b.
     Default: 1.0"""
 
-mc_help_inst=u"""MyConfigurable(Configurable) options
+mc_help_inst="""MyConfigurable(Configurable) options
 ------------------------------------
 --MyConfigurable.a=<Integer>
     The integer a.
@@ -66,7 +66,7 @@ class Bar(Foo):
     bdict = Dict().tag(config=True, multiplicity='+')
     bdict_values = Dict({1:'a','0':'b',5:'c'}).tag(config=True, multiplicity='+')
 
-foo_help=u"""Foo(Configurable) options
+foo_help="""Foo(Configurable) options
 -------------------------
 --Foo.a=<Int>
     The integer a.
@@ -78,7 +78,7 @@ foo_help=u"""Foo(Configurable) options
 --Foo.flist=<list-item-1>...
     Default: []"""
 
-bar_help=u"""Bar(Foo) options
+bar_help="""Bar(Foo) options
 ----------------
 --Bar.a=<Int>
     The integer a.

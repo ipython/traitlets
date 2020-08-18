@@ -121,11 +121,11 @@ class Application(SingletonConfigurable):
 
     # The name of the application, will usually match the name of the command
     # line application
-    name = Unicode(u'application')
+    name = Unicode('application')
 
     # The description of the application that is printed at the beginning
     # of the help.
-    description = Unicode(u'This is an application.')
+    description = Unicode('This is an application.')
     # default section descriptions
     option_description = Unicode(option_description)
     keyvalue_description = Unicode(keyvalue_description)
@@ -162,7 +162,7 @@ class Application(SingletonConfigurable):
                     yield parent
 
     # The version string of this application.
-    version = Unicode(u'0.0')
+    version = Unicode('0.0')
 
     # the argv used to initialize the application
     argv = List()

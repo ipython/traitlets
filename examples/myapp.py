@@ -44,7 +44,7 @@ class Foo(Configurable):
 
     i = Int(0, help="The integer i.").tag(config=True)
     j = Int(1, help="The integer j.").tag(config=True)
-    name = Unicode(u'Brian', help="First name.").tag(config=True, shortname="B")
+    name = Unicode('Brian', help="First name.").tag(config=True, shortname="B")
 
 
 class Bar(Configurable):
@@ -54,11 +54,11 @@ class Bar(Configurable):
 
 class MyApp(Application):
 
-    name = Unicode(u'myapp')
+    name = Unicode('myapp')
     running = Bool(False, 
                    help="Is the app running?").tag(config=True)
     classes = List([Bar, Foo])
-    config_file = Unicode(u'', 
+    config_file = Unicode('',
                    help="Load this config file").tag(config=True)
     
     aliases = Dict(dict(i='Foo.i',j='Foo.j',name='Foo.name', running='MyApp.running',

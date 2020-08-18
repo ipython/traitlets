@@ -83,7 +83,7 @@ class TestFileCL(TestCase):
         self.assertEqual(config.D.C.value, 'hi there')
 
     def test_python(self):
-        fd, fname = mkstemp('.py', prefix=u'μnïcø∂e')
+        fd, fname = mkstemp('.py', prefix='μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write(pyfile)
         f.close()
@@ -93,7 +93,7 @@ class TestFileCL(TestCase):
         self._check_conf(config)
 
     def test_json(self):
-        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
+        fd, fname = mkstemp('.json', prefix='μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write(json1file)
         f.close()
@@ -104,7 +104,7 @@ class TestFileCL(TestCase):
 
     def test_context_manager(self):
 
-        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
+        fd, fname = mkstemp('.json', prefix='μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write('{}')
         f.close()
@@ -123,7 +123,7 @@ class TestFileCL(TestCase):
         self.assertEqual(cl.config.MyAttr.value, value)
 
     def test_json_context_bad_write(self):
-        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
+        fd, fname = mkstemp('.json', prefix='μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write('{}')
         f.close()
@@ -169,7 +169,7 @@ class TestFileCL(TestCase):
         })
 
     def test_v2raise(self):
-        fd, fname = mkstemp('.json', prefix=u'μnïcø∂e')
+        fd, fname = mkstemp('.json', prefix='μnïcø∂e')
         f = os.fdopen(fd, 'w')
         f.write(json2file)
         f.close()
@@ -314,10 +314,10 @@ class TestKeyValueCL(TestCase):
 
     def test_unicode_args(self):
         cl = self.klass(log=log)
-        argv = [u'--a=épsîlön']
+        argv = ['--a=épsîlön']
         config = cl.load_config(argv)
         print(config, cl.extra_args)
-        self.assertEqual(config.a, u'épsîlön')
+        self.assertEqual(config.a, 'épsîlön')
 
     def test_list_append(self):
         cl = self.klass(log=log)
@@ -374,12 +374,12 @@ class TestArgParseKVCL(TestKeyValueCL):
 
     def test_unicode_alias(self):
         cl = self.klass(log=log)
-        argv = [u'--a=épsîlön']
+        argv = ['--a=épsîlön']
         config = cl.load_config(argv, aliases=dict(a='A.a'))
         print(dict(config))
         print(cl.extra_args)
         print(cl.aliases)
-        self.assertEqual(config.A.a, u'épsîlön')
+        self.assertEqual(config.A.a, 'épsîlön')
 
     def test_expanduser2(self):
         cl = self.klass(log=log)
@@ -398,7 +398,7 @@ class TestArgParseKVCL(TestKeyValueCL):
         cl = self.klass(log=log)
         argv = ['-c', 'a=5']
         config = cl.load_config(argv, aliases=dict(c='A.c'))
-        self.assertEqual(config.A.c, u"a=5")
+        self.assertEqual(config.A.c, "a=5")
 
     def test_seq_traits(self):
         cl = self.klass(log=log, classes=(CBase, CSub))
