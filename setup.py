@@ -42,16 +42,26 @@ with open(pjoin(here, name, '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 
+with open(os.path.join(here, "README.md")) as f:
+    long_description = f.read()
+
+long_description_content_type = "text/markdown"
 setup_args = dict(
     name            = name,
     version         = version_ns['__version__'],
     scripts         = glob(pjoin('scripts', '*')),
     packages        = packages,
-    description     = "Traitlets Python config system",
-    long_description= "A configuration system for Python applications.",
+    description     = "Traitlets Python configuration system",
+    long_description= long_description,
     author          = 'IPython Development Team',
-    author_email    = 'ipython-dev@scipy.org',
+    author_email    = 'ipython-dev@python.org',
     url             = 'https://github.com/ipython/traitlets',
+    project_urls={
+          'Documentation': 'https://traitlets.readthedocs.io/',
+          'Funding'      : 'https://numfocus.org/',
+          'Source'       : 'https://github.com/ipython/traitlets',
+          'Tracker'      : 'https://github.com/ipython/traitlets/issues',
+    },
     license         = 'BSD',
     platforms       = "Linux, Mac OS X, Windows",
     keywords        = ['Interactive', 'Interpreter', 'Shell', 'Web'],
