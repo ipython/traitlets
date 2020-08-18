@@ -42,35 +42,17 @@ with open(pjoin(here, name, '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 
-long_desc = """
-Traitlets is a pure Python library enabling:
+with open(os.path.join(here, "README.md")) as f:
+    long_description = f.read()
 
-- the enforcement of strong typing for attributes of Python objects
-  (typed attributes are called *"traits"*);
-- dynamically calculated default values;
-- automatic validation and coercion of trait attributes when attempting a
-  change;
-- registering for receiving notifications when trait values change;
-- reading configuring values from files or from command line
-  arguments - a distinct layer on top of traitlets, so you may use
-  traitlets without the configuration machinery.
-
-Its implementation relies on the [descriptor](https://docs.python.org/howto/descriptor.html)
-pattern, and it is a lightweight pure-python alternative of the
-[*traits* library](http://code.enthought.com/pages/traits.html).
-
-Traitlets powers the configuration system of IPython and Jupyter
-and the declarative API of IPython interactive widgets.
-"""
-
-
+long_description_content_type = "text/markdown"
 setup_args = dict(
     name            = name,
     version         = version_ns['__version__'],
     scripts         = glob(pjoin('scripts', '*')),
     packages        = packages,
     description     = "Traitlets Python configuration system",
-    long_description= long_desc,
+    long_description= long_description,
     author          = 'IPython Development Team',
     author_email    = 'ipython-dev@python.org',
     url             = 'https://github.com/ipython/traitlets',
