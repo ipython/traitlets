@@ -1019,7 +1019,7 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
 
         # This is needed because object.__new__ only accepts
         # the cls argument.
-        new_meth = super().__new__
+        new_meth = super(HasDescriptors, cls).__new__
         if new_meth is object.__new__:
             inst = new_meth(cls)
         else:
@@ -2432,7 +2432,7 @@ class Container(Instance):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
-        super().__init__(klass=self.klass, args=args, **kwargs)
+        super(Container, self).__init__(klass=self.klass, args=args, **kwargs)
 
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
