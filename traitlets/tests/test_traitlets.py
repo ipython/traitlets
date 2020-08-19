@@ -1493,7 +1493,7 @@ class TestDottedObjectName(TraitTestBase):
     obj = DottedObjectNameTrait()
 
     _default_value = "a.b"
-    _good_values = ["A", "y.t", "y765.__repr__", "os.path.join", "os.path.join"]
+    _good_values = ["A", "y.t", "y765.__repr__", "os.path.join"]
     _bad_values = [1, "abc.€", "_.@", ".", ".abc", "abc.", ".abc.", None]
     
     _good_values.append("t.þ")
