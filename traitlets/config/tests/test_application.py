@@ -54,7 +54,7 @@ class Foo(Configurable):
     Details about i.
     """).tag(config=True)
     j = Integer(1, help="The integer j.").tag(config=True)
-    name = Unicode(u'Brian', help="First name.").tag(config=True)
+    name = Unicode('Brian', help="First name.").tag(config=True)
     la = List([]).tag(config=True)
     li = List(Integer()).tag(config=True)
     fdict = Dict().tag(config=True, multiplicity='+')
@@ -73,12 +73,12 @@ class Bar(Configurable):
 
 class MyApp(Application):
 
-    name = Unicode(u'myapp')
+    name = Unicode('myapp')
     running = Bool(False, help="Is the app running?").tag(config=True)
     classes = List([Bar, Foo])
-    config_file = Unicode(u'', help="Load this config file").tag(config=True)
+    config_file = Unicode('', help="Load this config file").tag(config=True)
 
-    warn_tpyo = Unicode(u"yes the name is wrong on purpose", config=True,
+    warn_tpyo = Unicode("yes the name is wrong on purpose", config=True,
             help="Should print a warning if `MyApp.warn-typo=...` command is passed")
 
     aliases = {}
@@ -140,10 +140,10 @@ class TestApplication(TestCase):
 
     def test_basic(self):
         app = MyApp()
-        self.assertEqual(app.name, u'myapp')
+        self.assertEqual(app.name, 'myapp')
         self.assertEqual(app.running, False)
         self.assertEqual(app.classes, [MyApp, Bar, Foo])
-        self.assertEqual(app.config_file, u'')
+        self.assertEqual(app.config_file, '')
 
     def test_mro_discovery(self):
         app = MyApp()

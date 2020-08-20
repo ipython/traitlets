@@ -120,7 +120,7 @@ subclass
     from traitlets import Int, Float, Unicode, Bool
 
     class MyClass(Configurable):
-        name = Unicode(u'defaultname'
+        name = Unicode('defaultname'
             help="the name of the object"
         ).tag(config=True)
         ranking = Integer(0, help="the class's ranking").tag(config=True)
@@ -239,11 +239,11 @@ to be reflected in the configuration system.  Here is a simple example::
     from traitlets import Integer, Float, Unicode, Bool
 
     class Foo(Configurable):
-        name = Unicode(u'fooname', config=True)
+        name = Unicode('fooname', config=True)
         value = Float(100.0, config=True)
 
     class Bar(Foo):
-        name = Unicode(u'barname', config=True)
+        name = Unicode('barname', config=True)
         othervalue = Int(0, config=True)
 
 Now, we can create a configuration file to configure instances of :class:`Foo`
@@ -252,7 +252,7 @@ and :class:`Bar`::
     # config file
     c = get_config()
 
-    c.Foo.name = u'bestname'
+    c.Foo.name = 'bestname'
     c.Bar.othervalue = 10
 
 This class hierarchy and configuration file accomplishes the following:

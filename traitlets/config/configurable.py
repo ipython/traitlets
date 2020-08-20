@@ -177,11 +177,11 @@ class Configurable(HasTraits):
                     else:
                         warn = lambda msg: warnings.warn(msg, stacklevel=9)
                     matches = get_close_matches(name, traits)
-                    msg = u"Config option `{option}` not recognized by `{klass}`.".format(
+                    msg = "Config option `{option}` not recognized by `{klass}`.".format(
                         option=name, klass=self.__class__.__name__)
 
                     if len(matches) == 1:
-                        msg += u"  Did you mean `{matches}`?".format(matches=matches[0])
+                        msg += "  Did you mean `{matches}`?".format(matches=matches[0])
                     elif len(matches) >= 1:
                         msg +="  Did you mean one of: `{matches}`?".format(matches=', '.join(sorted(matches)))
                     warn(msg)
@@ -230,8 +230,8 @@ class Configurable(HasTraits):
         assert inst is None or isinstance(inst, cls)
         final_help = []
         base_classes = ', '.join(p.__name__ for p in cls.__bases__)
-        final_help.append(u'%s(%s) options' % (cls.__name__, base_classes))
-        final_help.append(len(final_help[0])*u'-')
+        final_help.append('%s(%s) options' % (cls.__name__, base_classes))
+        final_help.append(len(final_help[0])*'-')
         for k, v in sorted(cls.class_traits(config=True).items()):
             help = cls.class_get_trait_help(v, inst)
             final_help.append(help)

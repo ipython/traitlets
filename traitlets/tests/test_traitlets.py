@@ -1229,7 +1229,7 @@ class AnyTraitTest(TraitTestBase):
     obj = AnyTrait()
 
     _default_value = None
-    _good_values   = [10.0, 'ten', u'ten', [10], {'ten': 10},(10,), None, 1j]
+    _good_values   = [10.0, 'ten', [10], {'ten': 10},(10,), None, 1j]
     _bad_values    = []
 
 class UnionTrait(HasTraits):
@@ -1271,9 +1271,9 @@ class TestInt(TraitTestBase):
     obj = IntTrait()
     _default_value = 99
     _good_values   = [10, -10]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
-                      10.1, -10.1, '10L', '-10L', '10.1', '-10.1', u'10L',
-                      u'-10L', u'10.1', u'-10.1',  '10', '-10', u'10', -200]
+    _bad_values    = ['ten', [10], {'ten': 10}, (10,), None, 1j,
+                      10.1, -10.1, '10L', '-10L', '10.1', '-10.1',
+                      '10', '-10', -200]
 
 
 class CIntTrait(HasTraits):
@@ -1283,9 +1283,9 @@ class TestCInt(TraitTestBase):
     obj = CIntTrait()
 
     _default_value = 5
-    _good_values   = ['10', '-10', u'10', u'-10', 10, 10.0, -10.0, 10.1]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
-                      None, 1j, '10.1', u'10.1']
+    _good_values   = ['10', '-10', 10, 10.0, -10.0, 10.1]
+    _bad_values    = ['ten', [10], {'ten': 10},(10,),
+                      None, 1j, '10.1']
 
     def coerce(self, n):
         return int(n)
@@ -1312,10 +1312,9 @@ class TestLong(TraitTestBase):
 
     _default_value = 99
     _good_values   = [10, -10]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
+    _bad_values    = ['ten', [10], {'ten': 10},(10,),
                       None, 1j, 10.1, -10.1, '10', '-10', '10L', '-10L', '10.1',
-                      '-10.1', u'10', u'-10', u'10L', u'-10L', u'10.1',
-                      u'-10.1']
+                      '-10.1']
 
 
 class MinBoundLongTrait(HasTraits):
@@ -1347,9 +1346,9 @@ class TestCLong(TraitTestBase):
     obj = CLongTrait()
 
     _default_value = 5
-    _good_values   = ['10', '-10', u'10', u'-10', 10, 10.0, -10.0, 10.1]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10},(10,),
-                      None, 1j, '10.1', u'10.1']
+    _good_values   = ['10', '-10', 10, 10.0, -10.0, 10.1]
+    _bad_values    = ['ten', [10], {'ten': 10},(10,),
+                      None, 1j, '10.1']
 
     def coerce(self, n):
         return int(n)
@@ -1409,9 +1408,8 @@ class TestFloat(TraitTestBase):
 
     _default_value = 99.0
     _good_values   = [10, -10, 10.1, -10.1]
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None,
-                      1j, '10', '-10', '10L', '-10L', '10.1', '-10.1', u'10',
-                      u'-10', u'10L', u'-10L', u'10.1', u'-10.1', 201.0]
+    _bad_values    = ['ten', [10], {'ten': 10}, (10,), None,
+                      1j, '10', '-10', '10L', '-10L', '10.1', '-10.1', 201.0]
 
 
 class CFloatTrait(HasTraits):
@@ -1423,8 +1421,8 @@ class TestCFloat(TraitTestBase):
     obj = CFloatTrait()
 
     _default_value = 99.0
-    _good_values   = [10, 10.0, 10.5, '10.0', '10', '-10', '10.0', u'10']
-    _bad_values    = ['ten', u'ten', [10], {'ten': 10}, (10,), None, 1j,
+    _good_values   = [10, 10.0, 10.5, '10.0', '10', '-10']
+    _bad_values    = ['ten', [10], {'ten': 10}, (10,), None, 1j,
                       200.1, '200.1']
 
     def coerce(self, v):
@@ -1442,7 +1440,7 @@ class TestComplex(TraitTestBase):
     _default_value = 99.0-99.0j
     _good_values   = [10, -10, 10.1, -10.1, 10j, 10+10j, 10-10j,
                       10.1j, 10.1+10.1j, 10.1-10.1j]
-    _bad_values    = [u'10L', u'-10L', 'ten', [10], {'ten': 10},(10,), None]
+    _bad_values    = ['10L', '-10L', 'ten', [10], {'ten': 10},(10,), None]
 
 
 class BytesTrait(HasTraits):
@@ -1457,22 +1455,22 @@ class TestBytes(TraitTestBase):
     _good_values   = [b'10', b'-10', b'10L',
                       b'-10L', b'10.1', b'-10.1', b'string']
     _bad_values    = [10, -10, 10.1, -10.1, 1j, [10],
-                      ['ten'],{'ten': 10},(10,), None,  u'string']
+                      ['ten'],{'ten': 10},(10,), None,  'string']
 
 
 class UnicodeTrait(HasTraits):
 
-    value = Unicode(u'unicode')
+    value = Unicode('unicode')
 
 class TestUnicode(TraitTestBase):
 
     obj = UnicodeTrait()
 
-    _default_value = u'unicode'
+    _default_value = 'unicode'
     _good_values   = ['10', '-10', '10L', '-10L', '10.1',
-                      '-10.1', '', u'', 'string', u'string', u"€"]
+                      '-10.1', '', 'string', "€"]
     _bad_values    = [10, -10, 10.1, -10.1, 1j,
-                      [10], ['ten'], [u'ten'], {'ten': 10},(10,), None]
+                      [10], ['ten'], {'ten': 10},(10,), None]
 
 
 class ObjectNameTrait(HasTraits):
@@ -1482,10 +1480,10 @@ class TestObjectName(TraitTestBase):
     obj = ObjectNameTrait()
 
     _default_value = "abc"
-    _good_values = ["a", "gh", "g9", "g_", "_G", u"a345_"]
-    _bad_values = [1, "", u"€", "9g", "!", "#abc", "aj@", "a.b", "a()", "a[0]",
+    _good_values = ["a", "gh", "g9", "g_", "_G", "a345_"]
+    _bad_values = [1, "", "€", "9g", "!", "#abc", "aj@", "a.b", "a()", "a[0]",
                                                         None, object(), object]
-    _good_values.append(u"þ")  # þ=1 is valid in Python 3 (PEP 3131).
+    _good_values.append("þ")  # þ=1 is valid in Python 3 (PEP 3131).
 
 
 class DottedObjectNameTrait(HasTraits):
@@ -1495,10 +1493,10 @@ class TestDottedObjectName(TraitTestBase):
     obj = DottedObjectNameTrait()
 
     _default_value = "a.b"
-    _good_values = ["A", "y.t", "y765.__repr__", "os.path.join", u"os.path.join"]
-    _bad_values = [1, u"abc.€", "_.@", ".", ".abc", "abc.", ".abc.", None]
+    _good_values = ["A", "y.t", "y765.__repr__", "os.path.join"]
+    _bad_values = [1, "abc.€", "_.@", ".", ".abc", "abc.", ".abc.", None]
     
-    _good_values.append(u"t.þ")
+    _good_values.append("t.þ")
 
 
 class TCPAddressTrait(HasTraits):
@@ -1646,7 +1644,7 @@ class TestMultiTuple(TraitTestBase):
 
     _default_value = (99,b'bottles')
     _good_values = [(1,b'a'), (2,b'b')]
-    _bad_values = ((),10, b'a', (1,b'a',3), (b'a',1), (1, u'a'))
+    _bad_values = ((),10, b'a', (1,b'a',3), (b'a',1), (1, 'a'))
 
 class CRegExpTrait(HasTraits):
 
