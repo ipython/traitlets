@@ -15,6 +15,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 200
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -24,6 +26,5 @@ jobs:
         python -m pip install --upgrade pip
         pip install 'darker>=1.1'
     - name: Lint with black
-      uses: actions/checkout@v2
       run: |
         darker --check -r 61c7c8f5030d116de210f67d851ec9afa9f16170 .
