@@ -13,9 +13,31 @@ name = 'traitlets'
 
 import sys
 
-v = sys.version_info
-if v[:2] < (3,7):
-    error = "ERROR: %s requires Python version 3.7 or above." % name
+
+if sys.version_info < (3, 7):
+    pip_message = 'This may be due to an out of date pip. Make sure you have pip >= 9.0.1.'
+    try:
+        import pip
+        pip_version = tuple([int(x) for x in pip.__version__.split('.')[:3]])
+        if pip_version < (9, 0, 1) :
+            pip_message = 'Your pip version is out of date, please install pip >= 9.0.1. '\
+            'pip {} detected.'.format(pip.__version__)
+        else:
+            # pip is new enough - it must be something else
+            pip_message = ''
+    except Exception:
+        pass
+
+
+    error = """
+Traitlets 5.0+ supports Python 3.7 and above, following NEP 29.
+
+For any earlier version of Python use traitlets 4.x
+
+Python {py} detected.
+{pip}
+""".format(py=sys.version_info, pip=pip_message )
+
     print(error, file=sys.stderr)
     sys.exit(1)
 
