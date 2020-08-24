@@ -1,4 +1,4 @@
-version_info = (5, 0, 0, "b1")
+version_info = (5, 0, 0, "rc1")
 
 # unlike `.dev`, alpha, beta and rc _must not_ have dots,
 # or the wheel and tgz won't look to pip like the same version.
