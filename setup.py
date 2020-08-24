@@ -67,7 +67,6 @@ with open(pjoin(here, name, '_version.py')) as f:
 with open(os.path.join(here, "README.md")) as f:
     long_description = f.read()
 
-long_description_content_type = "text/markdown"
 setup_args = dict(
     name            = name,
     version         = version_ns['__version__'],
@@ -75,6 +74,7 @@ setup_args = dict(
     packages        = packages,
     description     = "Traitlets Python configuration system",
     long_description= long_description,
+    long_description_content_type = "text/markdown",
     author          = 'IPython Development Team',
     author_email    = 'ipython-dev@python.org',
     url             = 'https://github.com/ipython/traitlets',
