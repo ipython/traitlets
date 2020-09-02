@@ -98,7 +98,7 @@ setup_args = dict(
     ],
 )
 
-if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv):
+if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv) or any(a.startswith('sdist') for a in sys.argv):
     import setuptools
 
 setuptools_args = {}
