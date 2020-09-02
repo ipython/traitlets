@@ -61,6 +61,8 @@ from traitlets import (
     HasDescriptors,
     CUnicode,
 )
+from traitlets.utils import cast_unicode
+
 
 def change_dict(*ordered_values):
     change_names = ('name', 'old', 'new', 'owner', 'type')
@@ -1462,15 +1464,19 @@ class UnicodeTrait(HasTraits):
 
     value = Unicode('unicode')
 
+
 class TestUnicode(TraitTestBase):
 
     obj = UnicodeTrait()
 
     _default_value = 'unicode'
     _good_values   = ['10', '-10', '10L', '-10L', '10.1',
-                      '-10.1', '', 'string', "€"]
+                      '-10.1', '', 'string', "€", b"bytestring"]
     _bad_values    = [10, -10, 10.1, -10.1, 1j,
                       [10], ['ten'], {'ten': 10},(10,), None]
+
+    def coerce(self, v):
+        return cast_unicode(v)
 
 
 class ObjectNameTrait(HasTraits):
@@ -1495,7 +1501,7 @@ class TestDottedObjectName(TraitTestBase):
     _default_value = "a.b"
     _good_values = ["A", "y.t", "y765.__repr__", "os.path.join"]
     _bad_values = [1, "abc.€", "_.@", ".", ".abc", "abc.", ".abc.", None]
-    
+
     _good_values.append("t.þ")
 
 
