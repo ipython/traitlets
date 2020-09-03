@@ -295,6 +295,15 @@ class TestApplication(TestCase):
             assert app.config.TestApp.value == 'cli'
             assert app.value == 'cli'
 
+    def test_cli_allow_none(self):
+        class App(Application):
+            aliases = {"opt": "App.opt"}
+            opt = Unicode(allow_none=True, config=True)
+
+        app = App()
+        app.parse_command_line(["--opt=None"])
+        assert app.opt is None
+
     def test_flags(self):
         app = MyApp()
         app.parse_command_line(["--disable"])
