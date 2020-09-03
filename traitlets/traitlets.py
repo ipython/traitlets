@@ -493,6 +493,8 @@ class TraitType(BaseDescriptor):
 
         .. versionadded:: 5.0
         """
+        if self.allow_none and s == 'None':
+            return None
         return s
 
     def default(self, obj=None):
@@ -2038,6 +2040,8 @@ class Int(TraitType):
         return _validate_bounds(self, obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         return int(s)
 
 
@@ -2076,6 +2080,8 @@ class Float(TraitType):
         return _validate_bounds(self, obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         return float(s)
 
 
@@ -2104,6 +2110,8 @@ class Complex(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         return complex(s)
 
 
@@ -2131,6 +2139,8 @@ class Bytes(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         return s.encode('utf8')
 
 
@@ -2162,6 +2172,8 @@ class Unicode(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         s = os.path.expanduser(s)
         if len(s) >= 2:
             # handle deprecated "1"
@@ -2203,6 +2215,8 @@ class ObjectName(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         return s
 
 class DottedObjectName(ObjectName):
@@ -2233,6 +2247,8 @@ class Bool(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         s = s.lower()
         if s in {'true', '1'}:
             return True
@@ -2487,6 +2503,8 @@ class Container(Instance):
         if len(s_list) == 1:
             # check for deprecated --Class.trait="['a', 'b', 'c']"
             r = s_list[0]
+            if r == "None" and self.allow_none:
+                return None
             if (
                 (r[0] == '[' and r[-1] == ']') or
                 (r[0] == '(' and r[-1] == ')')
@@ -2897,6 +2915,8 @@ class Dict(Instance):
 
         This is where we parse CLI configuration
         """
+        if len(s_list) == 1 and s_list[0] == "None" and self.allow_none:
+            return None
         if (
             len(s_list) == 1
             and s_list[0].startswith("{")
@@ -2965,6 +2985,8 @@ class TCPAddress(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
+        if self.allow_none and s == 'None':
+            return None
         if ':' not in s:
             raise ValueError('Require `ip:port`, got %r' % s)
         ip, port = s.split(':', 1)
