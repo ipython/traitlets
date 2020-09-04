@@ -2521,7 +2521,7 @@ class Container(Instance):
     def item_from_string(self, s):
         """Cast a single item from a string
 
-        Evaluated when parsing CLIconfiguration from a string
+        Evaluated when parsing CLI configuration from a string
         """
         if self._trait:
             return self._trait.from_string(s)
@@ -2897,11 +2897,10 @@ class Dict(Instance):
                 trait.instance_init(obj)
         super(Dict, self).instance_init(obj)
 
-
     def from_string(self, s):
         """Load value from a single string"""
         if not isinstance(s, str):
-            raise TypeError(f"from_string expects a list, got {repr(s)} of type {type(s)}")
+            raise TypeError(f"from_string expects a string, got {repr(s)} of type {type(s)}")
         try:
             return self.from_string_list([s])
         except Exception:
@@ -2911,9 +2910,13 @@ class Dict(Instance):
             raise
 
     def from_string_list(self, s_list):
-        """Return the value from a list of config strings
+        """Return a dict from a list of config strings.
 
-        This is where we parse CLI configuration
+        This is where we parse CLI configuration.
+
+        Each item should have the form ``"key=value"``.
+
+        item parsing is done in :meth:`.item_from_string`.
         """
         if len(s_list) == 1 and s_list[0] == "None" and self.allow_none:
             return None
@@ -2939,13 +2942,14 @@ class Dict(Instance):
         return combined
 
     def item_from_string(self, s):
-        """Cast a single item from a string
+        """Cast a single-key dict from a string.
 
-        Evaluated when parsing CLIconfiguration from a string
+        Evaluated when parsing CLI configuration from a string.
 
-        Dicts expect strings of the form key=value
+        Dicts expect strings of the form key=value.
 
-        Returns a one-key dictionary
+        Returns a one-key dictionary,
+        which will be merged in :meth:`.from_string_list`.
         """
 
         if '=' not in s:

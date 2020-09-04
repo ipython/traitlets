@@ -274,7 +274,7 @@ Command-line arguments
 
 All configurable options can also be supplied at the command line when launching
 the application. Applications use a parser called
-:class:`~traitlets.config.loader.KeyValueLoader` to load values into a Config
+:class:`~traitlets.config.loader.KVArgParseConfigLoader` to load values into a Config
 object.
 
 By default, values are assigned in much the same way as in a config file:
@@ -283,15 +283,49 @@ By default, values are assigned in much the same way as in a config file:
 
     $ ipython --InteractiveShell.autoindent=False --BaseIPythonApplication.profile='myprofile'
 
-Is the same as adding:
+is the same as adding:
 
 .. sourcecode:: python
 
-    c.InteractiveShell.autoindent=False
-    c.BaseIPythonApplication.profile='myprofile'
+    c.InteractiveShell.autoindent = False
+    c.BaseIPythonApplication.profile = 'myprofile'
 
-to your configuration file. Key/Value arguments *always* take a value, separated by '='
-and no spaces.
+to your configuration file.
+
+.. versionchanged:: 5.0
+
+    Prior to 5.0, fully specified ``--Class.trait=value`` arguments
+    required an equals sign and no space separating the key and value.
+    But after 5.0, these arguments can be separated by space as with aliases.
+
+.. versionchanged:: 5.0
+
+    extra quotes around strings and literal prefixes are no longer required.
+
+    .. seealso::
+
+        :ref:`cli_strings`
+
+.. versionchanged:: 5.0
+
+    If a scalar (:class:`~.Unicode`, :class:`~.Integer`, etc.) is specified multiple times
+    on the command-line, this will now raise.
+    Prior to 5.0, all instances of the option before the last would be ignored.
+
+.. versionchanged:: 5.0
+
+    In 5.0, positional extra arguments (typically a list of files) must be contiguous,
+    for example::
+
+        mycommand file1 file2 --flag
+
+    or::
+
+        mycommand --flag file1 file2
+
+    whereas prior to 5.0, these "extra arguments" be distributed among other arguments::
+
+        mycommand file1 --flag file2
 
 .. note::
 
@@ -302,18 +336,17 @@ and no spaces.
 
 .. versionadded:: 4.3
 
-    The environement variable ``TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR``
+    The environment variable ``TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR``
     to ``'1'`` or ``'true'`` to change the default value of ``raise_config_file_errors``.
 
 
 Common Arguments
 ----------------
 
-Since the strictness and verbosity of the :class:`~traitlets.config.loader.KeyValueLoader`
-above are not ideal for everyday use, common arguments can be specified as flags_ or aliases_.
+Since the strictness and verbosity of the full ``--Class.trait=value`` form are not ideal for everyday use,
+common arguments can be specified as flags_ or aliases_.
 
-Flags and aliases are handled by :mod:`argparse` instead, allowing for more flexible
-parsing. In general, flags and aliases are prefixed by ``--``, except for those
+In general, flags and aliases are prefixed by ``--``, except for those
 that are single characters, in which case they can be specified with a single ``-``, e.g.:
 
 .. code-block:: bash
@@ -376,7 +409,7 @@ after :command:`git`, and are called with the form :command:`command subcommand
 
 .. code-block:: bash
 
-    $ ipython qtconsole --profile myprofile
+    $ jupyter qtconsole --profile myprofile
 
 
 .. currentmodule::  traitlets.config
@@ -386,7 +419,7 @@ instances, mapping *subcommand names* to two-tuples containing these:
 
 1. A subclass of :class:`Application` to handle the subcommand.
    This can be specified as:
-   
+
    - simply as a class, where its :meth:`SingletonConfigurable.instance()`
      will be invoked (straight-forward, but loads subclasses on import time);
    - as a string which can be imported to produce the above class;
@@ -395,7 +428,7 @@ instances, mapping *subcommand names* to two-tuples containing these:
        app_factory(parent_app: Application) -> Application
 
      .. note::
-        The return value of the facory above is an *instance*, not a class,
+        The return value of the factory above is an *instance*, not a class,
         son the :meth:`SingletonConfigurable.instance()` is not invoked
         in this case.
 
@@ -407,6 +440,194 @@ instances, mapping *subcommand names* to two-tuples containing these:
 To see a list of the available aliases, flags, and subcommands for a configurable
 application, simply pass ``-h`` or ``--help``. And to see the full list of
 configurable options (*very* long), pass ``--help-all``.
+
+
+.. _cli_strings:
+
+Interpreting command-line strings
+---------------------------------
+
+.. versionadded:: 5.0
+
+    :meth:`~.TraitType.from_string`,
+    :meth:`~.List.from_string_list`,
+    and :meth:`~.List.item_from_string`.
+
+Prior to 5.0, we only had good support for Unicode or similar string types on the command-line.
+Other types were supported via :py:func:`ast.literal_eval`,
+which meant that simple types such as integers were well supported, too.
+
+The downside of this implementation was that the :py:func:`literal_eval` happened
+before the type of the target trait was known,
+meaning that strings that could be interpreted as literals could end up with the wrong type,
+famously::
+
+    $ ipython -c 1
+    ...
+    [TerminalIPythonApp] CRITICAL | Bad config encountered during initialization:
+    [TerminalIPythonApp] CRITICAL | The 'code_to_run' trait of a TerminalIPythonApp instance must be a unicode string, but a value of 1 <class 'int'> was specified.
+
+This resulted in requiring redundant "double-quoting" of strings in many cases.
+That gets confusing when the shell *also* interprets quotes, so one had to::
+
+    $ ipython -c "'1'"
+
+in order to set a string that looks like an integer.
+
+traitlets 5.0 defers parsing of interpreting command-line strings to
+:meth:`~.TraitType.from_string`,
+which is an arbitrary function that will be called with the string given on the command-line.
+This eliminates the need to 'guess' how to interpret strings before we know what they are configuring.
+
+Backward compatibility
+**********************
+
+It is not feasible to be perfectly backward-compatible when fixing behavior as problematic as this.
+However, we are doing our best to ensure that folks who had workarounds for this funky behavior
+are disrupted as little as we can manage.
+That means that we have kept what look like literals working wherever we could,
+so if you were double-quoting strings to ensure the were interpreted as strings,
+that will continue to work with warnings for the foreseeable future.
+
+If you have an example command-line call that used to work with traitlets 4
+but does not any more with traitlets 5, please `let us know <https://github.com/ipython/traitlets/issues>`__.
+
+
+Custom traits
+*************
+
+.. versionadded: 5.0
+
+Custom trait types can override :meth:`~.TraitType.from_string`
+to specify how strings should be interpreted.
+This could for example allow specifying hex-encoded bytes on the command-line:
+
+.. sourcecode:: python
+
+    from binascii import a2b_hex
+    from traitlets.config import Application
+    from traitlets import Bytes
+
+
+    class HexBytes(Bytes):
+        def from_string(self, s):
+            return a2b_hex(s)
+
+
+    class App(Application):
+
+        aliases = {"key": "App.key"}
+        key = HexBytes(
+            help="""
+            Key to be used.
+
+            Specify as hex on the command-line.
+            """,
+            config=True
+        )
+
+        def start(self):
+            print(f"key={self.key}")
+
+
+    if __name__ == "__main__":
+        App.launch_instance()
+
+::
+
+    $ myprogram --key=a1b2
+    key=b'\xa2\xb2'
+
+
+Container traits
+----------------
+
+In traitlets 5.0, items for container traits can be specified
+by passing the key multiple times, e.g.::
+
+    myprogram -l a -l b
+
+to produce the list ``["a", "b"]``
+
+or for dictionaries use `key=value`::
+
+    myprogram -d a=5 -l b=10
+
+to produce the dict ``{"a": 5, "b": 10}``.
+
+In traitlets prior to 5.0, container traits (List, Dict) could *technically*
+be configured on the command-line by specifying a repr of a Python list or dict, e.g::
+
+    ipython --ScriptMagics.script_paths='{"perl": "/usr/bin/perl"}'
+
+but that gets pretty tedious, especially with more than a couple of fields.
+This still works with a FutureWarning,
+but the new way allows container items to be specified by passing the argument multiple times::
+
+    ipython \
+        --ScriptMagics.script_paths perl=/usr/bin/perl \
+        --ScriptMagics.script_paths ruby=/usr/local/opt/bin/ruby
+
+This handling is good enough that we can recommend defining aliases for container traits for the first time! For example:
+
+.. sourcecode:: python
+
+    from traitlets.config import Application
+    from traitlets import List, Dict, Integer, Unicode
+
+
+    class App(Application):
+
+        aliases = {"x": "App.x", "y": "App.y"}
+        x = List(Unicode(), config=True)
+        y = Dict(Integer(), config=True)
+
+        def start(self):
+            print(f"x={self.x}")
+            print(f"y={self.y}")
+
+
+    if __name__ == "__main__":
+        App.launch_instance()
+
+produces::
+
+    $ myprogram -x a -x b -y a=10 -y b=5
+    x=['a', 'b']
+    y={'a': 10, 'b': 5}
+
+.. note::
+
+    Specifying the value trait of Dict was necessary to cast the values in `y` to integers.
+    Otherwise, they values of `y` would have been the strings ``'10'`` and ``'5'``.
+
+
+For container types, :meth:`.List.from_string_list` is called with the list of all values
+specified on the command-line and is responsible for turning the list of strings
+into the appropriate type.
+Each item is then passed to :meth:`.List.item_from_string` which is responsible
+for handling the item,
+such as casting to integer or parsing `key=value` in the case of a Dict.
+
+The deprecated :py:func:`ast.literal_eval` handling is preserved for backward-compatibility
+in the event of a single item that 'looks like' a list or dict literal.
+
+If you would prefer, you can also use custom container traits
+which define :meth`~.TraitType.from_string` to expand a single string into a list,
+for example:
+
+.. sourcecode::
+
+    class PathList(List):
+        def from_string(self, s):
+            return s.split(os.pathsep)
+
+which would allow::
+
+    myprogram --path /bin:/usr/local/bin:/opt/bin
+
+to set a ``PathList`` trait with ``["/bin", "/usr/local/bin", "/opt/bin"]``.
+
 
 
 Design requirements

@@ -82,6 +82,9 @@ def execfile(fname, glob):
 class LazyConfigValue(HasTraits):
     """Proxy object for exposing methods on configurable containers
 
+    These methods allow appending/extending/updating
+    to add to non-empty defaults instead of clobbering them.
+
     Exposes:
 
     - append, extend, insert on lists
@@ -97,9 +100,11 @@ class LazyConfigValue(HasTraits):
     _inserts = List()
 
     def append(self, obj):
+        """Append an item to a List"""
         self._extend.append(obj)
 
     def extend(self, other):
+        """Extend a list"""
         self._extend.extend(other)
 
     def prepend(self, other):
@@ -109,8 +114,8 @@ class LazyConfigValue(HasTraits):
 
     def merge_into(self, other):
         """
-        Merge with another  earlier LazyConfig Value or an earlier container.
-        This is used when having global systemwide configuration file.
+        Merge with another earlier LazyConfigValue or an earlier container.
+        This is useful when having global system-wide configuration files.
 
         Self is expected to have higher precedence.
 
@@ -150,6 +155,7 @@ class LazyConfigValue(HasTraits):
     _update = Any()
 
     def update(self, other):
+        """Update either a set or dict"""
         if self._update is None:
             if isinstance(other, dict):
                 self._update = {}
@@ -159,6 +165,7 @@ class LazyConfigValue(HasTraits):
 
     # set methods
     def add(self, obj):
+        """Add an item to a set"""
         self.update({obj})
 
     def get_value(self, initial):
@@ -216,7 +223,18 @@ def _is_section_key(key):
 
 
 class Config(dict):
-    """An attribute based dict that can do smart merges."""
+    """An attribute-based dict that can do smart merges.
+
+    Accessing a field on a config object for the first time populates the key
+    with either a nested Config object for keys starting with capitals
+    or :class:`.LazyConfigValue` for lowercase keys,
+    allowing quick assignments such as::
+
+        c = Config()
+        c.Class.int_trait = 5
+        c.Class.list_trait.append("x")
+
+    """
 
     def __init__(self, *args, **kwds):
         dict.__init__(self, *args, **kwds)
@@ -918,9 +936,9 @@ class _FlagAction(argparse.Action):
 
 class KVArgParseConfigLoader(ArgParseConfigLoader):
     """A config loader that loads aliases and flags with argparse,
-    but will use KVLoader for the rest.  This allows better parsing
-    of common args, such as `ipython -c 'print 5'`, but still gets
-    arbitrary config with `ipython --InteractiveShell.autoindent=False`"""
+
+    as well as arbitrary --Class.trait value
+    """
 
     parser_class = _KVArgParser
 
