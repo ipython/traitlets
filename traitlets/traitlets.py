@@ -2139,9 +2139,20 @@ class Bytes(TraitType):
         self.error(obj, value)
 
     def from_string(self, s):
-        if self.allow_none and s == 'None':
+        if self.allow_none and s == "None":
             return None
-        return s.encode('utf8')
+        if len(s) >= 3:
+            # handle deprecated b"string"
+            for quote in ('"', "'"):
+                if s[:2] == f"b{quote}" and s[-1] == quote:
+                    old_s = s
+                    s = s[2:-1]
+                    warn(
+                        "Supporting extra quotes around Bytes is deprecated in traitlets 5.0. "
+                        "Use %r instead of %r." % (s, old_s),
+                        FutureWarning)
+                    break
+        return s.encode("utf8")
 
 
 class CBytes(Bytes):
