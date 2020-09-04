@@ -5,14 +5,11 @@
 
 import argparse
 import copy
-import functools as fnt
 import os
 import re
 import sys
 import json
 import warnings
-from ast import literal_eval
-from collections import defaultdict
 
 from ..utils import cast_unicode
 
@@ -366,6 +363,10 @@ class DeferredConfig:
     def get_value(self, trait):
         raise NotImplementedError("Implement in subclasses")
 
+    def _super_repr(self):
+        # explicitly call super on direct parent
+        return super(self.__class__, self).__repr__()
+
 
 class DeferredConfigString(str, DeferredConfig):
     """Config value for loading config from a string
@@ -396,8 +397,7 @@ class DeferredConfigString(str, DeferredConfig):
             return s
 
     def __repr__(self):
-        super_repr = super(DeferredConfigString, self).__repr__()
-        return '%s(%s)' % (self.__class__.__name__, super_repr)
+        return '%s(%s)' % (self.__class__.__name__, self._super_repr())
 
 
 class DeferredConfigList(list, DeferredConfig):
@@ -423,7 +423,7 @@ class DeferredConfigList(list, DeferredConfig):
         else:
             # only allow one item
             if len(self) > 1:
-                raise ValueError("Multiply defined option: %s" % trait.name)
+                raise ValueError(f"{trait.name} only accepts one value, got {len(self)}: {list(self)}")
             src = self[0]
             cast = trait.from_string
 
@@ -436,8 +436,7 @@ class DeferredConfigList(list, DeferredConfig):
             return src
 
     def __repr__(self):
-        super_repr = super(DeferredConfigList, self).__repr__()
-        return '%s(%s)' % (self.__class__.__name__, super_repr)
+        return '%s(%s)' % (self.__class__.__name__, self._super_repr())
 
 
 #-----------------------------------------------------------------------------
@@ -1019,8 +1018,12 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
             # eval the KV assignment
             try:
                 self._exec_config_str(lhs, rhs, trait)
-            except Exception:
-                raise ArgumentError("Invalid argument: '%s=%s'" % (lhs, rhs))
+            except Exception as e:
+                # cast deferred to nicer repr for the error
+                # DeferredList->list, etc
+                if isinstance(rhs, DeferredConfig):
+                    rhs = rhs._super_repr()
+                raise ArgumentError(f"Error loading argument {lhs}={rhs}, {e}")
 
         for subc in self.parsed_data._flags:
             self._load_flag(subc)
