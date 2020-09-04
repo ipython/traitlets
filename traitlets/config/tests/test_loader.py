@@ -485,7 +485,10 @@ class TestConfig(TestCase):
         self.assertNotIn('foo', cfg)
         foo = cfg.foo
         assert isinstance(foo, LazyConfigValue)
-        self.assertIn('foo', cfg)
+        # empty lazy value indicates no config is actually there
+        assert 'foo' not in cfg
+        foo.append('x')
+        assert 'foo' in cfg
 
     def test_lazy_truthiness(self):
         cfg = Config()
@@ -537,7 +540,10 @@ class TestConfig(TestCase):
         self.assertNotIn('foo', cfg)
         foo = cfg['foo']
         assert isinstance(foo, LazyConfigValue)
-        self.assertIn('foo', cfg)
+        # empty lazy value indicates no config is actually there
+        assert 'foo' not in cfg
+        foo.append('x')
+        assert 'foo' in cfg
 
     def test_merge_no_copies(self):
         c = Config()
