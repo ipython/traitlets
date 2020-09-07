@@ -16,6 +16,7 @@ from io import StringIO
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
+import pytest
 from pytest import mark
 
 from traitlets import (
@@ -628,6 +629,23 @@ class TestApplication(TestCase):
             self.assertEqual(app.running, False)
 
 
+def test_cli_multi_scalar(caplog):
+    class App(Application):
+        aliases = {"opt": "App.opt"}
+        opt = Unicode(config=True)
+
+    app = App(log=logging.getLogger())
+    with pytest.raises(SystemExit):
+        app.parse_command_line(["--opt", "1", "--opt", "2"])
+    record = caplog.get_records("call")[-1]
+    message = record.message
+
+    assert "Error loading argument" in message
+    assert "App.opt=['1', '2']" in message
+    assert "opt only accepts one value" in message
+    assert record.levelno == logging.CRITICAL
+
+
 class Root(Application):
     subcommands = {
         'sub1': ('traitlets.config.tests.test_application.Sub1', 'import string'),
@@ -691,7 +709,7 @@ def test_show_config(capsys):
     cfg.MyApp.i = 5
     # don't show empty
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config=True)
     app.start()
     out, err = capsys.readouterr()
@@ -704,7 +722,7 @@ def test_show_config_json(capsys):
     cfg = Config()
     cfg.MyApp.i = 5
     cfg.OtherApp
-    
+
     app = MyApp(config=cfg, show_config_json=True)
     app.start()
     out, err = capsys.readouterr()
