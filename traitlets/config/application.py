@@ -85,7 +85,6 @@ def catch_config_error(method):
         try:
             return method(app, *args, **kwargs)
         except (TraitError, ArgumentError) as e:
-            app.print_help()
             app.log.fatal("Bad config encountered during initialization: %s", e)
             app.log.debug("Config at the time: %s", app.config)
             app.exit(1)
@@ -700,8 +699,8 @@ class Application(SingletonConfigurable):
         try:
             self.cli_config = deepcopy(loader.load_config())
         except SystemExit:
-            # print help output on error
-            self.print_help()
+            # traitlets 5: no longer print help output on error
+            # help output is huge, and comes after the error
             raise
         self.update_config(self.cli_config)
         # store unparsed args in extra_args
