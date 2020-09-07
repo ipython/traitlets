@@ -10,9 +10,17 @@ Traitlets 5.0 is a new version of traitlets that accumulate changes over a perio
 internal refactoring made the internal code structure cleaner and simpler, and greatly improved the diagnostic error
 messages as well has help and documentation generation.
 
-We expect no code change needed for any consumer of the Python API (ipywidgets, and alike), though CLI argument parsing
-have seen a complete rewrite, so if you have an application that does use the parsing logic of traitlets you may see
-changes in behavior, and have now access to more features.
+We expect no code change needed for any consumer of the Python API (ipywidgets, and alike),
+though CLI argument parsing have seen a complete rewrite,
+so if you have an application that does use the parsing logic of traitlets you may see changes in behavior,
+and now have access to more features.
+
+.. seealso::
+
+  :ref:`commandline` for details about command-line parsing and the changes in 5.0.
+
+  Please `let us know <https://github.com/ipython/traitlets/issues>`__
+  if you find issues with the new command-line parsing changes.
 
 We also want to thanks in particular a number of regular contributor through the years that have patiently waited for
 their often large contribution to be available, if **rough** order of number of contribution:

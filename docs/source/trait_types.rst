@@ -9,10 +9,12 @@ Trait Types
 
    .. automethod:: __init__
 
+   .. automethod:: from_string
+
 Numbers
 -------
 
-.. class:: Integer
+.. autoclass:: Integer
 
    An integer trait. On Python 2, this automatically uses the ``int`` or
    ``long`` types as necessary.
@@ -60,7 +62,7 @@ Containers
 ----------
 
 .. autoclass:: List
-   :members: __init__
+   :members: __init__, from_string_list, item_from_string
 
 .. autoclass:: Set
    :members: __init__
@@ -69,7 +71,7 @@ Containers
    :members: __init__
 
 .. autoclass:: Dict
-   :members: __init__
+   :members: __init__, from_string_list, item_from_string
 
 Classes and instances
 ---------------------
