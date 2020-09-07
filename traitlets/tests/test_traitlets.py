@@ -2690,6 +2690,22 @@ def test_cunicode_from_string(s, expected):
 
 @pytest.mark.parametrize(
     "s, expected",
+    [("xyz", b"xyz"), ("1", b"1"), ('b"xx"', b"xx"), ("b'abc'", b"abc"), ("None", None)],
+)
+def test_bytes_from_string(s, expected):
+    _from_string_test(Bytes, s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected",
+    [("xyz", b"xyz"), ("1", b"1"), ('b"xx"', b"xx"), ("b'abc'", b"abc"), ("None", None)],
+)
+def test_cbytes_from_string(s, expected):
+    _from_string_test(CBytes, s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected",
     [("x", ValueError), ("1", 1), ("123", 123), ("2.0", ValueError), ("None", None)],
 )
 def test_int_from_string(s, expected):
