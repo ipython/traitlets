@@ -13,6 +13,7 @@ import os
 import pprint
 import re
 import sys
+import warnings
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
@@ -198,7 +199,13 @@ class Application(SingletonConfigurable):
     @observe_compat
     def _log_format_changed(self, change):
         """Change the log formatter when log_format is set."""
-        _log_handler = self.log.handlers[0]
+        _log_handler = self._get_log_handler()
+        if not _log_handler:
+            warnings.warn(
+                f"No Handler found on {self.log}, setting log_format will have no effect",
+                RuntimeWarning,
+            )
+            return
         _log_formatter = self._log_formatter_cls(fmt=self.log_format, datefmt=self.log_datefmt)
         _log_handler.setFormatter(_log_formatter)
 

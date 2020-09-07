@@ -5,10 +5,12 @@
 
 
 from copy import deepcopy
+import logging
 import warnings
 
 from .loader import Config, LazyConfigValue, DeferredConfig, _is_section_key
 from traitlets.traitlets import (
+    Any,
     HasTraits,
     Instance,
     Container,
@@ -16,6 +18,7 @@ from traitlets.traitlets import (
     observe,
     observe_compat,
     default,
+    validate,
 )
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
 
@@ -433,13 +436,37 @@ class LoggingConfigurable(Configurable):
     is to get the logger from the currently running Application.
     """
 
-    log = Instance('logging.Logger')
-    @default('log')
+    log = Any(help="Logger or LoggerAdapter instance")
+
+    @validate("log")
+    def _validate_log(self, proposal):
+        if not isinstance(proposal.value, (logging.Logger, logging.LoggerAdapter)):
+            # warn about unsupported type, but be lenient to allow for duck typing
+            warnings.warn(
+                f"{self.__class__.__name__}.log should be a Logger or LoggerAdapter,"
+                f" got {proposal.value}."
+            )
+        return proposal.value
+
+    @default("log")
     def _log_default(self):
         if isinstance(self.parent, LoggingConfigurable):
             return self.parent.log
         from traitlets import log
         return log.get_logger()
+
+    def _get_log_handler(self):
+        """Return the default Handler
+
+        Returns None if none can be found
+        """
+        logger = self.log
+        if isinstance(logger, logging.LoggerAdapter):
+            logger = logger.logger
+        if not getattr(logger, "handlers", None):
+            # no handlers attribute or empty handlers list
+            return None
+        return logger.handlers[0]
 
 
 class SingletonConfigurable(LoggingConfigurable):
