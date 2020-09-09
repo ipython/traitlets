@@ -1504,6 +1504,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         Example
 
         .. code-block:: python
+
             class MyClass(HasTraits):
                 i = Int()
 
