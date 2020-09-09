@@ -9,6 +9,8 @@ Any class with trait attributes must inherit from :class:`HasTraits`.
 
    .. automethod:: has_trait
 
+   .. automethod:: trait_has_value
+
    .. automethod:: trait_names
 
    .. automethod:: class_trait_names
