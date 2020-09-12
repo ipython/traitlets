@@ -157,6 +157,6 @@ of the HasTraits instance.
 ### Release build:
 
 ```bash
-$ pip install pep517
-$ python -m pep517.build .
+$ pip install build
+$ python -m build .
 ```
