@@ -408,7 +408,10 @@ class DeferredConfigString(str, DeferredConfig):
         s = str(self)
         try:
             return trait.from_string(s)
-        except Exception:
+        except Exception as e:
+            warnings.warn(
+                f"Error calling {trait.name}.from_string({s!r}): {e}", RuntimeWarning
+            )
             # exception casting from string,
             # let the original string lie.
             # this will raise a more informative error when config is loaded.
@@ -435,22 +438,28 @@ class DeferredConfigList(list, DeferredConfig):
     """
     def get_value(self, trait):
         """Get the value stored in this string"""
-        if hasattr(trait, "from_string_list"):
+        if getattr(trait, "from_string_list", None) is not None:
             src = list(self)
             cast = trait.from_string_list
+            method_name = "from_string_list"
         else:
             # only allow one item
             if len(self) > 1:
                 raise ValueError(f"{trait.name} only accepts one value, got {len(self)}: {list(self)}")
             src = self[0]
             cast = trait.from_string
+            method_name = "from_string"
 
         try:
             return cast(src)
-        except Exception:
+        except Exception as e:
             # exception casting from string,
             # let the original value lie.
             # this will raise a more informative error when config is loaded.
+            warnings.warn(
+                f"Error calling {trait.name}.{method_name}({src!r}): {e}",
+                RuntimeWarning,
+            )
             return src
 
     def __repr__(self):
