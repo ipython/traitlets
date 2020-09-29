@@ -2678,7 +2678,7 @@ class Tuple(Container):
             args = ()
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
-        else:
+        elif default_value is None and not kwargs.get("allow_none", False):
             raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
 
         self._traits = []
