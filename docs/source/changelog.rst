@@ -4,6 +4,12 @@ Changes in Traitlets
 Traitlets 5.0
 -------------
 
+5.0.5
+*****
+
+- Support deprecated literals for sets, tuples on the command-line: ``nbconvert --TagRemovePreprocessor.remove_cell_tags='{"tag"}'``
+- Fix ``from_string_list`` for Tuples in general
+
 5.0.4
 *****
 

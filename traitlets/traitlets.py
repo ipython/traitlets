@@ -2412,6 +2412,8 @@ class Container(Instance):
     _valid_defaults = SequenceTypes
     _trait = None
 
+    _literal_from_string_pairs = ("[]", "()")
+
     def __init__(self, trait=None, default_value=None, **kwargs):
         """Create a container trait type from a list, set, or tuple.
 
@@ -2517,20 +2519,34 @@ class Container(Instance):
             r = s_list[0]
             if r == "None" and self.allow_none:
                 return None
-            if (
-                (r[0] == '[' and r[-1] == ']') or
-                (r[0] == '(' and r[-1] == ')')
+            if len(r) >= 2 and any(
+                r.startswith(start) and r.endswith(end)
+                for start, end in self._literal_from_string_pairs
             ):
+                if self.this_class:
+                    clsname = self.this_class.__name__ + "."
+                else:
+                    clsname = ""
+
                 warn(
                     "--{0}={1} for containers is deprecated in traitlets 5.0. "
-                    "You can pass --{0} item ... multiple times to add items to a list.".format(
-                        self.name, r),
-                    FutureWarning
+                    "You can pass `--{0} item` ... multiple times to add items to a list.".format(
+                        clsname + self.name, r
+                    ),
+                    FutureWarning,
                 )
                 return self.klass(literal_eval(r))
-        return self.klass([self.item_from_string(s) for s in s_list])
+        sig = inspect.signature(self.item_from_string)
+        if "index" in sig.parameters:
+            item_from_string = self.item_from_string
+        else:
+            # backward-compat: allow item_from_string to ignore index arg
+            item_from_string = lambda s, index=None: self.item_from_string(s)
+        return self.klass(
+            [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
+        )
 
-    def item_from_string(self, s):
+    def item_from_string(self, s, index=None):
         """Cast a single item from a string
 
         Evaluated when parsing CLI configuration from a string
@@ -2595,6 +2611,8 @@ class Set(List):
     """An instance of a Python set."""
     klass = set
     _cast_types = (tuple, list)
+
+    _literal_from_string_pairs = ("[]", "()", "{}")
 
     # Redefine __init__ just to make the docstring more accurate.
     def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize,
@@ -2687,13 +2705,24 @@ class Tuple(Container):
                 warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                      " Passing types is deprecated in traitlets 4.1.",
                      DeprecationWarning, stacklevel=2)
-            t = trait() if isinstance(trait, type) else trait
-            self._traits.append(t)
+                trait = trait()
+            self._traits.append(trait)
 
         if self._traits and default_value is None:
             # don't allow default to be an empty container if length is specified
             args = None
-        super(Container,self).__init__(klass=self.klass, args=args, **kwargs)
+        super(Container, self).__init__(klass=self.klass, args=args, **kwargs)
+
+    def item_from_string(self, s, index):
+        """Cast a single item from a string
+
+        Evaluated when parsing CLI configuration from a string
+        """
+        if not self._traits or index >= len(self._traits):
+            # return s instead of raising index error
+            # length errors will be raised later on validation
+            return s
+        return self._traits[index].from_string(s)
 
     def validate_elements(self, obj, value):
         if not self._traits:
