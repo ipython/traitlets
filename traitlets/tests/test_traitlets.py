@@ -45,6 +45,7 @@ from traitlets import (
     Instance,
     TCPAddress,
     List,
+    Set,
     Tuple,
     ObjectName,
     DottedObjectName,
@@ -2787,10 +2788,67 @@ def test_list_from_string(s, expected):
         (["x"], ValueError, Integer()),
         (["1", "x"], ["1", "x"], Unicode()),
         (["None"], [None], Unicode(allow_none=True)),
+        (["None"], ["None"], Unicode(allow_none=False)),
     ],
 )
 def test_list_items_from_string(s, expected, value_trait):
     _from_string_test(List(value_trait), s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected",
+    [
+        ("[]", set()),
+        ('[1, 2, "x"]', {1, 2, "x"}),
+        ('{1, 2, "x"}', {1, 2, "x"}),
+        (["1", "x"], {"1", "x"}),
+        (["None"], None),
+    ],
+)
+def test_set_from_string(s, expected):
+    _from_string_test(Set, s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected, value_trait",
+    [
+        (["1", "2", "3"], {1, 2, 3}, Integer()),
+        (["x"], ValueError, Integer()),
+        (["1", "x"], {"1", "x"}, Unicode()),
+        (["None"], {None}, Unicode(allow_none=True)),
+    ],
+)
+def test_set_items_from_string(s, expected, value_trait):
+    _from_string_test(Set(value_trait), s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected",
+    [
+        ("[]", ()),
+        ("()", ()),
+        ('[1, 2, "x"]', (1, 2, "x")),
+        ('(1, 2, "x")', (1, 2, "x")),
+        (["1", "x"], ("1", "x")),
+        (["None"], None),
+    ],
+)
+def test_tuple_from_string(s, expected):
+    _from_string_test(Tuple, s, expected)
+
+
+@pytest.mark.parametrize(
+    "s, expected, value_traits",
+    [
+        (["1", "2", "3"], (1, 2, 3), [Integer(), Integer(), Integer()]),
+        (["x"], ValueError, [Integer()]),
+        (["1", "x"], ("1", "x"), [Unicode()]),
+        (["None"], ("None",), [Unicode(allow_none=False)]),
+        (["None"], (None,), [Unicode(allow_none=True)]),
+    ],
+)
+def test_tuple_items_from_string(s, expected, value_traits):
+    _from_string_test(Tuple(*value_traits), s, expected)
 
 
 @pytest.mark.parametrize(
