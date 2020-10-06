@@ -9,13 +9,11 @@
 
 import pickle
 import re
-import sys
-from ._warnings import expected_warnings
-
 from unittest import TestCase
-import pytest
-from pytest import mark
 
+import pytest
+
+from ._warnings import expected_warnings
 from traitlets import (
     HasTraits,
     MetaHasTraits,
@@ -40,6 +38,7 @@ from traitlets import (
     Callable,
     All,
     Undefined,
+    Set,
     Type,
     This,
     Instance,
@@ -1517,9 +1516,11 @@ class TestTCPAddress(TraitTestBase):
     _good_values = [('localhost',0),('192.168.0.1',1000),('www.google.com',80)]
     _bad_values = [(0,0),('localhost',10.0),('localhost',-1), None]
 
+
 class ListTrait(HasTraits):
 
     value = List(Int())
+
 
 class TestList(TraitTestBase):
 
@@ -1533,6 +1534,7 @@ class TestList(TraitTestBase):
         if value is not None:
             value = list(value)
         return value
+
 
 class Foo(object):
     pass
@@ -1653,9 +1655,41 @@ class TestMultiTuple(TraitTestBase):
     _good_values = [(1,b'a'), (2,b'b')]
     _bad_values = ((),10, b'a', (1,b'a',3), (b'a',1), (1, 'a'))
 
+
+@pytest.mark.parametrize(
+    "Trait", (List, Tuple, Set, Dict, Integer, Unicode,),
+)
+def test_allow_none_default_value(Trait):
+    class C(HasTraits):
+        t = Trait(default_value=None, allow_none=True)
+
+    # test default value
+    c = C()
+    assert c.t is None
+
+    # and in constructor
+    c = C(t=None)
+    assert c.t is None
+
+
+@pytest.mark.parametrize(
+    "Trait, default_value",
+    ((List, []), (Tuple, ()), (Set, set()), (Dict, {}), (Integer, 0), (Unicode, "")),
+)
+def test_default_value(Trait, default_value):
+    class C(HasTraits):
+        t = Trait()
+
+    # test default value
+    c = C()
+    assert type(c.t) is type(default_value)
+    assert c.t == default_value
+
+
 class CRegExpTrait(HasTraits):
 
     value = CRegExp(r'')
+
 
 class TestCRegExp(TraitTestBase):
 

@@ -1695,7 +1695,7 @@ class ClassBasedTraitType(TraitType):
 class Type(ClassBasedTraitType):
     """A trait whose value must be a subclass of a specified class."""
 
-    def __init__ (self, default_value=Undefined, klass=None, **kwargs):
+    def __init__(self, default_value=Undefined, klass=None, **kwargs):
         """Construct a Type trait
 
         A Type trait specifies that its values must be subclasses of
@@ -2411,10 +2411,9 @@ class Container(Instance):
     _cast_types = ()
     _valid_defaults = SequenceTypes
     _trait = None
-
     _literal_from_string_pairs = ("[]", "()")
 
-    def __init__(self, trait=None, default_value=None, **kwargs):
+    def __init__(self, trait=None, default_value=Undefined, **kwargs):
         """Create a container trait type from a list, set, or tuple.
 
         The default value is created by doing ``List(default_value)``,
@@ -2443,12 +2442,16 @@ class Container(Instance):
 
         """
         # allow List([values]):
-        if default_value is None and not is_trait(trait):
+        if trait is not None and default_value is Undefined and not is_trait(trait):
             default_value = trait
             trait = None
 
-        if default_value is None:
+        if default_value is Undefined:
             args = ()
+        elif default_value is None:
+            # default_value back on kwargs for super() to handle
+            args = ()
+            kwargs["default_value"] = None
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
@@ -2562,7 +2565,14 @@ class List(Container):
     klass = list
     _cast_types = (tuple,)
 
-    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize, **kwargs):
+    def __init__(
+        self,
+        trait=None,
+        default_value=Undefined,
+        minlen=0,
+        maxlen=sys.maxsize,
+        **kwargs,
+    ):
         """Create a List trait type from a list, set, or tuple.
 
         The default value is created by doing ``list(default_value)``,
@@ -2615,8 +2625,14 @@ class Set(List):
     _literal_from_string_pairs = ("[]", "()", "{}")
 
     # Redefine __init__ just to make the docstring more accurate.
-    def __init__(self, trait=None, default_value=None, minlen=0, maxlen=sys.maxsize,
-                 **kwargs):
+    def __init__(
+        self,
+        trait=None,
+        default_value=Undefined,
+        minlen=0,
+        maxlen=sys.maxsize,
+        **kwargs,
+    ):
         """Create a Set trait type from a list, set, or tuple.
 
         The default value is created by doing ``set(default_value)``,
@@ -2694,6 +2710,10 @@ class Tuple(Container):
 
         if default_value is Undefined:
             args = ()
+        elif default_value is None:
+            # default_value back on kwargs for super() to handle
+            args = ()
+            kwargs["default_value"] = None
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
