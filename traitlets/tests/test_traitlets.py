@@ -1686,6 +1686,26 @@ def test_default_value(Trait, default_value):
     assert c.t == default_value
 
 
+@pytest.mark.parametrize(
+    "Trait, default_value",
+    ((List, []), (Tuple, ()), (Set, set())),
+)
+def test_subclass_default_value(Trait, default_value):
+    """Test deprecated default_value=None behavior for Container subclass traits"""
+
+    class SubclassTrait(Trait):
+        def __init__(self, default_value=None):
+            super().__init__(default_value=default_value)
+
+    class C(HasTraits):
+        t = SubclassTrait()
+
+    # test default value
+    c = C()
+    assert type(c.t) is type(default_value)
+    assert c.t == default_value
+
+
 class CRegExpTrait(HasTraits):
 
     value = CRegExp(r'')

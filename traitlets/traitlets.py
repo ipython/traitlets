@@ -2407,6 +2407,7 @@ class Container(Instance):
 
     To be subclassed by overriding klass.
     """
+
     klass = None
     _cast_types = ()
     _valid_defaults = SequenceTypes
@@ -2441,10 +2442,24 @@ class Container(Instance):
             further keys for extensions to the Trait (e.g. config)
 
         """
+
         # allow List([values]):
         if trait is not None and default_value is Undefined and not is_trait(trait):
             default_value = trait
             trait = None
+
+        if default_value is None and not kwargs.get("allow_none", False):
+            # improve backward-compatibility for possible subclasses
+            # specifying default_value=None as default,
+            # keeping 'unspecified' behavior (i.e. empty container)
+            warn(
+                f"Specifying {self.__class__.__name__}(default_value=None)"
+                " for no default is deprecated in traitlets 5.0.5."
+                " Use default_value=Undefined",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            default_value = Undefined
 
         if default_value is Undefined:
             args = ()
@@ -2455,16 +2470,23 @@ class Container(Instance):
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
-            raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
+            raise TypeError(
+                "default value of %s was %s" % (self.__class__.__name__, default_value)
+            )
 
         if is_trait(trait):
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
-                     " Passing types is deprecated in traitlets 4.1.",
-                     DeprecationWarning, stacklevel=3)
+                warn(
+                    "Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
+                    " Passing types is deprecated in traitlets 4.1.",
+                    DeprecationWarning,
+                    stacklevel=3,
+                )
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
-            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
+            raise TypeError(
+                "`trait` must be a Trait or None, got %s" % repr_type(trait)
+            )
 
         super(Container, self).__init__(klass=self.klass, args=args, **kwargs)
 
@@ -2671,6 +2693,7 @@ class Set(List):
 
 class Tuple(Container):
     """An instance of a Python tuple."""
+
     klass = tuple
     _cast_types = (list,)
 
@@ -2702,11 +2725,24 @@ class Tuple(Container):
             will be cast to a tuple. If ``traits`` are specified,
             ``default_value`` must conform to the shape and type they specify.
         """
-        default_value = kwargs.pop('default_value', Undefined)
+        default_value = kwargs.pop("default_value", Undefined)
         # allow Tuple((values,)):
         if len(traits) == 1 and default_value is Undefined and not is_trait(traits[0]):
             default_value = traits[0]
             traits = ()
+
+        if default_value is None and not kwargs.get("allow_none", False):
+            # improve backward-compatibility for possible subclasses
+            # specifying default_value=None as default,
+            # keeping 'unspecified' behavior (i.e. empty container)
+            warn(
+                f"Specifying {self.__class__.__name__}(default_value=None)"
+                " for no default is deprecated in traitlets 5.0.5."
+                " Use default_value=Undefined",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            default_value = Undefined
 
         if default_value is Undefined:
             args = ()
@@ -2717,18 +2753,23 @@ class Tuple(Container):
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
-            raise TypeError('default value of %s was %s' %(self.__class__.__name__, default_value))
+            raise TypeError(
+                "default value of %s was %s" % (self.__class__.__name__, default_value)
+            )
 
         self._traits = []
         for trait in traits:
             if isinstance(trait, type):
-                warn("Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
-                     " Passing types is deprecated in traitlets 4.1.",
-                     DeprecationWarning, stacklevel=2)
+                warn(
+                    "Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
+                    " Passing types is deprecated in traitlets 4.1.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 trait = trait()
             self._traits.append(trait)
 
-        if self._traits and default_value is None:
+        if self._traits and (default_value is None or default_value is Undefined):
             # don't allow default to be an empty container if length is specified
             args = None
         super(Container, self).__init__(klass=self.klass, args=args, **kwargs)
