@@ -10,6 +10,7 @@ Traitlets 5.0
 - Support deprecated literals for sets, tuples on the command-line: ``nbconvert --TagRemovePreprocessor.remove_cell_tags='{"tag"}'``
 - Fix ``from_string_list`` for Tuples in general
 - Fix support for ``List(default_value=None, allow_none=True)`` and other Container traits
+- Fix help output for nested aliases and tuple traits
 
 5.0.4
 *****
