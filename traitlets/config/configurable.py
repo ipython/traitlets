@@ -279,7 +279,7 @@ class Configurable(HasTraits):
             lines.append(indent('Choices: %s' % trait.info()))
 
         if inst is not None:
-            lines.append(indent('Current: %r' % getattr(inst, trait.name), 4))
+            lines.append(indent('Current: %r' % (getattr(inst, trait.name),), 4))
         else:
             try:
                 dvr = trait.default_value_repr()
