@@ -730,6 +730,35 @@ def test_show_config_json(capsys):
     assert Config(displayed) == cfg
 
 
+def test_deep_alias():
+    from traitlets.config import Application, Configurable
+    from traitlets import Int
+
+    class Foo(Configurable):
+        val = Int(default_value=5).tag(config=True)
+
+    class Bar(Configurable):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.foo = Foo(parent=self)
+
+    class TestApp(Application):
+        name = 'test'
+
+        aliases = {'val': 'Bar.Foo.val'}
+        classes = [Foo, Bar]
+
+        def initialize(self, *args, **kwargs):
+            super().initialize(*args, **kwargs)
+            self.bar = Bar(parent=self)
+
+    app = TestApp()
+    app.initialize(['--val=10'])
+    assert app.bar.foo.val == 10
+    assert len(list(app.emit_alias_help())) > 0
+
+
 if __name__ == '__main__':
     # for test_help_output:
     MyApp.launch_instance()

@@ -399,7 +399,8 @@ class Application(SingletonConfigurable):
                     longname, fhelp = longname
                 else:
                     fhelp = None
-                classname, traitname = longname.split('.', 1)
+                classname, traitname = longname.split('.')[-2:]
+                longname = classname + '.' + traitname
                 cls = classdict[classname]
 
                 trait = cls.class_traits(config=True)[traitname]
