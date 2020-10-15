@@ -2194,8 +2194,8 @@ class Unicode(TraitType):
                     old_s = s
                     s = s[1:-1]
                     warn(
-                        "Supporting extra quotes around Unicode is deprecated in traitlets 5.0. "
-                        "Use %r instead of %r – or use CUnicode." % (s, old_s),
+                        "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
+                        "You can use %r instead of %r if you require traitlets >=5." % (s, old_s),
                         FutureWarning)
         return s
 
