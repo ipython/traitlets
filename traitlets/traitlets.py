@@ -535,7 +535,11 @@ class TraitType(BaseDescriptor):
             value = obj._trait_values[self.name]
         except KeyError:
             # Check for a dynamic initializer.
-            default = obj.trait_defaults(self.name)
+            key = (obj.__class__, self.name)
+            if key in obj._simple_default:
+                default = obj._simple_default[key](obj)
+            else:
+                default = obj.trait_defaults(self.name)
             if default is Undefined:
                 warn(
                     "Explicit using of Undefined as the default value "
@@ -1537,6 +1541,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         """
         return {name: getattr(self, name) for name in self.trait_names(**metadata)}
 
+    # because _get_trait_default_generator is quite expensive, we keep track of the simple
+    # defaults, to speed up creation of HasTrait objects
+    _simple_default = {}
+
     def _get_trait_default_generator(self, name):
         """Return default generator for a given trait
 
@@ -1560,6 +1568,8 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 return getattr(c, method_name)
             if name in c.__dict__.get('_trait_default_generators', {}):
                 return c._trait_default_generators[name]
+        key = (cls, name)
+        cls._simple_default[key] = trait.default
         return trait.default
 
     def trait_defaults(self, *names, **metadata):
