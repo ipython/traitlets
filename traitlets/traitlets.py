@@ -248,13 +248,6 @@ def _validate_link(*tuples):
             raise TypeError("%r has no trait %r" % (obj, trait_name))
 
 
-class SourceLink:
-    def __init__(self, obj, attr, transform = None):
-        self.obj = obj
-        self.attr = attr
-        self.transform = transform
-
-
 class link(object):
     """Link traits from different objects together so they remain in sync.
 
@@ -373,6 +366,14 @@ class directional_link(object):
         self.source[0].unobserve(self._update, names=self.source[1])
 
 dlink = directional_link
+
+
+class SourceLink:
+    def __init__(self, obj, attr, link_type=link, transform=None):
+        self.obj = obj
+        self.attr = attr
+        self.link_type = link_type
+        self.transform = transform
 
 
 #-----------------------------------------------------------------------------
@@ -610,7 +611,7 @@ class TraitType(BaseDescriptor):
         if self.read_only:
             raise TraitError('The "%s" trait is read-only.' % self.name)
         elif isinstance(value, SourceLink):
-            link((value.obj, value.attr), (obj, self.name), transform=value.transform)
+            value.link_type((value.obj, value.attr), (obj, self.name), transform=value.transform)
         else:
             self.set(obj, value)
 

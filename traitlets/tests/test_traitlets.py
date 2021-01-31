@@ -2024,7 +2024,7 @@ class TestLink(TestCase):
             a = Int()
 
         x1 = A()
-        x2 = A(a = SourceLink(x1, "a", (lambda x: x+1, lambda x: x-1)))
+        x2 = A(a = SourceLink(x1, "a", transform=(lambda x: x+1, lambda x: x-1)))
         x1.a = 3
         self.assertEqual(x2.a, 4)
         x2.a = 1
@@ -2120,6 +2120,17 @@ class TestDirectionalLink(TestCase):
         self.assertEqual(a.value, b.value)
         a.value += 1
         self.assertEqual(a.value, b.value)
+
+    def test_source_directional_link(self):
+        class A(HasTraits):
+            a = Int()
+
+        x1 = A()
+        x2 = A(a = SourceLink(x1, "a", link_type=directional_link, transform=lambda x: x+1))
+        x1.a = 3
+        self.assertEqual(x2.a, 4)
+        x2.a = 1
+        self.assertEqual(x1.a, 3)
 
 class Pickleable(HasTraits):
 
