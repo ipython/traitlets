@@ -608,7 +608,7 @@ class TraitType(BaseDescriptor):
             return value
         if hasattr(self, 'validate'):
             value = self.validate(obj, value)
-        if obj._cross_validation_lock is False:
+        if obj is not None and obj._cross_validation_lock is False:
             value = self._cross_validate(obj, value)
         return value
 
@@ -2528,11 +2528,7 @@ class Container(Instance):
         """Load value from a single string"""
         if not isinstance(s, str):
             raise TraitError(f"Expected string, got {s!r}")
-        try:
-            test = literal_eval(s)
-        except Exception:
-            test = None
-        return self.validate(None, test)
+        return self.from_string_list([s])
 
     def from_string_list(self, s_list):
         """Return the value from a list of config strings
