@@ -18,6 +18,7 @@ from traitlets.config.loader import (
     LazyConfigValue,
     PyFileConfigLoader,
     JSONFileConfigLoader,
+    TOMLFileConfigLoader,
     KeyValueConfigLoader,
     ArgParseConfigLoader,
     KVArgParseConfigLoader,
@@ -69,6 +70,27 @@ json2file = """
 }
 """
 
+toml_file = """
+# This is a TOML document.
+
+version = 1
+
+a = 10
+b = 20
+
+[Foo]
+  # Indentation (tabs and/or spaces) is allowed but not required
+  [Foo.Bam]
+    value = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+  [Foo.Bar]
+    value = 10
+
+[D]
+  [D.C]
+    value = 'hi there'
+"""
+
 import logging
 log = logging.getLogger('devnull')
 log.setLevel(0)
@@ -99,6 +121,16 @@ class TestFileCL(TestCase):
         f.close()
         # Unlink the file
         cl = JSONFileConfigLoader(fname, log=log)
+        config = cl.load_config()
+        self._check_conf(config)
+
+    def test_toml(self):
+        fd, fname = mkstemp('.toml', prefix='μnïcø∂e')
+        f = os.fdopen(fd, 'w')
+        f.write(toml_file)
+        f.close()
+        # Unlink the file
+        cl = TOMLFileConfigLoader(fname, log=log)
         config = cl.load_config()
         self._check_conf(config)
 
