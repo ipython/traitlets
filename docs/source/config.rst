@@ -551,7 +551,7 @@ to produce the list ``["a", "b"]``
 
 or for dictionaries use `key=value`::
 
-    myprogram -d a=5 -l b=10
+    myprogram -d a=5 -d b=10
 
 to produce the dict ``{"a": 5, "b": 10}``.
 
