@@ -1,0 +1,40 @@
+name: Test downstream projects
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install build
+        python -m build .
+        pip install dist/traitlets*.whl
+        pip install --pre --upgrade traitlets[test] pytest pytest-cov
+        pip install ipython[test] git+https://github.com/jupyter/nbconvert.git#egg=nbconvert[test] \
+                    notebook[test] ipywidgets[test]
+        pip freeze
+
+    - name: Run tests
+      run: |
+        iptest
+        pytest --pyargs nbconvert
+        nosetests --exclude selenium notebook
+        pytest --pyargs ipywidgets
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
