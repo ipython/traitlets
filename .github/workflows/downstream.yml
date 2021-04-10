@@ -33,7 +33,7 @@ jobs:
       run: |
         iptest
         pytest --pyargs nbconvert
-        nosetests --exclude selenium notebook
+        pytest --pyargs notebook -k 'not selenium'
         pytest --pyargs ipywidgets
 
     - name: Upload coverage to Codecov
