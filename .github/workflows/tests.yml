@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+    branches: '*'
+  pull_request:
+    branches: '*'
+
+jobs:
+  tests:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install build
+        python -m build .
+        pip install dist/traitlets*.whl
+        pip install --pre --upgrade traitlets[test] pytest pytest-cov
+        pip freeze
+
+    - name: Test with pytest
+      run: |
+        pytest --cov traitlets -v traitlets
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
