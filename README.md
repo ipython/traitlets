@@ -24,7 +24,7 @@ Traitlets is a pure Python library enabling:
 
 Its implementation relies on the [descriptor](https://docs.python.org/howto/descriptor.html)
 pattern, and it is a lightweight pure-python alternative of the
-[*traits* library](http://code.enthought.com/pages/traits.html).
+[*traits* library](https://docs.enthought.com/traits/).
 
 Traitlets powers the configuration system of IPython and Jupyter
 and the declarative API of IPython interactive widgets.
