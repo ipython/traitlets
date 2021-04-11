@@ -1,6 +1,7 @@
 # Traitlets
 
-[![Build Status](https://travis-ci.org/ipython/traitlets.svg?branch=master)](https://travis-ci.org/ipython/traitlets)
+[![Tests](https://github.com/ipython/traitlets/actions/workflows/tests.yml/badge.svg)](https://github.com/ipython/traitlets/actions/workflows/tests.yml)
+[![Test downstream projects](https://github.com/ipython/traitlets/actions/workflows/downstream.yml/badge.svg)](https://github.com/ipython/traitlets/actions/workflows/downstream.yml)
 [![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](https://traitlets.readthedocs.io/en/latest/?badge=latest)
 
 |               |                                        |
