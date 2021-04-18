@@ -787,10 +787,10 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         argv : optional, list
             If given, used to read command-line arguments from, otherwise
             sys.argv[1:] is used.
-        parser_args : tuple
+        *parser_args : tuple
             A tuple of positional arguments that will be passed to the
             constructor of :class:`argparse.ArgumentParser`.
-        parser_kw : dict
+        **parser_kw : dict
             A tuple of keyword arguments that will be passed to the
             constructor of :class:`argparse.ArgumentParser`.
 

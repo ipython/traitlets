@@ -902,7 +902,7 @@ def validate(*names):
 
     Parameters
     ----------
-    names
+    *names
         The str names of the Traits to validate.
 
     Notes
