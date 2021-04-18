@@ -793,6 +793,12 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         **parser_kw : dict
             A tuple of keyword arguments that will be passed to the
             constructor of :class:`argparse.ArgumentParser`.
+        aliases : dict of str to str
+            Dict of aliases to full traitlests names for CLI parsing
+        flags : dict of str to str
+            Dict of flags to full traitlests names for CLI parsing
+        log
+            Passed to `ConfigLoader`
 
         Returns
         -------
