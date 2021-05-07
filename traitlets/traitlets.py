@@ -439,7 +439,9 @@ class TraitType(BaseDescriptor):
         If *allow_none* is True, None is a valid value in addition to any
         values that are normally valid. The default is up to the subclass.
         For most trait types, the default value for ``allow_none`` is False.
-
+        
+        If *read_only* is True, attempts to directly modify a trait attribute raises a TraitError.
+        
         Extra metadata can be associated with the traitlet using the .tag() convenience method
         or by using the traitlet instance's .metadata dictionary.
         """
