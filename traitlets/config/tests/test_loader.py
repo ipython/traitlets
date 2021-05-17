@@ -134,6 +134,22 @@ class TestFileCL(TestCase):
         config = cl.load_config()
         self._check_conf(config)
 
+    def test_optional_toml(self):
+        import traitlets.config.loader as loader
+        from traitlets.config.loader import ConfigLoaderError
+        loader.HAS_TOML = False
+        fd, fname = mkstemp('.toml', prefix='μnïcø∂e')
+        f = os.fdopen(fd, 'w')
+        f.write(toml_file)
+        f.close()
+        error_raised = False
+        try:
+            cl = TOMLFileConfigLoader(fname, log=log)
+        except ConfigLoaderError:
+            error_raised = True
+        loader.HAS_TOML = True
+        assert error_raised is True
+
     def test_context_manager(self):
 
         fd, fname = mkstemp('.json', prefix='μnïcø∂e')

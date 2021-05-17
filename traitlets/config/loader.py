@@ -9,7 +9,11 @@ import os
 import re
 import sys
 import json
-import toml
+try:
+    import toml
+    HAS_TOML = True
+except ImportError:
+    HAS_TOML = None
 import warnings
 
 from ..utils import cast_unicode
@@ -612,6 +616,15 @@ class TOMLFileConfigLoader(FileConfigLoader):
 
     """
 
+    def __init__(self, filename, **kw):
+        """Wrapper for checking (optional) toml module import"""
+        if not HAS_TOML:
+            raise ConfigLoaderError('toml module is not found. In order to use toml configuration'
+                                    'files, please either install traitlets with corresponding option'
+                                    ' (pip install "traitlets[with-toml]") or simply add it with'
+                                    '"pip install toml"')
+        super(TOMLFileConfigLoader, self).__init__(filename, **kw)
+
     def load_config(self):
         """Load the config from a file and return it as a Config object."""
         self.clear()
@@ -636,7 +649,7 @@ class TOMLFileConfigLoader(FileConfigLoader):
         if version == 1:
             return Config(dictionary)
         else:
-            raise ValueError('Unknown version of JSON config file: {version}'.format(version=version))
+            raise ValueError('Unknown version of TOML config file: {version}'.format(version=version))
 
     def __enter__(self):
         self.load_config()
