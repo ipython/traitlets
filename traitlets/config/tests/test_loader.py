@@ -327,6 +327,14 @@ class TestKeyValueCL(TestCase):
         c = C(config=config)
         assert c.list_trait == ["x", "y"]
 
+    def test_list_single_item(self):
+        cl = self.klass(log=log)
+        argv = ["--C.list_trait", "x"]
+        config = cl.load_config(argv)
+        assert config.C.list_trait == ["x"]
+        c = C(config=config)
+        assert c.list_trait == ["x"]
+
     def test_dict(self):
         cl = self.klass(log=log)
         argv = ["--C.dict_trait", "x=5", "--C.dict_trait", "y=10"]
