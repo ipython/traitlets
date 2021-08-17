@@ -331,7 +331,6 @@ class TestKeyValueCL(TestCase):
         cl = self.klass(log=log)
         argv = ["--C.list_trait", "x"]
         config = cl.load_config(argv)
-        assert config.C.list_trait == ["x"]
         c = C(config=config)
         assert c.list_trait == ["x"]
 

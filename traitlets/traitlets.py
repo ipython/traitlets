@@ -2644,6 +2644,12 @@ class List(Container):
 
         return super(List, self).validate_elements(obj, value)
 
+    def set(self, obj, value):
+        if isinstance(value, str):
+            return super().set(obj, [value])
+        else:
+            return super().set(obj, value)
+
 
 class Set(List):
     """An instance of a Python set."""
