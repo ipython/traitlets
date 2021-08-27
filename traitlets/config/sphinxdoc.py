@@ -33,14 +33,10 @@ The generated rST syntax looks like this::
     Cross reference like this: :configtrait:`Application.log_datefmt`.
 """
 from traitlets import Undefined
+from traitlets.utils.text import indent
 from collections import defaultdict
 
 from textwrap import indent as _indent, dedent
-
-
-def indent(val):
-    res = _indent(val, "    ")
-    return res
 
 
 def setup(app):
