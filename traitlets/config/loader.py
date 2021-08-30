@@ -14,7 +14,6 @@ import warnings
 from ..utils import cast_unicode
 
 from ipython_genutils.path import filefind
-from ipython_genutils.encoding import DEFAULT_ENCODING
 from traitlets.traitlets import (
     HasTraits, Container, List, Dict, Any, Undefined,
 )
@@ -863,9 +862,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
 
     def _parse_args(self, args):
         """self.parser->self.parsed_data"""
-        # decode sys.argv to support unicode command-line options
-        enc = DEFAULT_ENCODING
-        uargs = [cast_unicode(a, enc) for a in args]
+        uargs = [cast_unicode(a) for a in args]
 
         unpacked_aliases = {}
         if self.aliases:
