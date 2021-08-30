@@ -103,10 +103,6 @@ if 'develop' in sys.argv or any(a.startswith('bdist') for a in sys.argv) or any(
 
 setuptools_args = {}
 
-install_requires = setuptools_args['install_requires'] = [
-    'ipython_genutils',
-]
-
 extras_require = setuptools_args['extras_require'] = {
     'test': ['pytest'],
 }
