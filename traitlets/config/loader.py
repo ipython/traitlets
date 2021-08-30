@@ -11,9 +11,8 @@ import sys
 import json
 import warnings
 
-from ..utils import cast_unicode
+from ..utils import cast_unicode, filefind
 
-from ipython_genutils.path import filefind
 from traitlets.traitlets import (
     HasTraits, Container, List, Dict, Any, Undefined,
 )

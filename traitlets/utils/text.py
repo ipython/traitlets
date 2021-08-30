@@ -1,5 +1,5 @@
 """
-Utilities importted from ipython_genutils
+Utilities imported from ipython_genutils
 """
 
 import re

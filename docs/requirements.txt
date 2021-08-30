@@ -1,4 +1,3 @@
-ipython_genutils
 Sphinx
 sphinx_rtd_theme
 -e ../.
