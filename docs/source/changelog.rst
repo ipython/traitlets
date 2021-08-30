@@ -1,6 +1,35 @@
 Changes in Traitlets
 ====================
 
+Traitlets 5.1
+-------------
+
+Traitlets 5.1 brings a couple of updates and changes to traitlets, and is
+recommended for all users. What follow is a non-exhaustive list of changes:
+
+ - Removal of the ``ipython_genutils`` dependency, this should remove any direct
+   and indirect reliance on ``nose`` and prepare traitlets 5.1 for Python 3.10
+   and above compatibility, some test suite changes also accommodate Python 3.10 changes.
+   If you package traitlets downstream, make sure to remove this dependency.
+
+ - Removal of ``ipython_genutils`` may have change the default encoding detected
+   for the command line argument parsing when not utf-8. We expect this to
+   affect a small portion of older windows version. If you encounter issue let
+   us know.
+
+ - Stop recommendation of ``CUnicode`` in some circumstances as it's
+   deprecated.
+
+ - Our test suite is now using GitHub action instead of travis CI. If you are
+   packaging downstream using the git repository, you may have to exclude the
+   ``.github`` folder now, and can remove exclusion of
+
+ - It fixes a parsing issue for list of one single element on the CLI.
+
+ - We reserve the right to remove official support for Python 3.7 in subsequent
+   minor revisions.
+
+
 Traitlets 5.0
 -------------
 
