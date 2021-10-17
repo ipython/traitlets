@@ -42,7 +42,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov traitlets -v traitlets
+        pytest --cov traitlets --cov-report=xml -v traitlets
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
