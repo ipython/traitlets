@@ -35,13 +35,16 @@ jobs:
         iptest
     - name: Run tests nbconvert
       run: |
-        pytest --pyargs nbconvert -p no:unraisableexception -k 'not network'
+        pytest --cov traitlets --cov-report=xml:coverage-from-nbconvert.xml \
+               --pyargs nbconvert -p no:unraisableexception -k 'not network'
     - name: Run tests notebook
       run: |
-        pytest --pyargs notebook -k 'not selenium and not integration_tests'
+        pytest --cov traitlets --cov-report=xml:coverage-from-notebook.xml \
+               --pyargs notebook -k 'not selenium and not integration_tests'
     - name: Run tests ipywidgets
       run: |
-        pytest --pyargs ipywidgets
+        pytest --cov traitlets --cov-report=xml:coverage-from-ipywidgets.xml \
+               --pyargs ipywidgets
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
