@@ -60,7 +60,7 @@ from traitlets import (
     BaseDescriptor,
     HasDescriptors,
     CUnicode,
-)
+    SourceLink)
 from traitlets.utils import cast_unicode
 
 
@@ -2020,6 +2020,17 @@ class TestLink(TestCase):
         l = link((mc, "i"), (mc, "j"))
         self.assertRaises(TraitError, setattr, mc, 'j', 2)
 
+    def test_source_link(self):
+        class A(HasTraits):
+            a = Int()
+
+        x1 = A()
+        x2 = A(a = SourceLink(x1, "a", transform=(lambda x: x+1, lambda x: x-1)))
+        x1.a = 3
+        self.assertEqual(x2.a, 4)
+        x2.a = 1
+        self.assertEqual(x1.a, 0)
+
 class TestDirectionalLink(TestCase):
     def test_connect_same(self):
         """Verify two traitlets of the same type can be linked together using directional_link."""
@@ -2110,6 +2121,17 @@ class TestDirectionalLink(TestCase):
         self.assertEqual(a.value, b.value)
         a.value += 1
         self.assertEqual(a.value, b.value)
+
+    def test_source_directional_link(self):
+        class A(HasTraits):
+            a = Int()
+
+        x1 = A()
+        x2 = A(a = SourceLink(x1, "a", link_type=directional_link, transform=lambda x: x+1))
+        x1.a = 3
+        self.assertEqual(x2.a, 4)
+        x2.a = 1
+        self.assertEqual(x1.a, 3)
 
 class Pickleable(HasTraits):
 

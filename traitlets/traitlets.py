@@ -39,21 +39,21 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
-from ast import literal_eval
 import contextlib
+import enum
 import inspect
 import os
 import re
 import sys
 import types
-import enum
+from ast import literal_eval
 from warnings import warn, warn_explicit
 
+from .utils.bunch import Bunch
+from .utils.descriptions import describe, class_of, add_article, repr_type
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
-from .utils.bunch import Bunch
-from .utils.descriptions import describe, class_of, add_article, repr_type
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -81,6 +81,7 @@ __all__ = [
     "BaseDescriptor",
     "TraitType",
     "parse_notifier_name",
+    "SourceLink"
 ]
 
 # any TraitType subclass (that doesn't start with _) will be added automatically
@@ -246,6 +247,7 @@ def _validate_link(*tuples):
         if not trait_name in obj.traits():
             raise TypeError("%r has no trait %r" % (obj, trait_name))
 
+
 class link(object):
     """Link traits from different objects together so they remain in sync.
 
@@ -364,6 +366,14 @@ class directional_link(object):
         self.source[0].unobserve(self._update, names=self.source[1])
 
 dlink = directional_link
+
+
+class SourceLink:
+    def __init__(self, obj, attr, link_type=link, transform=None):
+        self.obj = obj
+        self.attr = attr
+        self.link_type = link_type
+        self.transform = transform
 
 
 #-----------------------------------------------------------------------------
@@ -602,6 +612,8 @@ class TraitType(BaseDescriptor):
         """
         if self.read_only:
             raise TraitError('The "%s" trait is read-only.' % self.name)
+        elif isinstance(value, SourceLink):
+            value.link_type((value.obj, value.attr), (obj, self.name), transform=value.transform)
         else:
             self.set(obj, value)
 
@@ -732,6 +744,7 @@ class TraitType(BaseDescriptor):
 
     def default_value_repr(self):
         return repr(self.default_value)
+
 
 #-----------------------------------------------------------------------------
 # The HasTraits implementation
