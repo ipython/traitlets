@@ -582,7 +582,34 @@ class TestConfig(TestCase):
         self.assertNotIn('foo', cfg)
         foo = cfg.foo
         assert isinstance(foo, LazyConfigValue)
-        self.assertIn('foo', cfg)
+        # empty lazy value indicates no config is actually there
+        assert 'foo' not in cfg
+        foo.append('x')
+        assert 'foo' in cfg
+
+    def test_lazy_truthiness(self):
+        cfg = Config()
+        lazy = cfg.empty_trait
+        assert not lazy
+        assert not cfg.empty_trait
+
+        cfg.append_trait.append('x')
+        assert cfg.append_trait
+
+        cfg.prepend_trait.prepend('x')
+        assert cfg.prepend_trait
+
+        cfg.extend_trait.extend(['x'])
+        assert cfg.extend_trait
+
+        cfg.Class.insert_trait.insert(0, 'x')
+        assert cfg.Class.insert_trait
+
+        cfg.Class.update_trait.update({'key': 'value'})
+        assert cfg.Class.update_trait
+
+        cfg.Class.add_trait.add('item')
+        assert cfg.Class.add_trait
 
     def test_getattr_private_missing(self):
         cfg = Config()
@@ -605,13 +632,15 @@ class TestConfig(TestCase):
         assert repr([0,1]) in repr2
         assert 'value=' in repr2
 
-
     def test_getitem_not_section(self):
         cfg = Config()
         self.assertNotIn('foo', cfg)
         foo = cfg['foo']
         assert isinstance(foo, LazyConfigValue)
-        self.assertIn('foo', cfg)
+        # empty lazy value indicates no config is actually there
+        assert 'foo' not in cfg
+        foo.append('x')
+        assert 'foo' in cfg
 
     def test_merge_no_copies(self):
         c = Config()
@@ -752,3 +781,18 @@ class TestConfig(TestCase):
         c.merge(c2)
 
         self.assertEqual(c.Foo.trait._update, {"a": 1, "z": 26, "b": 1})
+
+    def test_empty_lazy_not_in(self):
+        c = Config()
+        lazy1 = c.Foo.trait
+        # 'in' check looks for *actual* config
+        # so creation of a lazy config handle
+        # doesn't mean we have config there
+        assert 'trait' not in c.Foo
+        # make sure that subsequent lazy access
+        # doesn't create a new LazyConfigValue, though
+        c.Foo.trait.append("x")
+        assert 'trait' in c.Foo
+        assert c.Foo.trait
+        assert lazy1 is c.Foo.trait
+        assert lazy1
