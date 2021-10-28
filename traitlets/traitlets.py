@@ -618,12 +618,15 @@ class TraitType(BaseDescriptor):
         if self.name in obj._trait_validators:
             proposal = Bunch({'trait': self, 'value': value, 'owner': obj})
             value = obj._trait_validators[self.name](obj, proposal)
-        elif hasattr(obj, '_%s_validate' % self.name):
-            meth_name = '_%s_validate' % self.name
-            cross_validate = getattr(obj, meth_name)
-            _deprecated_method(cross_validate, obj.__class__, meth_name,
-                "use @validate decorator instead.")
-            value = cross_validate(value, self)
+        else:
+            if self.name not in obj._magic_trait_validator_found:
+                obj._magic_trait_validator_found[self.name] = hasattr(obj, '_%s_validate' % self.name)
+            if obj._magic_trait_validator_found[self.name]:
+                meth_name = '_%s_validate' % self.name
+                cross_validate = getattr(obj, meth_name)
+                _deprecated_method(cross_validate, obj.__class__, meth_name,
+                    "use @validate decorator instead.")
+                value = cross_validate(value, self)
         return value
 
     def __or__(self, other):
@@ -1065,6 +1068,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
+        # keep track which magic trait notifier is found and not
+        self._magic_trait_notifiers_found = {}
+        self._magic_trait_validator_found = {}
         super(HasTraits, self).setup_instance(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
@@ -1215,7 +1221,19 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     for change in changes:
                         self.notify_change(change)
 
+    def _may_have_observer_for_name(self, name):
+        if self._trait_notifiers:
+            return True
+        if name not in self._magic_trait_notifiers_found:
+            magic_name = '_%s_changed' % name
+            self._magic_trait_notifiers_found[name] = hasattr(self, magic_name)
+        return self._magic_trait_notifiers_found[name]
+
     def _notify_trait(self, name, old_value, new_value):
+        if not self._may_have_observer_for_name(name) and \
+            self.__class__.notify_change == HasTraits.notify_change and\
+                "notify_change" not in self.__dict__:
+            return
         self.notify_change(Bunch(
             name=name,
             old=old_value,
@@ -1230,6 +1248,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
     def _notify_observers(self, event):
         """Notify observers of any event"""
+        if not isinstance(event, Bunch):
+            name = event['name']
+        else:
+            name = event.name
+        if not self._may_have_observer_for_name(name):
+            return
         if not isinstance(event, Bunch):
             # cast to bunch if given a dict
             event = Bunch(event)
