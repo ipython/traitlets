@@ -87,6 +87,11 @@ class MyApp(Application):
     def start(self):
         print("app.config:")
         print(self.config)
+        print("try running with --help-all to see all available flags")
+        self.log.info("Info Mesage")
+        self.log.debug("DebugMessage")
+        self.log.critical("Warning")
+        self.log.critical("Critical mesage")
 
 
 def main():
