@@ -193,7 +193,7 @@ external validator:
 Holding Trait Cross-Validation and Notifications
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sometimes it may be impossible to transition from to valid states for a
+Sometimes it may be impossible to transition between valid states for a
 ``HasTraits`` instance by change attributes one by one. The
 ``hold_trait_notifications`` context manager can be used to hold the custom
 cross validation until the context manager is released. If a validation error
