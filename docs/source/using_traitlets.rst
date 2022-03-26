@@ -194,7 +194,7 @@ Holding Trait Cross-Validation and Notifications
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sometimes it may be impossible to transition between valid states for a
-``HasTraits`` instance by change attributes one by one. The
+``HasTraits`` instance by changing attributes one by one. The
 ``hold_trait_notifications`` context manager can be used to hold the custom
 cross validation until the context manager is released. If a validation error
 occurs, changes are rolled back to the initial state.
