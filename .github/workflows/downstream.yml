@@ -32,7 +32,8 @@ jobs:
 
     - name: Run tests IPython
       run: |
-        iptest
+        pytest --cov traitlets --cov-report=xml:coverage-from-nbconvert.xml \
+               --pyargs IPython -p no:unraisableexception 
     - name: Run tests nbconvert
       run: |
         pytest --cov traitlets --cov-report=xml:coverage-from-nbconvert.xml \
