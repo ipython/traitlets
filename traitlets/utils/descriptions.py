@@ -46,11 +46,11 @@ def describe(article, value, name=None, verbose=False, capital=False):
     Definite description:
 
     >>> describe("the", object())
-    "the object at '0x10741f1b0'"
+    "the object at '...'"
     >>> describe("the", object)
-    "the type 'object'"
+    'the object object'
     >>> describe("the", type(object))
-    "the type 'type'"
+    'the type type'
 
     Definitely named description:
 
@@ -103,7 +103,8 @@ def describe(article, value, name=None, verbose=False, capital=False):
         return add_article(typename, False, capital)
     else:
         raise ValueError(
-            "The 'article' argument should " "be 'the', 'a', 'an', or None not %r" % article
+            "The 'article' argument should "
+            "be 'the', 'a', 'an', or None not %r" % article
         )
 
 
