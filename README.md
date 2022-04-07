@@ -4,17 +4,17 @@
 [![Test downstream projects](https://github.com/ipython/traitlets/actions/workflows/downstream.yml/badge.svg)](https://github.com/ipython/traitlets/actions/workflows/downstream.yml)
 [![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](https://traitlets.readthedocs.io/en/latest/?badge=latest)
 
-|               |                                        |
-|---------------|----------------------------------------|
-| **home**      |   https://github.com/ipython/traitlets |
-| **pypi-repo** |   https://pypi.org/project/traitlets/  |
-| **docs**      |   https://traitlets.readthedocs.io/    |
-| **license**   |   Modified BSD License                 |
+|               |                                      |
+| ------------- | ------------------------------------ |
+| **home**      | https://github.com/ipython/traitlets |
+| **pypi-repo** | https://pypi.org/project/traitlets/  |
+| **docs**      | https://traitlets.readthedocs.io/    |
+| **license**   | Modified BSD License                 |
 
 Traitlets is a pure Python library enabling:
 
 - the enforcement of strong typing for attributes of Python objects
- (typed attributes are called *"traits"*);
+  (typed attributes are called _"traits"_);
 - dynamically calculated default values;
 - automatic validation and coercion of trait attributes when attempting a
   change;
@@ -25,7 +25,7 @@ Traitlets is a pure Python library enabling:
 
 Its implementation relies on the [descriptor](https://docs.python.org/howto/descriptor.html)
 pattern, and it is a lightweight pure-python alternative of the
-[*traits* library](https://docs.enthought.com/traits/).
+[_traits_ library](https://docs.enthought.com/traits/).
 
 Traitlets powers the configuration system of IPython and Jupyter
 and the declarative API of IPython interactive widgets.
@@ -91,7 +91,7 @@ To do something when a trait attribute is changed, decorate a method with
 The method will be called with a single argument, a dictionary which contains
 an owner, new value, old value, name of the changed trait, and the event type.
 
-In this example, the `_num_changed` method is decorated with ``@observe(`num`)``:
+In this example, the `_num_changed` method is decorated with `` @observe(`num`) ``:
 
 ```Python
 from traitlets import HasTraits, Integer, observe

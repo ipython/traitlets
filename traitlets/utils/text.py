@@ -3,8 +3,9 @@ Utilities imported from ipython_genutils
 """
 
 import re
-from textwrap import dedent, indent as _indent
 import textwrap
+from textwrap import dedent
+from textwrap import indent as _indent
 
 
 def indent(val):
