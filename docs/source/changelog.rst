@@ -52,7 +52,9 @@ Traitlets 5.0
 5.0.4
 *****
 
-- Support deprecated use of byte-literals for bytes on the command-line: ``ipython kernel --Session.key="b'abc'"``. The `b` prefix is no longer needed in traitlets 5.0, but is supported for backward-compatibility
+- Support deprecated use of byte-literals for bytes on the command-line:
+  ``ipython kernel --Session.key="b'abc'"``. The `b` prefix is no longer needed
+  in traitlets 5.0, but is supported for backward-compatibility
 - Improve output of configuration errors, especially when help output would make it hard to find the helpful error message
 
 5.0.3

@@ -124,6 +124,3 @@ For example::
             if not os.path.exists(path):
                 raise TraitError("path %r does not exist" % path)
             return path
-
-
-

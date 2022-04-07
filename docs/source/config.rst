@@ -664,4 +664,3 @@ Here are the main requirements we wanted our configuration system to have:
   hierarchy to be specified statically before runtime. Python is a very
   dynamic language and you don't always know everything that needs to be
   configured when a program starts.
-

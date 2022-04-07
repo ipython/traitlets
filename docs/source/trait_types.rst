@@ -115,4 +115,3 @@ Miscellaneous
 .. autoclass:: Callable
 
 .. autoclass:: Any
-

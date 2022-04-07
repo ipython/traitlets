@@ -7,7 +7,11 @@ A simple utility to import something by its string name.
 
 .. autofunction:: import_item
 
-A way to expand the signature of the ``HasTraits`` class constructor. This enables auto-completion of trait-names in IPython and xeus-python when having Jedi>=0.15 by adding trait names with their default values in the constructor signature.
+A way to expand the signature of the ``HasTraits`` class constructor. This
+enables auto-completion of trait-names in IPython and xeus-python when having
+Jedi>=0.15 by adding trait names with their default values in the constructor
+signature.
+
 Example:
 
 .. code:: Python
