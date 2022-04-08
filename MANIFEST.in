@@ -8,7 +8,7 @@ include pytest.ini
 
 exclude .pre-commit-config.yaml
 exclude .git-blame-ignore-revs
-exclude readthedocs.yaml
+exclude readthedocs.yml
 exclude .mailmap
 
 # Documentation
