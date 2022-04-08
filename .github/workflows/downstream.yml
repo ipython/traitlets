@@ -24,24 +24,29 @@ jobs:
           python -m build .
           pip install dist/traitlets*.whl
           pip install --pre --upgrade traitlets[test] pytest pytest-cov
-          pip install ipython[test] git+https://github.com/jupyter/nbconvert.git#egg=nbconvert[test] \
+          pip install ipython[test] nbconvert[test] \
                       notebook[test] ipywidgets[test]
+          # Work around https://github.com/jupyter/nbconvert/issues/1754
+          pip install "bleach<5"
           pip freeze
 
       - name: Run tests IPython
         run: |
           cd $HOME
           pytest -ra --cov traitlets --cov-report=xml:coverage-from-ipython.xml --pyargs IPython
+
       - name: Run tests nbconvert
         run: |
           cd $HOME
           pytest -ra --cov traitlets --cov-report=xml:coverage-from-nbconvert.xml \
                  --pyargs nbconvert -p no:unraisableexception -k 'not network'
+
       - name: Run tests notebook
         run: |
           cd $HOME
           pytest -ra --cov traitlets --cov-report=xml:coverage-from-notebook.xml \
                  --pyargs notebook -k 'not selenium and not integration_tests'
+
       - name: Run tests ipywidgets
         run: |
           cd $HOME
