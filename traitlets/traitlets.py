@@ -189,9 +189,7 @@ def _safe_literal_eval(s):
 
 def is_trait(t):
     """Returns whether the given value is an instance or subclass of TraitType."""
-    return isinstance(t, TraitType) or (
-        isinstance(t, type) and issubclass(t, TraitType)
-    )
+    return isinstance(t, TraitType) or (isinstance(t, type) and issubclass(t, TraitType))
 
 
 def parse_notifier_name(names):
@@ -258,8 +256,7 @@ def _validate_link(*tuples):
     for t in tuples:
         if not len(t) == 2:
             raise TypeError(
-                "Each linked traitlet must be specified as (HasTraits, 'trait_name'), not %r"
-                % t
+                "Each linked traitlet must be specified as (HasTraits, 'trait_name'), not %r" % t
             )
         obj, trait_name = t
         if not isinstance(obj, HasTraits):
@@ -298,9 +295,7 @@ class link:
     def __init__(self, source, target, transform=None):
         _validate_link(source, target)
         self.source, self.target = source, target
-        self._transform, self._transform_inv = (
-            transform if transform else (lambda x: x,) * 2
-        )
+        self._transform, self._transform_inv = transform if transform else (lambda x: x,) * 2
 
         self.link()
 
@@ -629,9 +624,7 @@ class TraitType(BaseDescriptor):
             return value
         except Exception:
             # This should never be reached.
-            raise TraitError(
-                "Unexpected error in TraitType: " "default value not set properly"
-            )
+            raise TraitError("Unexpected error in TraitType: " "default value not set properly")
         else:
             return value
 
@@ -970,9 +963,7 @@ def observe(*names, type="change"):
         raise TypeError("Please specify at least one trait name to observe.")
     for name in names:
         if name is not All and not isinstance(name, str):
-            raise TypeError(
-                "trait names to observe must be strings or All, not %r" % name
-            )
+            raise TypeError("trait names to observe must be strings or All, not %r" % name)
     return ObserveHandler(names, type=type)
 
 
@@ -1041,9 +1032,7 @@ def validate(*names):
         raise TypeError("Please specify at least one trait name to validate.")
     for name in names:
         if name is not All and not isinstance(name, str):
-            raise TypeError(
-                "trait names to validate must be strings or All, not %r" % name
-            )
+            raise TypeError("trait names to validate must be strings or All, not %r" % name)
     return ValidateHandler(names)
 
 
@@ -1592,9 +1581,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = dict(
-            [memb for memb in getmembers(cls) if isinstance(memb[1], TraitType)]
-        )
+        traits = dict([memb for memb in getmembers(cls) if isinstance(memb[1], TraitType)])
 
         if len(metadata) == 0:
             return traits
@@ -1707,8 +1694,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         for n in names:
             if not self.has_trait(n):
                 raise TraitError(
-                    "'%s' is not a trait of '%s' "
-                    "instances" % (n, type(self).__name__)
+                    "'%s' is not a trait of '%s' " "instances" % (n, type(self).__name__)
                 )
 
         if len(names) == 1 and len(metadata) == 0:
@@ -1741,11 +1727,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         to the function.
         """
         traits = dict(
-            [
-                memb
-                for memb in getmembers(self.__class__)
-                if isinstance(memb[1], TraitType)
-            ]
+            [memb for memb in getmembers(self.__class__) if isinstance(memb[1], TraitType)]
         )
 
         if len(metadata) == 0:
@@ -1784,11 +1766,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         Works like ``event_handlers``, except for excluding traits from parents.
         """
         sup = super(cls, cls)
-        return {
-            n: e
-            for (n, e) in cls.events(name).items()
-            if getattr(sup, n, None) is not e
-        }
+        return {n: e for (n, e) in cls.events(name).items() if getattr(sup, n, None) is not e}
 
     @classmethod
     def trait_events(cls, name=None):
@@ -2352,8 +2330,7 @@ class Unicode(TraitType):
                     s = s[1:-1]
                     warn(
                         "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
-                        "You can use %r instead of %r if you require traitlets >=5."
-                        % (s, old_s),
+                        "You can use %r instead of %r if you require traitlets >=5." % (s, old_s),
                         FutureWarning,
                     )
         return s
@@ -2533,11 +2510,7 @@ class FuzzyEnum(Enum):
 
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
-        match_func = (
-            (lambda v, c: v in c)
-            if substring_matching
-            else (lambda v, c: c.startswith(v))
-        )
+        match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
@@ -2630,9 +2603,7 @@ class Container(Instance):
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
-            raise TypeError(
-                f"default value of {self.__class__.__name__} was {default_value}"
-            )
+            raise TypeError(f"default value of {self.__class__.__name__} was {default_value}")
 
         if is_trait(trait):
             if isinstance(trait, type):
@@ -2644,9 +2615,7 @@ class Container(Instance):
                 )
             self._trait = trait() if isinstance(trait, type) else trait
         elif trait is not None:
-            raise TypeError(
-                "`trait` must be a Trait or None, got %s" % repr_type(trait)
-            )
+            raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
         super().__init__(klass=self.klass, args=args, **kwargs)
 
@@ -2727,9 +2696,7 @@ class Container(Instance):
         else:
             # backward-compat: allow item_from_string to ignore index arg
             item_from_string = lambda s, index=None: self.item_from_string(s)
-        return self.klass(
-            [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
-        )
+        return self.klass([item_from_string(s, index=idx) for idx, s in enumerate(s_list)])
 
     def item_from_string(self, s, index=None):
         """Cast a single item from a string
@@ -2924,9 +2891,7 @@ class Tuple(Container):
         elif isinstance(default_value, self._valid_defaults):
             args = (default_value,)
         else:
-            raise TypeError(
-                f"default value of {self.__class__.__name__} was {default_value}"
-            )
+            raise TypeError(f"default value of {self.__class__.__name__} was {default_value}")
 
         self._traits = []
         for trait in traits:
@@ -3129,9 +3094,7 @@ class Dict(Instance):
                 key_trait = key_trait()
             self._key_trait = key_trait
         elif key_trait is not None:
-            raise TypeError(
-                "`key_trait` must be a Trait or None, got %s" % repr_type(key_trait)
-            )
+            raise TypeError("`key_trait` must be a Trait or None, got %s" % repr_type(key_trait))
 
         self._per_key_traits = per_key_traits
 
@@ -3200,9 +3163,7 @@ class Dict(Instance):
     def from_string(self, s):
         """Load value from a single string"""
         if not isinstance(s, str):
-            raise TypeError(
-                f"from_string expects a string, got {repr(s)} of type {type(s)}"
-            )
+            raise TypeError(f"from_string expects a string, got {repr(s)} of type {type(s)}")
         try:
             return self.from_string_list([s])
         except Exception:
@@ -3345,9 +3306,7 @@ class UseEnum(TraitType):
     info_text = "Trait type adapter to a Enum class"
 
     def __init__(self, enum_class, default_value=None, **kwargs):
-        assert issubclass(enum_class, enum.Enum), (
-            "REQUIRE: enum.Enum, but was: %r" % enum_class
-        )
+        assert issubclass(enum_class, enum.Enum), "REQUIRE: enum.Enum, but was: %r" % enum_class
         allow_none = kwargs.get("allow_none", False)
         if default_value is None and not allow_none:
             default_value = list(enum_class.__members__.values())[0]
@@ -3436,11 +3395,7 @@ def _add_all():
     do in a function to avoid iterating through globals while defining local variables
     """
     for _name, _value in globals().items():
-        if (
-            not _name.startswith("_")
-            and isinstance(_value, type)
-            and issubclass(_value, TraitType)
-        ):
+        if not _name.startswith("_") and isinstance(_value, type) and issubclass(_value, TraitType):
             __all__.append(_name)
 
 

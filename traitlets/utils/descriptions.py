@@ -103,8 +103,7 @@ def describe(article, value, name=None, verbose=False, capital=False):
         return add_article(typename, False, capital)
     else:
         raise ValueError(
-            "The 'article' argument should "
-            "be 'the', 'a', 'an', or None not %r" % article
+            "The 'article' argument should " "be 'the', 'a', 'an', or None not %r" % article
         )
 
 

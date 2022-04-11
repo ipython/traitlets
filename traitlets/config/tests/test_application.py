@@ -770,40 +770,40 @@ def test_deep_alias():
 
 def test_logging_config(tmp_path, capsys):
     """We should be able to configure additional log handlers."""
-    log_file = tmp_path / 'log_file'
+    log_file = tmp_path / "log_file"
     app = Application(
         logging_config={
-            'version': 1,
-            'handlers': {
-                'file': {
-                    'class': 'logging.FileHandler',
-                    'level': 'DEBUG',
-                    'filename': str(log_file),
+            "version": 1,
+            "handlers": {
+                "file": {
+                    "class": "logging.FileHandler",
+                    "level": "DEBUG",
+                    "filename": str(log_file),
                 },
             },
-            'loggers': {
-                'Application': {
-                    'level': 'DEBUG',
-                    'handlers': ['console', 'file'],
+            "loggers": {
+                "Application": {
+                    "level": "DEBUG",
+                    "handlers": ["console", "file"],
                 },
-            }
+            },
         }
     )
     # the default "console" handler + our new "file" handler
     assert len(app.log.handlers) == 2
 
     # log a couple of messages
-    app.log.info('info')
-    app.log.warn('warn')
+    app.log.info("info")
+    app.log.warn("warn")
 
     # test that log messages get written to the file
-    with open(log_file, 'r') as log_handle:
-        assert log_handle.read() == 'info\nwarn\n'
+    with open(log_file) as log_handle:
+        assert log_handle.read() == "info\nwarn\n"
 
     # test that log messages get written to stderr (default console handler)
-    assert capsys.readouterr().err == '[Application] WARNING | warn\n'
+    assert capsys.readouterr().err == "[Application] WARNING | warn\n"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # for test_help_output:
     MyApp.launch_instance()

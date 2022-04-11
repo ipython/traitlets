@@ -4,17 +4,17 @@
 # Distributed under the terms of the Modified BSD License.
 
 
-from collections import defaultdict, OrderedDict
-from contextlib import suppress
-from copy import deepcopy
 import functools
 import json
 import logging
-from logging.config import dictConfig
 import os
 import pprint
 import re
 import sys
+from collections import OrderedDict, defaultdict
+from contextlib import suppress
+from copy import deepcopy
+from logging.config import dictConfig
 from textwrap import dedent
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
@@ -38,8 +38,8 @@ from traitlets.traitlets import (
     observe,
     observe_compat,
 )
-from traitlets.utils.text import indent, wrap_paragraphs
 from traitlets.utils.nested_update import nested_update
+from traitlets.utils.text import indent, wrap_paragraphs
 
 from ..utils import cast_unicode
 from ..utils.importstring import import_item
@@ -223,43 +223,43 @@ class Application(SingletonConfigurable):
 
         """
         config = {
-            'version': 1,
-            'handlers': {
-                'console': {
-                    'class': 'logging.StreamHandler',
-                    'formatter': 'console',
-                    'level': logging.getLevelName(self.log_level),
-                    'stream': 'ext://sys.stderr',
+            "version": 1,
+            "handlers": {
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "console",
+                    "level": logging.getLevelName(self.log_level),
+                    "stream": "ext://sys.stderr",
                 },
             },
-            'formatters': {
-                'console': {
-                    'class': (
-                        f'{self._log_formatter_cls.__module__}'
-                        f'.{self._log_formatter_cls.__name__}'
+            "formatters": {
+                "console": {
+                    "class": (
+                        f"{self._log_formatter_cls.__module__}"
+                        f".{self._log_formatter_cls.__name__}"
                     ),
-                    'format': self.log_format,
-                    'datefmt': self.log_datefmt,
+                    "format": self.log_format,
+                    "datefmt": self.log_datefmt,
                 },
             },
-            'loggers': {
+            "loggers": {
                 self.__class__.__name__: {
-                    'level': 'DEBUG',
-                    'handlers': ['console'],
+                    "level": "DEBUG",
+                    "handlers": ["console"],
                 }
             },
-            'disable_existing_loggers': False,
+            "disable_existing_loggers": False,
         }
 
-        if sys.executable and sys.executable.endswith('pythonw.exe'):
+        if sys.executable and sys.executable.endswith("pythonw.exe"):
             # disable logging
             # (this should really go to a file, but file-logging is only
             # hooked up in parallel applications)
-            del config['handlers']['loggers']
+            del config["handlers"]["loggers"]
 
         return config
 
-    @observe('log_datefmt', 'log_format', 'log_level', 'logging_config')
+    @observe("log_datefmt", "log_format", "log_level", "logging_config")
     def _observe_logging_change(self, change):
         # convert log level strings to ints
         log_level = self.log_level
@@ -267,7 +267,7 @@ class Application(SingletonConfigurable):
             self.log_level = getattr(logging, log_level)
         self._configure_logging()
 
-    @observe('log', type='default')
+    @observe("log", type="default")
     def _observe_logging_default(self, change):
         self._configure_logging()
 
@@ -276,7 +276,7 @@ class Application(SingletonConfigurable):
         nested_update(config, self.logging_config or {})
         dictConfig(config)
 
-    @default('log')
+    @default("log")
     def _log_default(self):
         """Start logging for this application."""
         log = logging.getLogger(self.__class__.__name__)

@@ -713,4 +713,4 @@ def test_logger_adapter(caplog, capsys):
     app.log_format = "%(key)s %(message)s"
     app.log.info("test message")
 
-    assert 'adapted test message' in capsys.readouterr().err
+    assert "adapted test message" in capsys.readouterr().err
