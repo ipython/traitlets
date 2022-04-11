@@ -704,14 +704,13 @@ class TestLogger(TestCase):
         self.assertIn("Config option `totally_wrong` not recognized by `A`.", output)
         self.assertNotIn("Did you mean", output)
 
-    def test_logger_adapter(self):
-        logger = logging.getLogger("test_logger_adapter")
-        adapter = logging.LoggerAdapter(logger, {"key": "adapted"})
 
-        with self.assertLogs(logger, logging.INFO) as captured:
-            app = Application(log=adapter, log_level=logging.INFO)
-            app.log_format = "%(key)s %(message)s"
-            app.log.info("test message")
+def test_logger_adapter(caplog, capsys):
+    logger = logging.getLogger("Application")
+    adapter = logging.LoggerAdapter(logger, {"key": "adapted"})
 
-        output = "\n".join(captured.output)
-        assert "adapted test message" in output
+    app = Application(log=adapter, log_level=logging.INFO)
+    app.log_format = "%(key)s %(message)s"
+    app.log.info("test message")
+
+    assert "adapted test message" in capsys.readouterr().err

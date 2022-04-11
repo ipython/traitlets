@@ -198,13 +198,13 @@ def parse_notifier_name(names):
     Examples
     --------
     >>> parse_notifier_name([])
-    [All]
+    [traitlets.All]
     >>> parse_notifier_name("a")
     ['a']
     >>> parse_notifier_name(["a", "b"])
     ['a', 'b']
     >>> parse_notifier_name(All)
-    [All]
+    [traitlets.All]
     """
     if names is All or isinstance(names, str):
         return [names]
@@ -277,8 +277,17 @@ class link:
 
     Examples
     --------
+    >>> class X(HasTraits):
+    ...     value = Int()
+
+    >>> src = X(value=1)
+    >>> tgt = X(value=42)
     >>> c = link((src, "value"), (tgt, "value"))
-    >>> src.value = 5  # updates other objects as well
+
+    Setting source updates target objects:
+    >>> src.value = 5
+    >>> tgt.value
+    5
     """
 
     updating = False
@@ -349,9 +358,23 @@ class directional_link:
 
     Examples
     --------
+    >>> class X(HasTraits):
+    ...     value = Int()
+
+    >>> src = X(value=1)
+    >>> tgt = X(value=42)
     >>> c = directional_link((src, "value"), (tgt, "value"))
-    >>> src.value = 5  # updates target objects
-    >>> tgt.value = 6  # does not update source object
+
+    Setting source updates target objects:
+    >>> src.value = 5
+    >>> tgt.value
+    5
+
+    Setting target does not update source object:
+    >>> tgt.value = 6
+    >>> src.value
+    5
+
     """
 
     updating = False
@@ -664,7 +687,10 @@ class TraitType(BaseDescriptor):
             meth_name = "_%s_validate" % self.name
             cross_validate = getattr(obj, meth_name)
             _deprecated_method(
-                cross_validate, obj.__class__, meth_name, "use @validate decorator instead."
+                cross_validate,
+                obj.__class__,
+                meth_name,
+                "use @validate decorator instead.",
             )
             value = cross_validate(value, self)
         return value
@@ -726,7 +752,12 @@ class TraitType(BaseDescriptor):
                     error.args = (
                         "The '%s' trait contains %s which "
                         "expected %s, not %s."
-                        % (self.name, chain, error.args[1], describe("the", error.args[0])),
+                        % (
+                            self.name,
+                            chain,
+                            error.args[1],
+                            describe("the", error.args[0]),
+                        ),
                     )
             raise error
         else:
@@ -780,7 +811,11 @@ class TraitType(BaseDescriptor):
 
         This allows convenient metadata tagging when initializing the trait, such as:
 
+        Examples
+        --------
         >>> Int(0).tag(config=True, sync=True)
+        <traitlets.traitlets.Int object at ...>
+
         """
         maybe_constructor_keywords = set(metadata.keys()).intersection(
             {"help", "allow_none", "read_only", "default_value"}
@@ -1320,7 +1355,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
                 _deprecated_method(
-                    class_value, self.__class__, magic_name, "use @observe and @unobserve instead."
+                    class_value,
+                    self.__class__,
+                    magic_name,
+                    "use @observe and @unobserve instead.",
                 )
                 cb = getattr(self, magic_name)
                 # Only append the magic method if it was not manually registered
@@ -1489,7 +1527,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 class_value = getattr(self.__class__, magic_name)
                 if not isinstance(class_value, ValidateHandler):
                     _deprecated_method(
-                        class_value, self.__class__, magic_name, "use @validate decorator instead."
+                        class_value,
+                        self.__class__,
+                        magic_name,
+                        "use @validate decorator instead.",
                     )
         for name in names:
             self._trait_validators[name] = handler
@@ -2964,16 +3005,17 @@ class Dict(Instance):
 
         Examples
         --------
-        >>> d = Dict(Unicode())
         a dict whose values must be text
+        >>> d = Dict(Unicode())
 
-        >>> d2 = Dict(per_key_traits={"n": Integer(), "s": Unicode()})
         d2['n'] must be an integer
         d2['s'] must be text
+        >>> d2 = Dict(per_key_traits={"n": Integer(), "s": Unicode()})
 
-        >>> d3 = Dict(value_trait=Integer(), key_trait=Unicode())
         d3's keys must be text
         d3's values must be integers
+        >>> d3 = Dict(value_trait=Integer(), key_trait=Unicode())
+
         """
 
         # handle deprecated keywords

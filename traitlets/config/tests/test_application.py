@@ -121,9 +121,9 @@ class TestApplication(TestCase):
         app = MyApp(log_level=logging.INFO)
         handler = logging.StreamHandler(stream)
         # trigger reconstruction of the log formatter
-        app.log.handlers = [handler]
         app.log_format = "%(message)s"
         app.log_datefmt = "%Y-%m-%d %H:%M"
+        app.log.handlers = [handler]
         app.log.info("hello")
         assert "hello" in stream.getvalue()
 
@@ -766,6 +766,42 @@ def test_deep_alias():
     app.initialize(["--val=10"])
     assert app.bar.foo.val == 10
     assert len(list(app.emit_alias_help())) > 0
+
+
+def test_logging_config(tmp_path, capsys):
+    """We should be able to configure additional log handlers."""
+    log_file = tmp_path / "log_file"
+    app = Application(
+        logging_config={
+            "version": 1,
+            "handlers": {
+                "file": {
+                    "class": "logging.FileHandler",
+                    "level": "DEBUG",
+                    "filename": str(log_file),
+                },
+            },
+            "loggers": {
+                "Application": {
+                    "level": "DEBUG",
+                    "handlers": ["console", "file"],
+                },
+            },
+        }
+    )
+    # the default "console" handler + our new "file" handler
+    assert len(app.log.handlers) == 2
+
+    # log a couple of messages
+    app.log.info("info")
+    app.log.warn("warn")
+
+    # test that log messages get written to the file
+    with open(log_file) as log_handle:
+        assert log_handle.read() == "info\nwarn\n"
+
+    # test that log messages get written to stderr (default console handler)
+    assert capsys.readouterr().err == "[Application] WARNING | warn\n"
 
 
 if __name__ == "__main__":

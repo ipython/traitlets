@@ -469,6 +469,9 @@ class LoggingConfigurable(Configurable):
         """Return the default Handler
 
         Returns None if none can be found
+
+        Deprecated, this now returns the first log handler which may or may
+        not be the default one.
         """
         logger = self.log
         if isinstance(logger, logging.LoggerAdapter):

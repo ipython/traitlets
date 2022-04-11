@@ -21,16 +21,19 @@ def all_warnings():
     >>> import warnings
     >>> def foo():
     ...     warnings.warn(RuntimeWarning("bar"))
+
     We raise the warning once, while the warning filter is set to "once".
     Hereafter, the warning is invisible, even with custom filters:
     >>> with warnings.catch_warnings():
     ...     warnings.simplefilter('once')
     ...     foo()
+
     We can now run ``foo()`` without a warning being raised:
-    >>> from numpy.testing import assert_warns
-    >>> foo()
+    >>> from numpy.testing import assert_warns  # doctest: +SKIP
+    >>> foo()  # doctest: +SKIP
+
     To catch the warning, we call in the help of ``all_warnings``:
-    >>> with all_warnings():
+    >>> with all_warnings():  # doctest: +SKIP
     ...     assert_warns(RuntimeWarning, foo)
     """
 
@@ -73,9 +76,9 @@ def expected_warnings(matching):
 
     Examples
     --------
-    >>> from skimage import data, img_as_ubyte, img_as_float
-    >>> with expected_warnings(["precision loss"]):
-    ...     d = img_as_ubyte(img_as_float(data.coins()))
+    >>> from skimage import data, img_as_ubyte, img_as_float  # doctest: +SKIP
+    >>> with expected_warnings(["precision loss"]):           # doctest: +SKIP
+    ...     d = img_as_ubyte(img_as_float(data.coins()))      # doctest: +SKIP
 
     Notes
     -----
