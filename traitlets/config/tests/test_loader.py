@@ -112,7 +112,7 @@ class TestFileCL(TestCase):
         self.assertEqual(cl.config.MyAttr.value, value)
 
         # check that another loader does see the change
-        cl2 = JSONFileConfigLoader(fname, log=log)
+        _ = JSONFileConfigLoader(fname, log=log)
         self.assertEqual(cl.config.MyAttr.value, value)
 
     def test_json_context_bad_write(self):
@@ -184,7 +184,7 @@ class TestFileCL(TestCase):
 def _parse_int_or_str(v):
     try:
         return int(v)
-    except:
+    except Exception:
         return str(v)
 
 

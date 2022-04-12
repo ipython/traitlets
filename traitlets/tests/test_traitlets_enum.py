@@ -190,8 +190,6 @@ class TestUseEnum(unittest.TestCase):
             example.color = "BAD_VALUE"
 
     def test_info(self):
-        import sys
-
         choices = color_choices
 
         class Example(HasTraits):
@@ -213,7 +211,7 @@ class TestUseEnum(unittest.TestCase):
             info = enum.info_rst()
             self.assertEqual(len(info.split("|")), len(choices), info.split("|"))
             self.assertIn("or `None`", info)
-            ## Check no single `\` exists.
+            # Check no single `\` exists.
             self.assertNotRegex(info, r"\b\\\b")
 
             enum.allow_none = False
@@ -225,7 +223,7 @@ class TestUseEnum(unittest.TestCase):
             info = enum.info_rst()
             self.assertEqual(len(info.split("|")), len(choices), info.split("|"))
             self.assertNotIn("None", info)
-            ## Check no single `\` exists.
+            # Check no single `\` exists.
             self.assertNotRegex(info, r"\b\\\b")
 
 
@@ -235,7 +233,7 @@ class TestUseEnum(unittest.TestCase):
 
 
 class TestFuzzyEnum(unittest.TestCase):
-    ## Check mostly `validate()`, Ctor must be checked on generic `Enum`
+    # Check mostly `validate()`, Ctor must be checked on generic `Enum`
     # or `CaselessStrEnum`.
 
     def test_search_all_prefixes__overwrite(self):
@@ -377,6 +375,6 @@ class TestFuzzyEnum(unittest.TestCase):
         example = new_trait_class(color, True, False)()
         self.assertEqual(example.color, color)
 
-        ## FIXME: default value not validated!
+        # FIXME: default value not validated!
         # with self.assertRaises(TraitError):
         #    example = new_trait_class(color.lower(), True, False)

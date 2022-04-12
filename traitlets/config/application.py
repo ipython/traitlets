@@ -595,7 +595,7 @@ class Application(SingletonConfigurable):
         for p in wrap_paragraphs(self.subcommand_description.format(app=self.name)):
             yield p
             yield ""
-        for subc, (cls, help) in self.subcommands.items():
+        for subc, (_, help) in self.subcommands.items():
             yield subc
             if help:
                 yield indent(dedent(help.strip()))
@@ -688,7 +688,7 @@ class Application(SingletonConfigurable):
         if isinstance(subapp, str):
             subapp = import_item(subapp)
 
-        ## Cannot issubclass() on a non-type (SOhttp://stackoverflow.com/questions/8692430)
+        # Cannot issubclass() on a non-type (SOhttp://stackoverflow.com/questions/8692430)
         if isinstance(subapp, type) and issubclass(subapp, Application):
             # Clear existing instances before...
             self.__class__.clear_instance()
@@ -915,7 +915,7 @@ class Application(SingletonConfigurable):
         def is_any_parent_included(cls):
             return any(b in cls_to_config and cls_to_config[b] for b in cls.__bases__)
 
-        ## Mark "empty" classes for inclusion if their parents own-traits,
+        # Mark "empty" classes for inclusion if their parents own-traits,
         #  and loop until no more classes gets marked.
         #
         while True:

@@ -34,7 +34,6 @@ The generated rST syntax looks like this::
 """
 from collections import defaultdict
 from textwrap import dedent
-from textwrap import indent as _indent
 
 from traitlets import Undefined
 from traitlets.utils.text import indent
@@ -74,7 +73,7 @@ def class_config_rst_doc(cls, trait_aliases):
     """
     lines = []
     classname = cls.__name__
-    for k, trait in sorted(cls.class_traits(config=True).items()):
+    for _, trait in sorted(cls.class_traits(config=True).items()):
         ttype = trait.__class__.__name__
 
         fullname = classname + "." + trait.name
