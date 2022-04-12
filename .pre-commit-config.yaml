@@ -3,16 +3,25 @@ repos:
     rev: v4.1.0
     hooks:
       - id: debug-statements
-      - id: end-of-file-fixer
-      - id: check-case-conflict
-      - id: check-executables-have-shebangs
-      - id: requirements-txt-fixer
+        stages: [manual]
       - id: check-added-large-files
+        stages: [manual]
       - id: check-case-conflict
+        stages: [manual]
       - id: check-toml
+        stages: [manual]
       - id: check-yaml
+        stages: [manual]
       - id: forbid-new-submodules
+        stages: [manual]
       - id: check-builtin-literals
+        stages: [manual]
+      - id: check-case-conflict
+        stages: [manual]
+      - id: check-executables-have-shebangs
+        stages: [manual]
+      - id: end-of-file-fixer
+      - id: requirements-txt-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/psf/black
