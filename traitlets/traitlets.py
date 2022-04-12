@@ -1692,9 +1692,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         depend on the current state of the object."""
         for n in names:
             if not self.has_trait(n):
-                raise TraitError(
-                    "'%s' is not a trait of '%s' instances" % (n, type(self).__name__)
-                )
+                raise TraitError(f"'{n}' is not a trait of '{type(self).__name__}' instances")
 
         if len(names) == 1 and len(metadata) == 0:
             return self._get_trait_default_generator(names[0])(self)
