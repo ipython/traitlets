@@ -21,6 +21,6 @@ class TestImportItem(TestCase):
         class NotAString:
             pass
 
-        msg = "import_item accepts strings, " "not '%s'." % NotAString
+        msg = "import_item accepts strings, not '%s'." % NotAString
         with self.assertRaisesRegex(TypeError, msg):
             import_item(NotAString())

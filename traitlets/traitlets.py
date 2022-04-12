@@ -261,7 +261,7 @@ def _validate_link(*tuples):
         obj, trait_name = t
         if not isinstance(obj, HasTraits):
             raise TypeError("Each object must be HasTraits, not %r" % type(obj))
-        if not trait_name in obj.traits():
+        if trait_name not in obj.traits():
             raise TypeError(f"{obj!r} has no trait {trait_name!r}")
 
 
@@ -624,7 +624,7 @@ class TraitType(BaseDescriptor):
             return value
         except Exception:
             # This should never be reached.
-            raise TraitError("Unexpected error in TraitType: " "default value not set properly")
+            raise TraitError("Unexpected error in TraitType: default value not set properly")
         else:
             return value
 
@@ -924,7 +924,7 @@ class MetaHasDescriptors(type):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
 
-        for k, v in getmembers(cls):
+        for _, v in getmembers(cls):
             if isinstance(v, BaseDescriptor):
                 v.subclass_init(cls)
 
@@ -1269,7 +1269,6 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             return
         else:
             cache = {}
-            notify_change = self.notify_change
 
             def compress(past_changes, change):
                 """Merges the provided change with the last if possible."""
@@ -1693,9 +1692,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         depend on the current state of the object."""
         for n in names:
             if not self.has_trait(n):
-                raise TraitError(
-                    "'%s' is not a trait of '%s' " "instances" % (n, type(self).__name__)
-                )
+                raise TraitError(f"'{n}' is not a trait of '{type(self).__name__}' instances")
 
         if len(names) == 1 and len(metadata) == 0:
             return self._get_trait_default_generator(names[0])(self)
@@ -1956,7 +1953,7 @@ class Instance(ClassBasedTraitType):
         if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, str)):
             self.klass = klass
         else:
-            raise TraitError("The klass attribute must be a class" " not: %r" % klass)
+            raise TraitError("The klass attribute must be a class not: %r" % klass)
 
         if (kw is not None) and not isinstance(kw, dict):
             raise TraitError("The 'kw' argument must be a dict or None.")
@@ -2695,7 +2692,7 @@ class Container(Instance):
             item_from_string = self.item_from_string
         else:
             # backward-compat: allow item_from_string to ignore index arg
-            item_from_string = lambda s, index=None: self.item_from_string(s)
+            item_from_string = lambda s, index=None: self.item_from_string(s)  # noqa[E371]
         return self.klass([item_from_string(s, index=idx) for idx, s in enumerate(s_list)])
 
     def item_from_string(self, s, index=None):
@@ -3128,7 +3125,7 @@ class Dict(Instance):
             if key_trait:
                 try:
                     key = key_trait._validate(obj, key)
-                except TraitError as error:
+                except TraitError:
                     self.element_error(obj, key, key_trait, "Keys")
             active_value_trait = per_key_override.get(key, value_trait)
             if active_value_trait:

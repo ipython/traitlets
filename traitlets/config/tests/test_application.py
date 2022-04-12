@@ -568,7 +568,7 @@ class TestApplication(TestCase):
         app.parse_command_line(["sub1"])
 
         self.assertIsInstance(app.subapp, Sub1)
-        ## Check parent hierarchy.
+        # Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
 
         Root.clear_instance()
@@ -578,7 +578,7 @@ class TestApplication(TestCase):
         app.parse_command_line(["sub1", "sub2"])
         self.assertIsInstance(app.subapp, Sub1)
         self.assertIsInstance(app.subapp.subapp, Sub2)
-        ## Check parent hierarchy.
+        # Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)
 
@@ -590,7 +590,7 @@ class TestApplication(TestCase):
         self.assertIsInstance(app.subapp, Sub1)
         self.assertIsInstance(app.subapp.subapp, Sub3)
         self.assertTrue(app.subapp.subapp.flag)  # Set by factory.
-        ## Check parent hierarchy.
+        # Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)  # Set by factory.
 
@@ -794,7 +794,7 @@ def test_logging_config(tmp_path, capsys):
 
     # log a couple of messages
     app.log.info("info")
-    app.log.warn("warn")
+    app.log.warning("warn")
 
     # test that log messages get written to the file
     with open(log_file) as log_handle:

@@ -52,7 +52,7 @@ def make_link_node(rawtext, app, type, slug, options):
     return node
 
 
-def ghissue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+def ghissue_role(name, rawtext, text, lineno, inliner, options=None, content=None):
     """Link to a GitHub issue.
 
     Returns 2 part tuple containing list of nodes to insert into the
@@ -67,6 +67,8 @@ def ghissue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     :param options: Directive options for customization.
     :param content: The directive content for customization.
     """
+    options = options or {}
+    content = content or []
 
     try:
         issue_num = int(text)
@@ -88,7 +90,7 @@ def ghissue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         category = "issues"
     else:
         msg = inliner.reporter.error(
-            'GitHub roles include "ghpull" and "ghissue", ' '"%s" is invalid.' % name, line=lineno
+            'GitHub roles include "ghpull" and "ghissue", "%s" is invalid.' % name, line=lineno
         )
         prb = inliner.problematic(rawtext, rawtext, msg)
         return [prb], [msg]
@@ -96,7 +98,7 @@ def ghissue_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     return [node], []
 
 
-def ghuser_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+def ghuser_role(name, rawtext, text, lineno, inliner, options=None, content=None):
     """Link to a GitHub user.
 
     Returns 2 part tuple containing list of nodes to insert into the
@@ -111,14 +113,15 @@ def ghuser_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     :param options: Directive options for customization.
     :param content: The directive content for customization.
     """
-    app = inliner.document.settings.env.app
+    options = options or {}
+    content = content or []
     # info('user link %r' % text)
     ref = "https://www.github.com/" + text
     node = nodes.reference(rawtext, text, refuri=ref, **options)
     return [node], []
 
 
-def ghcommit_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+def ghcommit_role(name, rawtext, text, lineno, inliner, options=None, content=None):
     """Link to a GitHub commit.
 
     Returns 2 part tuple containing list of nodes to insert into the
@@ -133,6 +136,8 @@ def ghcommit_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     :param options: Directive options for customization.
     :param content: The directive content for customization.
     """
+    options = options or {}
+    content = content or []
     app = inliner.document.settings.env.app
     # info('user link %r' % text)
     try:

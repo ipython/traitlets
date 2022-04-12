@@ -967,7 +967,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         self.parser.set_defaults(_flags=[])
         paa("extra_args", nargs="*")
 
-        ## An index of all container traits collected::
+        # An index of all container traits collected::
         #
         #     { <traitname>: (<trait>, <argparse-kwds>) }
         #
@@ -1100,7 +1100,7 @@ def load_pyconfig_files(config_files, path):
             next_config = loader.load_config()
         except ConfigFileNotFound:
             pass
-        except:
+        except Exception:
             raise
         else:
             config.merge(next_config)

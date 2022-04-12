@@ -185,7 +185,7 @@ class Configurable(HasTraits):
                     if isinstance(self, LoggingConfigurable):
                         warn = self.log.warning
                     else:
-                        warn = lambda msg: warnings.warn(msg, stacklevel=9)
+                        warn = lambda msg: warnings.warn(msg, stacklevel=9)  # noqa[E371]
                     matches = get_close_matches(name, traits)
                     msg = "Config option `{option}` not recognized by `{klass}`.".format(
                         option=name, klass=self.__class__.__name__
@@ -245,7 +245,7 @@ class Configurable(HasTraits):
         base_classes = ", ".join(p.__name__ for p in cls.__bases__)
         final_help.append(f"{cls.__name__}({base_classes}) options")
         final_help.append(len(final_help[0]) * "-")
-        for k, v in sorted(cls.class_traits(config=True).items()):
+        for _, v in sorted(cls.class_traits(config=True).items()):
             help = cls.class_get_trait_help(v, inst)
             final_help.append(help)
         return "\n".join(final_help)
@@ -403,7 +403,7 @@ class Configurable(HasTraits):
         """
         lines = []
         classname = cls.__name__
-        for k, trait in sorted(cls.class_traits(config=True).items()):
+        for _, trait in sorted(cls.class_traits(config=True).items()):
             ttype = trait.__class__.__name__
 
             termline = classname + "." + trait.name

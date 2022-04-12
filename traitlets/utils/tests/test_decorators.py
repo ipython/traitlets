@@ -1,4 +1,4 @@
-from inspect import Parameter, Signature, signature
+from inspect import Parameter, signature
 from unittest import TestCase
 
 from ...traitlets import HasTraits, Int, Unicode
