@@ -792,10 +792,9 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         self,
         argv: t.Optional[t.List[str]] = None,
         aliases: t.Optional[t.Dict[str, str]] = None,
-        flag: t.Optional[t.Dict[str, str]] = None,
+        flags: t.Optional[t.Dict[str, str]] = None,
         log: t.Any = None,
         classes: t.Optional[t.List[t.Type[t.Any]]] = None,
-        flags: t.Optional[t.Dict[str, str]] = None,
         *parser_args: t.Any,
         **parser_kw: t.Any,
     ) -> None:
