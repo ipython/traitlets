@@ -1244,6 +1244,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 if isinstance(value, EventHandler):
                     value.instance_init(self)
 
+    @property  # type:ignore[misc]
     @contextlib.contextmanager
     def cross_validation_lock(self):
         """
