@@ -8,7 +8,7 @@ from .utils.decorators import signature_has_traits
 from .utils.importstring import import_item
 
 
-class Sentinel(traitlets.Sentinel):
+class Sentinel(traitlets.Sentinel):  # type:ignore[name-defined]
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         warn(

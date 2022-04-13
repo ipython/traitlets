@@ -74,6 +74,7 @@ setup_args = dict(
     version=version_ns["__version__"],
     scripts=glob(pjoin("scripts", "*")),
     packages=packages,
+    include_package_data=True,
     description="Traitlets Python configuration system",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -46,6 +46,7 @@ import os
 import re
 import sys
 import types
+import typing as t
 from ast import literal_eval
 from warnings import warn, warn_explicit
 
@@ -479,7 +480,7 @@ class TraitType(BaseDescriptor):
     allow_none = False
     read_only = False
     info_text = "any value"
-    default_value = Undefined
+    default_value: t.Optional[t.Any] = Undefined
 
     def __init__(
         self,
@@ -2124,7 +2125,7 @@ class Union(TraitType):
 class Any(TraitType):
     """A trait which allows any value."""
 
-    default_value = None
+    default_value: t.Optional[t.Any] = None
     allow_none = True
     info_text = "any value"
 
@@ -2538,11 +2539,11 @@ class Container(Instance):
     To be subclassed by overriding klass.
     """
 
-    klass = None
-    _cast_types = ()
+    klass: t.Optional[t.Union[str, t.Type[t.Any]]] = None
+    _cast_types: t.Any = ()
     _valid_defaults = SequenceTypes
     _trait = None
-    _literal_from_string_pairs = ("[]", "()")
+    _literal_from_string_pairs: t.Any = ("[]", "()")
 
     def __init__(self, trait=None, default_value=Undefined, **kwargs):
         """Create a container trait type from a list, set, or tuple.
@@ -2618,7 +2619,8 @@ class Container(Instance):
 
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
-            value = self.klass(value)
+            assert self.klass is not None
+            value = self.klass(value)  # type:ignore[operator]
         value = super().validate(obj, value)
         if value is None:
             return value
@@ -2638,7 +2640,8 @@ class Container(Instance):
                 self.error(obj, v, error)
             else:
                 validated.append(v)
-        return self.klass(validated)
+        assert self.klass is not None
+        return self.klass(validated)  # type:ignore[operator]
 
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
@@ -2665,6 +2668,7 @@ class Container(Instance):
 
         This is where we parse CLI configuration
         """
+        assert self.klass is not None
         if len(s_list) == 1:
             # check for deprecated --Class.trait="['a', 'b', 'c']"
             r = s_list[0]
@@ -2686,14 +2690,17 @@ class Container(Instance):
                     ),
                     FutureWarning,
                 )
-                return self.klass(literal_eval(r))
+                return self.klass(literal_eval(r))  # type:ignore[operator]
         sig = inspect.signature(self.item_from_string)
         if "index" in sig.parameters:
             item_from_string = self.item_from_string
         else:
             # backward-compat: allow item_from_string to ignore index arg
             item_from_string = lambda s, index=None: self.item_from_string(s)  # noqa[E371]
-        return self.klass([item_from_string(s, index=idx) for idx, s in enumerate(s_list)])
+
+        return self.klass(
+            [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
+        )  # type:ignore[operator]
 
     def item_from_string(self, s, index=None):
         """Cast a single item from a string
@@ -2710,7 +2717,7 @@ class List(Container):
     """An instance of a Python list."""
 
     klass = list
-    _cast_types = (tuple,)
+    _cast_types: t.Any = (tuple,)
 
     def __init__(
         self,
@@ -2774,7 +2781,7 @@ class List(Container):
 class Set(List):
     """An instance of a Python set."""
 
-    klass = set
+    klass = set  # type:ignore[assignment]
     _cast_types = (tuple, list)
 
     _literal_from_string_pairs = ("[]", "()", "{}")
@@ -2880,7 +2887,7 @@ class Tuple(Container):
             default_value = Undefined
 
         if default_value is Undefined:
-            args = ()
+            args: t.Any = ()
         elif default_value is None:
             # default_value back on kwargs for super() to handle
             args = ()
@@ -3056,7 +3063,7 @@ class Dict(Instance):
         if default_value is Undefined:
             default_value = {}
         if default_value is None:
-            args = None
+            args: t.Any = None
         elif isinstance(default_value, dict):
             args = (default_value,)
         elif isinstance(default_value, SequenceTypes):
@@ -3135,7 +3142,7 @@ class Dict(Instance):
                     self.element_error(obj, v, active_value_trait, "Values")
             validated[key] = v
 
-        return self.klass(validated)
+        return self.klass(validated)  # type:ignore
 
     def class_init(self, cls, name):
         if isinstance(self._value_trait, TraitType):
@@ -3299,7 +3306,7 @@ class UseEnum(TraitType):
         assert entity.color is Color.green
     """
 
-    default_value = None
+    default_value: t.Optional[enum.Enum] = None
     info_text = "Trait type adapter to a Enum class"
 
     def __init__(self, enum_class, default_value=None, **kwargs):

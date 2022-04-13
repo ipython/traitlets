@@ -11,6 +11,7 @@ import os
 import pprint
 import re
 import sys
+import typing as t
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
 from copy import deepcopy
@@ -160,7 +161,7 @@ class Application(SingletonConfigurable):
 
     # A sequence of Configurable subclasses whose config=True attributes will
     # be exposed at the command line.
-    classes = []
+    classes: t.List[t.Type[t.Any]] = []
 
     def _classes_inc_parents(self, classes=None):
         """Iterate through configurable classes, including configurable parents
@@ -222,7 +223,7 @@ class Application(SingletonConfigurable):
         control of logging.
 
         """
-        config = {
+        config: t.Dict[str, t.Any] = {
             "version": 1,
             "handlers": {
                 "console": {
@@ -288,7 +289,7 @@ class Application(SingletonConfigurable):
             if not _log.propagate:
                 break
             else:
-                _log = _log.parent
+                _log = _log.parent  # type:ignore[assignment]
         return log
 
     logging_config = Dict(
@@ -344,13 +345,13 @@ class Application(SingletonConfigurable):
     #: the alias map for configurables
     #: Keys might strings or tuples for additional options; single-letter alias accessed like `-v`.
     #: Values might be like "Class.trait" strings of two-tuples: (Class.trait, help-text).
-    aliases = {"log-level": "Application.log_level"}
+    aliases: t.Dict[str, str] = {"log-level": "Application.log_level"}
 
     # flags for loading Configurables or store_const style flags
     # flags are loaded from this dict by '--key' flags
     # this must be a dict of two-tuples, the first element being the Config/dict
     # and the second being the help string for the flag
-    flags = {
+    flags: t.Dict[str, t.Any] = {
         "debug": (
             {
                 "Application": {
@@ -418,7 +419,7 @@ class Application(SingletonConfigurable):
     def _show_config_changed(self, change):
         if change.new:
             self._save_start = self.start
-            self.start = self.start_show_config
+            self.start = self.start_show_config  # type:ignore[assignment]
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
@@ -481,7 +482,7 @@ class Application(SingletonConfigurable):
             if not class_config:
                 continue
             print(classname)
-            pformat_kwargs = dict(indent=4, compact=True)
+            pformat_kwargs: t.Dict[str, t.Any] = dict(indent=4, compact=True)
 
             for traitname in sorted(class_config):
                 value = class_config[traitname]
@@ -521,8 +522,8 @@ class Application(SingletonConfigurable):
                 fhelp = cls.class_get_trait_help(trait, helptext=fhelp).splitlines()
 
                 if not isinstance(alias, tuple):
-                    alias = (alias,)
-                alias = sorted(alias, key=len)
+                    alias = (alias,)  # type:ignore[assignment]
+                alias = sorted(alias, key=len)  # type:ignore[assignment]
                 alias = ", ".join(("--%s" if len(m) > 1 else "-%s") % m for m in alias)
 
                 # reformat first line
@@ -545,8 +546,8 @@ class Application(SingletonConfigurable):
         for flags, (cfg, fhelp) in self.flags.items():
             try:
                 if not isinstance(flags, tuple):
-                    flags = (flags,)
-                flags = sorted(flags, key=len)
+                    flags = (flags,)  # type:ignore[assignment]
+                flags = sorted(flags, key=len)  # type:ignore[assignment]
                 flags = ", ".join(("--%s" if len(m) > 1 else "-%s") % m for m in flags)
                 yield flags
                 yield indent(dedent(fhelp.strip()))
@@ -655,7 +656,7 @@ class Application(SingletonConfigurable):
 
     def emit_description(self):
         """Yield lines with the application description."""
-        for p in wrap_paragraphs(self.description or self.__doc__):
+        for p in wrap_paragraphs(self.description or self.__doc__ or ""):
             yield p
             yield ""
 
@@ -696,7 +697,7 @@ class Application(SingletonConfigurable):
             self.subapp = subapp.instance(parent=self)
         elif callable(subapp):
             # or ask factory to create it...
-            self.subapp = subapp(self)
+            self.subapp = subapp(self)  # type:ignore[call-arg]
         else:
             raise AssertionError("Invalid mappings for subcommand '%s'!" % subc)
 
@@ -726,30 +727,30 @@ class Application(SingletonConfigurable):
                 mro_tree[parent.__name__].append(clsname)
         # flatten aliases, which have the form:
         # { 'alias' : 'Class.trait' }
-        aliases = {}
+        aliases: t.Dict[str, str] = {}
         for alias, longname in self.aliases.items():
             if isinstance(longname, tuple):
                 longname, _ = longname
-            cls, trait = longname.split(".", 1)
-            children = mro_tree[cls]
+            cls, trait = longname.split(".", 1)  # type:ignore[assignment]
+            children = mro_tree[cls]  # type:ignore[index]
             if len(children) == 1:
                 # exactly one descendent, promote alias
-                cls = children[0]
+                cls = children[0]  # type:ignore[assignment]
             if not isinstance(aliases, tuple):
-                alias = (alias,)
+                alias = (alias,)  # type:ignore[assignment]
             for al in alias:
-                aliases[al] = ".".join([cls, trait])
+                aliases[al] = ".".join([cls, trait])  # type:ignore[list-item]
 
         # flatten flags, which are of the form:
         # { 'key' : ({'Cls' : {'trait' : value}}, 'help')}
         flags = {}
         for key, (flagdict, help) in self.flags.items():
-            newflag = {}
+            newflag: t.Dict[t.Any, t.Any] = {}
             for cls, subdict in flagdict.items():
-                children = mro_tree[cls]
+                children = mro_tree[cls]  # type:ignore[index]
                 # exactly one descendent, promote flag section
                 if len(children) == 1:
-                    cls = children[0]
+                    cls = children[0]  # type:ignore[assignment]
 
                 if cls in newflag:
                     newflag[cls].update(subdict)
@@ -757,7 +758,7 @@ class Application(SingletonConfigurable):
                     newflag[cls] = subdict
 
             if not isinstance(key, tuple):
-                key = (key,)
+                key = (key,)  # type:ignore[assignment]
             for k in key:
                 flags[k] = (newflag, help)
         return flags, aliases
@@ -829,8 +830,8 @@ class Application(SingletonConfigurable):
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
             jsonloader = cls.json_config_loader_class(basefilename + ".json", path=path, log=log)
-            loaded = []
-            filenames = []
+            loaded: t.List[t.Any] = []
+            filenames: t.List[str] = []
             for loader in [pyloader, jsonloader]:
                 config = None
                 try:

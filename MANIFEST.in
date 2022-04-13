@@ -5,6 +5,7 @@ include CHANGES.txt
 include MANIFEST.in
 include pyproject.toml
 include pytest.ini
+include traitlets/py.typed
 
 exclude .pre-commit-config.yaml
 exclude .git-blame-ignore-revs
