@@ -1354,11 +1354,11 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
         callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
         callables.extend(
-            self._trait_notifiers.get(All, {}).get(type, [])
-        )  # type:ignore[call-overload]
+            self._trait_notifiers.get(All, {}).get(type, [])  # type:ignore[call-overload]
+        )
         callables.extend(
-            self._trait_notifiers.get(All, {}).get(All, [])
-        )  # type:ignore[call-overload]
+            self._trait_notifiers.get(All, {}).get(All, [])  # type:ignore[call-overload]
+        )
 
         # Now static ones
         magic_name = "_%s_changed" % name
@@ -1776,8 +1776,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         """
         sup = super(cls, cls)
         return {
-            n: e for (n, e) in cls.events(name).items() if getattr(sup, n, None) is not e
-        }  # type:ignore[attr-defined]
+            n: e
+            for (n, e) in cls.events(name).items()  # type:ignore[attr-defined]
+            if getattr(sup, n, None) is not e
+        }
 
     @classmethod
     def trait_events(cls, name=None):
@@ -2528,8 +2530,10 @@ class FuzzyEnum(Enum):
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
         match_func = (
-            (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
-        )  # type:ignore[no-any-return]
+            (lambda v, c: v in c)
+            if substring_matching
+            else (lambda v, c: c.startswith(v))  # type:ignore[no-any-return]
+        )
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
