@@ -441,8 +441,8 @@ class BaseDescriptor:
        accept superclasses for :class:`This` values.
     """
 
-    name = None
-    this_class = None
+    name: t.Optional[str] = None
+    this_class: t.Optional[t.Type[t.Any]] = None
 
     def class_init(self, cls, name):
         """Part of the initialization which may depend on the underlying
@@ -476,7 +476,7 @@ class BaseDescriptor:
 class TraitType(BaseDescriptor):
     """A base class for all trait types."""
 
-    metadata = {}
+    metadata: t.Dict[str, t.Any] = {}
     allow_none = False
     read_only = False
     info_text = "any value"
@@ -514,9 +514,11 @@ class TraitType(BaseDescriptor):
             stacklevel = 1
             f = inspect.currentframe()
             # count supers to determine stacklevel for warning
+            assert f is not None
             while f.f_code.co_name == "__init__":
                 stacklevel += 1
                 f = f.f_back
+                assert f is not None
             mod = f.f_globals.get("__name__") or ""
             pkg = mod.split(".", 1)[0]
             key = tuple(["metadata-tag", pkg] + sorted(kwargs))
@@ -570,7 +572,7 @@ class TraitType(BaseDescriptor):
         if self.default_value is not Undefined:
             return self.default_value
         elif hasattr(self, "make_dynamic_default"):
-            return self.make_dynamic_default()
+            return self.make_dynamic_default()  # type:ignore[attr-defined]
         else:
             # Undefined will raise in TraitType.get
             return self.default_value
@@ -675,7 +677,7 @@ class TraitType(BaseDescriptor):
         if value is None and self.allow_none:
             return value
         if hasattr(self, "validate"):
-            value = self.validate(obj, value)
+            value = self.validate(obj, value)  # type:ignore[attr-defined]
         if obj._cross_validation_lock is False:
             value = self._cross_validate(obj, value)
         return value
@@ -1125,7 +1127,7 @@ class DefaultHandler(EventHandler):
 class HasDescriptors(metaclass=MetaHasDescriptors):
     """The base class for all classes that have descriptors."""
 
-    def __new__(*args, **kwargs):
+    def __new__(*args: t.Any, **kwargs: t.Any) -> t.Any:
         # Pass cls as args[0] to allow "cls" as keyword argument
         cls = args[0]
         args = args[1:]
@@ -1148,7 +1150,7 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
         self = args[0]
         args = args[1:]
 
-        self._cross_validation_lock = False
+        self._cross_validation_lock = False  # type:ignore[attr-defined]
         cls = self.__class__
         for key in dir(cls):
             # Some descriptors raise AttributeError like zope.interface's
@@ -1164,6 +1166,11 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
 
 
 class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
+    _trait_values: t.Dict[str, t.Any]
+    _trait_notifiers: t.Dict[str, t.Any]
+    _trait_validators: t.Dict[str, t.Any]
+    _cross_validation_lock: bool
+
     def setup_instance(*args, **kwargs):
         # Pass self as args[0] to allow "self" as keyword argument
         self = args[0]
@@ -1172,6 +1179,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         self._trait_values = {}
         self._trait_notifiers = {}
         self._trait_validators = {}
+        self._cross_validation_lock = False
         super(HasTraits, self).setup_instance(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
@@ -1236,7 +1244,6 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 if isinstance(value, EventHandler):
                     value.instance_init(self)
 
-    @property
     @contextlib.contextmanager
     def cross_validation_lock(self):
         """
@@ -1269,7 +1276,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             yield
             return
         else:
-            cache = {}
+            cache: t.Dict[str, t.Any] = {}
 
             def compress(past_changes, change):
                 """Merges the provided change with the last if possible."""
@@ -1290,7 +1297,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             try:
                 # Replace notify_change with `hold`, caching and compressing
                 # notifications, disable cross validation and yield.
-                self.notify_change = hold
+                self.notify_change = hold  # type:ignore[assignment]
                 self._cross_validation_lock = True
                 yield
                 # Cross validate final values when context is released.
@@ -1300,7 +1307,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     self.set_trait(name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
-                self.notify_change = lambda x: None
+                self.notify_change = lambda x: None  # type:ignore[assignment]
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
@@ -1346,8 +1353,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         callables = []
         callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
         callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(All, {}).get(All, []))
+        callables.extend(
+            self._trait_notifiers.get(All, {}).get(type, [])
+        )  # type:ignore[call-overload]
+        callables.extend(
+            self._trait_notifiers.get(All, {}).get(All, [])
+        )  # type:ignore[call-overload]
 
         # Now static ones
         magic_name = "_%s_changed" % name
@@ -1379,7 +1390,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
     def _add_notifiers(self, handler, name, type):
         if name not in self._trait_notifiers:
-            nlist = []
+            nlist: t.List[t.Any] = []
             self._trait_notifiers[name] = {type: nlist}
         else:
             if type not in self._trait_notifiers[name]:
@@ -1494,7 +1505,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         """Remove trait change handlers of any type for the specified name.
         If name is not specified, removes all trait notifiers."""
         if name is All:
-            self._trait_notifiers = {}
+            self._trait_notifiers: t.Dict[str, t.Any] = {}
         else:
             try:
                 del self._trait_notifiers[name]
@@ -1673,7 +1684,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         # truncate mro to the class on which the trait is defined
         mro = cls.mro()
         try:
-            mro = mro[: mro.index(trait.this_class) + 1]
+            mro = mro[: mro.index(trait.this_class) + 1]  # type:ignore[arg-type]
         except ValueError:
             # this_class not in mro
             pass
@@ -1681,7 +1692,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             if method_name in c.__dict__:
                 return getattr(c, method_name)
             if name in c.__dict__.get("_trait_default_generators", {}):
-                return c._trait_default_generators[name]
+                return c._trait_default_generators[name]  # type:ignore[attr-defined]
         return trait.default
 
     def trait_defaults(self, *names, **metadata):
@@ -1764,7 +1775,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         Works like ``event_handlers``, except for excluding traits from parents.
         """
         sup = super(cls, cls)
-        return {n: e for (n, e) in cls.events(name).items() if getattr(sup, n, None) is not e}
+        return {
+            n: e for (n, e) in cls.events(name).items() if getattr(sup, n, None) is not e
+        }  # type:ignore[attr-defined]
 
     @classmethod
     def trait_events(cls, name=None):
@@ -1785,10 +1798,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             if isinstance(v, EventHandler):
                 if name is None:
                     events[k] = v
-                elif name in v.trait_names:
+                elif name in v.trait_names:  # type:ignore[attr-defined]
                     events[k] = v
                 elif hasattr(v, "tags"):
-                    if cls.trait_names(**v.tags):
+                    if cls.trait_names(**v.tags):  # type:ignore[attr-defined]
                         events[k] = v
         return events
 
@@ -1873,7 +1886,7 @@ class Type(ClassBasedTraitType):
                     "%r could not be imported" % (self.name, obj, value)
                 )
         try:
-            if issubclass(value, self.klass):
+            if issubclass(value, self.klass):  # type:ignore[arg-type]
                 return value
         except Exception:
             pass
@@ -1903,6 +1916,7 @@ class Type(ClassBasedTraitType):
 
     def default_value_repr(self):
         value = self.default_value
+        assert value is not None
         if isinstance(value, str):
             return repr(value)
         else:
@@ -1967,7 +1981,8 @@ class Instance(ClassBasedTraitType):
         super().__init__(**kwargs)
 
     def validate(self, obj, value):
-        if isinstance(value, self.klass):
+        assert self.klass is not None
+        if isinstance(value, self.klass):  # type:ignore[arg-type]
             return value
         else:
             self.error(obj, value)
@@ -1992,7 +2007,10 @@ class Instance(ClassBasedTraitType):
     def make_dynamic_default(self):
         if (self.default_args is None) and (self.default_kwargs is None):
             return None
-        return self.klass(*(self.default_args or ()), **(self.default_kwargs or {}))
+        assert self.klass is not None
+        return self.klass(
+            *(self.default_args or ()), **(self.default_kwargs or {})
+        )  # type:ignore[operator]
 
     def default_value_repr(self):
         return repr(self.make_dynamic_default())
@@ -2011,7 +2029,7 @@ class ForwardDeclaredMixin:
         Find the specified class name by looking for it in the module in which
         our this_class attribute was defined.
         """
-        modname = self.this_class.__module__
+        modname = self.this_class.__module__  # type:ignore[attr-defined]
         return import_item(".".join([modname, string]))
 
 
@@ -2048,6 +2066,7 @@ class This(ClassBasedTraitType):
         # What if value is a superclass of obj.__class__?  This is
         # complicated if it was the superclass that defined the This
         # trait.
+        assert self.this_class is not None
         if isinstance(value, self.this_class) or (value is None):
             return value
         else:
@@ -2351,7 +2370,7 @@ class ObjectName(TraitType):
 
     info_text = "a valid object identifier in Python"
 
-    coerce_str = staticmethod(lambda _, s: s)
+    coerce_str = staticmethod(lambda _, s: s)  # type:ignore[no-any-return]
 
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
@@ -2508,7 +2527,9 @@ class FuzzyEnum(Enum):
 
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
-        match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
+        match_func = (
+            (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
+        )  # type:ignore[no-any-return]
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
@@ -2593,7 +2614,7 @@ class Container(Instance):
             default_value = Undefined
 
         if default_value is Undefined:
-            args = ()
+            args: t.Any = ()
         elif default_value is None:
             # default_value back on kwargs for super() to handle
             args = ()
@@ -2682,7 +2703,7 @@ class Container(Instance):
                     clsname = self.this_class.__name__ + "."
                 else:
                     clsname = ""
-
+                assert self.name is not None
                 warn(
                     "--{0}={1} for containers is deprecated in traitlets 5.0. "
                     "You can pass `--{0} item` ... multiple times to add items to a list.".format(

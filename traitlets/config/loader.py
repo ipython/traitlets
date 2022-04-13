@@ -885,8 +885,8 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
 
     def _create_parser(self):
         self.parser = self.parser_class(
-            *self.parser_args, **self.parser_kw
-        )  # type:ignore[arg-type]
+            *self.parser_args, **self.parser_kw  # type:ignore[arg-type]
+        )
         self._add_arguments(self.aliases, self.flags, self.classes)
 
     def _add_arguments(self, aliases, flags, classes):

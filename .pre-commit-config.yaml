@@ -43,7 +43,7 @@ repos:
       - id: mypy
         args: ["--config-file", "pyproject.toml"]
         exclude: "traitlets/.*tests/.*.py"
-        additional_dependencies: [pytest]
+        additional_dependencies: [pytest, types-docutils, sphinx]
         stages: [manual]
 
   - repo: https://github.com/pre-commit/mirrors-prettier

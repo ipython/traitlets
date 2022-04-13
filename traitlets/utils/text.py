@@ -6,6 +6,7 @@ import re
 import textwrap
 from textwrap import dedent
 from textwrap import indent as _indent
+from typing import List
 
 
 def indent(val):
@@ -13,7 +14,7 @@ def indent(val):
     return res
 
 
-def wrap_paragraphs(text: str, ncols=80):
+def wrap_paragraphs(text: str, ncols: int = 80) -> List[str]:
     """Wrap multiple paragraphs to fit a specified width.
 
     This is equivalent to textwrap.wrap, but with support for multiple
