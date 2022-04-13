@@ -254,12 +254,12 @@ def getmembers(object, predicate=None):
 
 def _validate_link(*tuples):
     """Validate arguments for traitlet link functions"""
-    for t in tuples:
-        if not len(t) == 2:
+    for tup in tuples:
+        if not len(tup) == 2:
             raise TypeError(
                 "Each linked traitlet must be specified as (HasTraits, 'trait_name'), not %r" % t
             )
-        obj, trait_name = t
+        obj, trait_name = tup
         if not isinstance(obj, HasTraits):
             raise TypeError("Each object must be HasTraits, not %r" % type(obj))
         if trait_name not in obj.traits():
@@ -2102,9 +2102,9 @@ class Union(TraitType):
 
     def default(self, obj=None):
         default = super().default(obj)
-        for t in self.trait_types:
+        for trait in self.trait_types:
             if default is Undefined:
-                default = t.default(obj)
+                default = trait.default(obj)
             else:
                 break
         return default
@@ -2963,9 +2963,9 @@ class Tuple(Container):
             raise TraitError(e)
 
         validated = []
-        for t, v in zip(self._traits, value):
+        for trait, v in zip(self._traits, value):
             try:
-                v = t._validate(obj, v)
+                v = trait._validate(obj, v)
             except TraitError as error:
                 self.error(obj, v, error)
             else:
