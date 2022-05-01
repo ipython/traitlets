@@ -30,7 +30,7 @@ When the config attribute of an Application is updated, it will fire all of
 the trait's events for all of the config=True attributes.
 """
 
-from traitlets import Bool, Dict, Int, List, Unicode  # type:ignore
+from traitlets import Bool, Dict, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 
@@ -52,10 +52,10 @@ class MyApp(Application):
 
     name = Unicode("myapp")
     running = Bool(False, help="Is the app running?").tag(config=True)
-    classes = List([Bar, Foo])
+    classes = List([Bar, Foo])  # type:ignore[assignment]
     config_file = Unicode("", help="Load this config file").tag(config=True)
 
-    aliases = Dict(
+    aliases = Dict(  # type:ignore[assignment]
         dict(
             i="Foo.i",
             j="Foo.j",
@@ -66,7 +66,7 @@ class MyApp(Application):
         )
     )
 
-    flags = Dict(
+    flags = Dict(  # type:ignore[assignment]
         dict(
             enable=({"Bar": {"enabled": True}}, "Enable Bar"),
             disable=({"Bar": {"enabled": False}}, "Disable Bar"),
