@@ -1,6 +1,21 @@
 Changes in Traitlets
 ====================
 
+Traitlets 5.2
+-------------
+
+5.2.0
+*****
+
+Traitlets 5.2 brings a couple of updates and changes to traitlets, and is
+recommended for all users. What follows is a non-exhaustive list of changes:
+
+  - Application: add logging_config trait.
+  - Disambiguate the use of the term value in the example.
+  - Add mypy typing support.
+  - DOC: Add log example.
+  - Internal cleanup: linters, autoformatters, CI.
+
 Traitlets 5.1
 -------------
 
