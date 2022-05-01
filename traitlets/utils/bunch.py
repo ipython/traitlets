@@ -7,7 +7,7 @@ attribute-access of items on a dict.
 # Distributed under the terms of the Modified BSD License.
 
 
-class Bunch(dict):
+class Bunch(dict):  # type:ignore[type-arg]
     """A dict with attribute-access"""
 
     def __getattr__(self, key):

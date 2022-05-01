@@ -9,6 +9,7 @@ import json
 import os
 import re
 import sys
+import typing as t
 import warnings
 
 from traitlets.traitlets import Any, Container, Dict, HasTraits, List, Undefined
@@ -221,7 +222,7 @@ def _is_section_key(key):
         return False
 
 
-class Config(dict):
+class Config(dict):  # type:ignore[type-arg]
     """An attribute-based dict that can do smart merges.
 
     Accessing a field on a config object for the first time populates the key
@@ -272,7 +273,7 @@ class Config(dict):
 
         self.update(to_update)
 
-    def collisions(self, other):
+    def collisions(self, other: "Config") -> t.Dict[str, t.Any]:
         """Check for collisions between two config objects.
 
         Returns a dict of the form {"Class": {"trait": "collision message"}}`,
@@ -280,7 +281,7 @@ class Config(dict):
 
         An empty dict indicates no collisions.
         """
-        collisions = {}
+        collisions: t.Dict[str, t.Any] = {}
         for section in self:
             if section not in other:
                 continue
@@ -353,7 +354,7 @@ class Config(dict):
 
     def __getattr__(self, key):
         if key.startswith("__"):
-            return dict.__getattr__(self, key)
+            return dict.__getattr__(self, key)  # type:ignore[attr-defined]
         try:
             return self.__getitem__(key)
         except KeyError as e:
@@ -422,7 +423,7 @@ class DeferredConfigString(str, DeferredConfig):
         return f"{self.__class__.__name__}({self._super_repr()})"
 
 
-class DeferredConfigList(list, DeferredConfig):
+class DeferredConfigList(list, DeferredConfig):  # type:ignore[type-arg]
     """Config value for loading config from a list of strings
 
     Interpretation is deferred until it is loaded into the trait.
@@ -733,7 +734,7 @@ class _KVAction(argparse.Action):
         setattr(namespace, self.dest, items)
 
 
-class _DefaultOptionDict(dict):
+class _DefaultOptionDict(dict):  # type:ignore[type-arg]
     """Like the default options dict
 
     but acts as if all --Class.trait options are predefined
@@ -788,8 +789,15 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
     parser_class = ArgumentParser
 
     def __init__(
-        self, argv=None, aliases=None, flags=None, log=None, classes=(), *parser_args, **parser_kw
-    ):
+        self,
+        argv: t.Optional[t.List[str]] = None,
+        aliases: t.Optional[t.Dict[str, str]] = None,
+        flags: t.Optional[t.Dict[str, str]] = None,
+        log: t.Any = None,
+        classes: t.Optional[t.List[t.Type[t.Any]]] = None,
+        *parser_args: t.Any,
+        **parser_kw: t.Any,
+    ) -> None:
         """Create a config loader for use with argparse.
 
         Parameters
@@ -818,6 +826,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         config : Config
             The resulting Config object.
         """
+        classes = classes or []
         super(CommandLineConfigLoader, self).__init__(log=log)
         self.clear()
         if argv is None:
@@ -874,7 +883,9 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
             return []
 
     def _create_parser(self):
-        self.parser = self.parser_class(*self.parser_args, **self.parser_kw)
+        self.parser = self.parser_class(
+            *self.parser_args, **self.parser_kw  # type:ignore[arg-type]
+        )
         self._add_arguments(self.aliases, self.flags, self.classes)
 
     def _add_arguments(self, aliases, flags, classes):
@@ -884,14 +895,14 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         """self.parser->self.parsed_data"""
         uargs = [cast_unicode(a) for a in args]
 
-        unpacked_aliases = {}
+        unpacked_aliases: t.Dict[str, str] = {}
         if self.aliases:
             unpacked_aliases = {}
             for alias, alias_target in self.aliases.items():
                 if alias in self.flags:
                     continue
                 if not isinstance(alias, tuple):
-                    short_alias, alias = alias, None
+                    short_alias, alias = alias, None  # type:ignore[assignment]
                 else:
                     short_alias, alias = alias
                 for al in (short_alias, alias):
@@ -959,10 +970,11 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     as well as arbitrary --Class.trait value
     """
 
-    parser_class = _KVArgParser
+    parser_class = _KVArgParser  # type:ignore[assignment]
 
     def _add_arguments(self, aliases, flags, classes):
-        alias_flags = {}
+        alias_flags: t.Dict[str, t.Any] = {}
+        argparse_kwds: t.Dict[str, t.Any]
         paa = self.parser.add_argument
         self.parser.set_defaults(_flags=[])
         paa("extra_args", nargs="*")

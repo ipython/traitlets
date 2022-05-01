@@ -30,7 +30,7 @@ When the config attribute of an Application is updated, it will fire all of
 the trait's events for all of the config=True attributes.
 """
 
-from traitlets import Bool, Dict, Int, List, Unicode
+from traitlets import Bool, Dict, Int, List, Unicode  # type:ignore
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 

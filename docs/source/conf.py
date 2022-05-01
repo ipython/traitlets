@@ -24,7 +24,7 @@ import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
 # We load the ipython release info into a dict by explicit execution
-_release = {}
+_release = {}  # type:ignore
 exec(
     compile(open("../../traitlets/_version.py").read(), "../../traitlets/_version.py", "exec"),
     _release,
@@ -100,7 +100,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+# exclude_patterns = []
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -319,7 +319,7 @@ intersphinx_mapping = {"https://docs.python.org/": None}
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 if not on_rtd:  # only import and set the theme if we're building docs locally
-    import sphinx_rtd_theme
+    import sphinx_rtd_theme  # type:ignore[import]
 
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]

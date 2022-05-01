@@ -86,7 +86,10 @@ def describe(article, value, name=None, verbose=False, capital=False):
             elif isinstance(value, types.MethodType):
                 name = value.__func__.__name__
                 tick_wrap = True
-            elif type(value).__repr__ in (object.__repr__, type.__repr__):
+            elif type(value).__repr__ in (
+                object.__repr__,
+                type.__repr__,
+            ):  # type:ignore[comparison-overlap]
                 name = "at '%s'" % hex(id(value))
                 verbose = False
             else:
