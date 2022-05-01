@@ -26,8 +26,6 @@ jobs:
           pip install --pre --upgrade traitlets[test] pytest pytest-cov
           pip install ipython[test] nbconvert[test] \
                       notebook[test] ipywidgets[test]
-          # Work around https://github.com/jupyter/nbconvert/issues/1754
-          pip install "bleach<5"
           pip freeze
 
       - name: Run tests IPython
