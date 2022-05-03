@@ -81,7 +81,8 @@ messages as well has help and documentation generation.
 We expect no code change needed for any consumer of the Python API (ipywidgets, and alike),
 though CLI argument parsing have seen a complete rewrite,
 so if you have an application that does use the parsing logic of traitlets you may see changes in behavior,
-and now have access to more features.
+and now have access to more features. There was also a cleanup of what was considered a part of the public API,
+certain previously exposed utility functions and types are no longer available. Please see an exhausive list below.
 
 .. seealso::
 
@@ -141,6 +142,23 @@ Major changes are:
  - we now follow NEP 29, and are thus Python 3.7+ only.
  - remove ``six`` as a dependency
  - remove ``funcsig`` as a dependency.
+ - no longer exposes the following functions / types:
+ 
+   - ClassTypes
+   - DefaultHandler
+   - EventHandler
+   - ForwardDeclaredMixin
+   - ObserveHandler
+   - SequenceTypes
+   - ValidateHandler
+   - add_article
+   - class_of
+   - getargspec
+   - getmembers
+   - is_trait
+   - isidentifier
+   - repr_type
+ 
 
 
 Here is a list of most Pull requests that went into 5.0 and a short description.
