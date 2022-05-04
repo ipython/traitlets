@@ -23,6 +23,9 @@ dynamic = ["description", "version"]
 [project.optional-dependencies]
 test = ["pytest", "pre-commit"]
 
+[tool.flit.sdist]
+include = ['examples/']
+
 [tool.mypy]
 check_untyped_defs = true
 disallow_any_generics = true
