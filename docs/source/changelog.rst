@@ -143,7 +143,7 @@ Major changes are:
  - remove ``six`` as a dependency
  - remove ``funcsig`` as a dependency.
  - no longer exposes the following functions / types:
- 
+
    - ClassTypes
    - DefaultHandler
    - EventHandler
@@ -158,7 +158,7 @@ Major changes are:
    - is_trait
    - isidentifier
    - repr_type
- 
+
 
 
 Here is a list of most Pull requests that went into 5.0 and a short description.

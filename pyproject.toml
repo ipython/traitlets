@@ -1,6 +1,30 @@
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "traitlets"
+authors = [{name = "IPython Development Team", email = "ipython-dev@python.org"}]
+license = {file = "COPYING.md"}
+readme = "README.md"
+keywords = ["Interactive", "Interpreter", "Shell", "Web"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+urls = {Homepage = "https://github.com/ipython/traitlets"}
+requires-python = ">=3.7"
+dynamic = ["description", "version"]
+
+[project.optional-dependencies]
+test = ["pytest", "pre-commit"]
+
+[tool.flit.sdist]
+include = ['examples/']
 
 [tool.mypy]
 check_untyped_defs = true
@@ -18,3 +42,35 @@ warn_unused_configs = true
 warn_redundant_casts = true
 warn_return_any = true
 warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+addopts = "--durations=10 -ra --showlocals --doctest-modules --color yes"
+testpaths = [
+    "traitlets",
+    "examples",
+]
+filterwarnings = [
+    "ignore",
+    "ignore:Passing unrecognized arguments",
+    "ignore:Keyword .* is deprecated",
+    "ignore:Supporting extra quotes around",
+    "ignore:DeprecatedApp._config_changed is deprecated in traitlets",
+    "ignore:A parent of DeprecatedApp._config_changed has adopted",
+    "ignore:KeyValueConfigLoader is deprecated since Traitlets",
+    "ignore:Traits should be given as instances",
+    "ignore:Explicit using of Undefined as",
+    "ignore:on_trait_change is deprecated",
+    "ignore:.*use @observe and @unobserve instead",
+    "ignore:.*for no default is deprecated in traitlets",
+    "ignore:.*use @validate decorator instead",
+    "ignore:.*has adopted the new \\(traitlets 4.1\\) @observe\\(change\\) API",
+    "ignore:.*will be removed in Jinja 3.1.:DeprecationWarning",
+    "ignore: the imp module is deprecated in favour of importlib",
+    "ignore:IPython.core.inputsplitter is deprecated since IPython 7 in favor of `IPython.core.inputtransformer2`:DeprecationWarning",
+    "ignore:pyee.EventEmitter is deprecated and will be removed in a future major version", # you should instead use either pyee.AsyncIOEventEmitter, pyee.TwistedEventEmitter, pyee.ExecutorEventEmitter, pyee.TrioEventEmitter, or pyee.BaseEventEmitter.:DeprecationWarning
+    "ignore:Your element with mimetype.*",
+]
+markers = [
+    "network: marks tests which require network connection (nbconvert)",
+    "integration_tests: notebook mark (notebook)",
+]

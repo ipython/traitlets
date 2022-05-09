@@ -1,3 +1,4 @@
+"""Traitlets Python configuration system"""
 from warnings import warn
 
 from . import traitlets

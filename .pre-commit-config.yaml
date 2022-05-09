@@ -80,11 +80,6 @@ repos:
     rev: v8.14.0
     hooks:
       - id: eslint
-
-  - repo: https://github.com/mgedmin/check-manifest
-    rev: "0.48"
-    hooks:
-      - id: check-manifest
         stages: [manual]
 
   - repo: https://github.com/sirosen/check-jsonschema

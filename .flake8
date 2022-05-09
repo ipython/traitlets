@@ -1,6 +1,3 @@
-[metadata]
-license_file = COPYING.md
-
 [flake8]
 ignore = E501, W503, E402
 builtins = c, get_config
