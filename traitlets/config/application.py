@@ -944,7 +944,7 @@ class Application(SingletonConfigurable):
         return "\n".join(lines)
 
     def close_handlers(self):
-        if getattr(self, '_logging_configured', False):
+        if getattr(self, "_logging_configured", False):
             # don't attempt to close handlers unless they have been opened
             # (note accessing self.log.handlers will create handlers if they
             # have not yet been initialised)

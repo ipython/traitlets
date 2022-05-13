@@ -815,6 +815,7 @@ def test_logging_teardown_on_error(monkeypatch, capsys):
     # shutting down).
     def _configure(*args, **kwargs):
         raise Exception()
+
     monkeypatch.setattr(
         "logging.config.DictConfigurator.configure",
         _configure,
@@ -825,7 +826,7 @@ def test_logging_teardown_on_error(monkeypatch, capsys):
     app = Application()
     del app
     out, err = capsys.readouterr()
-    assert 'Traceback' not in err
+    assert "Traceback" not in err
 
     # ensure that we would get traceback otherwise
     # (to prevent this test from yielding false-negatives)
@@ -833,7 +834,7 @@ def test_logging_teardown_on_error(monkeypatch, capsys):
     app._logging_configured = True  # make it look like logging was configured
     del app
     out, err = capsys.readouterr()
-    assert 'Traceback' in err
+    assert "Traceback" in err
 
 
 if __name__ == "__main__":
