@@ -804,6 +804,38 @@ def test_logging_config(tmp_path, capsys):
     assert capsys.readouterr().err == "[Application] WARNING | warn\n"
 
 
+def test_logging_teardown_on_error(monkeypatch, capsys):
+    """Ensure we don't try to open logs in order to close them (See #722).
+
+    If you try to configure logging handlers whilst Python is shutting down
+    you'll get traceback.
+    """
+    # simulate a failure configuring logging handlers
+    # (this can happen if you try to configure handlers whilst Python is
+    # shutting down).
+    def _configure(*args, **kwargs):
+        raise Exception()
+    monkeypatch.setattr(
+        "logging.config.DictConfigurator.configure",
+        _configure,
+    )
+
+    # create and destroy an app (without configuring logging)
+    # (ensure that we don't get any traceback)
+    app = Application()
+    del app
+    out, err = capsys.readouterr()
+    assert 'Traceback' not in err
+
+    # ensure that we would get traceback otherwise
+    # (to prevent this test from yielding false-negatives)
+    app = Application()
+    app._logging_configured = True  # make it look like logging was configured
+    del app
+    out, err = capsys.readouterr()
+    assert 'Traceback' in err
+
+
 if __name__ == "__main__":
     # for test_help_output:
     MyApp.launch_instance()

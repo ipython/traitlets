@@ -4,6 +4,12 @@ Changes in Traitlets
 Traitlets 5.2
 -------------
 
+5.2.1
+*****
+
+  - logging: Don't attempt to close handlers unless they have been opened.
+    Fixes ``ValueError: Unable to configure formatter 'console'`` traceback.
+
 5.2.0
 *****
 
