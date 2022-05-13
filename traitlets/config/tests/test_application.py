@@ -804,6 +804,19 @@ def test_logging_config(tmp_path, capsys):
     assert capsys.readouterr().err == "[Application] WARNING | warn\n"
 
 
+def test_get_default_logging_config_pythonw(monkeypatch):
+    """Ensure logging is correctly disabled for pythonw usage."""
+    monkeypatch.setattr("traitlets.config.application.IS_PYTHONW", True)
+    config = Application().get_default_logging_config()
+    assert "handlers" not in config
+    assert "loggers" not in config
+
+    monkeypatch.setattr("traitlets.config.application.IS_PYTHONW", False)
+    config = Application().get_default_logging_config()
+    assert "handlers" in config
+    assert "loggers" in config
+
+
 @pytest.fixture
 def caplogconfig(monkeypatch):
     """Capture logging config events for DictConfigurator objects.
