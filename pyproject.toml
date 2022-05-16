@@ -1,6 +1,6 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["hatchling >=0.25"]
+build-backend = "hatchling.build"
 
 [project]
 name = "traitlets"
@@ -23,8 +23,8 @@ dynamic = ["description", "version"]
 [project.optional-dependencies]
 test = ["pytest", "pre-commit"]
 
-[tool.flit.sdist]
-include = ['examples/']
+[tool.hatch.version]
+path = "traitlets/_version.py"
 
 [tool.mypy]
 check_untyped_defs = true
