@@ -1,5 +1,5 @@
-version_info = (5, 3, 0, "dev0")
-__version__ = "5.3.0.dev0"
+version_info = (5, 2, 1, "")
+__version__ = "5.2.1"
 
 # unlike `.dev`, alpha, beta and rc _must not_ have dots,
 # or the wheel and tgz won't look to pip like the same version.
