@@ -256,7 +256,7 @@ class Application(SingletonConfigurable):
             # disable logging
             # (this should really go to a file, but file-logging is only
             # hooked up in parallel applications)
-            del config["handlers"]["loggers"]
+            del config["loggers"]
 
         return config
 
