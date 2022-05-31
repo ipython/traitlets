@@ -4,6 +4,12 @@ Changes in Traitlets
 Traitlets 5.2
 -------------
 
+5.2.2
+*****
+
+   - Make ``traitlets.__all__`` explicit and validate in test.
+   - Fix ``KeyError`` in ``Application.get_default_logging_config``
+
 5.2.1
 *****
 
