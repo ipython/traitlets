@@ -839,7 +839,7 @@ def caplogconfig(monkeypatch):
     return calls
 
 
-@pytest.mark.skipif(sys.implementation == 'PyPy', reason="Test does not work on pypy")
+@pytest.mark.skipif(sys.implementation == "PyPy", reason="Test does not work on pypy")
 def test_logging_teardown_on_error(capsys, caplogconfig):
     """Ensure we don't try to open logs in order to close them (See #722).
 
