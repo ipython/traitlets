@@ -1,4 +1,4 @@
-version_info = (5, 2, 2, "final")
+version_info = (5, 2, 2)
 __version__ = "5.2.2"
 
 # unlike `.dev`, alpha, beta and rc _must not_ have dots,
