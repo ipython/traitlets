@@ -56,6 +56,7 @@ from traitlets import (
     link,
     observe,
     observe_compat,
+    traitlets,
     validate,
 )
 from traitlets.utils import cast_unicode
@@ -3133,3 +3134,20 @@ def test_object_from_string(s, expected):
 )
 def test_tcp_from_string(s, expected):
     _from_string_test(TCPAddress, s, expected)
+
+
+def test_all_attribute():
+    """verify all trait types are added to to `traitlets.__all__`
+
+    do in a function to avoid iterating through globals while defining local variables
+    """
+    names = dir(traitlets)
+    for name in names:
+        value = getattr(traitlets, name)
+        if not name.startswith("_") and isinstance(value, type) and issubclass(value, TraitType):
+            if name not in traitlets.__all__:
+                raise ValueError(f"{name} not in __all__")
+
+    for name in traitlets.__all__:
+        if name not in names:
+            raise ValueError(f"{name} should be removed from __all__")
