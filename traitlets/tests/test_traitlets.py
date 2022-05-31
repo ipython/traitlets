@@ -3137,7 +3137,7 @@ def test_tcp_from_string(s, expected):
 
 
 def test_all_attribute():
-    """Verify all trait types are added to to `traitlets.__all__`"""
+    """Verify all trait types are added to `traitlets.__all__`"""
     names = dir(traitlets)
     for name in names:
         value = getattr(traitlets, name)
