@@ -376,6 +376,7 @@ class TestApplication(TestCase):
         class TestMultiAliasApp(Application):
             foo = Integer(config=True)
             aliases = {("f", "bar", "qux"): "TestMultiAliasApp.foo"}
+
         app = TestMultiAliasApp()
         app.parse_command_line(["-f", "3"])
         self.assertEqual(app.foo, 3)
