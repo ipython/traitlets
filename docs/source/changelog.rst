@@ -1,6 +1,16 @@
 Changes in Traitlets
 ====================
 
+
+Traitlets 5.3
+-------------
+
+5.3.0
+*****
+
+  - Fix traitlet name in docstring
+  - Re-support multiple-alias key for ArgParseConfigLoader
+
 Traitlets 5.2
 -------------
 
