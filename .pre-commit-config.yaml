@@ -38,7 +38,7 @@ repos:
         args: [--profile=black]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.961
+    rev: v0.971
     hooks:
       - id: mypy
         args: ["--config-file", "pyproject.toml"]
@@ -52,7 +52,7 @@ repos:
       - id: prettier
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.1
+    rev: v2.37.2
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
@@ -77,13 +77,13 @@ repos:
         stages: [manual]
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.19.0
+    rev: v8.20.0
     hooks:
       - id: eslint
         stages: [manual]
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.17.0
+    rev: 0.17.1
     hooks:
       - id: check-jsonschema
         name: "Check GitHub Workflows"
