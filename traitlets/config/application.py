@@ -830,12 +830,12 @@ class Application(SingletonConfigurable):
 
         if not isinstance(path, list):
             path = [path]
-        for path in reversed(path):
+        for current in reversed(path):
             # path list is in descending priority order, so load files backwards:
-            pyloader = cls.python_config_loader_class(basefilename + ".py", path=path, log=log)
+            pyloader = cls.python_config_loader_class(basefilename + ".py", path=current, log=log)
             if log:
-                log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
-            jsonloader = cls.json_config_loader_class(basefilename + ".json", path=path, log=log)
+                log.debug("Looking for %s in %s", basefilename, current or os.getcwd())
+            jsonloader = cls.json_config_loader_class(basefilename + ".json", path=current, log=log)
             loaded: t.List[t.Any] = []
             filenames: t.List[str] = []
             for loader in [pyloader, jsonloader]:
