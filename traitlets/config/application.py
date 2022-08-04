@@ -830,7 +830,7 @@ class Application(SingletonConfigurable):
 
         if not isinstance(path, list):
             path = [path]
-        for path in path[::-1]:
+        for path in reversed(path):
             # path list is in descending priority order, so load files backwards:
             pyloader = cls.python_config_loader_class(basefilename + ".py", path=path, log=log)
             if log:
@@ -882,7 +882,7 @@ class Application(SingletonConfigurable):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
-        for (config, filename) in self._load_config_files(
+        for (config, fname) in self._load_config_files(
             filename,
             path=path,
             log=self.log,
@@ -890,9 +890,9 @@ class Application(SingletonConfigurable):
         ):
             new_config.merge(config)
             if (
-                filename not in self._loaded_config_files
+                fname not in self._loaded_config_files
             ):  # only add to list of loaded files if not previously loaded
-                self._loaded_config_files.append(filename)
+                self._loaded_config_files.append(fname)
         # add self.cli_config to preserve CLI config priority
         new_config.merge(self.cli_config)
         self.update_config(new_config)
