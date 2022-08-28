@@ -2,54 +2,61 @@ name: Test downstream projects
 
 on:
   push:
+    branches: ["main"]
   pull_request:
 
+concurrency:
+  group: downstream-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  tests:
+  ipython:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
         with:
-          python-version: 3.8
+          package_name: ipython
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install build
-          python -m build .
-          pip install dist/traitlets*.whl
-          pip install --pre --upgrade traitlets[test] pytest pytest-cov
-          pip install ipython[test] nbconvert[test] \
-                      notebook>=7.0.0a5[test] ipywidgets[test]
-          pip freeze
+  nbconvert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+        with:
+          package_name: nbconvert
+          package_spec: pip install -e ".[test]"
 
-      - name: Run tests IPython
-        run: |
-          cd $HOME
-          pytest -ra --cov traitlets --cov-report=xml:coverage-from-ipython.xml --pyargs IPython
+  jupyter_server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+        with:
+          package_name: jupyter_server
 
-      - name: Run tests nbconvert
-        run: |
-          cd $HOME
-          pytest -ra --cov traitlets --cov-report=xml:coverage-from-nbconvert.xml \
-                 --pyargs nbconvert -p no:unraisableexception -k 'not network'
+  ipywidgets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+        with:
+          package_name: ipywidgets
 
-      - name: Run tests notebook
-        run: |
-          cd $HOME
-          pytest -ra --cov traitlets --cov-report=xml:coverage-from-notebook.xml \
-                 --pyargs notebook
-
-      - name: Run tests ipywidgets
-        run: |
-          cd $HOME
-          pytest -ra --cov traitlets --cov-report=xml:coverage-from-ipywidgets.xml \
-                 --pyargs ipywidgets
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+  notebook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+        with:
+          package_name: notebook>=7.0.0a5
