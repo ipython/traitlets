@@ -58,8 +58,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - Name: Test notebook
-      - run: git clone https://github.com/jupyter/notebook.git
+      - name: Test notebook
+        run: |
+          git clone https://github.com/jupyter/notebook.git
           cd notebook
           pip install -e ".[test]"
           python -m pytest -ra -x -vv --full-trace --color=yes
