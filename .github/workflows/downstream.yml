@@ -51,16 +51,13 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
         with:
           package_name: ipywidgets
-
-  notebook:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v2
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - name: Test notebook
-        run: |
-          git clone https://github.com/jupyter/notebook.git
-          cd notebook
-          pip install -e ".[test]"
-          python -m pytest -ra -x -vv --full-trace --color=yes
+# TODO: reinstate when notebook 7 is released.
+# notebook:
+#   runs-on: ubuntu-latest
+#   timeout-minutes: 10
+#   steps:
+#     - uses: actions/checkout@v2
+#     - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+#     - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+#       with:
+#         package_name: notebook
