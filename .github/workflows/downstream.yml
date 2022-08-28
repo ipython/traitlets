@@ -25,7 +25,7 @@ jobs:
           pip install dist/traitlets*.whl
           pip install --pre --upgrade traitlets[test] pytest pytest-cov
           pip install ipython[test] nbconvert[test] \
-                      notebook[test] ipywidgets[test]
+                      notebook>=7.0.0a5[test] ipywidgets[test]
           pip freeze
 
       - name: Run tests IPython
