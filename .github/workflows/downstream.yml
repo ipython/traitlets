@@ -43,7 +43,7 @@ jobs:
         run: |
           cd $HOME
           pytest -ra --cov traitlets --cov-report=xml:coverage-from-notebook.xml \
-                 --pyargs notebook -k 'not selenium and not integration_tests'
+                 --pyargs notebook
 
       - name: Run tests ipywidgets
         run: |
