@@ -52,13 +52,13 @@ jobs:
         with:
           package_name: ipywidgets
 
-notebook:
-  runs-on: ubuntu-latest
-  timeout-minutes: 10
-  steps:
-    - uses: actions/checkout@v2
-    - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-    - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
-      with:
-        package_name: notebook
-        test_command: pytest -vv --ignore-glob=notebook/tests/selenium/* --ignore-glob=notebook/nbconvert/tests/* --ignore-glob=notebook/services/nbconvert/tests/*
+  notebook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+        with:
+          package_name: notebook
+          test_command: pytest -vv --ignore-glob=notebook/tests/selenium/* --ignore-glob=notebook/nbconvert/tests/* --ignore-glob=notebook/services/nbconvert/tests/*
