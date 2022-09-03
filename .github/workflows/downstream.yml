@@ -2,7 +2,7 @@ name: Test downstream projects
 
 on:
   push:
-    branches: ["main"]
+    branches: ["*"]
   pull_request:
 
 concurrency:
