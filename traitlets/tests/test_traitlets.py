@@ -3138,10 +3138,7 @@ def test_tcp_from_string(s, expected):
 
 @pytest.mark.parametrize(
     "s, expected",
-    [
-        ("[]", []),
-        ('{}', '{}')
-    ],
+    [("[]", []), ("{}", "{}")],
 )
 def test_union_of_list_and_unicode_from_string(s, expected):
     _from_string_test(Union([List(), Unicode()]), s, expected)
