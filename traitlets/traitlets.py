@@ -2179,6 +2179,16 @@ class Union(TraitType):
         else:
             return Union(self.trait_types + [other])
 
+    def from_string(self, s):
+        for trait_type in self.trait_types:
+            try:
+                v = trait_type.from_string(s)
+                return trait_type.validate(None, v)
+            except TraitError:
+                continue
+        self.error(None, s)
+
+
 
 # -----------------------------------------------------------------------------
 # Basic TraitTypes implementations/subclasses
