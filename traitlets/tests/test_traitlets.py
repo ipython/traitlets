@@ -3136,6 +3136,14 @@ def test_tcp_from_string(s, expected):
     _from_string_test(TCPAddress, s, expected)
 
 
+@pytest.mark.parametrize(
+    "s, expected",
+    [("[]", []), ("{}", "{}")],
+)
+def test_union_of_list_and_unicode_from_string(s, expected):
+    _from_string_test(Union([List(), Unicode()]), s, expected)
+
+
 def test_all_attribute():
     """Verify all trait types are added to `traitlets.__all__`"""
     names = dir(traitlets)
