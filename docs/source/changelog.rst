@@ -1,6 +1,16 @@
 Changes in Traitlets
 ====================
 
+Traitlets 5.4
+-------------
+
+5.4.0
+*****
+
+  - Fix version_info
+  - Make generated config files more lintable
+  - Fix union trait from string
+  - Add security.md, and tidelift bage
 
 Traitlets 5.3
 -------------
