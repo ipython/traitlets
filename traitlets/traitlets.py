@@ -1011,7 +1011,7 @@ class MetaHasTraits(MetaHasDescriptors):
                         cls._all_trait_default_generators[name] = c.__dict__[default_method_name]
                         break
                     if name in c.__dict__.get("_trait_default_generators", {}):
-                        cls._all_trait_default_generators[name] = c._trait_default_generators[name]
+                        cls._all_trait_default_generators[name] = c._trait_default_generators[name]  # type: ignore[attr-defined]
                         break
                 else:
                     cls._all_trait_default_generators[name] = trait.default
@@ -1238,6 +1238,8 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     _trait_notifiers: t.Dict[str, t.Any]
     _trait_validators: t.Dict[str, t.Any]
     _cross_validation_lock: bool
+    _traits: t.Dict[str, t.Any]
+    _all_trait_default_generators: t.Dict[str, t.Any]
 
     def setup_instance(*args, **kwargs):
         # Pass self as args[0] to allow "self" as keyword argument
@@ -1423,7 +1425,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         if name in self._trait_notifiers:
             callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
             callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
-        if All in self._trait_notifiers:
+        if All in self._trait_notifiers:  # type:ignore[comparison-overlap]
             callables.extend(
                 self._trait_notifiers.get(All, {}).get(type, [])  # type:ignore[call-overload]
             )
