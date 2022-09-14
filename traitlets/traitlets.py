@@ -964,6 +964,7 @@ class MetaHasDescriptors(type):
         BaseDescriptor in the class dict of the newly created ``cls`` before
         calling their :attr:`class_init` method.
         """
+        cls._descriptors = []
         for k, v in classdict.items():
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
@@ -971,6 +972,7 @@ class MetaHasDescriptors(type):
         for _, v in getmembers(cls):
             if isinstance(v, BaseDescriptor):
                 v.subclass_init(cls)
+                cls._descriptors.append(v)
 
 
 class MetaHasTraits(MetaHasDescriptors):
@@ -1220,17 +1222,9 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
 
         self._cross_validation_lock = False  # type:ignore[attr-defined]
         cls = self.__class__
-        for key in dir(cls):
-            # Some descriptors raise AttributeError like zope.interface's
-            # __provides__ attributes even though they exist.  This causes
-            # AttributeErrors even though they are listed in dir(cls).
-            try:
-                value = getattr(cls, key)
-            except AttributeError:
-                pass
-            else:
-                if isinstance(value, BaseDescriptor):
-                    value.instance_init(self)
+        for descriptor in cls._descriptors:
+            descriptor.instance_init(self)
+
 
 
 class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
