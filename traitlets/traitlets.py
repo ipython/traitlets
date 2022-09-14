@@ -1015,7 +1015,6 @@ class MetaHasTraits(MetaHasDescriptors):
                     cls._all_trait_default_generators[name] = trait.default
 
 
-
 def observe(*names: t.Union[Sentinel, str], type: str = "change") -> "ObserveHandler":
     """A decorator which can be used to observe Traits on a class.
 
@@ -1230,7 +1229,6 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
         cls = self.__class__
         for descriptor in cls._descriptors:
             descriptor.instance_init(self)
-
 
 
 class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
