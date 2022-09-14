@@ -989,6 +989,7 @@ class MetaHasTraits(MetaHasDescriptors):
         cls._trait_default_generators = {}
         # also looking at base classes
         cls._all_trait_default_generators = {}
+        cls._traits = {}
 
         super().setup_class(classdict)
 
@@ -997,6 +998,7 @@ class MetaHasTraits(MetaHasDescriptors):
         for name in dir(cls):
             value = getattr(cls, name)
             if isinstance(value, TraitType):
+                cls._traits[name] = value
                 trait = value
                 default_method_name = "_%s_default" % name
                 try:
@@ -1661,7 +1663,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = dict([memb for memb in getmembers(cls) if isinstance(memb[1], TraitType)])
+        traits = cls._traits.copy()
 
         if len(metadata) == 0:
             return traits
@@ -1693,7 +1695,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
     def has_trait(self, name):
         """Returns True if the object has a trait with the specified name."""
-        return isinstance(getattr(self.__class__, name, None), TraitType)
+        return name in self._traits
 
     def trait_has_value(self, name):
         """Returns True if the specified trait has a value.
@@ -1791,9 +1793,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = dict(
-            [memb for memb in getmembers(self.__class__) if isinstance(memb[1], TraitType)]
-        )
+        traits = self._traits.copy()
 
         if len(metadata) == 0:
             return traits
