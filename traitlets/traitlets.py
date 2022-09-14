@@ -1414,14 +1414,16 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         name, type = event.name, event.type
 
         callables = []
-        callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
-        callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
-        callables.extend(
-            self._trait_notifiers.get(All, {}).get(type, [])  # type:ignore[call-overload]
-        )
-        callables.extend(
-            self._trait_notifiers.get(All, {}).get(All, [])  # type:ignore[call-overload]
-        )
+        if name in self._trait_notifiers:
+            callables.extend(self._trait_notifiers.get(name, {}).get(type, []))
+            callables.extend(self._trait_notifiers.get(name, {}).get(All, []))
+        if All in self._trait_notifiers:
+            callables.extend(
+                self._trait_notifiers.get(All, {}).get(type, [])  # type:ignore[call-overload]
+            )
+            callables.extend(
+                self._trait_notifiers.get(All, {}).get(All, [])  # type:ignore[call-overload]
+            )
 
         # Now static ones
         magic_name = "_%s_changed" % name
