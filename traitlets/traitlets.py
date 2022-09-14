@@ -654,8 +654,14 @@ class TraitType(BaseDescriptor):
                     DeprecationWarning,
                     stacklevel=2,
                 )
-            with obj.cross_validation_lock:
+            # Using a context manager has a large runtime overhead, so we
+            # write out the obj.cross_validation_lock call here.
+            _cross_validation_lock = obj._cross_validation_lock
+            try:
+                obj._cross_validation_lock = True
                 value = self._validate(obj, default)
+            finally:
+                obj._cross_validation_lock = _cross_validation_lock
             obj._trait_values[self.name] = value
             obj._notify_observers(
                 Bunch(
