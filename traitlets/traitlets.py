@@ -977,8 +977,35 @@ class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
     def setup_class(cls, classdict):  # noqa
+        # for only the current class
         cls._trait_default_generators = {}
+        # also looking at base classes
+        cls._all_trait_default_generators = {}
+
         super().setup_class(classdict)
+
+        mro = cls.mro()
+
+        for name in dir(cls):
+            value = getattr(cls, name)
+            if isinstance(value, TraitType):
+                trait = value
+                default_method_name = "_%s_default" % name
+                try:
+                    mro_trait = mro[: mro.index(trait.this_class) + 1]  # type:ignore[arg-type]
+                except ValueError:
+                    # this_class not in mro
+                    pass
+                for c in mro_trait:
+                    if default_method_name in c.__dict__:
+                        cls._all_trait_default_generators[name] = c.__dict__[default_method_name]
+                        break
+                    if name in c.__dict__.get("_trait_default_generators", {}):
+                        cls._all_trait_default_generators[name] = c._trait_default_generators[name]
+                        break
+                else:
+                    cls._all_trait_default_generators[name] = trait.default
+
 
 
 def observe(*names: t.Union[Sentinel, str], type: str = "change") -> "ObserveHandler":
@@ -1720,22 +1747,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         method_name = "_%s_default" % name
         if method_name in self.__dict__:
             return getattr(self, method_name)
-        cls = self.__class__
-        trait = getattr(cls, name)
-        assert isinstance(trait, TraitType)
-        # truncate mro to the class on which the trait is defined
-        mro = cls.mro()
-        try:
-            mro = mro[: mro.index(trait.this_class) + 1]  # type:ignore[arg-type]
-        except ValueError:
-            # this_class not in mro
-            pass
-        for c in mro:
-            if method_name in c.__dict__:
-                return getattr(c, method_name)
-            if name in c.__dict__.get("_trait_default_generators", {}):
-                return c._trait_default_generators[name]  # type:ignore[attr-defined]
-        return trait.default
+        if method_name in self.__class__.__dict__:
+            return getattr(self.__class__, method_name)
+        return self._all_trait_default_generators[name]
 
     def trait_defaults(self, *names, **metadata):
         """Return a trait's default value or a dictionary of them
