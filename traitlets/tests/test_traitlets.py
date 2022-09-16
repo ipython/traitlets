@@ -1953,7 +1953,10 @@ class TestInstanceKeyValidatedDict(TraitTestBase):
 class FullyValidatedDictTrait(HasTraits):
 
     value = Dict(
-        value_trait=Unicode(), key_trait=Unicode(), per_key_traits={"foo": Int()}, default_value={"foo": 1}
+        value_trait=Unicode(),
+        key_trait=Unicode(),
+        per_key_traits={"foo": Int()},
+        default_value={"foo": 1},
     )
 
 
