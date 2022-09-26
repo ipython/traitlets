@@ -1024,15 +1024,15 @@ class MetaHasTraits(MetaHasDescriptors):
                     none_ok = trait.default_value is None and trait.allow_none
                     if (
                         type(trait) in [CInt, Int]
-                        and trait.min is None
-                        and trait.max is None
+                        and trait.min is None  # type: ignore[attr-defined]
+                        and trait.max is None  # type: ignore[attr-defined]
                         and (isinstance(trait.default_value, int) or none_ok)
                     ):
                         cls._static_immutable_initial_values[name] = trait.default_value
                     elif (
                         type(trait) in [CFloat, Float]
-                        and trait.min is None
-                        and trait.max is None
+                        and trait.min is None  # type: ignore[attr-defined]
+                        and trait.max is None  # type: ignore[attr-defined]
                         and (isinstance(trait.default_value, float) or none_ok)
                     ):
                         cls._static_immutable_initial_values[name] = trait.default_value
