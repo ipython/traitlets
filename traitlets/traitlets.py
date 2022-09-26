@@ -990,6 +990,7 @@ class MetaHasTraits(MetaHasDescriptors):
         # also looking at base classes
         cls._all_trait_default_generators = {}
         cls._traits = {}
+        cls._static_immutable_initial_values = {}
 
         super().setup_class(classdict)
 
@@ -1014,6 +1015,42 @@ class MetaHasTraits(MetaHasDescriptors):
                         cls._all_trait_default_generators[name] = c._trait_default_generators[name]  # type: ignore[attr-defined]
                         break
                 else:
+                    # We don't have a dynamic default generator using @default etc.
+                    # Now if the default value is not dynamic and immutable (string, number)
+                    # and does not require any validation, we keep them in a dict
+                    # of initial values to speed up instance creation.
+                    # This is a very specific optimization, but a very common scenario in
+                    # for instance ipywidgets.
+                    none_ok = trait.default_value is None and trait.allow_none
+                    if (
+                        type(trait) in [CInt, Int]
+                        and trait.min is None
+                        and trait.max is None
+                        and (isinstance(trait.default_value, int) or none_ok)
+                    ):
+                        cls._static_immutable_initial_values[name] = trait.default_value
+                    elif (
+                        type(trait) in [CFloat, Float]
+                        and trait.min is None
+                        and trait.max is None
+                        and (isinstance(trait.default_value, float) or none_ok)
+                    ):
+                        cls._static_immutable_initial_values[name] = trait.default_value
+                    elif type(trait) in [CBool, Bool] and (
+                        isinstance(trait.default_value, bool) or none_ok
+                    ):
+                        cls._static_immutable_initial_values[name] = trait.default_value
+                    elif type(trait) in [CUnicode, Unicode] and (
+                        isinstance(trait.default_value, str) or none_ok
+                    ):
+                        cls._static_immutable_initial_values[name] = trait.default_value
+                    elif type(trait) == Any and (
+                        isinstance(trait.default_value, (str, int, float, bool)) or none_ok
+                    ):
+                        cls._static_immutable_initial_values[name] = trait.default_value
+
+                    # we always add it, because a class may change when we call add_trait
+                    # and then the instance may not have all the _static_immutable_initial_values
                     cls._all_trait_default_generators[name] = trait.default
 
 
@@ -1235,6 +1272,7 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
 
 class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     _trait_values: t.Dict[str, t.Any]
+    _static_immutable_initial_values: t.Dict[str, t.Any]
     _trait_notifiers: t.Dict[str, t.Any]
     _trait_validators: t.Dict[str, t.Any]
     _cross_validation_lock: bool
@@ -1246,7 +1284,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         self = args[0]
         args = args[1:]
 
-        self._trait_values = {}
+        self._trait_values = {
+            k: v for k, v in self._static_immutable_initial_values.items() if k not in kwargs
+        }
         self._trait_notifiers = {}
         self._trait_validators = {}
         self._cross_validation_lock = False
