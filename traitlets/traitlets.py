@@ -1284,9 +1284,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         self = args[0]
         args = args[1:]
 
-        self._trait_values = {
-            k: v for k, v in self._static_immutable_initial_values.items() if k not in kwargs
-        }
+        # although we'd prefer to set only the initial values not present
+        # in kwargs, we will overwrite them in `__init__`, and simply making
+        # a copy of a dict is faster than checking for each key.
+        self._trait_values = self._static_immutable_initial_values.copy()
         self._trait_notifiers = {}
         self._trait_validators = {}
         self._cross_validation_lock = False
