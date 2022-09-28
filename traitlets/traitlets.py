@@ -1048,6 +1048,15 @@ class MetaHasTraits(MetaHasDescriptors):
                         isinstance(trait.default_value, (str, int, float, bool)) or none_ok
                     ):
                         cls._static_immutable_initial_values[name] = trait.default_value
+                    elif type(trait) == Union and trait.default_value is None:
+                        cls._static_immutable_initial_values[name] = None
+                    elif (
+                        type(trait) == Dict
+                        and trait.default_args is None
+                        and trait.default_kwargs is None
+                        and trait.allow_none
+                    ):
+                        cls._static_immutable_initial_values[name] = None
 
                     # we always add it, because a class may change when we call add_trait
                     # and then the instance may not have all the _static_immutable_initial_values
