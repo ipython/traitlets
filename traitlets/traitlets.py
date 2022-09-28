@@ -1322,13 +1322,40 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         # notifications.
         super_args = args
         super_kwargs = {}
-        with self.hold_trait_notifications():
-            for key, value in kwargs.items():
-                if self.has_trait(key):
-                    setattr(self, key, value)
-                else:
-                    # passthrough args that don't set traits to super
-                    super_kwargs[key] = value
+
+        # this is a simplified (and faster) version of
+        # the hold_trait_notifications(self) context manager
+        def ignore(*_ignore_args):
+            pass
+
+        self.notify_change = ignore  # type:ignore[assignment]
+        self._cross_validation_lock = True
+        changes = {}
+        for key, value in kwargs.items():
+            if self.has_trait(key):
+                setattr(self, key, value)
+                changes[key] = Bunch(
+                    name=key,
+                    old=None,
+                    new=value,
+                    owner=self,
+                    type="change",
+                )
+            else:
+                # passthrough args that don't set traits to super
+                super_kwargs[key] = value
+        # notify and cross validate all trait changes that were set in kwargs
+        changed = set(kwargs) & set(self._traits)
+        for key in changed:
+            change = changes[key]
+            self._traits[key]._cross_validate(self, change.new)
+        self._cross_validation_lock = False
+        # Restore method retrieval from class
+        del self.notify_change
+        for key in changed:
+            change = changes[key]
+            self.notify_change(changes[key])
+
         try:
             super().__init__(*super_args, **super_kwargs)
         except TypeError as e:
