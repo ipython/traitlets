@@ -499,7 +499,15 @@ class BaseDescriptor:
         self.name = name
 
     def subclass_init(self, cls):
-        pass
+        # Instead of HasDescriptors.setup_instance calling
+        # every instance_init, we opt in by default.
+        # This gives descriptors a change to opt out for
+        # performance reasons.
+        # Because most traits do not need instance_init,
+        # and it will otherwise be called for every HasTrait instance
+        # beging created, this otherwise gives a significant performance
+        # pentalty. Most TypeTraits in traitlets opt out.
+        cls._instance_inits.append(self.instance_init)
 
     def instance_init(self, obj):
         """Part of the initialization which may depend on the underlying
@@ -971,6 +979,7 @@ class MetaHasDescriptors(type):
         calling their :attr:`class_init` method.
         """
         cls._descriptors = []
+        cls._instance_inits = []
         for k, v in classdict.items():
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
@@ -1275,8 +1284,13 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
 
         self._cross_validation_lock = False  # type:ignore[attr-defined]
         cls = self.__class__
-        for descriptor in cls._descriptors:
-            descriptor.instance_init(self)
+        # Let descriptors performance initialization when a HasDescriptor
+        # instance is created. This allows registration of observers and
+        # default creations or other bookkeepings.
+        # Note that descriptors can opt-out of this behavior by overriding
+        # subclass_init.
+        for init in cls._instance_inits:
+            init(self)
 
 
 class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
@@ -2015,8 +2029,9 @@ class Type(ClassBasedTraitType):
         return result
 
     def instance_init(self, obj):
+        # we can't do this in subclass_init because that
+        # might be called before all imports are done.
         self._resolve_classes()
-        super().instance_init(obj)
 
     def _resolve_classes(self):
         if isinstance(self.klass, str):
@@ -2107,8 +2122,9 @@ class Instance(ClassBasedTraitType):
         return result
 
     def instance_init(self, obj):
+        # we can't do this in subclass_init because that
+        # might be called before all imports are done.
         self._resolve_classes()
-        super().instance_init(obj)
 
     def _resolve_classes(self):
         if isinstance(self.klass, str):
@@ -2232,10 +2248,11 @@ class Union(TraitType):
             trait_type.class_init(cls, None)
         super().class_init(cls, name)
 
-    def instance_init(self, obj):
+    def subclass_init(self, cls):
         for trait_type in reversed(self.trait_types):
-            trait_type.instance_init(obj)
-        super().instance_init(obj)
+            trait_type.subclass_init(cls)
+        # explicitly not calling super().subclass_init(cls)
+        # to opt out of instance_init
 
     def validate(self, obj, value):
         with obj.cross_validation_lock:
@@ -2277,6 +2294,9 @@ class Any(TraitType):
     default_value: t.Optional[t.Any] = None
     allow_none = True
     info_text = "any value"
+
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
 
 
 def _validate_bounds(trait, obj, value):
@@ -2326,6 +2346,9 @@ class Int(TraitType):
             return None
         return int(s)
 
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
+
 
 class CInt(Int):
     """A casting version of the int trait."""
@@ -2365,6 +2388,9 @@ class Float(TraitType):
             return None
         return float(s)
 
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
+
 
 class CFloat(Float):
     """A casting version of the float trait."""
@@ -2394,6 +2420,9 @@ class Complex(TraitType):
         if self.allow_none and s == "None":
             return None
         return complex(s)
+
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
 
 
 class CComplex(Complex):
@@ -2436,6 +2465,9 @@ class Bytes(TraitType):
                     )
                     break
         return s.encode("utf8")
+
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
 
 
 class CBytes(Bytes):
@@ -2481,6 +2513,9 @@ class Unicode(TraitType):
                         FutureWarning,
                     )
         return s
+
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
 
 
 class CUnicode(Unicode):
@@ -2801,10 +2836,11 @@ class Container(Instance):
             self._trait.class_init(cls, None)
         super().class_init(cls, name)
 
-    def instance_init(self, obj):
+    def subclass_init(self, cls):
         if isinstance(self._trait, TraitType):
-            self._trait.instance_init(obj)
-        super().instance_init(obj)
+            self._trait.subclass_init(cls)
+        # explicitly not calling super().subclass_init(cls)
+        # to opt out of instance_init
 
     def from_string(self, s):
         """Load value from a single string"""
@@ -3105,11 +3141,12 @@ class Tuple(Container):
                 trait.class_init(cls, None)
         super(Container, self).class_init(cls, name)
 
-    def instance_init(self, obj):
+    def subclass_init(self, cls):
         for trait in self._traits:
             if isinstance(trait, TraitType):
-                trait.instance_init(obj)
-        super(Container, self).instance_init(obj)
+                trait.subclass_init(cls)
+        # explicitly not calling super().subclass_init(cls)
+        # to opt out of instance_init
 
 
 class Dict(Instance):
@@ -3307,15 +3344,16 @@ class Dict(Instance):
                 trait.class_init(cls, None)
         super().class_init(cls, name)
 
-    def instance_init(self, obj):
+    def subclass_init(self, cls):
         if isinstance(self._value_trait, TraitType):
-            self._value_trait.instance_init(obj)
+            self._value_trait.subclass_init(cls)
         if isinstance(self._key_trait, TraitType):
-            self._key_trait.instance_init(obj)
+            self._key_trait.subclass_init(cls)
         if self._per_key_traits is not None:
             for trait in self._per_key_traits.values():
-                trait.instance_init(obj)
-        super().instance_init(obj)
+                trait.subclass_init(cls)
+        # explicitly not calling super().subclass_init(cls)
+        # to opt out of instance_init
 
     def from_string(self, s):
         """Load value from a single string"""
