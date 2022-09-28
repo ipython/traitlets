@@ -1349,7 +1349,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             changed = set(kwargs) & set(self._traits)
             for key in changed:
                 change = changes[key]
-                self._traits[key]._cross_validate(self, change.new)
+                value = self._traits[key]._cross_validate(self, getattr(self, key))
+                self.set_trait(key, value)
+                changes[key].new = value
             self._cross_validation_lock = False
             # Restore method retrieval from class
             del self.notify_change

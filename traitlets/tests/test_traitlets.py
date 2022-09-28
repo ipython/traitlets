@@ -123,6 +123,9 @@ class TestTraitType(TestCase):
         a.tt = 10  # type:ignore
         self.assertEqual(a.tt, -1)
 
+        a = A(tt=11)
+        self.assertEqual(a.tt, -1)
+
     def test_default_validate(self):
         class MyIntTT(TraitType):
             def validate(self, obj, value):
@@ -2034,6 +2037,23 @@ class TestValidationHook(TestCase):
         u.even = 2  # OK
         with self.assertRaises(TraitError):
             u.even = 3  # Trait Error
+
+    def test_validate_used(self):
+        """Verify that the validate value is being used"""
+
+        class FixedValue(HasTraits):
+            value = Int(0)
+
+            @validate("value")
+            def _value_validate(self, proposal):
+                return -1
+
+        u = FixedValue(value=2)
+        assert u.value == -1
+
+        u = FixedValue()
+        u.value = 3
+        assert u.value == -1
 
 
 class TestLink(TestCase):
