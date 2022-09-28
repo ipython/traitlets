@@ -1323,38 +1323,39 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         super_args = args
         super_kwargs = {}
 
-        # this is a simplified (and faster) version of
-        # the hold_trait_notifications(self) context manager
-        def ignore(*_ignore_args):
-            pass
+        if kwargs:
+            # this is a simplified (and faster) version of
+            # the hold_trait_notifications(self) context manager
+            def ignore(*_ignore_args):
+                pass
 
-        self.notify_change = ignore  # type:ignore[assignment]
-        self._cross_validation_lock = True
-        changes = {}
-        for key, value in kwargs.items():
-            if self.has_trait(key):
-                setattr(self, key, value)
-                changes[key] = Bunch(
-                    name=key,
-                    old=None,
-                    new=value,
-                    owner=self,
-                    type="change",
-                )
-            else:
-                # passthrough args that don't set traits to super
-                super_kwargs[key] = value
-        # notify and cross validate all trait changes that were set in kwargs
-        changed = set(kwargs) & set(self._traits)
-        for key in changed:
-            change = changes[key]
-            self._traits[key]._cross_validate(self, change.new)
-        self._cross_validation_lock = False
-        # Restore method retrieval from class
-        del self.notify_change
-        for key in changed:
-            change = changes[key]
-            self.notify_change(changes[key])
+            self.notify_change = ignore  # type:ignore[assignment]
+            self._cross_validation_lock = True
+            changes = {}
+            for key, value in kwargs.items():
+                if self.has_trait(key):
+                    setattr(self, key, value)
+                    changes[key] = Bunch(
+                        name=key,
+                        old=None,
+                        new=value,
+                        owner=self,
+                        type="change",
+                    )
+                else:
+                    # passthrough args that don't set traits to super
+                    super_kwargs[key] = value
+            # notify and cross validate all trait changes that were set in kwargs
+            changed = set(kwargs) & set(self._traits)
+            for key in changed:
+                change = changes[key]
+                self._traits[key]._cross_validate(self, change.new)
+            self._cross_validation_lock = False
+            # Restore method retrieval from class
+            del self.notify_change
+            for key in changed:
+                change = changes[key]
+                self.notify_change(changes[key])
 
         try:
             super().__init__(*super_args, **super_kwargs)
