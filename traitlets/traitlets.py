@@ -1060,7 +1060,7 @@ class MetaHasTraits(MetaHasDescriptors):
                     elif type(trait) == Union and trait.default_value is None:
                         cls._static_immutable_initial_values[name] = None
                     elif (
-                        type(trait) == Dict
+                        isinstance(trait, Instance)
                         and trait.default_args is None
                         and trait.default_kwargs is None
                         and trait.allow_none
