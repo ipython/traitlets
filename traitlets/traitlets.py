@@ -2616,6 +2616,9 @@ class Bool(TraitType):
         else:
             raise ValueError("%r is not 1, 0, true, or false")
 
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
+
 
 class CBool(Bool):
     """A casting version of the boolean trait."""
@@ -2666,6 +2669,9 @@ class Enum(TraitType):
             return self.validate(None, s)
         except TraitError:
             return _safe_literal_eval(s)
+
+    def subclass_init(self, cls):
+        pass  # fully opt out of instance_init
 
 
 class CaselessStrEnum(Enum):
