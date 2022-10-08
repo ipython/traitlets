@@ -2,6 +2,7 @@ Utils
 =====
 
 .. module:: traitlets
+   :noindex:
 
 A simple utility to import something by its string name.
 

@@ -16,11 +16,12 @@
 # serve to show the default.
 
 import os
+import os.path as osp
 import shutil
 import sys
 
-HERE = os.path.abspath(os.path.dirname(__file__))
-ROOT = os.path.abspath(os.path.join("../../", HERE))
+HERE = osp.abspath(osp.dirname(__file__))
+ROOT = osp.dirname(osp.dirname(HERE))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -31,7 +32,7 @@ ROOT = os.path.abspath(os.path.join("../../", HERE))
 _release = {}  # type:ignore
 exec(
     compile(
-        open(os.path.join(ROOT, "traitlets/_version.py")).read(),
+        open(osp.join(ROOT, "traitlets/_version.py")).read(),
         "../../traitlets/_version.py",
         "exec",
     ),
@@ -46,13 +47,12 @@ exec(
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-sys.path.insert(0, os.path.abspath(os.path.join(HERE, "sphinxext")))
+sys.path.insert(0, osp.abspath(osp.join(HERE, "sphinxext")))
 extensions = [
-    "myst-parser",
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
-    "github",  # for easy GitHub links
 ]
 github_project_url = "https://github.com/ipython/traitlets"
 
@@ -99,7 +99,7 @@ release = _release["__version__"]
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -325,5 +325,5 @@ intersphinx_mapping = {"https://docs.python.org/": None}
 
 
 def setup(app):
-    dest = os.path.join(HERE, "other", "changelog.md")
-    shutil.copy(os.path.join(HERE, "..", "..", "CHANGELOG.md"), dest)
+    dest = osp.join(HERE, "changelog.md")
+    shutil.copy(osp.join(HERE, "..", "..", "CHANGELOG.md"), dest)
