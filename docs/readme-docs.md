@@ -7,39 +7,53 @@ is hosted on ReadTheDocs.
 
 #### Change directory to documentation root:
 
-    cd docs
+```
+cd docs
+```
 
 #### Create environment
 
-- [**conda**] Create conda env (and install relevant dependencies):
+- \[**conda**\] Create conda env (and install relevant dependencies):
 
-        conda env create -f environment.yml
+  ```
+    conda env create -f environment.yml
+  ```
 
-- [**pip**] Create virtual environment (and install relevant dependencies):
+- \[**pip**\] Create virtual environment (and install relevant dependencies):
 
-        virtualenv traitlets_docs -p python3
-        pip install -r requirements.txt
+  ```
+    virtualenv traitlets_docs -p python3
+    pip install -r requirements.txt
+  ```
 
 #### Activate the newly built environment `traitlets_docs`
 
-- [**conda**] Activate conda env:
+- \[**conda**\] Activate conda env:
 
-        source activate traitlets_docs
+  ```
+    source activate traitlets_docs
+  ```
 
-- [**pip**] The virtualenv should have been automatically activated. If
+- \[**pip**\] The virtualenv should have been automatically activated. If
   not:
 
-        source activate
+  ```
+    source activate
+  ```
 
 #### Build documentation using:
 
 - Makefile for Linux and OS X:
 
-        make html
+  ```
+    make html
+  ```
 
 - make.bat for Windows:
 
-        make.bat html
+  ```
+    make.bat html
+  ```
 
 #### Display the documentation locally
 
@@ -48,7 +62,9 @@ is hosted on ReadTheDocs.
 - Or alternatively you may run a local server to display
   the docs. In Python 3:
 
-        python -m http.server 8000
+  ```
+    python -m http.server 8000
+  ```
 
   In your browser, go to `http://localhost:8000`.
 
