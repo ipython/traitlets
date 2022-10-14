@@ -62,6 +62,19 @@ jobs:
       - name: Run the unit tests
         run: pytest -vv -W default traitlets || pytest -vv -W default traitlets --lf
 
+  docs:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Install the Python dependencies
+        run: |
+          pip install -e .[docs]
+      - name: Build the docs
+        run: |
+          make -C docs html SPHINXOPTS='-W'
+
   test_prereleases:
     name: Test Prereleases
     timeout-minutes: 10
@@ -99,6 +112,13 @@ jobs:
     steps:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@v1
+
+  check_links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
 
   pre-commit:
     name: pre-commit

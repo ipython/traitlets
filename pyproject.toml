@@ -22,6 +22,11 @@ dynamic = ["description", "version"]
 
 [project.optional-dependencies]
 test = ["pytest", "pre-commit"]
+docs = [
+    "myst-parser",
+    "pydata-sphinx-theme",
+    "sphinx"
+]
 
 [tool.hatch.version]
 path = "traitlets/_version.py"

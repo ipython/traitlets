@@ -19,3 +19,4 @@ __pycache__
 .coverage
 .cache
 htmlcov
+docs/source/CHANGELOG.md

@@ -1,8 +1,14 @@
-conda:
-  file: docs/environment.yml
-python:
-  version: 3
-  pip_install: true
+version: 2
+sphinx:
+  configuration: docs/source/conf.py
 formats:
   - epub
   - pdf
+python:
+  version: 3.8
+  install:
+    # install itself with pip install .
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
