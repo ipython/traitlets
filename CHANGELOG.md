@@ -2,14 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.5.0
+
+* Clean up application typing
+* Update tests and docs to use non-deprecated functions
+* Clean up version handling
+* Prep for jupyter releaser
+* Format the changelog
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.4.0
 
 - Fix version_info
 - Make generated config files more lintable
 - Fix union trait from string
 - Add security.md, and tidelift bage
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.3.0
 
