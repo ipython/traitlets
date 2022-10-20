@@ -514,7 +514,10 @@ class BaseDescriptor:
         pass
 
 
-class TraitType(BaseDescriptor):
+G = t.TypeVar('G')
+S = t.TypeVar('S')
+
+class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
 
     metadata: t.Dict[str, t.Any] = {}
@@ -672,7 +675,7 @@ class TraitType(BaseDescriptor):
         else:
             return value
 
-    def __get__(self, obj, cls=None):
+    def __get__(self, obj, cls=None) -> G:
         """Get the value of the trait by self.name for the instance.
 
         Default values are instantiated when :meth:`HasTraits.__new__`
@@ -703,7 +706,7 @@ class TraitType(BaseDescriptor):
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
 
-    def __set__(self, obj, value):
+    def __set__(self, obj, value: S):
         """Set the value of the trait by self.name for the instance.
 
         Values pass through a validation stage where errors are raised when
@@ -2460,7 +2463,7 @@ class DottedObjectName(ObjectName):
         self.error(obj, value)
 
 
-class Bool(TraitType):
+class Bool(TraitType[str, t.Union[bool, int]]):
     """A boolean (True, False) trait."""
 
     default_value = False
@@ -2488,7 +2491,7 @@ class Bool(TraitType):
             raise ValueError("%r is not 1, 0, true, or false")
 
 
-class CBool(Bool):
+class CBool(Bool, TraitType[bool, t.Any]):
     """A casting version of the boolean trait."""
 
     def validate(self, obj, value):
