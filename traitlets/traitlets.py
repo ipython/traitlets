@@ -515,8 +515,9 @@ class BaseDescriptor:
         pass
 
 
-G = t.TypeVar('G')
-S = t.TypeVar('S')
+G = t.TypeVar("G")
+S = t.TypeVar("S")
+
 
 class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
@@ -644,7 +645,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         obj._trait_values[self.name] = value
         return value
 
-    def get(self, obj: 'HasTraits', cls: t.Any = None) -> t.Optional[G]:
+    def get(self, obj: "HasTraits", cls: t.Any = None) -> t.Optional[G]:
         try:
             value = obj._trait_values[self.name]  # type: ignore
         except KeyError:
@@ -676,7 +677,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         else:
             return value  # type: ignore
 
-    def __get__(self, obj: 'HasTraits', cls: t.Any = None) -> t.Optional[G]:
+    def __get__(self, obj: "HasTraits", cls: t.Any = None) -> t.Optional[G]:
         """Get the value of the trait by self.name for the instance.
 
         Default values are instantiated when :meth:`HasTraits.__new__`
@@ -707,7 +708,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
 
-    def __set__(self, obj: 'HasTraits', value: t.Optional[S]) -> None:
+    def __set__(self, obj: "HasTraits", value: t.Optional[S]) -> None:
         """Set the value of the trait by self.name for the instance.
 
         Values pass through a validation stage where errors are raised when
@@ -3467,7 +3468,9 @@ class UseEnum(TraitType[t.Any, t.Any]):
         return self._info(as_rst=True)
 
 
-class Callable(TraitType[collections.abc.Callable[..., t.Any], collections.abc.Callable[..., t.Any]]):
+class Callable(
+    TraitType[collections.abc.Callable[..., t.Any], collections.abc.Callable[..., t.Any]]
+):
     """A trait which is callable.
 
     Notes
