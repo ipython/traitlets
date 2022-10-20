@@ -96,6 +96,7 @@ class MyApp(Application):
         print("app.config:")
         print(self.config)
         print("try running with --help-all to see all available flags")
+        assert self.log is not None
         self.log.debug("Debug Message")
         self.log.info("Info Message")
         self.log.warning("Warning Message")

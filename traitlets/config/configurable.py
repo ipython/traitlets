@@ -5,6 +5,7 @@
 
 
 import logging
+import typing as t
 import warnings
 from copy import deepcopy
 from textwrap import dedent
@@ -44,8 +45,10 @@ class MultipleInstanceError(ConfigurableError):
 
 class Configurable(HasTraits):
 
-    config = Instance(Config, (), {})
-    parent = Instance("traitlets.config.configurable.Configurable", allow_none=True)
+    config: Instance[Config] = Instance(Config, (), {})
+    parent: Instance[t.Any] = Instance(
+        "traitlets.config.configurable.Configurable", allow_none=True
+    )
 
     def __init__(self, **kwargs):
         """Create a configurable given a config config.
@@ -183,6 +186,7 @@ class Configurable(HasTraits):
                     from difflib import get_close_matches
 
                     if isinstance(self, LoggingConfigurable):
+                        assert self.log is not None
                         warn = self.log.warning
                     else:
                         warn = lambda msg: warnings.warn(msg, stacklevel=9)  # noqa[E371]
@@ -460,6 +464,7 @@ class LoggingConfigurable(Configurable):
     @default("log")
     def _log_default(self):
         if isinstance(self.parent, LoggingConfigurable):
+            assert self.parent is not None
             return self.parent.log
         from traitlets import log
 

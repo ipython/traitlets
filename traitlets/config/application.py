@@ -29,6 +29,7 @@ from traitlets.config.loader import (
     PyFileConfigLoader,
 )
 from traitlets.traitlets import (
+    Any,
     Bool,
     Dict,
     Enum,
@@ -151,6 +152,8 @@ class Application(SingletonConfigurable):
     # line application
     name: t.Union[str, Unicode] = Unicode("application")
 
+    log = Any(help="Logger or LoggerAdapter instance", allow_none=False)
+
     # The description of the application that is printed at the beginning
     # of the help.
     description: t.Union[str, Unicode] = Unicode("This is an application.")
@@ -201,7 +204,7 @@ class Application(SingletonConfigurable):
     )
 
     # The log level for the application
-    log_level: t.Union[str, int, Enum] = Enum(
+    log_level: t.Union[str, int, Enum] = Enum(  # type:ignore[assignment]
         (0, 10, 20, 30, 40, 50, "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"),
         default_value=logging.WARN,
         help="Set the log level by value or name.",
@@ -209,11 +212,11 @@ class Application(SingletonConfigurable):
 
     _log_formatter_cls = LevelFormatter
 
-    log_datefmt: t.Union[str, Unicode] = Unicode(
+    log_datefmt: t.Union[str, Unicode] = Unicode(  # type:ignore[assignment]
         "%Y-%m-%d %H:%M:%S", help="The date format used by logging formatters for %(asctime)s"
     ).tag(config=True)
 
-    log_format: t.Union[str, Unicode] = Unicode(
+    log_format: t.Union[str, Unicode] = Unicode(  # type:ignore[assignment]
         "[%(name)s]%(highlevel)s %(message)s",
         help="The Logging format template",
     ).tag(config=True)
@@ -237,7 +240,7 @@ class Application(SingletonConfigurable):
                 "console": {
                     "class": "logging.StreamHandler",
                     "formatter": "console",
-                    "level": logging.getLevelName(self.log_level),
+                    "level": logging.getLevelName(self.log_level),  # type:ignore[arg-type]
                     "stream": "ext://sys.stderr",
                 },
             },
@@ -402,7 +405,7 @@ class Application(SingletonConfigurable):
     # and the second being the help string for the subcommand
     subcommands: t.Union[t.Dict[str, t.Tuple[t.Any, str]], Dict] = Dict()
     # parse_command_line will initialize a subapp, if requested
-    subapp = Instance("traitlets.config.application.Application", allow_none=True)
+    subapp: Instance[t.Any] = Instance("traitlets.config.application.Application", allow_none=True)
 
     # extra command-line arguments that don't set config values
     extra_args: t.Union[t.List[str], List] = List(Unicode())
@@ -420,11 +423,11 @@ class Application(SingletonConfigurable):
 
     _loaded_config_files = List()
 
-    show_config: t.Union[bool, Bool] = Bool(
+    show_config: t.Union[bool, Bool] = Bool(  # type:ignore[assignment]
         help="Instead of starting the Application, dump configuration to stdout"
     ).tag(config=True)
 
-    show_config_json: t.Union[bool, Bool] = Bool(
+    show_config_json: t.Union[bool, Bool] = Bool(  # type:ignore[assignment]
         help="Instead of starting the Application, dump configuration to stdout (as JSON)"
     ).tag(config=True)
 
@@ -563,6 +566,7 @@ class Application(SingletonConfigurable):
             return
 
         for flags, (cfg, fhelp) in self.flags.items():
+            assert isinstance(cfg, dict)
             try:
                 if not isinstance(flags, tuple):
                     flags = (flags,)

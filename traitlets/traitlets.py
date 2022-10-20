@@ -39,6 +39,7 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+import collections.abc
 import contextlib
 import enum
 import inspect
@@ -522,7 +523,13 @@ class BaseDescriptor:
         pass
 
 
-class TraitType(BaseDescriptor):
+G = t.TypeVar("G")
+S = t.TypeVar("S")
+
+# Self = t.TypeVar("Self", bound="TraitType")  # Holdover waiting for typings.Self in Python 3.11
+
+
+class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
 
     metadata: t.Dict[str, t.Any] = {}
@@ -651,9 +658,9 @@ class TraitType(BaseDescriptor):
         obj._trait_values[self.name] = value
         return value
 
-    def get(self, obj, cls=None):
+    def get(self, obj: "HasTraits", cls: t.Any = None) -> t.Optional[G]:
         try:
-            value = obj._trait_values[self.name]
+            value = obj._trait_values[self.name]  # type: ignore
         except KeyError:
             # Check for a dynamic initializer.
             default = obj.trait_defaults(self.name)
@@ -673,7 +680,7 @@ class TraitType(BaseDescriptor):
                 value = self._validate(obj, default)
             finally:
                 obj._cross_validation_lock = _cross_validation_lock
-            obj._trait_values[self.name] = value
+            obj._trait_values[self.name] = value  # type: ignore
             obj._notify_observers(
                 Bunch(
                     name=self.name,
@@ -682,14 +689,14 @@ class TraitType(BaseDescriptor):
                     type="default",
                 )
             )
-            return value
+            return value  # type: ignore
         except Exception as e:
             # This should never be reached.
             raise TraitError("Unexpected error in TraitType: default value not set properly") from e
         else:
-            return value
+            return value  # type: ignore
 
-    def __get__(self, obj, cls=None):
+    def __get__(self, obj: "HasTraits", cls: t.Any = None) -> t.Optional[G]:
         """Get the value of the trait by self.name for the instance.
 
         Default values are instantiated when :meth:`HasTraits.__new__`
@@ -720,7 +727,7 @@ class TraitType(BaseDescriptor):
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
 
-    def __set__(self, obj, value):
+    def __set__(self, obj: "HasTraits", value: t.Optional[S]) -> None:
         """Set the value of the trait by self.name for the instance.
 
         Values pass through a validation stage where errors are raised when
@@ -867,7 +874,7 @@ class TraitType(BaseDescriptor):
         warn("Deprecated in traitlets 4.1, " + msg, DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
-    def tag(self, **metadata):
+    def tag(self, **metadata: t.Any) -> "TraitType[G, S]":
         """Sets metadata and returns self.
 
         This allows convenient metadata tagging when initializing the trait, such as:
@@ -1976,7 +1983,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 # -----------------------------------------------------------------------------
 
 
-class ClassBasedTraitType(TraitType):
+class ClassBasedTraitType(TraitType[t.Any, t.Any]):
     """
     A trait with error reporting and string -> type resolution for Type,
     Instance and This.
@@ -2085,7 +2092,10 @@ class Type(ClassBasedTraitType):
             return repr(f"{value.__module__}.{value.__name__}")
 
 
-class Instance(ClassBasedTraitType):
+T = t.TypeVar("T")
+
+
+class Instance(ClassBasedTraitType, t.Generic[T]):
     """A trait whose value must be an instance of a specified class.
 
     The value can also be an instance of a subclass of the specified class.
@@ -2093,9 +2103,52 @@ class Instance(ClassBasedTraitType):
     Subclasses can declare default classes by overriding the klass attribute
     """
 
-    klass = None
+    if t.TYPE_CHECKING:
 
-    def __init__(self, klass=None, args=None, kw=None, **kwargs):
+        @t.overload
+        def __new__(
+            cls, kind: type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
+        ) -> "Instance[T]":
+            ...
+
+        @t.overload
+        def __new__(
+            cls, kind: type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
+        ) -> "Instance[T | None]":
+            ...
+
+        @t.overload
+        def __new__(
+            cls, kind: type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
+        ) -> "Instance[T]":
+            ...
+
+        # see: https://github.com/python/mypy/issues/1020
+        def __new__(  # type: ignore[misc]
+            cls, kind: type[T], *, allow_none: t.Literal[True, False]
+        ) -> "Instance[T] | Instance[T | None]":
+            ...
+
+        @t.overload  # type:ignore[override]
+        def __get__(self, obj: None, cls: type[t.Any]) -> "Instance[T]":
+            ...
+
+        @t.overload
+        def __get__(self, obj: t.Any, cls: type[t.Any]) -> T:
+            ...
+
+        def __get__(self, obj: t.Union[t.Any, None], cls: type[t.Any]) -> "t.Union[T, Instance[T]]":
+            ...
+
+    klass: t.Optional[t.Union[str, t.Type[T]]] = None
+
+    def __init__(
+        self,
+        klass: t.Optional[t.Union[str, t.Type[T]]] = None,
+        args: t.Optional[t.Tuple[t.Any, ...]] = None,
+        kw: t.Optional[t.Dict[str, t.Any]] = None,
+        **kwargs: t.Any,
+    ) -> None:
         """Construct an Instance trait.
 
         This trait allows values that are instances of a particular
@@ -2204,7 +2257,7 @@ class ForwardDeclaredType(ForwardDeclaredMixin, Type):
     pass
 
 
-class ForwardDeclaredInstance(ForwardDeclaredMixin, Instance):
+class ForwardDeclaredInstance(ForwardDeclaredMixin, Instance[T]):
     """
     Forward-declared version of Instance.
     """
@@ -2236,7 +2289,7 @@ class This(ClassBasedTraitType):
             self.error(obj, value)
 
 
-class Union(TraitType):
+class Union(TraitType[t.Any, t.Any]):
     """A trait type representing a Union type."""
 
     def __init__(self, trait_types, **kwargs):
@@ -2325,8 +2378,50 @@ class Union(TraitType):
 # -----------------------------------------------------------------------------
 
 
-class Any(TraitType):
+class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
     """A trait which allows any value."""
+
+    if t.TYPE_CHECKING:
+
+        @t.overload
+        def __new__(
+            cls, default_value: str = "", *, allow_none: t.Literal[False], **kwargs: t.Any
+        ) -> "Any":
+            ...
+
+        @t.overload
+        def __new__(
+            cls, default_value: str = "", *, allow_none: t.Literal[True], **kwargs: t.Any
+        ) -> "Any":
+            ...
+
+        @t.overload
+        def __new__(
+            cls,
+            default_value: str = "",
+            *,
+            help: str = "",
+            read_only: bool = False,
+            config: t.Any = None,
+        ) -> "Any":
+            ...
+
+        # see: https://github.com/python/mypy/issues/1020
+        def __new__(  # type: ignore[misc]
+            cls, default_value: str = "", *, allow_none: t.Literal[True, False]
+        ) -> "Any":
+            ...
+
+        @t.overload  # type:ignore[override]
+        def __get__(self, obj: None, cls: type[t.Any]) -> "Any":
+            ...
+
+        @t.overload
+        def __get__(self, obj: t.Any, cls: type[t.Any]) -> t.Any:
+            ...
+
+        def __get__(self, obj: t.Union[t.Any, None], cls: type[t.Any]) -> t.Union[t.Any, "Any"]:
+            ...
 
     default_value: t.Optional[t.Any] = None
     allow_none = True
@@ -2362,7 +2457,7 @@ def _validate_bounds(trait, obj, value):
     return value
 
 
-class Int(TraitType):
+class Int(TraitType[int, int]):
     """An int trait."""
 
     default_value = 0
@@ -2387,7 +2482,7 @@ class Int(TraitType):
         pass  # fully opt out of instance_init
 
 
-class CInt(Int):
+class CInt(Int, TraitType[int, t.Any]):
     """A casting version of the int trait."""
 
     def validate(self, obj, value):
@@ -2402,7 +2497,7 @@ Long, CLong = Int, CInt
 Integer = Int
 
 
-class Float(TraitType):
+class Float(TraitType[float, t.Union[int, float]]):
     """A float trait."""
 
     default_value = 0.0
@@ -2429,7 +2524,7 @@ class Float(TraitType):
         pass  # fully opt out of instance_init
 
 
-class CFloat(Float):
+class CFloat(Float, TraitType[float, t.Any]):
     """A casting version of the float trait."""
 
     def validate(self, obj, value):
@@ -2440,7 +2535,7 @@ class CFloat(Float):
         return _validate_bounds(self, obj, value)
 
 
-class Complex(TraitType):
+class Complex(TraitType[complex, t.Union[complex, float, int]]):
     """A trait for complex numbers."""
 
     default_value = 0.0 + 0.0j
@@ -2462,7 +2557,7 @@ class Complex(TraitType):
         pass  # fully opt out of instance_init
 
 
-class CComplex(Complex):
+class CComplex(Complex, TraitType[complex, t.Any]):
     """A casting version of the complex number trait."""
 
     def validate(self, obj, value):
@@ -2475,7 +2570,7 @@ class CComplex(Complex):
 # We should always be explicit about whether we're using bytes or unicode, both
 # for Python 3 conversion and for reliable unicode behaviour on Python 2. So
 # we don't have a Str type.
-class Bytes(TraitType):
+class Bytes(TraitType[bytes, bytes]):
     """A trait for byte strings."""
 
     default_value = b""
@@ -2507,7 +2602,7 @@ class Bytes(TraitType):
         pass  # fully opt out of instance_init
 
 
-class CBytes(Bytes):
+class CBytes(Bytes, TraitType[bytes, t.Any]):
     """A casting version of the byte string trait."""
 
     def validate(self, obj, value):
@@ -2517,11 +2612,53 @@ class CBytes(Bytes):
             self.error(obj, value)
 
 
-class Unicode(TraitType):
+class Unicode(TraitType[str, t.Union[str, bytes]]):
     """A trait for unicode strings."""
 
     default_value = ""
     info_text = "a unicode string"
+
+    if t.TYPE_CHECKING:
+
+        @t.overload
+        def __new__(
+            cls, default_value: str = "", *, allow_none: t.Literal[False], **kwargs: t.Any
+        ) -> "Unicode":
+            ...
+
+        @t.overload
+        def __new__(
+            cls, default_value: str = "", *, allow_none: t.Literal[True], **kwargs: t.Any
+        ) -> "Unicode":
+            ...
+
+        @t.overload
+        def __new__(
+            cls,
+            default_value: str = "",
+            *,
+            help: str = "",
+            read_only: bool = False,
+            config: t.Any = None,
+        ) -> "Unicode":
+            ...
+
+        # see: https://github.com/python/mypy/issues/1020
+        def __new__(  # type: ignore[misc]
+            cls, default_value: str = "", *, allow_none: t.Literal[True, False]
+        ) -> "Unicode":
+            ...
+
+        @t.overload  # type:ignore[override]
+        def __get__(self, obj: None, cls: type[t.Any]) -> "Unicode":
+            ...
+
+        @t.overload
+        def __get__(self, obj: t.Any, cls: type[t.Any]) -> str:
+            ...
+
+        def __get__(self, obj: t.Union[t.Any, None], cls: type[t.Any]) -> t.Union[str, "Unicode"]:
+            ...
 
     def validate(self, obj, value):
         if isinstance(value, str):
@@ -2555,7 +2692,7 @@ class Unicode(TraitType):
         pass  # fully opt out of instance_init
 
 
-class CUnicode(Unicode):
+class CUnicode(Unicode, TraitType[str, t.Any]):
     """A casting version of the unicode trait."""
 
     def validate(self, obj, value):
@@ -2565,7 +2702,7 @@ class CUnicode(Unicode):
             self.error(obj, value)
 
 
-class ObjectName(TraitType):
+class ObjectName(TraitType[str, str]):
     """A string holding a valid object name in this version of Python.
 
     This does not check that the name exists in any scope."""
@@ -2598,7 +2735,7 @@ class DottedObjectName(ObjectName):
         self.error(obj, value)
 
 
-class Bool(TraitType):
+class Bool(TraitType[bool, t.Union[bool, int]]):
     """A boolean (True, False) trait."""
 
     default_value = False
@@ -2636,7 +2773,7 @@ class Bool(TraitType):
         return completions
 
 
-class CBool(Bool):
+class CBool(Bool, TraitType[bool, t.Any]):
     """A casting version of the boolean trait."""
 
     def validate(self, obj, value):
@@ -2646,7 +2783,7 @@ class CBool(Bool):
             self.error(obj, value)
 
 
-class Enum(TraitType):
+class Enum(TraitType[t.Any, t.Any]):
     """An enum whose value must be in a given sequence."""
 
     def __init__(self, values, default_value=Undefined, **kwargs):
@@ -2775,13 +2912,52 @@ class FuzzyEnum(Enum):
         return self._info(as_rst=True)
 
 
-class Container(Instance):
+class Container(Instance[T]):
     """An instance of a container (list, set, etc.)
 
     To be subclassed by overriding klass.
     """
 
-    klass: t.Optional[t.Union[str, t.Type[t.Any]]] = None
+    if t.TYPE_CHECKING:
+
+        @t.overload
+        def __new__(
+            cls, kind: type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
+        ) -> "Container[T]":
+            ...
+
+        @t.overload
+        def __new__(
+            cls, kind: type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
+        ) -> "Container[T | None]":
+            ...
+
+        @t.overload
+        def __new__(
+            cls, kind: type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
+        ) -> "Container[T]":
+            ...
+
+        # see: https://github.com/python/mypy/issues/1020
+        def __new__(  # type: ignore[misc]
+            cls, kind: type[T], *, allow_none: t.Literal[True, False]
+        ) -> "Container[T] | Container[T | None]":
+            ...
+
+        @t.overload  # type:ignore[override]
+        def __get__(self, obj: None, cls: type[t.Any]) -> "Container[T]":
+            ...
+
+        @t.overload
+        def __get__(self, obj: t.Any, cls: type[t.Any]) -> T:
+            ...
+
+        def __get__(
+            self, obj: t.Union[t.Any, None], cls: type[t.Any]
+        ) -> "t.Union[T, Container[T]]":
+            ...
+
+    klass: t.Optional[t.Type[T]] = None
     _cast_types: t.Any = ()
     _valid_defaults = SequenceTypes
     _trait = None
@@ -2862,7 +3038,7 @@ class Container(Instance):
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
             assert self.klass is not None
-            value = self.klass(value)  # type:ignore[operator]
+            value = self.klass(value)  # type:ignore[call-arg]
         value = super().validate(obj, value)
         if value is None:
             return value
@@ -2883,7 +3059,7 @@ class Container(Instance):
             else:
                 validated.append(v)
         assert self.klass is not None
-        return self.klass(validated)  # type:ignore[operator]
+        return self.klass(validated)  # type:ignore[call-arg]
 
     def class_init(self, cls, name):
         if isinstance(self._trait, TraitType):
@@ -2933,7 +3109,7 @@ class Container(Instance):
                     ),
                     FutureWarning,
                 )
-                return self.klass(literal_eval(r))  # type:ignore[operator]
+                return self.klass(literal_eval(r))  # type:ignore[call-arg]
         sig = inspect.signature(self.item_from_string)
         if "index" in sig.parameters:
             item_from_string = self.item_from_string
@@ -2941,9 +3117,9 @@ class Container(Instance):
             # backward-compat: allow item_from_string to ignore index arg
             item_from_string = lambda s, index=None: self.item_from_string(s)  # noqa[E371]
 
-        return self.klass(
+        return self.klass(  # type:ignore[call-arg]
             [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
-        )  # type:ignore[operator]
+        )
 
     def item_from_string(self, s, index=None):
         """Cast a single item from a string
@@ -2956,7 +3132,7 @@ class Container(Instance):
             return s
 
 
-class List(Container):
+class List(Container[t.List[t.Any]]):
     """An instance of a Python list."""
 
     klass = list
@@ -3074,7 +3250,7 @@ class Set(List):
         return "{" + list_repr[1:-1] + "}"
 
 
-class Tuple(Container):
+class Tuple(Container[t.Tuple[t.Any, ...]]):
     """An instance of a Python tuple."""
 
     klass = tuple
@@ -3203,7 +3379,7 @@ class Tuple(Container):
         # to opt out of instance_init
 
 
-class Dict(Instance):
+class Dict(Instance[t.Dict[t.Any, t.Any]]):
     """An instance of a Python dict.
 
     One or more traits can be passed to the constructor
@@ -3481,7 +3657,7 @@ class Dict(Instance):
         return {key: value}
 
 
-class TCPAddress(TraitType):
+class TCPAddress(TraitType[tuple[str, int], tuple[str, int]]):
     """A trait for an (ip, port) tuple.
 
     This allows for both IPv4 IP addresses as well as hostnames.
@@ -3509,7 +3685,7 @@ class TCPAddress(TraitType):
         return (ip, port)
 
 
-class CRegExp(TraitType):
+class CRegExp(TraitType[re.Pattern[t.Any], t.Union[re.Pattern[t.Any], str]]):
     """A casting compiled regular expression trait.
 
     Accepts both strings and compiled regular expressions. The resulting
@@ -3524,7 +3700,7 @@ class CRegExp(TraitType):
             self.error(obj, value)
 
 
-class UseEnum(TraitType):
+class UseEnum(TraitType[t.Any, t.Any]):
     """Use a Enum class as model for the data type description.
     Note that if no default-value is provided, the first enum-value is used
     as default-value.
@@ -3621,7 +3797,9 @@ class UseEnum(TraitType):
         return self._info(as_rst=True)
 
 
-class Callable(TraitType):
+class Callable(
+    TraitType[collections.abc.Callable[..., t.Any], collections.abc.Callable[..., t.Any]]
+):
     """A trait which is callable.
 
     Notes
