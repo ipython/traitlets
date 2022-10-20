@@ -2316,7 +2316,7 @@ class CFloat(Float, TraitType[float, t.Any]):
         return _validate_bounds(self, obj, value)
 
 
-class Complex(TraitType[complex, complex | tuple[float, int]]):
+class Complex(TraitType[complex, complex | float | int]):
     """A trait for complex numbers."""
 
     default_value = 0.0 + 0.0j
