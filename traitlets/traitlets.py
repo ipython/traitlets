@@ -39,6 +39,7 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
+import collections.abc
 import contextlib
 import enum
 import inspect
@@ -643,9 +644,9 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         obj._trait_values[self.name] = value
         return value
 
-    def get(self, obj, cls=None):
+    def get(self, obj: 'HasTraits', cls: t.Any = None) -> t.Optional[G]:
         try:
-            value = obj._trait_values[self.name]
+            value = obj._trait_values[self.name]  # type: ignore
         except KeyError:
             # Check for a dynamic initializer.
             default = obj.trait_defaults(self.name)
@@ -659,7 +660,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                 )
             with obj.cross_validation_lock:
                 value = self._validate(obj, default)
-            obj._trait_values[self.name] = value
+            obj._trait_values[self.name] = value  # type: ignore
             obj._notify_observers(
                 Bunch(
                     name=self.name,
@@ -668,14 +669,14 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                     type="default",
                 )
             )
-            return value
+            return value  # type: ignore
         except Exception:
             # This should never be reached.
             raise TraitError("Unexpected error in TraitType: default value not set properly")
         else:
-            return value
+            return value  # type: ignore
 
-    def __get__(self, obj, cls=None) -> G:
+    def __get__(self, obj: 'HasTraits', cls: t.Any = None) -> t.Optional[G]:
         """Get the value of the trait by self.name for the instance.
 
         Default values are instantiated when :meth:`HasTraits.__new__`
@@ -706,7 +707,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             # comparison above returns something other than True/False
             obj._notify_trait(self.name, old_value, new_value)
 
-    def __set__(self, obj, value: S):
+    def __set__(self, obj: 'HasTraits', value: t.Optional[S]) -> None:
         """Set the value of the trait by self.name for the instance.
 
         Values pass through a validation stage where errors are raised when
@@ -1862,7 +1863,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 # -----------------------------------------------------------------------------
 
 
-class ClassBasedTraitType(TraitType):
+class ClassBasedTraitType(TraitType[t.Any, t.Any]):
     """
     A trait with error reporting and string -> type resolution for Type,
     Instance and This.
@@ -2120,7 +2121,7 @@ class This(ClassBasedTraitType):
             self.error(obj, value)
 
 
-class Union(TraitType):
+class Union(TraitType[t.Any, t.Any]):
     """A trait type representing a Union type."""
 
     def __init__(self, trait_types, **kwargs):
@@ -2208,7 +2209,7 @@ class Union(TraitType):
 # -----------------------------------------------------------------------------
 
 
-class Any(TraitType):
+class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
     """A trait which allows any value."""
 
     default_value: t.Optional[t.Any] = None
@@ -2242,7 +2243,7 @@ def _validate_bounds(trait, obj, value):
     return value
 
 
-class Int(TraitType):
+class Int(TraitType[int, int]):
     """An int trait."""
 
     default_value = 0
@@ -2264,7 +2265,7 @@ class Int(TraitType):
         return int(s)
 
 
-class CInt(Int):
+class CInt(Int, TraitType[int, t.Any]):
     """A casting version of the int trait."""
 
     def validate(self, obj, value):
@@ -2279,7 +2280,7 @@ Long, CLong = Int, CInt
 Integer = Int
 
 
-class Float(TraitType):
+class Float(TraitType[float, int | float]):
     """A float trait."""
 
     default_value = 0.0
@@ -2303,7 +2304,7 @@ class Float(TraitType):
         return float(s)
 
 
-class CFloat(Float):
+class CFloat(Float, TraitType[float, t.Any]):
     """A casting version of the float trait."""
 
     def validate(self, obj, value):
@@ -2314,7 +2315,7 @@ class CFloat(Float):
         return _validate_bounds(self, obj, value)
 
 
-class Complex(TraitType):
+class Complex(TraitType[complex, complex | tuple[float, int]]):
     """A trait for complex numbers."""
 
     default_value = 0.0 + 0.0j
@@ -2333,7 +2334,7 @@ class Complex(TraitType):
         return complex(s)
 
 
-class CComplex(Complex):
+class CComplex(Complex, TraitType[complex, t.Any]):
     """A casting version of the complex number trait."""
 
     def validate(self, obj, value):
@@ -2346,7 +2347,7 @@ class CComplex(Complex):
 # We should always be explicit about whether we're using bytes or unicode, both
 # for Python 3 conversion and for reliable unicode behaviour on Python 2. So
 # we don't have a Str type.
-class Bytes(TraitType):
+class Bytes(TraitType[bytes, bytes]):
     """A trait for byte strings."""
 
     default_value = b""
@@ -2375,7 +2376,7 @@ class Bytes(TraitType):
         return s.encode("utf8")
 
 
-class CBytes(Bytes):
+class CBytes(Bytes, TraitType[bytes, t.Any]):
     """A casting version of the byte string trait."""
 
     def validate(self, obj, value):
@@ -2385,7 +2386,7 @@ class CBytes(Bytes):
             self.error(obj, value)
 
 
-class Unicode(TraitType):
+class Unicode(TraitType[str, str | bytes]):
     """A trait for unicode strings."""
 
     default_value = ""
@@ -2420,7 +2421,7 @@ class Unicode(TraitType):
         return s
 
 
-class CUnicode(Unicode):
+class CUnicode(Unicode, TraitType[str, t.Any]):
     """A casting version of the unicode trait."""
 
     def validate(self, obj, value):
@@ -2430,7 +2431,7 @@ class CUnicode(Unicode):
             self.error(obj, value)
 
 
-class ObjectName(TraitType):
+class ObjectName(TraitType[str, str]):
     """A string holding a valid object name in this version of Python.
 
     This does not check that the name exists in any scope."""
@@ -2463,7 +2464,7 @@ class DottedObjectName(ObjectName):
         self.error(obj, value)
 
 
-class Bool(TraitType[str, t.Union[bool, int]]):
+class Bool(TraitType[bool, t.Union[bool, int]]):
     """A boolean (True, False) trait."""
 
     default_value = False
@@ -2501,7 +2502,7 @@ class CBool(Bool, TraitType[bool, t.Any]):
             self.error(obj, value)
 
 
-class Enum(TraitType):
+class Enum(TraitType[t.Any, t.Any]):
     """An enum whose value must be in a given sequence."""
 
     def __init__(self, values, default_value=Undefined, **kwargs):
@@ -3326,7 +3327,7 @@ class Dict(Instance):
         return {key: value}
 
 
-class TCPAddress(TraitType):
+class TCPAddress(TraitType[tuple[str, int], tuple[str, int]]):
     """A trait for an (ip, port) tuple.
 
     This allows for both IPv4 IP addresses as well as hostnames.
@@ -3354,7 +3355,7 @@ class TCPAddress(TraitType):
         return (ip, port)
 
 
-class CRegExp(TraitType):
+class CRegExp(TraitType[re.Pattern[t.Any], re.Pattern[t.Any] | str]):
     """A casting compiled regular expression trait.
 
     Accepts both strings and compiled regular expressions. The resulting
@@ -3369,7 +3370,7 @@ class CRegExp(TraitType):
             self.error(obj, value)
 
 
-class UseEnum(TraitType):
+class UseEnum(TraitType[t.Any, t.Any]):
     """Use a Enum class as model for the data type description.
     Note that if no default-value is provided, the first enum-value is used
     as default-value.
@@ -3466,7 +3467,7 @@ class UseEnum(TraitType):
         return self._info(as_rst=True)
 
 
-class Callable(TraitType):
+class Callable(TraitType[collections.abc.Callable[..., t.Any], collections.abc.Callable[..., t.Any]]):
     """A trait which is callable.
 
     Notes
