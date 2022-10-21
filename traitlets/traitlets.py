@@ -1350,7 +1350,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             for key in changed:
                 value = self._traits[key]._cross_validate(self, getattr(self, key))
                 self.set_trait(key, value)
-                changes[key].new = value
+                changes[key]['new'] = value
             self._cross_validation_lock = False
             # Restore method retrieval from class
             del self.notify_change
@@ -1511,7 +1511,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         if not isinstance(event, Bunch):
             # cast to bunch if given a dict
             event = Bunch(event)
-        name, type = event.name, event.type
+        name, type = event['name'], event['type']
 
         callables = []
         if name in self._trait_notifiers:
@@ -1527,7 +1527,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
 
         # Now static ones
         magic_name = "_%s_changed" % name
-        if event.type == "change" and hasattr(self, magic_name):
+        if event['type'] == "change" and hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
                 _deprecated_method(
