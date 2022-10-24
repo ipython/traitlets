@@ -4,11 +4,11 @@
 
 ## 5.5.0
 
-* Clean up application typing
-* Update tests and docs to use non-deprecated functions
-* Clean up version handling
-* Prep for jupyter releaser
-* Format the changelog
+- Clean up application typing
+- Update tests and docs to use non-deprecated functions
+- Clean up version handling
+- Prep for jupyter releaser
+- Format the changelog
 
 <!-- <END NEW CHANGELOG ENTRY> -->
 
