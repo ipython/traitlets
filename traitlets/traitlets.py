@@ -518,6 +518,7 @@ class BaseDescriptor:
 G = t.TypeVar("G")
 S = t.TypeVar("S")
 
+Self = t.TypeVar("Self", bound="TraitType")  # Holdover waiting for typings.Self in Python 3.11
 
 class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
@@ -855,7 +856,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         warn("Deprecated in traitlets 4.1, " + msg, DeprecationWarning, stacklevel=2)
         self.metadata[key] = value
 
-    def tag(self, **metadata):
+    def tag(self, **metadata) -> "TraitType[G, S]":
         """Sets metadata and returns self.
 
         This allows convenient metadata tagging when initializing the trait, such as:
