@@ -520,6 +520,7 @@ S = t.TypeVar("S")
 
 Self = t.TypeVar("Self", bound="TraitType")  # Holdover waiting for typings.Self in Python 3.11
 
+
 class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
 
