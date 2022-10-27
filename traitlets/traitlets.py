@@ -981,7 +981,7 @@ class MetaHasTraits(MetaHasDescriptors):
         super().setup_class(classdict)
 
 
-def observe(*names, type="change"):
+def observe(*names: t.Union[Sentinel, str], type: str = "change") -> "ObserveHandler":
     """A decorator which can be used to observe Traits on a class.
 
     The handler passed to the decorator will be called with one ``change``
@@ -1047,7 +1047,7 @@ def observe_compat(func):
     return compatible_observer
 
 
-def validate(*names):
+def validate(*names: t.Union[Sentinel, str]) -> "ValidateHandler":
     """A decorator to register cross validator of HasTraits object's state
     when a Trait is set.
 
@@ -1080,7 +1080,7 @@ def validate(*names):
     return ValidateHandler(names)
 
 
-def default(name):
+def default(name: str) -> "DefaultHandler":
     """A decorator which assigns a dynamic default for a Trait on a HasTraits object.
 
     Parameters
