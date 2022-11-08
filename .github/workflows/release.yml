@@ -32,7 +32,7 @@ jobs:
           ls -l dist
 
       # ref: https://github.com/actions/upload-artifact#readme
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: traitlets-${{ github.sha }}
           path: "dist/*"
