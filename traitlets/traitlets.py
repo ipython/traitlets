@@ -613,7 +613,7 @@ class TraitType(BaseDescriptor):
         if self.default_value is not Undefined:
             return self.default_value
         elif hasattr(self, "make_dynamic_default"):
-            return self.make_dynamic_default()  # type:ignore[attr-defined]
+            return self.make_dynamic_default() 
         else:
             # Undefined will raise in TraitType.get
             return self.default_value
@@ -718,7 +718,7 @@ class TraitType(BaseDescriptor):
         if value is None and self.allow_none:
             return value
         if hasattr(self, "validate"):
-            value = self.validate(obj, value)  # type:ignore[attr-defined]
+            value = self.validate(obj, value)
         if obj._cross_validation_lock is False:
             value = self._cross_validate(obj, value)
         return value
@@ -1845,7 +1845,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 elif name in v.trait_names:  # type:ignore[attr-defined]
                     events[k] = v
                 elif hasattr(v, "tags"):
-                    if cls.trait_names(**v.tags):  # type:ignore[attr-defined]
+                    if cls.trait_names(**v.tags):
                         events[k] = v
         return events
 
