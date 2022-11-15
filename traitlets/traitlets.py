@@ -613,7 +613,7 @@ class TraitType(BaseDescriptor):
         if self.default_value is not Undefined:
             return self.default_value
         elif hasattr(self, "make_dynamic_default"):
-            return self.make_dynamic_default() 
+            return self.make_dynamic_default()
         else:
             # Undefined will raise in TraitType.get
             return self.default_value
