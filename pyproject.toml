@@ -5,6 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "traitlets"
 authors = [{name = "IPython Development Team", email = "ipython-dev@python.org"}]
+description = "Traitlets Python configuration system"
 license = {file = "COPYING.md"}
 readme = "README.md"
 keywords = ["Interactive", "Interpreter", "Shell", "Web"]
@@ -18,7 +19,7 @@ classifiers = [
 ]
 urls = {Homepage = "https://github.com/ipython/traitlets"}
 requires-python = ">=3.7"
-dynamic = ["description", "version"]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 test = ["pytest", "pre-commit"]
