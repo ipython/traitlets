@@ -19,7 +19,7 @@ classifiers = [
 ]
 urls = {Homepage = "https://github.com/ipython/traitlets"}
 requires-python = ">=3.7"
-dynamic = ["description", "version"]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 test = ["pytest", "pre-commit"]
