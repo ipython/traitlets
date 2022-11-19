@@ -13,6 +13,10 @@ concurrency:
     ${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    shell: bash -eux {0}
+
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
@@ -20,34 +24,26 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.7", "3.10"]
+        python-version: ["3.7", "3.11"]
         include:
           - os: windows-latest
             python-version: "3.9"
           - os: ubuntu-latest
             python-version: "pypy-3.8"
+          - os: ubuntu-latest
+            python-version: "3.10"
           - os: macos-latest
             python-version: "3.8"
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-
-      - name: Install dependencies
-        run: |
-          pip install ".[test]" pytest-cov
-          pip freeze
-
-      - name: Test with pytest
-        run: |
-          python -m pytest --cov traitlets --cov-report=xml -v traitlets
-
+      - name: Run Tests
+        run: hatch run cov:test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
 
-  test_miniumum_verisons:
+  test_minimum_versions:
     name: Test Minimum Versions
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -59,21 +55,21 @@ jobs:
           python_version: "3.7"
       - name: Install minimum versions
         uses: jupyterlab/maintainer-tools/.github/actions/install-minimums@v1
+        with:
+          only_create_file: 1
       - name: Run the unit tests
-        run: pytest -vv -W default traitlets || pytest -vv -W default traitlets --lf
+        run: |
+          export PIP_CONSTRAINT="./contraints_file.txt"
+          hatch run test:nowarn || hatch run test:nowarn --lf
 
-  docs:
+  test_docs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - name: Install the Python dependencies
-        run: |
-          pip install -e .[docs]
       - name: Build the docs
-        run: |
-          make -C docs html SPHINXOPTS='-W'
+        run: hatch run docs:build
 
   test_prereleases:
     name: Test Prereleases
@@ -84,16 +80,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - name: Install the Python dependencies
-        run: |
-          pip install --upgrade --upgrade-strategy eager --pre -e ".[test]"
-      - name: List installed packages
-        run: |
-          pip freeze
-          pip check
+        with:
+          python_version: "3.11"
       - name: Run the tests
         run: |
-          pytest -vv traitlets || pytest -vv traitlets --lf
+          export PIP_PRE=1
+          hatch run test:nowarn || hatch run test:nowarn --lf
 
   make_sdist:
     name: Make SDist
@@ -120,24 +112,43 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
 
-  pre-commit:
+  check_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Base Setup
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Install Dependencies
+        run: |
+          pip install -e .
+      - name: Check Release
+        uses: jupyter-server/jupyter_releaser/.github/actions/check-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  pre_commit:
     name: pre-commit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: jupyterlab/maintainer-tools/.github/actions/pre-commit@v1
+
+  tests_check: # This job does nothing and is only used for the branch protection
+    if: always()
+    needs:
+      - tests
+      - pre_commit
+      - test_docs
+      - test_minimum_versions
+      - test_prereleases
+      - check_links
+      - check_release
+      - test_sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
         with:
-          python-version: 3.x
-      - uses: pre-commit/action@v3.0.0
-        with:
-          extra_args: --all-files --hook-stage=manual
-      - name: Help message if pre-commit fail
-        if: ${{ failure() }}
-        run: |
-          echo "You can install pre-commit hooks to automatically run formatting"
-          echo "on each commit with:"
-          echo "    pre-commit install"
-          echo "or you can run by hand on staged files with"
-          echo "    pre-commit run"
-          echo "or after-the-fact on already committed files with"
-          echo "    pre-commit run --all-files --hook-stage=manual"
+          jobs: ${{ toJSON(needs) }}

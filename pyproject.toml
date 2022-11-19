@@ -32,6 +32,24 @@ docs = [
 [tool.hatch.version]
 path = "traitlets/_version.py"
 
+[tool.hatch.envs.docs]
+features = ["docs"]
+[tool.hatch.envs.docs.scripts]
+build = "make -C docs html SPHINXOPTS='-W'"
+
+[tool.hatch.envs.test]
+features = ["test"]
+[tool.hatch.envs.test.scripts]
+test = "python -m pytest -vv {args}"
+nowarn = "test -W default {args}"
+
+[tool.hatch.envs.cov]
+features = ["test"]
+dependencies = ["coverage", "pytest-cov"]
+[tool.hatch.envs.cov.scripts]
+test = "python -m pytest -vv --cov traitlets --cov-branch --cov-report term-missing:skip-covered {args}"
+nowarn = "test -W default {args}"
+
 [tool.mypy]
 check_untyped_defs = true
 disallow_any_generics = true
@@ -81,4 +99,43 @@ filterwarnings = [
 markers = [
     "network: marks tests which require network connection (nbconvert)",
     "integration_tests: notebook mark (notebook)",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "if self.debug:",
+  "if settings.DEBUG",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "class .*\bProtocol\\):",
+"@(abc\\.)?abstractmethod",
+]
+
+[tool.flake8]
+ignore = "E501, W503, E402"
+builtins = "c, get_config"
+exclude = [
+    ".cache",
+    ".github",
+    "docs",
+    "setup.py",
+]
+enable-extensions = "G"
+extend-ignore = [
+    "G001", "G002", "G004", "G200", "G201", "G202",
+    # black adds spaces around ':'
+    "E203",
+]
+per-file-ignores = [
+    # B011: Do not call assert False since python -O removes these calls
+    # F841 local variable 'foo' is assigned to but never used
+    "traitlets/tests/*: B011", "F841",
+    # F401 'foo' imported but unused
+    # F403 'from foo import *' used; unable to detect undefined names
+    "traitlets/__init__.py: F401", "F403",
+    "traitlets/*/__init__.py: F401", "F403",
 ]
