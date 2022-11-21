@@ -59,7 +59,6 @@ jobs:
           only_create_file: 1
       - name: Run the unit tests
         run: |
-          export PIP_CONSTRAINT="./contraints_file.txt"
           hatch run test:nowarn || hatch run test:nowarn --lf
 
   test_docs:
@@ -84,8 +83,7 @@ jobs:
           python_version: "3.11"
       - name: Run the tests
         run: |
-          export PIP_PRE=1
-          hatch run test:nowarn || hatch run test:nowarn --lf
+          PIP_PRE=1 hatch run test:nowarn || hatch run test:nowarn --lf
 
   make_sdist:
     name: Make SDist
