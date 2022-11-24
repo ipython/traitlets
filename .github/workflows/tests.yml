@@ -52,11 +52,7 @@ jobs:
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python_version: "3.7"
-      - name: Install minimum versions
-        uses: jupyterlab/maintainer-tools/.github/actions/install-minimums@v1
-        with:
-          only_create_file: 1
+          dependency_type: minimum
       - name: Run the unit tests
         run: |
           hatch run test:nowarn || hatch run test:nowarn --lf
@@ -80,10 +76,10 @@ jobs:
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
-          python_version: "3.11"
+          dependency_type: pre
       - name: Run the tests
         run: |
-          PIP_PRE=1 hatch run test:nowarn || hatch run test:nowarn --lf
+          hatch run test:nowarn || hatch run test:nowarn --lf
 
   make_sdist:
     name: Make SDist
