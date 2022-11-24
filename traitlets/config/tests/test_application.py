@@ -21,7 +21,7 @@ from pytest import mark
 from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
-from traitlets.config.loader import Config
+from traitlets.config.loader import Config, KVArgParseConfigLoader
 from traitlets.tests.utils import (
     check_help_all_output,
     check_help_output,
@@ -400,6 +400,29 @@ class TestApplication(TestCase):
         self.assertIn("Equivalent to: [--Foo.i]", hmsg)
         self.assertIn("Equivalent to: [--Foo.j]", hmsg)
         self.assertIn("Equivalent to: [--Foo.name]", hmsg)
+
+    def test_alias_unrecognized(self):
+        """Check ability to override handling for unrecognized aliases"""
+        class StrictLoader(KVArgParseConfigLoader):
+            def _handle_unrecognized_alias(self, arg):
+                self.parser.error("Unrecognized alias: %s" % arg)
+
+        class StrictApplication(Application):
+            def _create_loader(self, argv, aliases, flags, classes):
+                return StrictLoader(argv, aliases, flags, classes=classes, log=self.log)
+
+        app = StrictApplication()
+        app.initialize(["--log-level=20"])  # recognized alias
+        assert app.log_level == 20
+
+        app = StrictApplication()
+        with pytest.raises(SystemExit, match="2"):
+            app.initialize(["--unrecognized=20"])
+
+        # Ideally we would use pytest capsys fixture, but fixtures are incompatible
+        # with unittest.TestCase-style classes :(
+        # stderr = capsys.readouterr().err
+        # assert "Unrecognized alias: unrecognized" in stderr
 
     def test_flag_clobber(self):
         """test that setting flags doesn't clobber existing settings"""
