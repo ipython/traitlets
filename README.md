@@ -188,12 +188,3 @@ with parity_check.hold_trait_notifications():
 
 However, we **recommend** that custom cross-validators don't modify the state
 of the HasTraits instance.
-
-### Release build:
-
-Releases should be automatically build and pushed to Pypi when a tag is marked and pushed to GitHub.
-
-```bash
-$ pip install build
-$ python -m build .
-```
