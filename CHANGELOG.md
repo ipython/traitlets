@@ -2,6 +2,33 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.6.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/5.5.0...2c5188a3562f03c0703315b21df41ca7ace23dd3))
+
+### Maintenance and upkeep improvements
+
+- Adopt jupyter releaser [#806](https://github.com/ipython/traitlets/pull/806) ([@blink1073](https://github.com/blink1073))
+- Use base setup dependency type [#805](https://github.com/ipython/traitlets/pull/805) ([@blink1073](https://github.com/blink1073))
+- More CI Cleanup [#803](https://github.com/ipython/traitlets/pull/803) ([@blink1073](https://github.com/blink1073))
+- More maintenance cleanup [#802](https://github.com/ipython/traitlets/pull/802) ([@blink1073](https://github.com/blink1073))
+- Add project description [#801](https://github.com/ipython/traitlets/pull/801) ([@blink1073](https://github.com/blink1073))
+- Bump actions/setup-python from 2 to 4 [#798](https://github.com/ipython/traitlets/pull/798) ([@dependabot](https://github.com/dependabot))
+- Bump actions/checkout from 2 to 3 [#797](https://github.com/ipython/traitlets/pull/797) ([@dependabot](https://github.com/dependabot))
+- Bump pre-commit/action from 2.0.0 to 3.0.0 [#796](https://github.com/ipython/traitlets/pull/796) ([@dependabot](https://github.com/dependabot))
+- Bump actions/upload-artifact from 2 to 3 [#795](https://github.com/ipython/traitlets/pull/795) ([@dependabot](https://github.com/dependabot))
+- Add dependabot [#794](https://github.com/ipython/traitlets/pull/794) ([@blink1073](https://github.com/blink1073))
+- Add more typings [#791](https://github.com/ipython/traitlets/pull/791) ([@blink1073](https://github.com/blink1073))
+- Format changelog [#789](https://github.com/ipython/traitlets/pull/789) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-10-18&to=2022-11-29&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2022-10-18..2022-11-29&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2022-10-18..2022-11-29&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-10-18..2022-11-29&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2022-10-18..2022-11-29&type=Issues) | [@rmorshea](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2022-10-18..2022-11-29&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.5.0
 
 - Clean up application typing
@@ -9,8 +36,6 @@
 - Clean up version handling
 - Prep for jupyter releaser
 - Format the changelog
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.4.0
 
