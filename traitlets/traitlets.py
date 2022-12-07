@@ -873,6 +873,21 @@ class TraitType(BaseDescriptor):
             )
 
         self.metadata.update(metadata)
+
+        # allow from_string to be overridden via metadata
+        if self.metadata.get("from_string"):
+            self.from_string = self.metadata["from_string"]
+            if (not self.metadata.get("from_string_list")) and getattr(
+                self, "from_string_list", None
+            ):
+                self.from_string_list = None
+                # from_string overridden, from_string_list inherited and not overridden
+                # ensure inherited from_string_list does not take priority over our new from_string
+                # by removing it
+
+        if self.metadata.get("from_string_list"):
+            self.from_string_list = self.metadata["from_string_list"]
+
         return self
 
     def default_value_repr(self):

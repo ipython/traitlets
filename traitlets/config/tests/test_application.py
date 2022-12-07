@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import sys
+from binascii import a2b_hex
 from io import StringIO
 from tempfile import TemporaryDirectory
 from unittest import TestCase
@@ -673,6 +674,25 @@ class TestApplication(TestCase):
             app.load_config_file(name, path=[td1])
             self.assertEqual(len(app.loaded_config_files), 1)
             self.assertEqual(app.running, False)
+
+
+def test_custom_from_string():
+    path_items = sys.path[:5]
+
+    path_str = os.pathsep.join(path_items)
+
+    def from_path_string(s):
+        return s.split(os.pathsep)
+
+    class App(Application):
+        path = List().tag(config=True, from_string=from_path_string)
+        hex = Bytes().tag(config=True, from_string=a2b_hex)
+        aliases = {"path": "App.path", "hex": "App.hex"}
+
+    app = App()
+    app.parse_command_line(["--path", path_str, "--hex", "a1b2"])
+    assert app.path == path_items
+    assert app.hex == b"\xa1\xb2"
 
 
 def test_cli_multi_scalar(caplog):
