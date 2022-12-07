@@ -23,11 +23,7 @@ from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, U
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config, KVArgParseConfigLoader
-from traitlets.tests.utils import (
-    check_help_all_output,
-    check_help_output,
-    get_output_error_code,
-)
+from traitlets.tests.utils import check_help_all_output, check_help_output, get_output_error_code
 
 try:
     from unittest import mock
@@ -376,7 +372,7 @@ class TestApplication(TestCase):
         # Test multiple > 2 aliases for the same argument
         class TestMultiAliasApp(Application):
             foo = Integer(config=True)
-            aliases = {("f", "bar", "qux"): "TestMultiAliasApp.foo"}  # type:ignore
+            aliases = {("f", "bar", "qux"): "TestMultiAliasApp.foo"}
 
         app = TestMultiAliasApp()
         app.parse_command_line(["-f", "3"])

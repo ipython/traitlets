@@ -1075,7 +1075,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         for subc in self.parsed_data._flags:
             self._load_flag(subc)
 
-    def _handle_unrecognized_alias(self, arg: str):
+    def _handle_unrecognized_alias(self, arg: str) -> None:
         """Handling for unrecognized alias arguments
 
         Probably a mistyped alias. By default just log a warning,
