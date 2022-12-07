@@ -358,19 +358,15 @@ class Application(SingletonConfigurable):
     #: Values might be like "Class.trait" strings of two-tuples: (Class.trait, help-text),
     #  or just the "Class.trait" string, in which case the help text is inferred from the
     #  corresponding trait
-    aliases: t.Dict[
-        t.Union[str, t.Tuple[str, ...]],
-        t.Union[str, t.Tuple[str, str]]
-    ] = {"log-level": "Application.log_level"}
+    aliases: t.Dict[t.Union[str, t.Tuple[str, ...]], t.Union[str, t.Tuple[str, str]]] = {
+        "log-level": "Application.log_level"
+    }
 
     # flags for loading Configurables or store_const style flags
     # flags are loaded from this dict by '--key' flags
     # this must be a dict of two-tuples, the first element being the Config/dict
     # and the second being the help string for the flag
-    flags: t.Dict[
-        t.Union[str, t.Tuple[str, ...]],
-        t.Tuple[t.Union[t.Dict, Config], str]
-    ] = {
+    flags: t.Dict[t.Union[str, t.Tuple[str, ...]], t.Tuple[t.Union[t.Dict, Config], str]] = {
         "debug": (
             {
                 "Application": {

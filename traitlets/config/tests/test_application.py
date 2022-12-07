@@ -403,6 +403,7 @@ class TestApplication(TestCase):
 
     def test_alias_unrecognized(self):
         """Check ability to override handling for unrecognized aliases"""
+
         class StrictLoader(KVArgParseConfigLoader):
             def _handle_unrecognized_alias(self, arg):
                 self.parser.error("Unrecognized alias: %s" % arg)
