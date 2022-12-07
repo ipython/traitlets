@@ -19,7 +19,7 @@ Authors
 
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
-from sphinx.util.logging import getLogger
+from sphinx.util.logging import getLogger  # type:ignore
 
 info = getLogger(__name__).info
 
@@ -41,7 +41,9 @@ def make_link_node(rawtext, app, type, slug, options):
         if not base.endswith("/"):
             base += "/"
     except AttributeError as err:
-        raise ValueError("github_project_url configuration value is not set (%s)" % str(err))
+        raise ValueError(
+            "github_project_url configuration value is not set (%s)" % str(err)
+        ) from err
 
     ref = base + type + "/" + slug + "/"
     set_classes(options)
@@ -147,7 +149,9 @@ def ghcommit_role(name, rawtext, text, lineno, inliner, options=None, content=No
         if not base.endswith("/"):
             base += "/"
     except AttributeError as err:
-        raise ValueError("github_project_url configuration value is not set (%s)" % str(err))
+        raise ValueError(
+            "github_project_url configuration value is not set (%s)" % str(err)
+        ) from err
 
     ref = base + text
     node = nodes.reference(rawtext, text[:6], refuri=ref, **options)

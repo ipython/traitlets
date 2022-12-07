@@ -57,6 +57,19 @@ jobs:
         run: |
           hatch run test:nowarn || hatch run test:nowarn --lf
 
+  test_lint:
+    name: Test Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      -  name: Run Linters
+         run: |
+          hatch run typing:test
+          hatch run lint:style
+          pipx run 'validate-pyproject[all]' pyproject.toml
+          pipx run doc8 --max-line-length=200
+
   test_docs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -121,19 +134,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  pre_commit:
-    name: pre-commit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/pre-commit@v1
-
   tests_check: # This job does nothing and is only used for the branch protection
     if: always()
     needs:
       - tests
-      - pre_commit
+      - test_lint
       - test_docs
       - test_minimum_versions
       - test_prereleases

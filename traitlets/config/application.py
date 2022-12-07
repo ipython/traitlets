@@ -952,7 +952,7 @@ class Application(SingletonConfigurable):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append("")
-        lines.append("c = get_config()  # noqa")
+        lines.append("c = get_config()  #" + "noqa")
         lines.append("")
         classes = self.classes if classes is None else classes
         config_classes = list(self._classes_with_config_traits(classes))
