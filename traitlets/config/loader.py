@@ -1049,8 +1049,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
             lhs = lhs.replace(_DOT_REPLACEMENT, ".")
             if "." not in lhs:
-                # probably a mistyped alias, but not technically illegal
-                self.log.warning("Unrecognized alias: '%s', it will have no effect.", lhs)
+                self._handle_unrecognized_alias(lhs)
                 trait = None
 
             if isinstance(rhs, list):
@@ -1074,6 +1073,15 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
         for subc in self.parsed_data._flags:
             self._load_flag(subc)
+
+    def _handle_unrecognized_alias(self, arg: str):
+        """Handling for unrecognized alias arguments
+
+        Probably a mistyped alias. By default just log a warning,
+        but users can override this to raise an error instead, e.g.
+        self.parser.error("Unrecognized alias: '%s'" % arg)
+        """
+        self.log.warning("Unrecognized alias: '%s', it will have no effect.", arg)
 
 
 class KeyValueConfigLoader(KVArgParseConfigLoader):
