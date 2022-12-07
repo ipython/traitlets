@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 """A simple example of how to use traitlets.config.application.Application.
 
 This should serve as a simple example that shows how the traitlets config
@@ -29,11 +31,9 @@ to set the following options:
 When the config attribute of an Application is updated, it will fire all of
 the trait's events for all of the config=True attributes.
 """
-
-from traitlets import Bool, Dict, Int, List, Unicode
+from traitlets import Bool, Dict, Enum, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
-
 
 class Foo(Configurable):
     """A class that has configurable, typed attributes."""
@@ -41,6 +41,7 @@ class Foo(Configurable):
     i = Int(0, help="The integer i.").tag(config=True)
     j = Int(1, help="The integer j.").tag(config=True)
     name = Unicode("Brian", help="First name.").tag(config=True, shortname="B")
+    mode = Enum(values=["on", "off", "other"], default_value="on").tag(config=True)
 
 
 class Bar(Configurable):
@@ -60,6 +61,7 @@ class MyApp(Application):
             i="Foo.i",
             j="Foo.j",
             name="Foo.name",
+            mode="Foo.mode",
             running="MyApp.running",
             enabled="Bar.enabled",
             log_level="MyApp.log_level",
@@ -93,10 +95,10 @@ class MyApp(Application):
         print("app.config:")
         print(self.config)
         print("try running with --help-all to see all available flags")
-        self.log.info("Info Mesage")
-        self.log.debug("DebugMessage")
-        self.log.critical("Warning")
-        self.log.critical("Critical mesage")
+        self.log.debug("Debug Message")
+        self.log.info("Info Message")
+        self.log.warning("Warning Message")
+        self.log.critical("Critical Message")
 
 
 def main():

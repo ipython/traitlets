@@ -5,6 +5,7 @@
 
 import argparse
 import copy
+import functools
 import json
 import os
 import re
@@ -1016,8 +1017,10 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     "dest": traitname.replace(".", _DOT_REPLACEMENT),
                     "metavar": traitname,
                 }
+                argcompleter = None
                 if traitname in argparse_traits:
-                    argparse_kwds.update(argparse_traits[traitname][1])
+                    trait, kwds = argparse_traits[traitname]
+                    argparse_kwds.update(kwds)
                     if "action" in argparse_kwds and traitname in alias_flags:
                         # flag sets 'action', so can't have flag & alias with custom action
                         # on the same name
@@ -1025,6 +1028,11 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                             "The alias `%s` for the 'append' sequence "
                             "config-trait `%s` cannot be also a flag!'" % (key, traitname)
                         )
+                    # For argcomplete, check if any either an argcompleter metadata tag or method
+                    # is available. If so, it should be a callable which takes the command-line key
+                    # string as an argument and other kwargs passed by argcomplete,
+                    # and returns the a list of string completions.
+                    argcompleter = trait.metadata.get("argcompleter") or getattr(trait, "argcompleter", None)
                 if traitname in alias_flags:
                     # alias and flag.
                     # when called with 0 args: flag
@@ -1034,7 +1042,11 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     argparse_kwds["flag"] = alias_flags[traitname]
                     argparse_kwds["alias"] = traitname
                 keys = ("-" + key, "--" + key) if len(key) == 1 else ("--" + key,)
-                paa(*keys, **argparse_kwds)
+                action = paa(*keys, **argparse_kwds)
+                if argcompleter is not None:
+                    # argcomplete's completers are callables returning list of completion strings
+                    action.completer = functools.partial(argcompleter, key=key)
+        self.argcomplete()
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
@@ -1084,6 +1096,12 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         """
         self.log.warning("Unrecognized alias: '%s', it will have no effect.", arg)
 
+    def argcomplete(self):
+        try:
+            import argcomplete
+            argcomplete.autocomplete(self.parser)
+        except ImportError:
+            pass
 
 class KeyValueConfigLoader(KVArgParseConfigLoader):
     """Deprecated in traitlets 5.0

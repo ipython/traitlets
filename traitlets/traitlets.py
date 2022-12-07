@@ -2619,6 +2619,13 @@ class Bool(TraitType):
     def subclass_init(self, cls):
         pass  # fully opt out of instance_init
 
+    def argcompleter(self, **kwargs):
+        """Completion hints for argcomplete"""
+        completions = ["true", "1", "false", "0"]
+        if self.allow_none:
+            completions.append("None")
+        return completions
+
 
 class CBool(Bool):
     """A casting version of the boolean trait."""
@@ -2672,6 +2679,10 @@ class Enum(TraitType):
 
     def subclass_init(self, cls):
         pass  # fully opt out of instance_init
+
+    def argcompleter(self, **kwargs):
+        """Completion hints for argcomplete"""
+        return list(self.values)
 
 
 class CaselessStrEnum(Enum):
