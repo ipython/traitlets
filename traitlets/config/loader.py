@@ -997,7 +997,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                         argparse_kwds["nargs"] = multiplicity
                 argparse_traits[argname] = (trait, argparse_kwds)
 
-        for keys, (value, _) in flags.items():
+        for keys, (value, fhelp) in flags.items():
             if not isinstance(keys, tuple):
                 keys = (keys,)
             for key in keys:
@@ -1005,7 +1005,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     alias_flags[aliases[key]] = value
                     continue
                 keys = ("-" + key, "--" + key) if len(key) == 1 else ("--" + key,)
-                paa(*keys, action=_FlagAction, flag=value)
+                paa(*keys, action=_FlagAction, flag=value, help=fhelp)
 
         for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):
@@ -1046,7 +1046,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 if argcompleter is not None:
                     # argcomplete's completers are callables returning list of completion strings
                     action.completer = functools.partial(argcompleter, key=key)
-        self.argcomplete()
+        self.argcomplete(classes)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
@@ -1096,10 +1096,13 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         """
         self.log.warning("Unrecognized alias: '%s', it will have no effect.", arg)
 
-    def argcomplete(self):
+    def argcomplete(self, classes: t.List[t.Any]):
         try:
             import argcomplete
-            argcomplete.autocomplete(self.parser)
+            from . import argcomplete_config
+            finder = argcomplete_config.ExtendedCompletionFinder()
+            finder.config_classes = classes  # type: ignore
+            finder(self.parser)
         except ImportError:
             pass
 
