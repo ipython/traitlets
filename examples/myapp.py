@@ -35,6 +35,7 @@ from traitlets import Bool, Dict, Enum, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 
+
 class Foo(Configurable):
     """A class that has configurable, typed attributes."""
 

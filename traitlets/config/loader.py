@@ -1032,7 +1032,9 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     # is available. If so, it should be a callable which takes the command-line key
                     # string as an argument and other kwargs passed by argcomplete,
                     # and returns the a list of string completions.
-                    argcompleter = trait.metadata.get("argcompleter") or getattr(trait, "argcompleter", None)
+                    argcompleter = trait.metadata.get("argcompleter") or getattr(
+                        trait, "argcompleter", None
+                    )
                 if traitname in alias_flags:
                     # alias and flag.
                     # when called with 0 args: flag
@@ -1099,12 +1101,15 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     def argcomplete(self, classes: t.List[t.Any]):
         try:
             import argcomplete
+
             from . import argcomplete_config
+
             finder = argcomplete_config.ExtendedCompletionFinder()
             finder.config_classes = classes  # type: ignore
             finder(self.parser)
         except ImportError:
             pass
+
 
 class KeyValueConfigLoader(KVArgParseConfigLoader):
     """Deprecated in traitlets 5.0

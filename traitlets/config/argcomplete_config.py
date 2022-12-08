@@ -2,6 +2,7 @@ import typing as t
 
 import argcomplete
 
+
 class ExtendedCompletionFinder(argcomplete.CompletionFinder):
     """An extension of CompletionFinder which dynamically completes class-trait based options
 
@@ -19,6 +20,7 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
 
     These changes do require using the internals of argcomplete.CompletionFinder.
     """
+
     def match_class_completions(self, cword_prefix: str) -> t.List[t.Tuple[t.Any, str]]:
         """Match the word to be completed against our Configurable classes
 
@@ -28,10 +30,12 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
         class_completions = [(cls, f"--{cls.__name__}.") for cls in self.config_classes]
         matched_completions = class_completions
         if "." in cword_prefix:
-            cword_prefix = cword_prefix[:cword_prefix.index(".") + 1]
+            cword_prefix = cword_prefix[: cword_prefix.index(".") + 1]
             matched_completions = [(cls, c) for (cls, c) in class_completions if c == cword_prefix]
         elif len(cword_prefix) > 0:
-            matched_completions = [(cls, c) for (cls, c) in class_completions if c.startswith(cword_prefix)]
+            matched_completions = [
+                (cls, c) for (cls, c) in class_completions if c.startswith(cword_prefix)
+            ]
         return matched_completions
 
     def inject_class_to_parser(self, cls):
@@ -47,7 +51,9 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
         """
         try:
             for traitname, trait in cls.class_traits(config=True).items():
-                completer = trait.metadata.get("argcompleter") or getattr(trait, "argcompleter", None)
+                completer = trait.metadata.get("argcompleter") or getattr(
+                    trait, "argcompleter", None
+                )
                 self._parser.add_argument(
                     f"--{cls.__name__}.{traitname}",
                     type=str,
@@ -102,4 +108,3 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
         # However, there could be edge cases, for example if the matched class
         # has no configurable traits.
         return completions
-
