@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import sys
+import typing as t
 from io import StringIO
 from tempfile import TemporaryDirectory
 from unittest import TestCase
@@ -22,11 +23,7 @@ from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, U
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config, KVArgParseConfigLoader
-from traitlets.tests.utils import (
-    check_help_all_output,
-    check_help_output,
-    get_output_error_code,
-)
+from traitlets.tests.utils import check_help_all_output, check_help_output, get_output_error_code
 
 try:
     from unittest import mock
@@ -68,7 +65,7 @@ class MyApp(Application):
 
     name = Unicode("myapp")
     running = Bool(False, help="Is the app running?").tag(config=True)
-    classes = List([Bar, Foo])
+    classes = List([Bar, Foo])  # type:ignore
     config_file = Unicode("", help="Load this config file").tag(config=True)
 
     warn_tpyo = Unicode(
@@ -77,7 +74,7 @@ class MyApp(Application):
         help="Should print a warning if `MyApp.warn-typo=...` command is passed",
     )
 
-    aliases = {}
+    aliases: t.Dict[t.Any, t.Any] = {}
     aliases.update(Application.aliases)
     aliases.update(
         {
@@ -94,7 +91,7 @@ class MyApp(Application):
         }
     )
 
-    flags = {}
+    flags: t.Dict[t.Any, t.Any] = {}
     flags.update(Application.flags)
     flags.update(
         {
@@ -137,7 +134,7 @@ class TestApplication(TestCase):
         app = MyApp()
         self.assertEqual(app.name, "myapp")
         self.assertEqual(app.running, False)
-        self.assertEqual(app.classes, [MyApp, Bar, Foo])
+        self.assertEqual(app.classes, [MyApp, Bar, Foo])  # type:ignore
         self.assertEqual(app.config_file, "")
 
     def test_mro_discovery(self):
@@ -519,7 +516,7 @@ class TestApplication(TestCase):
             pass
 
         app = MyApp()
-        app.classes.append(NoTraits)
+        app.classes.append(NoTraits)  # type:ignore
 
         conf_txt = app.generate_config_file()
         print(conf_txt)
@@ -663,7 +660,7 @@ class TestApplication(TestCase):
 
             # Attempt to update, ensure error...
             with self.assertRaises(AttributeError):
-                app.loaded_config_files = "/foo"
+                app.loaded_config_files = "/foo"  # type:ignore
 
             # ensure it can't be udpated via append
             app.loaded_config_files.append("/bar")
@@ -707,7 +704,7 @@ class Sub2(Application):
 
 
 class Sub1(Application):
-    subcommands = {
+    subcommands: dict = {  # type:ignore
         "sub2": (Sub2, "Application class"),
         "sub3": (lambda root: Sub3(parent=root, flag=True), "factory"),
     }

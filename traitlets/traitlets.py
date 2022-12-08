@@ -666,9 +666,9 @@ class TraitType(BaseDescriptor):
                 )
             )
             return value
-        except Exception:
+        except Exception as e:
             # This should never be reached.
-            raise TraitError("Unexpected error in TraitType: default value not set properly")
+            raise TraitError("Unexpected error in TraitType: default value not set properly") from e
         else:
             return value
 
@@ -934,7 +934,7 @@ class MetaHasDescriptors(type):
     instantiated and sets their name attribute.
     """
 
-    def __new__(mcls, name, bases, classdict):
+    def __new__(mcls, name, bases, classdict):  # noqa
         """Create the HasDescriptors class."""
         for k, v in classdict.items():
             # ----------------------------------------------------------------
@@ -976,7 +976,7 @@ class MetaHasDescriptors(type):
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def setup_class(cls, classdict):
+    def setup_class(cls, classdict):  # noqa
         cls._trait_default_generators = {}
         super().setup_class(classdict)
 
@@ -1800,10 +1800,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         """Get metadata values for trait by key."""
         try:
             trait = getattr(self.__class__, traitname)
-        except AttributeError:
+        except AttributeError as e:
             raise TraitError(
                 f"Class {self.__class__.__name__} does not have a trait named {traitname}"
-            )
+            ) from e
         metadata_name = "_" + traitname + "_metadata"
         if hasattr(self, metadata_name) and key in getattr(self, metadata_name):
             return getattr(self, metadata_name).get(key, default)
@@ -1924,11 +1924,11 @@ class Type(ClassBasedTraitType):
         if isinstance(value, str):
             try:
                 value = self._resolve_string(value)
-            except ImportError:
+            except ImportError as e:
                 raise TraitError(
                     "The '%s' trait of %s instance must be a type, but "
                     "%r could not be imported" % (self.name, obj, value)
-                )
+                ) from e
         try:
             if issubclass(value, self.klass):  # type:ignore[arg-type]
                 return value
@@ -2394,9 +2394,9 @@ class Unicode(TraitType):
         if isinstance(value, bytes):
             try:
                 return value.decode("ascii", "strict")
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as e:
                 msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
-                raise TraitError(msg.format(value, self.name, class_of(obj)))
+                raise TraitError(msg.format(value, self.name, class_of(obj))) from e
         self.error(obj, value)
 
     def from_string(self, s):

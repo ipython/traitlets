@@ -29,7 +29,7 @@ ROOT = osp.dirname(osp.dirname(HERE))
 
 # We load the ipython release info into a dict by explicit execution
 _release = {}  # type:ignore
-exec(
+exec(  # noqa
     compile(
         open(osp.join(ROOT, "traitlets/_version.py")).read(),
         "../../traitlets/_version.py",
