@@ -2,6 +2,27 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.7.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.6.0...f07afea52cf6314bc20571c52409ff6cb115a709))
+
+### Enhancements made
+
+- Performance: decrease runtime overhead for constructing HasTraits (up to 20x faster) [#777](https://github.com/ipython/traitlets/pull/777) ([@maartenbreddels](https://github.com/maartenbreddels))
+
+### Maintenance and upkeep improvements
+
+- Minor fixes for Application.aliases [#810](https://github.com/ipython/traitlets/pull/810) ([@azjps](https://github.com/azjps))
+- Adopt ruff and address lint [#809](https://github.com/ipython/traitlets/pull/809) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-11-29&to=2022-12-08&type=c))
+
+[@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2022-11-29..2022-12-08&type=Issues) | [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2022-11-29..2022-12-08&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-11-29..2022-12-08&type=Issues) | [@naterush](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Anaterush+updated%3A2022-11-29..2022-12-08&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2022-11-29..2022-12-08&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.6.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/5.5.0...2c5188a3562f03c0703315b21df41ca7ace23dd3))
@@ -26,8 +47,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-10-18&to=2022-11-29&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2022-10-18..2022-11-29&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2022-10-18..2022-11-29&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-10-18..2022-11-29&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2022-10-18..2022-11-29&type=Issues) | [@rmorshea](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2022-10-18..2022-11-29&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.5.0
 
