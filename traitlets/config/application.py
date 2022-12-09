@@ -525,6 +525,7 @@ class Application(SingletonConfigurable):
             for c in cls.mro()[:-3]:
                 classdict[c.__name__] = c
 
+        fhelp: t.Optional[str]
         for alias, longname in self.aliases.items():
             try:
                 if isinstance(longname, tuple):

@@ -1047,7 +1047,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 action = paa(*keys, **argparse_kwds)
                 if argcompleter is not None:
                     # argcomplete's completers are callables returning list of completion strings
-                    action.completer = functools.partial(argcompleter, key=key)
+                    action.completer = functools.partial(argcompleter, key=key)  # type: ignore
         self.argcomplete(classes)
 
     def _convert_to_config(self):
@@ -1098,14 +1098,14 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         """
         self.log.warning("Unrecognized alias: '%s', it will have no effect.", arg)
 
-    def argcomplete(self, classes: t.List[t.Any]):
+    def argcomplete(self, classes: t.List[t.Any]) -> None:
         try:
             import argcomplete
 
             from . import argcomplete_config
 
             finder = argcomplete_config.ExtendedCompletionFinder()
-            finder.config_classes = classes  # type: ignore
+            finder.config_classes = classes
             finder(self.parser)
         except ImportError:
             pass

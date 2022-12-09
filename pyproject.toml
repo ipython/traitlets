@@ -47,14 +47,14 @@ nowarn = "test -W default {args}"
 
 [tool.hatch.envs.cov]
 features = ["test"]
-dependencies = ["coverage", "pytest-cov"]
+dependencies = ["coverage", "pytest-cov", "argcomplete"]
 [tool.hatch.envs.cov.scripts]
 test = "python -m pytest -vv --cov traitlets --cov-branch --cov-report term-missing:skip-covered {args}"
 nowarn = "test -W default {args}"
 
 [tool.hatch.envs.typing]
 features = ["test", "typing"]
-dependencies = ["mypy>=0.990"]
+dependencies = ["mypy>=0.990", "argcomplete"]
 [tool.hatch.envs.typing.scripts]
 test = "mypy --install-types --non-interactive {args:.}"
 

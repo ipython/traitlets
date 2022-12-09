@@ -1,3 +1,4 @@
+import argparse
 import typing as t
 
 import argcomplete
@@ -20,6 +21,8 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
 
     These changes do require using the internals of argcomplete.CompletionFinder.
     """
+    _parser: argparse.ArgumentParser
+    config_classes: t.List[t.Any]  # Configurables
 
     def match_class_completions(self, cword_prefix: str) -> t.List[t.Tuple[t.Any, str]]:
         """Match the word to be completed against our Configurable classes
@@ -54,17 +57,19 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
                 completer = trait.metadata.get("argcompleter") or getattr(
                     trait, "argcompleter", None
                 )
+                multiplicity = trait.metadata.get("multiplicity")
                 self._parser.add_argument(
                     f"--{cls.__name__}.{traitname}",
                     type=str,
                     help=trait.help,
+                    nargs=multiplicity,
                     # metavar=traitname,
-                ).completer = completer
+                ).completer = completer  # type: ignore
                 argcomplete.debug(f"added --{cls.__name__}.{traitname}")
         except AttributeError:
             pass
 
-    def _get_completions(self, comp_words, cword_prefix, *args):
+    def _get_completions(self, comp_words: t.List[str], cword_prefix: str, *args) -> t.List[str]:
         """Overriden to dynamically append --Class.trait arguments if appropriate
 
         Warning:
@@ -72,7 +77,13 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
             --Class1.Class2.<...>.trait, although this is valid for traitlets.
             Part of the reason is that we don't currently have a way to identify
             which classes may be used with Class1 as a parent.
+
+        Warning:
+            This is an internal method in CompletionFinder and so the API might
+            be subject to drift.
         """
+        # Try to identify if we are completing something related to --Class. for
+        # a known Class, if we are then add the Class config traits to our ArgumentParser.
         prefix_chars = self._parser.prefix_chars
         is_option = len(cword_prefix) > 0 and cword_prefix[0] in prefix_chars
         if is_option:
@@ -85,16 +96,21 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
                 self.inject_class_to_parser(matched_cls)
         elif len(comp_words) > 0 and "." in comp_words[-1] and not is_option:
             # If not an option, perform a hacky check to see if we are completing
-            # an argument for a --Class.trait option.
-            # TODO: the branch condition is wrong here for multiplicity="+", need to fix
-            matched_completions = self.match_class_completions(comp_words[-1])
-            if matched_completions:
-                matched_cls = matched_completions[0][0]
-                self.inject_class_to_parser(matched_cls)
+            # an argument for an already present --Class.trait option. Search backwards
+            # for last option (based on last word starting with prefix_chars), and see
+            # if it is of the form --Class.trait. Note that if multiplicity="+", these
+            # arguments might conflict with positional arguments.
+            for prev_word in comp_words[::-1]:
+                if len(prev_word) > 0 and prev_word[0] in prefix_chars:
+                    matched_completions = self.match_class_completions(prev_word)
+                    if matched_completions:
+                        matched_cls = matched_completions[0][0]
+                        self.inject_class_to_parser(matched_cls)
+                    break
 
         return super()._get_completions(comp_words, cword_prefix, *args)
 
-    def _get_option_completions(self, parser, cword_prefix):
+    def _get_option_completions(self, parser: argparse.ArgumentParser, cword_prefix: str) -> t.List[str]:
         """Overriden to add --Class. completions when appropriate"""
         completions = super()._get_option_completions(parser, cword_prefix)
         if cword_prefix.endswith("."):
@@ -105,6 +121,6 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
             completions.extend(opt for cls, opt in matched_completions)
         # If there is exactly one match, we would expect it to have aleady
         # been handled by the options dynamically added in _get_completions().
-        # However, there could be edge cases, for example if the matched class
-        # has no configurable traits.
+        # However, maybe there's an edge cases missed here, for example if the
+        # matched class has no configurable traits.
         return completions

@@ -13,7 +13,7 @@ import os
 import sys
 import typing as t
 from io import StringIO
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryFile, TemporaryDirectory
 from unittest import TestCase
 
 import pytest
@@ -670,6 +670,38 @@ class TestApplication(TestCase):
             app.load_config_file(name, path=[td1])
             self.assertEqual(len(app.loaded_config_files), 1)
             self.assertEqual(app.running, False)
+
+
+class TestArgcomplete:
+    IFS = "\013"
+    COMP_WORDBREAKS = " \t\n\"'><=;|&(:"
+
+    @pytest.fixture
+    def argcomplete_on(self):
+        _old_environ = os.environ
+        os.environ = os.environ.copy()
+        os.environ["_ARGCOMPLETE"] = "1"
+        os.environ["_ARC_DEBUG"] = "yes"
+        os.environ["IFS"] = self.IFS
+        os.environ["_ARGCOMPLETE_COMP_WORDBREAKS"] = self.COMP_WORDBREAKS
+        os.environ["_ARGCOMPLETE"] = "1"
+        yield
+        os.environ = _old_environ
+
+    def run_completer(self, app, command, point=None, **kwargs):
+        if point is None:
+            point = str(len(command))
+        with TemporaryFile(mode="w+") as t:
+            os.environ["COMP_LINE"] = command
+            os.environ["COMP_POINT"] = point
+            with pytest.raises(SystemExit) as cm:
+                app.initialize(command, output_stream=t, exit_method=sys.exit, **kwargs)
+            if cm.exception.code != 0:
+                raise Exception("Unexpected exit code %d" % cm.exception.code)
+            t.seek(0)
+            return t.read().split(self.IFS)
+
+    # TODO: need to pass through output_stream to argcomplete to create unit tests
 
 
 def test_cli_multi_scalar(caplog):
