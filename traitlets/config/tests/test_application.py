@@ -13,7 +13,7 @@ import os
 import sys
 import typing as t
 from io import StringIO
-from tempfile import TemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory, TemporaryFile
 from unittest import TestCase
 
 import pytest

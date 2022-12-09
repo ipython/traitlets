@@ -1100,7 +1100,6 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
     def argcomplete(self, classes: t.List[t.Any]) -> None:
         try:
-            import argcomplete
 
             from . import argcomplete_config
 

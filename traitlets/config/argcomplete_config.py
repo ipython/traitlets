@@ -21,6 +21,7 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
 
     These changes do require using the internals of argcomplete.CompletionFinder.
     """
+
     _parser: argparse.ArgumentParser
     config_classes: t.List[t.Any]  # Configurables
 
@@ -110,7 +111,9 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
 
         return super()._get_completions(comp_words, cword_prefix, *args)
 
-    def _get_option_completions(self, parser: argparse.ArgumentParser, cword_prefix: str) -> t.List[str]:
+    def _get_option_completions(
+        self, parser: argparse.ArgumentParser, cword_prefix: str
+    ) -> t.List[str]:
         """Overriden to add --Class. completions when appropriate"""
         completions = super()._get_option_completions(parser, cword_prefix)
         if cword_prefix.endswith("."):
