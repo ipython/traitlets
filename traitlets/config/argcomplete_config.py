@@ -1,10 +1,68 @@
+"""Helper utilities for integrating argcomplete with traitlets"""
 import argparse
+import os
 import typing as t
 
-import argcomplete
+try:
+    import argcomplete
+    from argcomplete import CompletionFinder
+except ImportError:
+    # This module and its utility methods are written to not crash even
+    # if argcomplete is not installed.
+    class StubModule:
+        def __getattr__(self, attr):
+            raise ModuleNotFoundError("No module named 'argcomplete'")
 
+    argcomplete = StubModule()
+    CompletionFinder = object
 
-class ExtendedCompletionFinder(argcomplete.CompletionFinder):
+def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
+    """Get current words prior to completion point
+
+    This is normally done in the `argcomplete.CompletionFinder` constructor,
+    but is exposed here to allow `traitlets` to follow dynamic code-paths such
+    as determining whether to evaluate a subcommand.
+    """
+    if "_ARGCOMPLETE" not in os.environ:
+        return None
+
+    comp_line = os.environ["COMP_LINE"]
+    comp_point = int(os.environ["COMP_POINT"])
+    try:
+        comp_line = argcomplete.ensure_str(comp_line)
+    except ModuleNotFoundError:
+        return None
+    # argcomplete.debug("splitting COMP_LINE for:", comp_line, comp_point)
+    cword_prequote, cword_prefix, cword_suffix, comp_words, last_wordbreak_pos = argcomplete.split_line(comp_line, comp_point)
+
+    # _ARGCOMPLETE is set by the shell script to tell us where comp_words
+    # should start, based on what we're completing.
+    # 1: <script> [args]
+    # 2: python <script> [args]
+    # 3: python -m <module> [args]
+    start = int(os.environ["_ARGCOMPLETE"]) - 1
+    comp_words = comp_words[start:]
+
+    # argcomplete.debug("prequote=", cword_prequote, "prefix=", cword_prefix, "suffix=", cword_suffix, "words=", comp_words, "last=", last_wordbreak_pos)
+    return comp_words
+
+def increment_argcomplete_index():
+    """Assumes ``$_ARGCOMPLETE`` is set and `argcomplete` is importable
+
+    Increment the index pointed to by ``$_ARGCOMPLETE``, which is used to
+    determine which word `argcomplete` should start evaluating the command-line.
+    This may be useful to "inform" `argcomplete` that we have already evaluated
+    the first word as a subcommand.
+    """
+    try:
+        os.environ["_ARGCOMPLETE"] = str(int(os.environ["_ARGCOMPLETE"]) + 1)
+    except Exception:
+        try:
+            argcomplete.debug("Unable to increment $_ARGCOMPLETE", os.environ["_ARGCOMPLETE"])
+        except (KeyError, ModuleNotFoundError):
+            pass
+
+class ExtendedCompletionFinder(CompletionFinder):
     """An extension of CompletionFinder which dynamically completes class-trait based options
 
     This finder mainly adds 2 functionalities:
@@ -66,7 +124,7 @@ class ExtendedCompletionFinder(argcomplete.CompletionFinder):
                     nargs=multiplicity,
                     # metavar=traitname,
                 ).completer = completer  # type: ignore
-                argcomplete.debug(f"added --{cls.__name__}.{traitname}")
+                # argcomplete.debug(f"added --{cls.__name__}.{traitname}")
         except AttributeError:
             pass
 

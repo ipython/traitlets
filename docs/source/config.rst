@@ -429,10 +429,10 @@ instances, mapping *subcommand names* to two-tuples containing these:
 
      .. note::
         The return value of the factory above is an *instance*, not a class,
-        son the :meth:`SingletonConfigurable.instance()` is not invoked
+        so the :meth:`SingletonConfigurable.instance()` is not invoked
         in this case.
 
-   In all cases, the instanciated app is stored in :attr:`Application.subapp`
+   In all cases, the instantiated app is stored in :attr:`Application.subapp`
    and its :meth:`Application.initialize()` is invoked.
 
 2. A short description of the subcommand for use in help output.

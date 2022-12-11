@@ -66,7 +66,10 @@ to assist in debugging argcomplete. This was last checked with ``argcomplete==1.
 import json
 import os
 
-from argcomplete.completers import EnvironCompleter, SuppressCompleter
+try:
+    from argcomplete.completers import EnvironCompleter, SuppressCompleter
+except ImportError:
+    EnvironCompleter = SuppressCompleter = None
 
 from traitlets import Bool, Dict, Enum, Int, List, Unicode
 from traitlets.config.application import Application
