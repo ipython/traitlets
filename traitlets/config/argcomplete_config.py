@@ -16,6 +16,7 @@ except ImportError:
     argcomplete = StubModule()
     CompletionFinder = object
 
+
 def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
     """Get current words prior to completion point
 
@@ -33,7 +34,13 @@ def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
     except ModuleNotFoundError:
         return None
     # argcomplete.debug("splitting COMP_LINE for:", comp_line, comp_point)
-    cword_prequote, cword_prefix, cword_suffix, comp_words, last_wordbreak_pos = argcomplete.split_line(comp_line, comp_point)
+    (
+        cword_prequote,
+        cword_prefix,
+        cword_suffix,
+        comp_words,
+        last_wordbreak_pos,
+    ) = argcomplete.split_line(comp_line, comp_point)
 
     # _ARGCOMPLETE is set by the shell script to tell us where comp_words
     # should start, based on what we're completing.
@@ -45,6 +52,7 @@ def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
 
     # argcomplete.debug("prequote=", cword_prequote, "prefix=", cword_prefix, "suffix=", cword_suffix, "words=", comp_words, "last=", last_wordbreak_pos)
     return comp_words
+
 
 def increment_argcomplete_index():
     """Assumes ``$_ARGCOMPLETE`` is set and `argcomplete` is importable
@@ -61,6 +69,7 @@ def increment_argcomplete_index():
             argcomplete.debug("Unable to increment $_ARGCOMPLETE", os.environ["_ARGCOMPLETE"])
         except (KeyError, ModuleNotFoundError):
             pass
+
 
 class ExtendedCompletionFinder(CompletionFinder):
     """An extension of CompletionFinder which dynamically completes class-trait based options

@@ -17,12 +17,14 @@ from traitlets import Enum, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 
+
 class PrintHello(Configurable):
     greet_name = Unicode("world").tag(config=True)
     greeting = Enum(values=["hello", "hi", "bye"], default_value="hello").tag(config=True)
 
     def run(self):
         print(f"{self.greeting} {self.greet_name}")
+
 
 class FooApp(Application):
     name = Unicode("foo")
@@ -36,6 +38,7 @@ class FooApp(Application):
     def start(self):
         print(self.name)
         PrintHello(parent=self).run()
+
 
 class BarApp(Application):
     name = Unicode("bar")
@@ -55,6 +58,7 @@ class BarApp(Application):
         main_app.clear_instance()
         return cls.instance(parent=main_app)
 
+
 class MainApp(Application):
     name = Unicode("subcommand-example-app")
     description = Unicode("demonstrates app with subcommands")
@@ -69,6 +73,7 @@ class MainApp(Application):
         "foo": (FooApp, "run foo"),
         "bar": (BarApp.get_subapp, "run bar"),
     }
+
 
 if __name__ == "__main__":
     MainApp.launch_instance()

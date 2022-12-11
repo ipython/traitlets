@@ -805,6 +805,7 @@ class Application(SingletonConfigurable):
         if check_argcomplete and "_ARGCOMPLETE" in os.environ:
             try:
                 from traitlets.config.argcomplete_config import get_argcomplete_cwords
+
                 cwords = get_argcomplete_cwords()
                 assert cwords is not None
                 return cwords
@@ -827,6 +828,7 @@ class Application(SingletonConfigurable):
 
         try:
             from traitlets.config.argcomplete_config import increment_argcomplete_index
+
             increment_argcomplete_index()
         except (ImportError, ModuleNotFoundError):
             pass
