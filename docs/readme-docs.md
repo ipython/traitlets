@@ -1,47 +1,38 @@
 # Documenting traitlets
 
-[Documentation for `traitlets`](https://traitlets.readthedocs.io/en/latest/)
-is hosted on ReadTheDocs.
+[Documentation for `traitlets`](https://traitlets.readthedocs.io/en/latest/) is hosted on ReadTheDocs.
 
 ## Build documentation locally
 
-#### Change directory to documentation root:
+With [`hatch`](https://hatch.pypa.io/), one can build environments, docs, and serve it in one command:
+
+```
+pip install hatch
+hatch run docs:build
+```
+
+#### Build documentation manually
+
+Otherwise to build docs manually,
 
 ```
 cd docs
 ```
 
-#### Create environment
+Create virtual environment (and install relevant dependencies):
 
-- \[**conda**\] Create conda env (and install relevant dependencies):
-
-  ```
-    conda env create -f environment.yml
-  ```
-
-- \[**pip**\] Create virtual environment (and install relevant dependencies):
-
-  ```
+```
     virtualenv traitlets_docs -p python3
-    pip install -r requirements.txt
-  ```
+    pip install -r traitlets[docs]
+```
 
-#### Activate the newly built environment `traitlets_docs`
+The virtualenv should have been automatically activated. If not:
 
-- \[**conda**\] Activate conda env:
+```
+source activate
+```
 
-  ```
-    source activate traitlets_docs
-  ```
-
-- \[**pip**\] The virtualenv should have been automatically activated. If
-  not:
-
-  ```
-    source activate
-  ```
-
-#### Build documentation using:
+##### Build documentation using:
 
 - Makefile for Linux and OS X:
 
@@ -55,7 +46,7 @@ cd docs
     make.bat html
   ```
 
-#### Display the documentation locally
+##### Display the documentation locally
 
 - Navigate to `build/html/index.html` in your browser.
 
@@ -77,5 +68,3 @@ cd docs
 - `source/conf.py` - Sphinx build configuration file
 - `source` directory - source for documentation
 - `source/index.rst` - Main landing page of the Sphinx documentation
-- `requirements.txt` - list of packages to install when using pip
-- `environment.yml` - list of packages to install when using conda

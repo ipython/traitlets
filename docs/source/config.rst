@@ -273,7 +273,7 @@ Command-line arguments
 ======================
 
 All configurable options can also be supplied at the command line when launching
-the application. Applications use a parser called
+the application. :class:`~traitlets.config.Application`s use a parser called
 :class:`~traitlets.config.loader.KVArgParseConfigLoader` to load values into a Config
 object.
 
@@ -291,6 +291,10 @@ is the same as adding:
     c.BaseIPythonApplication.profile = 'myprofile'
 
 to your configuration file.
+
+Similar to configs, any class name can be used in ``--Class.trait=value`` arguments, including
+classes that the :class:`~traitlets.config.Application` might not know about. However, the
+``--help-all`` menu will only enumerate ``config`` traits of classes in ``Application.classes``.
 
 .. versionchanged:: 5.0
 
@@ -376,6 +380,26 @@ to specify the whole class name:
 
 When specifying ``alias`` dictionary in code, the values might be the strings
 like ``'Class.trait'`` or two-tuples like ``('Class.trait', "Some help message")``.
+For example:
+
+.. code-block:: python
+
+    from traitlets import Bool
+    from traitlets.config import Configurable, Application
+
+    class Foo(Configurable):
+        enabled = Bool(False, help="whether enabled").tag(config=True)
+
+    class App(Application):
+        classes = [Foo]
+        dry_run = Bool(False, help="dry run test").tag(config=True)
+        aliases = {
+            "dry-run": "App.dry_run",
+            ("f", "foo-enabled"): ("Foo.enabled", "whether foo is enabled"),
+        }
+
+    if __name__ == "__main__":
+        App.launch_instance()
 
 Flags
 *****
@@ -400,6 +424,37 @@ For instance:
     # is equivalent to
     $ ipython --TerminalIPythonApp.display_banner=False
 
+And a simple code example:
+
+.. code-block:: python
+
+    from traitlets import Bool
+    from traitlets.config import Configurable, Application
+
+    class Foo(Configurable):
+        enabled = Bool(False, help="whether enabled").tag(config=True)
+
+    class App(Application):
+        classes = [Foo]
+        dry_run = Bool(False, help="dry run test").tag(config=True)
+        flags = {
+            "dry-run": ({"App": {"dry_run": True}}, dry_run.help),
+            ("f", "enable-foo"): ({
+               "Foo": {"enabled": True},
+            }, "Enable foo"),
+            ("disable-foo"): ({
+               "Foo": {"enabled": False},
+            }, "Disable foo"),
+        }
+
+    if __name__ == "__main__":
+        App.launch_instance()
+
+Since flags are a bit more complicated to set up, there are a couple of common patterns
+implemented in helper methods, for example :func:`traitlets.config.boolean_flag` for setting
+up ``--x`` and ``--no-x``.
+
+
 Subcommands
 -----------
 
@@ -414,8 +469,9 @@ after :command:`git`, and are called with the form :command:`command subcommand
 
 .. currentmodule::  traitlets.config
 
-Subcommands are specified as a dictionary on :class:`~traitlets.config.Application`
-instances, mapping *subcommand names* to two-tuples containing these:
+Subcommands are specified as a dictionary assigned to a ``subcommands`` class member
+of :class:`~traitlets.config.Application` instances. This dictionary maps
+*subcommand names* to two-tuples containing these:
 
 1. A subclass of :class:`Application` to handle the subcommand.
    This can be specified as:
@@ -437,10 +493,36 @@ instances, mapping *subcommand names* to two-tuples containing these:
 
 2. A short description of the subcommand for use in help output.
 
+For example (refer to ``examples/subcommands_app.py`` for a full example):
+
+.. code-block:: python
+
+    class SubApp1(Application):
+        pass
+
+    class SubApp2(Application):
+        @classmethod
+        def get_subapp_instance(cls, application: Application) -> Application:
+            application.clear_instance()  # since Application is singleton, need to clear main app
+            return cls.instance(parent=main_app)
+
+    class MainApp(Application):
+        subcommands = {
+            "subapp1": (SubApp1, "First subapp"),
+            "subapp2": (SubApp2.get_subapp_instance, "Second subapp"),
+        }
+
+    if __name__ == "__main__":
+        MainApp.launch_instance()
+
+
 To see a list of the available aliases, flags, and subcommands for a configurable
 application, simply pass ``-h`` or ``--help``. And to see the full list of
-configurable options (*very* long), pass ``--help-all``.
+configurable options (*very* long), pass ``--help-all``. 
 
+For more complete examples
+of setting up :class:`~traitlets.config.Application`, refer to the
+`application examples <https://github.com/ipython/traitlets/tree/main/examples>`__.
 
 .. _cli_strings:
 
@@ -496,7 +578,7 @@ but does not any more with traitlets 5, please `let us know <https://github.com/
 Custom traits
 *************
 
-.. versionadded: 5.0
+.. versionadded:: 5.0
 
 Custom trait types can override :meth:`~.TraitType.from_string`
 to specify how strings should be interpreted.
@@ -628,6 +710,90 @@ which would allow::
 
 to set a ``PathList`` trait with ``["/bin", "/usr/local/bin", "/opt/bin"]``.
 
+
+Command-line tab completion with `argcomplete`
+----------------------------------------------
+
+.. versionadded:: 5.8
+
+`traitlets` has limited support for command-line tab completion for scripts
+based on :class:`~traitlets.config.Application` using `argcomplete`. To use this,
+follow the instructions for `setting up argcomplete <https://github.com/kislyuk/argcomplete>`__;
+you will likely want to activate global completion by doing something alone the
+lines of:
+
+.. code-block:: bash
+
+    # pip install argcomplete
+    # mkdir -p ~/.bash_completion.d/
+    activate-global-python-argcomplete --dest=~/.bash_completion.d/argcomplete
+    # source ~/.bash_completion.d/argcomplete from your ~/.bashrc
+
+(Follow relevant instructions for your shell.) For any script you want the
+tab-completion to work on, include the line:
+
+.. code-block:: python
+
+    # PYTHON_ARGCOMPLETE_OK
+
+in the first 1024 bytes of the script.
+
+The following options can be tab-completed:
+
+* Flags and aliases
+
+* The classes in ``Application.classes``, which can be initially completed as ``--Class.``
+
+  * Once a completion is narrows to a single class, the individual ``config`` traits
+    of the class will be tab-completable, as ``--Class.trait``.
+
+* The available values for :class:`traitlets.Bool` and :class:`traitlets.Enum` will be completable,
+  as well as any other custom :class:`traitlets.TraitType` which defines a ``argcompleter()`` method
+  returning a list of available string completions.
+
+* Custom completer methods can be assigned to a trait by tagging an ``argcompleter`` metadata tag.
+  Refer to `argcomplete's documentation <https://github.com/kislyuk/argcomplete#specifying-completers>`__
+  for examples of creating custom completer methods.
+
+Detailed examples of these can be found in the docstring of ``examples/argcomplete_app.py``.
+
+
+Caveats with `argcomplete` handling
+***********************************
+
+The support for `argcomplete` is still relatively new and may not work with all ways in
+which an :class:`~traitlets.config.Application` is used. Some known caveats:
+
+* `argcomplete` is called when any `Application` first constructs and uses a
+  :class:`~traitlets.config.KVArgParseConfigLoader` instance. In particular,
+  it is called on the `argparse.ArgumentParser` instance constructed by `KVArgParseConfigLoader`.
+  We assume that this is usually first done in scripts when parsing the command-line arguments,
+  but technically a script can first call ``Application.initialize(["other", "args"])`` for
+  some other reason.
+
+* `traitlets` does not actually ever add ``--Class.trait`` options to the `ArgumentParser`,
+  but instead directly parses them from ``argv``. In order to complete these, a custom
+  :class:`~traitlets.config.argcomplete_config.CompletionFinder` is subclassed from
+  ``argcomplete.CompletionFinder``, which dynamically inserts the ``--Class.`` and ``--Class.trait``
+  completions when it thinks suitable. However, this handling may be a bit fragile.
+
+* Because `traitlets` initializes configs from `argv` and not from `ArgumentParser`, it may be
+  more difficult to write custom completers which dynamically provide completions based on the
+  state of other parsed arguments.
+
+* Subcommand handling is especially tricky. `argcomplete`'s strategy is to call the python script
+  with no arguments e.g. ``len(sys.argv) == 1``, run until `argcomplete` is called on an `ArgumentParser`
+  and determine what completions are available. On the other hand, `traitlet`'s subcommand-handling
+  strategy is to check ``sys.argv[1]`` and see if it matches a subcommand, and if so then dynamically
+  load the subcommand app and initialize it with ``sys.argv[1:]``. To reconcile these two different
+  approaches, some hacking was done to get `traitlets` to recognize the current command-line as seen
+  by `argcomplete`, and to get `argcomplete` to start parsing command-line arguments after subcommands
+  have been evaluated.
+
+  * Some applications like `Jupyter` have custom ways of constructing subcommands which complicates
+    things even further.
+
+More details about these caveats can be found in the `original pull request <https://github.com/ipython/traitlets/pull/811>`__.
 
 
 Design requirements

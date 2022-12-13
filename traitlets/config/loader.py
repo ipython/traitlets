@@ -1100,14 +1100,15 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
     def argcomplete(self, classes: t.List[t.Any]) -> None:
         try:
-
-            from . import argcomplete_config
-
-            finder = argcomplete_config.ExtendedCompletionFinder()
-            finder.config_classes = classes
-            finder(self.parser)
+            import argcomplete
         except ImportError:
-            pass
+            return
+
+        from . import argcomplete_config
+
+        finder = argcomplete_config.ExtendedCompletionFinder()
+        finder.config_classes = classes
+        finder(self.parser)
 
 
 class KeyValueConfigLoader(KVArgParseConfigLoader):
