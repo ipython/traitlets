@@ -15,5 +15,6 @@ class App(Application):
         print(f"x={self.x}")
         print(f"y={self.y}")
 
+
 if __name__ == "__main__":
     App.launch_instance()

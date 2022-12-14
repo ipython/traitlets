@@ -12,6 +12,7 @@ class HexBytes(Bytes):
     def from_string(self, s):
         return a2b_hex(s)
 
+
 class App(Application):
     aliases = {"key": "App.key"}
     key = HexBytes(
@@ -20,11 +21,12 @@ class App(Application):
 
         Specify as hex on the command-line.
         """,
-        config=True
+        config=True,
     )
 
     def start(self):
         print(f"key={self.key}")
+
 
 if __name__ == "__main__":
     App.launch_instance()
