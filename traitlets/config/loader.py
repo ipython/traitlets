@@ -1108,7 +1108,8 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
         finder = argcomplete_config.ExtendedCompletionFinder()
         finder.config_classes = classes
-        finder(self.parser)
+        # for ease of testing, pass through self._argcomplete_kwargs if set
+        finder(self.parser, **getattr(self, "_argcomplete_kwargs", {}))
 
 
 class KeyValueConfigLoader(KVArgParseConfigLoader):

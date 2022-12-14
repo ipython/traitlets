@@ -2682,7 +2682,7 @@ class Enum(TraitType):
 
     def argcompleter(self, **kwargs):
         """Completion hints for argcomplete"""
-        return list(self.values)
+        return [str(v) for v in self.values]
 
 
 class CaselessStrEnum(Enum):
