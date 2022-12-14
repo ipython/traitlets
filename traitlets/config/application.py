@@ -788,7 +788,7 @@ class Application(SingletonConfigurable):
         return KVArgParseConfigLoader(argv, aliases, flags, classes=classes, log=self.log)
 
     @classmethod
-    def _get_sys_argv(cls, check_argcomplete=False) -> t.List[str]:
+    def _get_sys_argv(cls, check_argcomplete: bool = False) -> t.List[str]:
         """Get `sys.argv` or equivalent from `argcomplete`
 
         `argcomplete`'s strategy is to call the python script with no arguments,

@@ -22,7 +22,7 @@ requires-python = ">=3.7"
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["pytest", "pre-commit"]
+test = ["pytest", "pre-commit", "argcomplete"]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",

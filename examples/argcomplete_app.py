@@ -70,7 +70,6 @@ try:
     from argcomplete.completers import EnvironCompleter, SuppressCompleter
 except ImportError:
     EnvironCompleter = SuppressCompleter = None
-
 from traitlets import Bool, Dict, Enum, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
@@ -126,23 +125,19 @@ def bool_flag(trait, value=True):
 class ArgcompleteApp(Application):
     name = Unicode("argcomplete-example-app")
     description = Unicode("prints requested environment variables")
-    classes = List([JsonPrinter, EnvironPrinter])
+    classes = [JsonPrinter, EnvironPrinter]
 
     config_file = Unicode("", help="Load this config file").tag(config=True)
 
-    aliases = Dict(
-        {  # type:ignore[assignment]
-            ("e", "env-var", "env-vars"): "EnvironPrinter.vars",
-            ("s", "style"): "EnvironPrinter.style",
-            ("json-indent"): "JsonPrinter.indent",
-        }
-    )
+    aliases = {
+        ("e", "env-var", "env-vars"): "EnvironPrinter.vars",
+        ("s", "style"): "EnvironPrinter.style",
+        ("json-indent"): "JsonPrinter.indent",
+    }
 
-    flags = Dict(
-        {  # type:ignore[assignment]
-            "skip-if-missing": bool_flag(EnvironPrinter.skip_if_missing),
-        }
-    )
+    flags = {
+        "skip-if-missing": bool_flag(EnvironPrinter.skip_if_missing),
+    }
 
     def initialize(self, argv=None):
         self.parse_command_line(argv)

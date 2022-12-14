@@ -13,7 +13,7 @@ class SubApp2(Application):
     @classmethod
     def get_subapp_instance(cls, app: Application) -> Application:
         app.clear_instance()  # since Application is singleton, need to clear main app
-        return cls.instance(parent=app)
+        return cls.instance(parent=app)  # type: ignore[no-any-return]
 
 
 class MainApp(Application):

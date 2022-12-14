@@ -11,7 +11,9 @@ except ImportError:
     # if argcomplete is not installed.
     class StubModule:
         def __getattr__(self, attr):
-            raise ModuleNotFoundError("No module named 'argcomplete'")
+            if not attr.startswith("__"):
+                raise ModuleNotFoundError("No module named 'argcomplete'")
+            raise AttributeError(f"argcomplete stub module has no attribute '{attr}'")
 
     argcomplete = StubModule()
     CompletionFinder = object
@@ -34,6 +36,7 @@ def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
     except ModuleNotFoundError:
         return None
     # argcomplete.debug("splitting COMP_LINE for:", comp_line, comp_point)
+    comp_words: t.List[str]
     (
         cword_prequote,
         cword_prefix,
@@ -126,18 +129,20 @@ class ExtendedCompletionFinder(CompletionFinder):
                     trait, "argcompleter", None
                 )
                 multiplicity = trait.metadata.get("multiplicity")
-                self._parser.add_argument(
+                self._parser.add_argument(  # type: ignore[attr-defined]
                     f"--{cls.__name__}.{traitname}",
                     type=str,
                     help=trait.help,
                     nargs=multiplicity,
                     # metavar=traitname,
-                ).completer = completer  # type: ignore
+                ).completer = completer
                 # argcomplete.debug(f"added --{cls.__name__}.{traitname}")
         except AttributeError:
             pass
 
-    def _get_completions(self, comp_words: t.List[str], cword_prefix: str, *args) -> t.List[str]:
+    def _get_completions(
+        self, comp_words: t.List[str], cword_prefix: str, *args: t.Any
+    ) -> t.List[str]:
         """Overriden to dynamically append --Class.trait arguments if appropriate
 
         Warning:
@@ -176,12 +181,15 @@ class ExtendedCompletionFinder(CompletionFinder):
                         self.inject_class_to_parser(matched_cls)
                     break
 
-        return super()._get_completions(comp_words, cword_prefix, *args)
+        completions: t.List[str]
+        completions = super()._get_completions(comp_words, cword_prefix, *args)
+        return completions
 
     def _get_option_completions(
         self, parser: argparse.ArgumentParser, cword_prefix: str
     ) -> t.List[str]:
         """Overriden to add --Class. completions when appropriate"""
+        completions: t.List[str]
         completions = super()._get_option_completions(parser, cword_prefix)
         if cword_prefix.endswith("."):
             return completions

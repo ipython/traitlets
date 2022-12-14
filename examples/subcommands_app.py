@@ -28,7 +28,7 @@ class PrintHello(Configurable):
 
 class FooApp(Application):
     name = Unicode("foo")
-    classes = List([PrintHello])
+    classes = [PrintHello]
     aliases = {
         "print-name": "PrintHello.greet_name",
     }
@@ -42,7 +42,7 @@ class FooApp(Application):
 
 class BarApp(Application):
     name = Unicode("bar")
-    classes = List([PrintHello])
+    classes = [PrintHello]
     aliases = {
         "print-name": "PrintHello.greet_name",
     }
@@ -56,7 +56,7 @@ class BarApp(Application):
     @classmethod
     def get_subapp(cls, main_app: Application) -> Application:
         main_app.clear_instance()
-        return cls.instance(parent=main_app)
+        return cls.instance(parent=main_app)  # type: ignore[no-any-return]
 
 
 class MainApp(Application):
