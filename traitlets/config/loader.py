@@ -17,7 +17,6 @@ from traitlets.traitlets import Any, Container, Dict, HasTraits, List, Undefined
 
 from ..utils import cast_unicode, filefind
 
-
 # -----------------------------------------------------------------------------
 # Exceptions
 # -----------------------------------------------------------------------------
@@ -1100,7 +1099,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
     def argcomplete(self, classes: t.List[t.Any]) -> None:
         try:
-            import argcomplete
+            import argcomplete  # noqa
         except ImportError:
             return
 
