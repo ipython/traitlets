@@ -25,8 +25,10 @@ class ArgcompleteApp(Application):
         loader._argcomplete_kwargs = self.argcomplete_kwargs  # type: ignore[attr-defined]
         return loader
 
+
 class SubApp1(ArgcompleteApp):
     pass
+
 
 class SubApp2(ArgcompleteApp):
     @classmethod
@@ -34,12 +36,12 @@ class SubApp2(ArgcompleteApp):
         app.clear_instance()  # since Application is singleton, need to clear main app
         return cls.instance(parent=app)  # type: ignore[no-any-return]
 
+
 class MainApp(ArgcompleteApp):
     subcommands = {
         "subapp1": (SubApp1, "First subapp"),
         "subapp2": (SubApp2.get_subapp_instance, "Second subapp"),
     }
-
 
 
 class TestArgcomplete:
