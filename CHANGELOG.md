@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.7.1
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.7.0...aa0d38bf02d34a6df788477da30eac6e58ffbda5))
+
+### Bugs fixed
+
+- fix: some descriptors raise AttributeError [#812](https://github.com/ipython/traitlets/pull/812) ([@maartenbreddels](https://github.com/maartenbreddels))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-12-08&to=2022-12-12&type=c))
+
+[@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-12-08..2022-12-12&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.7.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.6.0...f07afea52cf6314bc20571c52409ff6cb115a709))
@@ -20,8 +36,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-11-29&to=2022-12-08&type=c))
 
 [@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2022-11-29..2022-12-08&type=Issues) | [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2022-11-29..2022-12-08&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-11-29..2022-12-08&type=Issues) | [@naterush](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Anaterush+updated%3A2022-11-29..2022-12-08&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2022-11-29..2022-12-08&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.6.0
 
