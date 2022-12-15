@@ -24,7 +24,6 @@ from traitlets.utils.text import indent, wrap_paragraphs
 
 from .loader import Config, DeferredConfig, LazyConfigValue, _is_section_key
 
-
 # -----------------------------------------------------------------------------
 # Helper classes for Configurables
 # -----------------------------------------------------------------------------
