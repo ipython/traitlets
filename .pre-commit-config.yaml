@@ -1,93 +1,40 @@
+ci:
+  autoupdate_schedule: monthly
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: v4.4.0
     hooks:
-      - id: debug-statements
-        stages: [manual]
-      - id: check-added-large-files
-        stages: [manual]
-      - id: check-case-conflict
-        stages: [manual]
-      - id: check-toml
-        stages: [manual]
-      - id: check-yaml
-        stages: [manual]
-      - id: forbid-new-submodules
-        stages: [manual]
-      - id: check-builtin-literals
-        stages: [manual]
-      - id: check-case-conflict
-        stages: [manual]
-      - id: check-executables-have-shebangs
-        stages: [manual]
       - id: end-of-file-fixer
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
       - id: requirements-txt-fixer
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: forbid-new-submodules
+      - id: check-builtin-literals
       - id: trailing-whitespace
 
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.19.2
+    hooks:
+      - id: check-github-workflows
+
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
+    hooks:
+      - id: mdformat
+
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 22.10.0
     hooks:
       - id: black
-        args: ["--line-length", "100"]
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.178
     hooks:
-      - id: isort
-        files: \.py$
-        args: [--profile=black]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.960
-    hooks:
-      - id: mypy
-        args: ["--config-file", "pyproject.toml"]
-        exclude: "traitlets/.*tests/.*.py"
-        additional_dependencies: [pytest, types-docutils, sphinx]
-        stages: [manual]
-
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.6.2
-    hooks:
-      - id: prettier
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.32.1
-    hooks:
-      - id: pyupgrade
-        args: [--py37-plus]
-
-  - repo: https://github.com/PyCQA/doc8
-    rev: 0.11.2
-    hooks:
-      - id: doc8
-        args: [--max-line-length=200]
-        stages: [manual]
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 4.0.1
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          [
-            "flake8-bugbear==20.1.4",
-            "flake8-logging-format==0.6.0",
-            "flake8-implicit-str-concat==0.2.0",
-          ]
-        stages: [manual]
-
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.16.0
-    hooks:
-      - id: eslint
-        stages: [manual]
-
-  - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.15.1
-    hooks:
-      - id: check-jsonschema
-        name: "Check GitHub Workflows"
-        files: ^\.github/workflows/
-        types: [yaml]
-        args: ["--schemafile", "https://json.schemastore.org/github-workflow"]
-        stages: [manual]
+      - id: ruff
+        args: ["--fix"]

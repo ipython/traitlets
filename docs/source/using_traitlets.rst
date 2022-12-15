@@ -143,8 +143,8 @@ properties.
 
     class Nested(HasTraits):
 
-        value = Dict(traits={
-            'configuration': Dict(trait=Unicode()),
+        value = Dict(per_key_traits={
+            'configuration': Dict(value_trait=Unicode()),
             'flag': Bool()
         })
 
