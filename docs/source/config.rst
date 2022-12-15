@@ -188,7 +188,7 @@ but with a .json extension.
 Configuration described in previous section could be written as follows in a
 JSON configuration file:
 
-.. sourcecode:: json
+.. code-block:: json
 
     {
       "MyClass": {
@@ -304,7 +304,7 @@ By default, values are assigned in much the same way as in a config file:
 
 is the same as adding:
 
-.. sourcecode:: python
+.. code-block:: python
 
     c.InteractiveShell.autoindent = False
     c.BaseIPythonApplication.profile = 'myprofile'
@@ -644,7 +644,7 @@ Custom trait types can override :meth:`~.TraitType.from_string`
 to specify how strings should be interpreted.
 This could for example allow specifying hex-encoded bytes on the command-line:
 
-.. sourcecode:: python
+.. code-block:: python
     :caption: examples/docs/from_string.py
     :emphasize-lines: 6,7
 
@@ -710,7 +710,7 @@ but the new way allows container items to be specified by passing the argument m
 
 This handling is good enough that we can recommend defining aliases for container traits for the first time! For example:
 
-.. sourcecode:: python
+.. code-block:: python
     :caption: examples/docs/container.py
 
     from traitlets.config import Application
@@ -756,7 +756,7 @@ If you would prefer, you can also use custom container traits
 which define :meth`~.TraitType.from_string` to expand a single string into a list,
 for example:
 
-.. sourcecode:: python
+.. code-block:: python
 
     class PathList(List):
         def from_string(self, s):
