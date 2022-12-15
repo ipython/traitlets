@@ -17,7 +17,6 @@ from traitlets.traitlets import Any, Container, Dict, HasTraits, List, Undefined
 
 from ..utils import cast_unicode, filefind
 
-
 # -----------------------------------------------------------------------------
 # Exceptions
 # -----------------------------------------------------------------------------
