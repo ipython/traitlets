@@ -70,7 +70,7 @@ try:
     from argcomplete.completers import EnvironCompleter, SuppressCompleter
 except ImportError:
     EnvironCompleter = SuppressCompleter = None
-from traitlets import Bool, Dict, Enum, Int, List, Unicode
+from traitlets import Bool, Enum, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 

@@ -13,7 +13,7 @@ Example:
     hello bob
 """
 
-from traitlets import Enum, List, Unicode
+from traitlets import Enum, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 
