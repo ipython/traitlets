@@ -18,6 +18,7 @@ from traitlets.config.loader import KVArgParseConfigLoader
 
 
 class ArgcompleteApp(Application):
+    """Override loader to pass through kwargs for argcomplete testing"""
     argcomplete_kwargs: t.Dict[str, t.Any]
 
     def _create_loader(self, argv, aliases, flags, classes):
@@ -74,6 +75,9 @@ class TestArgcomplete:
         """Mostly borrowed from argcomplete's unit tests
 
         Modified to take an application instead of an ArgumentParser
+
+        Command is the current command being completed and point is the index
+        into the command where the completion is triggered.
         """
         if point is None:
             point = str(len(command))
@@ -105,9 +109,6 @@ class TestArgcomplete:
                 out = t.read()
             return out.split(self.IFS)
 
-    # these tests work fine locally for me, but currently failing on GitHub CI
-    # due to OSError(9), possibly non-determistic :(
-    @pytest.mark.skip(reason="Failing on CI with Bad file descriptor")
     def test_complete_simple_app(self, argcomplete_on):
         app = ArgcompleteApp()
         expected = [
@@ -128,7 +129,6 @@ class TestArgcomplete:
             '--Application.log_format',
         }
 
-    @pytest.mark.skip(reason="Failing on CI with Bad file descriptor")
     def test_complete_custom_completers(self, argcomplete_on):
         app = ArgcompleteApp()
         # test pre-defined completers for Bool/Enum
@@ -181,7 +181,6 @@ class TestArgcomplete:
     #         '--SubApp2.',
     #     }
 
-    @pytest.mark.skip(reason="Failing on CI with Bad file descriptor")
     def test_complete_subcommands_main(self, argcomplete_on):
         app = MainApp()
         completions = set(self.run_completer(app, "app --"))
