@@ -19,6 +19,7 @@ from traitlets.config.loader import KVArgParseConfigLoader
 
 class ArgcompleteApp(Application):
     """Override loader to pass through kwargs for argcomplete testing"""
+
     argcomplete_kwargs: t.Dict[str, t.Any]
 
     def _create_loader(self, argv, aliases, flags, classes):
