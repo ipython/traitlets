@@ -67,7 +67,7 @@ import json
 import os
 
 try:
-    from argcomplete.completers import EnvironCompleter, SuppressCompleter
+    from argcomplete.completers import EnvironCompleter, SuppressCompleter  # type: ignore[import]
 except ImportError:
     EnvironCompleter = SuppressCompleter = None
 from traitlets import Bool, Enum, Int, List, Unicode

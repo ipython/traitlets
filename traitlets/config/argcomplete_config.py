@@ -4,7 +4,7 @@ import os
 import typing as t
 
 try:
-    import argcomplete
+    import argcomplete  # type: ignore[import]
     from argcomplete import CompletionFinder
 except ImportError:
     # This module and its utility methods are written to not crash even
@@ -31,19 +31,18 @@ def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
 
     comp_line = os.environ["COMP_LINE"]
     comp_point = int(os.environ["COMP_POINT"])
-    try:
-        comp_line = argcomplete.ensure_str(comp_line)
-    except ModuleNotFoundError:
-        return None
     # argcomplete.debug("splitting COMP_LINE for:", comp_line, comp_point)
     comp_words: t.List[str]
-    (
-        cword_prequote,
-        cword_prefix,
-        cword_suffix,
-        comp_words,
-        last_wordbreak_pos,
-    ) = argcomplete.split_line(comp_line, comp_point)
+    try:
+        (
+            cword_prequote,
+            cword_prefix,
+            cword_suffix,
+            comp_words,
+            last_wordbreak_pos,
+        ) = argcomplete.split_line(comp_line, comp_point)
+    except ModuleNotFoundError:
+        return None
 
     # _ARGCOMPLETE is set by the shell script to tell us where comp_words
     # should start, based on what we're completing.
