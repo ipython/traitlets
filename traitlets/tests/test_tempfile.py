@@ -1,9 +1,40 @@
+import contextlib
 import os
 from pathlib import Path
 import sys
 from tempfile import TemporaryFile, TemporaryDirectory
 
 import pytest
+
+_DEBUG = True
+
+
+@contextlib.contextmanager
+def mute_stdout():
+    stdout = sys.stdout
+    sys.stdout = open(os.devnull, "w")
+    try:
+        yield
+    finally:
+        sys.stdout = stdout
+
+
+@contextlib.contextmanager
+def mute_stderr():
+    stderr = sys.stderr
+    sys.stderr = open(os.devnull, "w")
+    try:
+        yield
+    finally:
+        sys.stderr.close()
+        sys.stderr = stderr
+
+
+debug_stream = sys.stderr
+def debug(*args):
+    if _DEBUG:
+        print(file=debug_stream, *args)
+
 
 class TestTempFile:
     IFS = "\013"
@@ -15,6 +46,20 @@ class TestTempFile:
 
         Set up environment variables to mimic those passed by argcomplete
         """
+        global debug_stream
+        try:
+            debug_stream = os.fdopen(9, "w")
+        except Exception:
+            debug_stream = sys.stderr
+        debug("test")
+        debug_stream.flush()
+
+        with mute_stdout():
+            print("abc")
+
+        with mute_stderr():
+            print("def", file=sys.stderr)
+
         _old_environ = os.environ
         os.environ = os.environ.copy()  # type: ignore[assignment]
         os.environ["_ARGCOMPLETE"] = "1"
