@@ -2,7 +2,7 @@ import contextlib
 import os
 import sys
 from pathlib import Path
-from tempfile import TemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory, TemporaryFile
 
 import pytest
 
