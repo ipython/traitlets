@@ -581,7 +581,8 @@ subclasses, but can also be set as instance variables.
 Additionally, the following are set by :class:`~traitlets.config.Application`:
 
 * ``.cli_config``, ``.extra_args``: These are set after :meth:`Application.initialize()`
-  has parsed the command-line arguments.
+  has parsed the command-line arguments. ``extra_args`` is a list holding any positional
+  arguments (as noted earlier, these must be contiguous in the command-line).
 
 
 .. _cli_strings:

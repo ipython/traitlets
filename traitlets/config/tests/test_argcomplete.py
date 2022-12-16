@@ -4,7 +4,6 @@ Tests for argcomplete handling by traitlets.config.application.Application
 
 import io
 import os
-import sys
 import typing as t
 
 import pytest
@@ -46,6 +45,14 @@ class MainApp(ArgcompleteApp):
     }
 
 
+class CustomError(Exception):
+    """Helper for exit hook for testing argcomplete"""
+
+    @classmethod
+    def exit(cls, code):
+        raise cls(str(code))
+
+
 class TestArgcomplete:
     IFS = "\013"
     COMP_WORDBREAKS = " \t\n\"'><=;|&(:"
@@ -82,41 +89,24 @@ class TestArgcomplete:
         """
         if point is None:
             point = str(len(command))
-        try:
-            # NOTE: argcomplete does not have a version attribute as far as I can find,
-            # when argcomplete was promoted to version 2.0, the change was made to
-            # have output_stream be in text mode instead of binary mode
-            # https://github.com/kislyuk/argcomplete/commit/efe11f30290fbd298aa5e6505556bb0ab1596ea0
-            # We hackily "check" for argcomplete version by seeing if it still contains
-            # py2 compatibility helpers. Once argcomplete>=2.0 has settled we can
-            # drop all of the bytes handling.
-            argcomplete.ensure_str
-            write_mode = "wb+"
-        except AttributeError:
-            write_mode = "wt+"
         # Flushing tempfile was leading to CI failures with Bad file descriptor, not sure why.
         # Fortunately we can just write to a StringIO instead.
         # print("Writing completions to temp file with mode=", write_mode)
         # from tempfile import TemporaryFile
         # with TemporaryFile(mode=write_mode) as t:
-        if write_mode == "wb+":
-            strio = io.BytesIO()
-        else:
-            strio = io.StringIO()
+        strio = io.StringIO()
         os.environ["COMP_LINE"] = command
         os.environ["COMP_POINT"] = str(point)
-        with pytest.raises(SystemExit) as cm:
-            app.argcomplete_kwargs = dict(output_stream=strio, exit_method=sys.exit, **kwargs)
+
+        with pytest.raises(CustomError) as cm:
+            app.argcomplete_kwargs = dict(
+                output_stream=strio, exit_method=CustomError.exit, **kwargs
+            )
             app.initialize()
-        if cm.value.code != 0:
-            raise Exception(f"Unexpected exit code {cm.value.code}")
-        out: str
-        if isinstance(strio, io.BytesIO):
-            out = strio.getvalue().decode()
-        elif isinstance(strio, io.StringIO):
-            out = strio.getvalue()
-        else:
-            raise RuntimeError("Expected io.StringIO")
+
+        if str(cm.value) != "0":
+            raise RuntimeError(f"Unexpected exit code {cm.value}")
+        out = strio.getvalue()
         return out.split(self.IFS)
 
     def test_complete_simple_app(self, argcomplete_on):
