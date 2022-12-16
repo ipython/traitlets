@@ -26,20 +26,11 @@ class TestTempFile:
 
         _old_environ = os.environ
         os.environ = os.environ.copy()  # type: ignore[assignment]
-        # os.environ["_ARGCOMPLETE"] = "1"
-        # os.environ["_ARC_DEBUG"] = "yes"
         os.environ["IFS"] = self.IFS
-        # os.environ["_ARGCOMPLETE_COMP_WORDBREAKS"] = self.COMP_WORDBREAKS
-        # os.environ["_ARGCOMPLETE"] = "1"
         yield
         os.environ = _old_environ
 
     def test_temp_file1(self, argcomplete_on):
-        with TemporaryFile("wt+") as t:
-            t.write("hello world")
-            t.flush()
-            t.seek(0)
-            assert t.read() == "hello world"
         with TemporaryFile("wt+") as t:
             t.write("hello world")
             t.flush()
@@ -63,23 +54,7 @@ class TestTempFile:
             t.seek(0)
             assert t.read() == "hello world"
 
-        with TemporaryFile("wt+") as t:
-            with pytest.raises(SystemExit):
-                sys.exit(0)
-            t.write("hello world")
-            t.flush()
-            t.seek(0)
-            assert t.read() == "hello world"
-
     def test_temp_file3(self, argcomplete_on):
-        with TemporaryFile("wt+") as t:
-            with pytest.raises(SystemExit):
-                sys.exit(0)
-            t.write("hello world")
-            t.flush()
-            t.seek(0)
-            assert t.read() == "hello world"
-
         with TemporaryFile("wt+") as t:
             with pytest.raises(SystemExit):
                 sys.exit(0)
