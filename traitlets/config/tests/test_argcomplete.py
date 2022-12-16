@@ -66,10 +66,9 @@ class TestArgcomplete:
         _old_environ = os.environ
         os.environ = os.environ.copy()  # type: ignore[assignment]
         os.environ["_ARGCOMPLETE"] = "1"
-        os.environ["_ARC_DEBUG"] = "yes"
+        # os.environ["_ARC_DEBUG"] = "yes"
         os.environ["IFS"] = self.IFS
         os.environ["_ARGCOMPLETE_COMP_WORDBREAKS"] = self.COMP_WORDBREAKS
-        os.environ["_ARGCOMPLETE"] = "1"
         yield
         os.environ = _old_environ
 
