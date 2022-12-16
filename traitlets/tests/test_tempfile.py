@@ -1,7 +1,7 @@
 import contextlib
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 from tempfile import TemporaryFile, TemporaryDirectory
 
 import pytest
@@ -31,6 +31,8 @@ def mute_stderr():
 
 
 debug_stream = sys.stderr
+
+
 def debug(*args):
     if _DEBUG:
         print(file=debug_stream, *args)
@@ -54,11 +56,11 @@ class TestTempFile:
         debug("test")
         debug_stream.flush()
 
-        with mute_stdout():
-            print("abc")
+        # with mute_stdout():
+        #     print("abc")
 
-        with mute_stderr():
-            print("def", file=sys.stderr)
+        # with mute_stderr():
+        #     print("def", file=sys.stderr)
 
         _old_environ = os.environ
         os.environ = os.environ.copy()  # type: ignore[assignment]
