@@ -58,7 +58,7 @@ class TestArgcomplete:
     COMP_WORDBREAKS = " \t\n\"'><=;|&(:"
 
     @pytest.fixture
-    def argcomplete_on(self):
+    def argcomplete_on(self, mocker):
         """Mostly borrowed from argcomplete's unit test fixtures
 
         Set up environment variables to mimic those passed by argcomplete
@@ -66,11 +66,19 @@ class TestArgcomplete:
         _old_environ = os.environ
         os.environ = os.environ.copy()  # type: ignore[assignment]
         os.environ["_ARGCOMPLETE"] = "1"
-        # os.environ["_ARC_DEBUG"] = "yes"
+        os.environ["_ARC_DEBUG"] = "yes"
         os.environ["IFS"] = self.IFS
         os.environ["_ARGCOMPLETE_COMP_WORDBREAKS"] = self.COMP_WORDBREAKS
-        yield
-        os.environ = _old_environ
+
+        # argcomplete==2.0.0 always calls fdopen(9, "w") to open a debug stream,
+        # however this could conflict with file descriptors used by pytest
+        # and lead to obscure errors. Since we are not looking at debug stream
+        # in these tests, just mock this fdopen call out.
+        mocker.patch("os.fdopen")
+        try:
+            yield
+        finally:
+            os.environ = _old_environ
 
     def run_completer(
         self,
