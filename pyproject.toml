@@ -22,7 +22,7 @@ requires-python = ">=3.7"
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["pytest", "pre-commit"]
+test = ["pytest", "pre-commit", "pytest-mock"]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",
@@ -45,7 +45,7 @@ nowarn = "test -W default {args}"
 
 [tool.hatch.envs.cov]
 features = ["test"]
-dependencies = ["coverage", "pytest-cov"]
+dependencies = ["coverage", "pytest-cov", "pytest-mock"]
 [tool.hatch.envs.cov.scripts]
 test = "python -m pytest -vv --cov traitlets --cov-branch --cov-report term-missing:skip-covered {args}"
 nowarn = "test -W default {args}"

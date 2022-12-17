@@ -8,12 +8,13 @@ debug_stream = sys.stderr
 
 class TestTempFile:
     @pytest.fixture
-    def argcomplete_on(self):
+    def argcomplete_on(self, mocker):
         """Mostly borrowed from argcomplete's unit test fixtures
 
         Set up environment variables to mimic those passed by argcomplete
         """
-        # mock_fdopen = mocker.patch("os.fdopen")
+        mock_fdopen = mocker.patch("os.fdopen")
+        global debug_stream
 
         try:
             debug_stream = os.fdopen(9, "w")
