@@ -7,7 +7,6 @@ debug_stream = sys.stderr
 
 
 class TestTempFile:
-
     @pytest.fixture
     def argcomplete_on(self):
         """Mostly borrowed from argcomplete's unit test fixtures
