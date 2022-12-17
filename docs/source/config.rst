@@ -60,7 +60,7 @@ Singletons: :class:`~traitlets.config.SingletonConfigurable`
     just like Configurables, except they have a class method
     :meth:`~traitlets.config.SingletonConfigurable.instance`,
     that returns the current active instance (or creates one if it
-    does not exist). :class:`~traitlets.config.Application`s is a singleton.
+    does not exist). :class:`~traitlets.config.Application` is a singleton.
     This lets
     objects easily connect to the current running Application without passing
     objects around everywhere.  For instance, to get the current running
@@ -215,7 +215,7 @@ command can be used in a configuration file for this purpose. Here is a simple
 example that loads all of the values from the file :file:`base_config.py`:
 
 .. code-block:: python
-    :caption: base_config.py
+    :caption: examples/docs/base_config.py
 
     c = get_config()  # noqa
     c.MyClass.name = 'coolname'
@@ -224,7 +224,7 @@ example that loads all of the values from the file :file:`base_config.py`:
 into the configuration file :file:`main_config.py`:
 
 .. code-block:: python
-    :caption: main_config.py
+    :caption: examples/docs/main_config.py
     :emphasize-lines: 4
 
     c = get_config()  # noqa
@@ -238,7 +238,8 @@ into the configuration file :file:`main_config.py`:
 In a situation like this the :func:`load_subconfig` makes sure that the
 search path for sub-configuration files is inherited from that of the parent.
 Thus, you can typically put the two in the same directory and everything will
-just work.
+just work. An example app using these configuration files can be found at
+``examples/docs/load_config_app.py``.
 
 
 Class based configuration inheritance
@@ -292,11 +293,29 @@ Command-line arguments
 ======================
 
 All configurable options can also be supplied at the command line when launching
-the application. Applications use a parser called
-:class:`~traitlets.config.loader.KVArgParseConfigLoader` to load values into a
-:class:`~traitlets.config.Config` object.
+the application. Internally, when :meth:`Application.initialize()` is called,
+a :class:`~traitlets.config.loader.KVArgParseConfigLoader` instance is constructed
+to load values into a :class:`~traitlets.config.Config` object. (For advanced users,
+this can be overridden in the helper method :meth:`Application._create_loader()`.)
 
-By default, values are assigned in much the same way as in a config file:
+Most command-line scripts simply need to call :meth:`Application.launch_instance()`,
+which will create the Application singleton, parse the command-line arguments, and
+start the application:
+
+.. code-block:: python
+    :emphasize-lines: 8
+
+    from traitlets.config import Application
+
+    class MyApp(Application):
+        def start(self):
+            pass  # app logic goes here
+
+    if __name__ == "__main__":
+        MyApp.launch_instance()
+
+By default, config values are assigned from command-line arguments in much the
+same way as in a config file:
 
 .. code-block:: bash
 
@@ -309,7 +328,37 @@ is the same as adding:
     c.InteractiveShell.autoindent = False
     c.BaseIPythonApplication.profile = 'myprofile'
 
-to your configuration file.
+to your configuration file. Command-line arguments take precedence over
+values read from configuration files. (This is done in
+:meth:`Application.load_config_file()` by merging `Application.cli_config`
+over values read from configuration files.)
+
+Note that even though :class:`Application` is a :class:`SingletonConfigurable`, multiple
+applications could still be started and called from each other by constructing
+them as one would with any other :class:`Configurable`:
+
+.. code-block:: python
+    :caption: examples/docs/multiple_apps.py
+    :emphasize-lines: 11,12,13
+
+    from traitlets.config import Application
+
+    class OtherApp(Application):
+        def start(self):
+            print("other")
+
+    class MyApp(Application):
+        classes = [OtherApp]
+        def start(self):
+            # similar to OtherApp.launch_instance(), but without singleton
+            self.other_app = OtherApp(config=self.config)
+            self.other_app.initialize(["--OtherApp.log_level", "INFO"])
+            self.other_app.start()
+
+    if __name__ == "__main__":
+        MyApp.launch_instance()
+
+
 
 .. versionchanged:: 5.0
 
@@ -348,10 +397,9 @@ to your configuration file.
 
 .. note::
 
-    Any error in configuration files which lead to this configuration
-    file will be ignored by default. Application subclasses may specify
-    `raise_config_file_errors = True` to exit on failure to load config files,
-    instead of the default of logging the failures.
+    By default, an error in a configuration file will cause the configuration
+    file to be ignored and a warning logged. Application subclasses may specify
+    `raise_config_file_errors = True` to exit on failure to load config files instead.
 
 .. versionadded:: 4.3
 
@@ -444,7 +492,7 @@ For instance:
     # is equivalent to
     $ ipython --TerminalIPythonApp.display_banner=False
 
-And a simple code example:
+And a runnable code example:
 
 .. code-block:: python
     :caption: examples/docs/flags.py
@@ -473,9 +521,10 @@ And a simple code example:
         App.launch_instance()
 
 Since flags are a bit more complicated to set up, there are a couple of common patterns
-implemented in helper methods, for example :func:`traitlets.config.boolean_flag` for setting
-up ``--x`` and ``--no-x``. By default, a few flags are set up: ``--debug`` (setting ``log_level=DEBUG``),
-``--show-config``, and ``--show-config-json`` (print config to stdout and exit).
+implemented in helper methods. For example, :func:`traitlets.config.boolean_flag()` sets
+up the flags ``--x`` and ``--no-x``. By default, the following few flags are set up:
+``--debug`` (setting ``log_level=DEBUG``), ``--show-config``, and ``--show-config-json``
+(print config to stdout and exit).
 
 
 Subcommands
@@ -580,9 +629,13 @@ subclasses, but can also be set as instance variables.
 
 Additionally, the following are set by :class:`~traitlets.config.Application`:
 
-* ``.cli_config``, ``.extra_args``: These are set after :meth:`Application.initialize()`
-  has parsed the command-line arguments. ``extra_args`` is a list holding any positional
-  arguments (as noted earlier, these must be contiguous in the command-line).
+* ``.cli_config``: The :class:`~traitlets.config.Config` created from the command-line arguments.
+  This is saved to override any config values loaded from configuration files called by
+  :meth:`Application.load_config_file()`.
+
+* ``.extra_args``: This is a list holding any positional arguments remaining from
+  the command-line arguments parsed during :meth:`Application.initialize()`.
+  As noted earlier, these must be contiguous in the command-line.
 
 
 .. _cli_strings:
@@ -778,15 +831,17 @@ Command-line tab completion with `argcomplete`
 .. versionadded:: 5.8
 
 `traitlets` has limited support for command-line tab completion for scripts
-based on :class:`~traitlets.config.Application` using `argcomplete`. To use this,
-follow the instructions for `setting up argcomplete <https://github.com/kislyuk/argcomplete>`__;
-you will likely want to activate global completion by doing something alone the
-lines of:
+based on :class:`~traitlets.config.Application` using
+`argcomplete <https://github.com/kislyuk/argcomplete>`__. To use this,
+follow the instructions for setting up argcomplete;
+you will likely want to
+`activate global completion <https://github.com/kislyuk/argcomplete#activating-global-completion>`__
+by doing something alone the lines of:
 
 .. code-block:: bash
 
     # pip install argcomplete
-    # mkdir -p ~/.bash_completion.d/
+    mkdir -p ~/.bash_completion.d/
     activate-global-python-argcomplete --dest=~/.bash_completion.d/argcomplete
     # source ~/.bash_completion.d/argcomplete from your ~/.bashrc
 
@@ -826,16 +881,16 @@ The support for `argcomplete` is still relatively new and may not work with all 
 which an :class:`~traitlets.config.Application` is used. Some known caveats:
 
 * `argcomplete` is called when any `Application` first constructs and uses a
-  :class:`~traitlets.config.KVArgParseConfigLoader` instance. In particular,
-  it is called on the `argparse.ArgumentParser` instance constructed by `KVArgParseConfigLoader`.
+  :class:`~traitlets.config.KVArgParseConfigLoader` instance, which constructs
+  a `argparse.ArgumentParser` instance.
   We assume that this is usually first done in scripts when parsing the command-line arguments,
   but technically a script can first call ``Application.initialize(["other", "args"])`` for
   some other reason.
 
-* `traitlets` does not actually ever add ``--Class.trait`` options to the `ArgumentParser`,
+* `traitlets` does not actually add ``"--Class.trait"`` options to the `ArgumentParser`,
   but instead directly parses them from ``argv``. In order to complete these, a custom
   :class:`~traitlets.config.argcomplete_config.CompletionFinder` is subclassed from
-  ``argcomplete.CompletionFinder``, which dynamically inserts the ``--Class.`` and ``--Class.trait``
+  ``argcomplete.CompletionFinder``, which dynamically inserts the ``"--Class.""`` and ``"--Class.trait"``
   completions when it thinks suitable. However, this handling may be a bit fragile.
 
 * Because `traitlets` initializes configs from `argv` and not from `ArgumentParser`, it may be
