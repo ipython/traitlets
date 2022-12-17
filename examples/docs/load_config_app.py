@@ -17,7 +17,7 @@ Example:
     default ranking:0
 """
 
-import os
+from pathlib import Path
 
 from traitlets import Int, Unicode
 from traitlets.config import Application, Configurable
@@ -45,7 +45,7 @@ class MyApp(Application):
     def initialize(self, argv=None):
         super().initialize(argv=argv)
         if self.config_file:
-            self.load_config_file(self.config_file, [os.path.dirname(__file__)])
+            self.load_config_file(self.config_file, [Path(__file__).parent / "configs"])
 
     def start(self):
         print(MyClass(parent=self))
