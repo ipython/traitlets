@@ -40,8 +40,3 @@ class TestTempFile:
     def test_temp_file2(self, argcomplete_on):
         with pytest.raises(RuntimeError):
             raise RuntimeError("test")
-
-    def test_temp_file3(self, argcomplete_on):
-        with TemporaryFile("wt+") as t:
-            with pytest.raises(SystemExit):
-                sys.exit(0)
