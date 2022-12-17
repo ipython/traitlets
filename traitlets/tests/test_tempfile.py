@@ -1,6 +1,5 @@
 import os
 import sys
-from tempfile import TemporaryFile
 
 import pytest
 
@@ -31,11 +30,8 @@ class TestTempFile:
         os.environ = _old_environ
 
     def test_temp_file1(self, argcomplete_on):
-        with TemporaryFile("wt+") as t:
-            t.write("hello world")
-            t.flush()
-            t.seek(0)
-            assert t.read() == "hello world"
+        with pytest.raises(RuntimeError):
+            raise RuntimeError("test")
 
     def test_temp_file2(self, argcomplete_on):
         with pytest.raises(RuntimeError):
