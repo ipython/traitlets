@@ -215,7 +215,7 @@ command can be used in a configuration file for this purpose. Here is a simple
 example that loads all of the values from the file :file:`base_config.py`:
 
 .. code-block:: python
-    :caption: examples/docs/base_config.py
+    :caption: examples/docs/configs/base_config.py
 
     c = get_config()  # noqa
     c.MyClass.name = 'coolname'
@@ -224,7 +224,7 @@ example that loads all of the values from the file :file:`base_config.py`:
 into the configuration file :file:`main_config.py`:
 
 .. code-block:: python
-    :caption: examples/docs/main_config.py
+    :caption: examples/docs/configs/main_config.py
     :emphasize-lines: 4
 
     c = get_config()  # noqa
@@ -239,8 +239,7 @@ In a situation like this the :func:`load_subconfig` makes sure that the
 search path for sub-configuration files is inherited from that of the parent.
 Thus, you can typically put the two in the same directory and everything will
 just work. An example app using these configuration files can be found at
-``examples/docs/load_config_app.py``.
-
+`examples/docs/load_config_app.py <https://github.com/ipython/traitlets/blob/main/examples/docs/load_config_app.py>`__.
 
 Class based configuration inheritance
 =====================================
@@ -871,7 +870,8 @@ The following options can be tab-completed:
   Refer to `argcomplete's documentation <https://github.com/kislyuk/argcomplete#specifying-completers>`__
   for examples of creating custom completer methods.
 
-Detailed examples of these can be found in the docstring of ``examples/argcomplete_app.py``.
+Detailed examples of these can be found in the docstring of
+`examples/argcomplete_app.py <https://github.com/ipython/traitlets/blob/main/examples/argcomplete_app.py>`__.
 
 
 Caveats with `argcomplete` handling
