@@ -558,6 +558,9 @@ class TraitType(BaseDescriptor):
         if read_only is not None:
             self.read_only = read_only
         self.help = help if help is not None else ""
+        if self.help:
+            # define __doc__ so that inspectors like autodoc find traits
+            self.__doc__ = self.help
 
         if len(kwargs) > 0:
             stacklevel = 1
