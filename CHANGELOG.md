@@ -2,18 +2,6 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
-## 5.8.0
-
-### Enhancements made
-
-- Shell command-line tab-completion via `argcomplete` [#811](https://github.com/ipython/traitlets/pull/811) ([@azjps](https://github.com/azjps))
-
-### Maintenance and upkeep improvements
-
-- Additional `Application` examples and docs [#811](https://github.com/ipython/traitlets/pull/811) ([@azjps](https://github.com/azjps))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
-
 ## 5.7.1
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.7.0...aa0d38bf02d34a6df788477da30eac6e58ffbda5))
@@ -27,6 +15,8 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-12-08&to=2022-12-12&type=c))
 
 [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-12-08..2022-12-12&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.7.0
 
