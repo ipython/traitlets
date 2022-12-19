@@ -2,6 +2,33 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.8.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.7.1...47e652f96aff54d1aa3b19337c9c8d80fe0fd4c4))
+
+### Enhancements made
+
+-Shell command-line tab-completion via `argcomplete` [#811](https://github.com/ipython/traitlets/pull/811) ([@azjps](https://github.com/azjps))
+
+- Define `trait.__doc__` = `trait.help` for better API Docs [#816](https://github.com/ipython/traitlets/pull/816) ([@minrk](https://github.com/minrk))
+
+### Maintenance and upkeep improvements
+
+- Expose more attributes for typing [#817](https://github.com/ipython/traitlets/pull/817) ([@blink1073](https://github.com/blink1073))
+- Fix lint [#814](https://github.com/ipython/traitlets/pull/814) ([@blink1073](https://github.com/blink1073))
+
+### Documentation improvements
+
+- Additional `Application` examples and docs  [#811](https://github.com/ipython/traitlets/pull/811) ([@azjps](https://github.com/azjps))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-12-12&to=2022-12-19&type=c))
+
+[@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2022-12-12..2022-12-19&type=Issues) | [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2022-12-12..2022-12-19&type=Issues) | [@minrk](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aminrk+updated%3A2022-12-12..2022-12-19&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.7.1
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.7.0...aa0d38bf02d34a6df788477da30eac6e58ffbda5))
@@ -15,8 +42,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-12-08&to=2022-12-12&type=c))
 
 [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-12-08..2022-12-12&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.7.0
 
