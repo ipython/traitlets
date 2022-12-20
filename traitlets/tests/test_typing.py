@@ -2,7 +2,6 @@ import pytest
 from typing_extensions import reveal_type
 
 from traitlets import Bool, HasTraits, TCPAddress
-from traitlets.config import Application
 
 
 @pytest.mark.mypy_testing

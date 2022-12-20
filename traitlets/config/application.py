@@ -17,7 +17,7 @@ from contextlib import suppress
 from copy import deepcopy
 from logging.config import dictConfig
 from textwrap import dedent
-from typing import Any, Callable, TypeVar, cast
+from typing import Callable, TypeVar, cast
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
 from traitlets.config.loader import (
