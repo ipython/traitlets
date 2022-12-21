@@ -209,7 +209,7 @@ class Application(SingletonConfigurable):
     )
 
     # The log level for the application
-    log_level: t.Union[str, int, Enum[t.Any, t.Any]] = Enum(  # type:ignore[assignment]
+    log_level: t.Union[str, int, Enum[t.Any, t.Any]] = Enum(
         (0, 10, 20, 30, 40, 50, "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"),
         default_value=logging.WARN,
         help="Set the log level by value or name.",
@@ -217,22 +217,14 @@ class Application(SingletonConfigurable):
 
     _log_formatter_cls = LevelFormatter
 
-    log_datefmt: t.Union[
-        str, Unicode[str, t.Union[str, bytes]]
-    ] = Unicode(  # type:ignore[assignment]
+    log_datefmt: t.Union[str, Unicode[str, t.Union[str, bytes]]] = Unicode(
         "%Y-%m-%d %H:%M:%S", help="The date format used by logging formatters for %(asctime)s"
-    ).tag(
-        config=True
-    )
+    ).tag(config=True)
 
-    log_format: t.Union[
-        str, Unicode[str, t.Union[str, bytes]]
-    ] = Unicode(  # type:ignore[assignment]
+    log_format: t.Union[str, Unicode[str, t.Union[str, bytes]]] = Unicode(
         "[%(name)s]%(highlevel)s %(message)s",
         help="The Logging format template",
-    ).tag(
-        config=True
-    )
+    ).tag(config=True)
 
     def get_default_logging_config(self):
         """Return the base logging configuration.
@@ -253,7 +245,7 @@ class Application(SingletonConfigurable):
                 "console": {
                     "class": "logging.StreamHandler",
                     "formatter": "console",
-                    "level": logging.getLevelName(self.log_level),  # type:ignore[assignment]
+                    "level": logging.getLevelName(self.log_level),
                     "stream": "ext://sys.stderr",
                 },
             },
@@ -436,17 +428,13 @@ class Application(SingletonConfigurable):
 
     _loaded_config_files = List()
 
-    show_config: t.Union[bool, Bool[bool, t.Union[bool, int]]] = Bool(  # type:ignore[assignment]
+    show_config: t.Union[bool, Bool[bool, t.Union[bool, int]]] = Bool(
         help="Instead of starting the Application, dump configuration to stdout"
     ).tag(config=True)
 
-    show_config_json: t.Union[
-        bool, Bool[bool, t.Union[bool, int]]
-    ] = Bool(  # type:ignore[assignment]
+    show_config_json: t.Union[bool, Bool[bool, t.Union[bool, int]]] = Bool(
         help="Instead of starting the Application, dump configuration to stdout (as JSON)"
-    ).tag(
-        config=True
-    )
+    ).tag(config=True)
 
     @observe("show_config_json")
     def _show_config_json_changed(self, change):
