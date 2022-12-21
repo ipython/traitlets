@@ -93,7 +93,7 @@ warn_unused_configs = true
 warn_redundant_casts = true
 warn_return_any = true
 warn_unused_ignores = true
-exclude = ["examples/docs/configs"]
+exclude = ["examples/docs/configs", "traitlets/tests/test_typing.py"]
 
 [tool.pytest.ini_options]
 addopts = "--durations=10 -ra --showlocals --doctest-modules --color yes --ignore examples/docs/configs"

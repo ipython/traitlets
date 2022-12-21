@@ -238,7 +238,7 @@ class Application(SingletonConfigurable):
                 "console": {
                     "class": "logging.StreamHandler",
                     "formatter": "console",
-                    "level": logging.getLevelName(self.log_level),  # type:ignore[arg-type]
+                    "level": logging.getLevelName(self.log_level),
                     "stream": "ext://sys.stderr",
                 },
             },
