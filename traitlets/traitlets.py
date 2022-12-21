@@ -2202,7 +2202,7 @@ class Instance(ClassBasedTraitType[T, T]):
         @t.overload
         def __init__(
             self: "Instance[T]",
-            klass: t.Union[str, t.Type[T], None] = ...,
+            klass: t.Type[T] = ...,
             args: t.Optional[t.Tuple[t.Any, ...]] = ...,
             kw: t.Optional[t.Dict[str, t.Any]] = ...,
             allow_none: Literal[False] = ...,
@@ -2213,7 +2213,29 @@ class Instance(ClassBasedTraitType[T, T]):
         @t.overload
         def __init__(
             self: "Instance[t.Optional[T]]",
-            klass: t.Union[str, t.Type[T], None] = ...,
+            klass: t.Type[T] = ...,
+            args: t.Optional[t.Tuple[t.Any, ...]] = ...,
+            kw: t.Optional[t.Dict[str, t.Any]] = ...,
+            allow_none: Literal[True] = ...,
+            **kwargs: t.Any,
+        ) -> None:
+            ...
+
+        @t.overload
+        def __init__(
+            self: "Instance[t.Any]",
+            klass: t.Union[str, None] = ...,
+            args: t.Optional[t.Tuple[t.Any, ...]] = ...,
+            kw: t.Optional[t.Dict[str, t.Any]] = ...,
+            allow_none: Literal[False] = ...,
+            **kwargs: t.Any,
+        ) -> None:
+            ...
+
+        @t.overload
+        def __init__(
+            self: "Instance[t.Optional[t.Any]]",
+            klass: t.Union[str, None] = ...,
             args: t.Optional[t.Tuple[t.Any, ...]] = ...,
             kw: t.Optional[t.Dict[str, t.Any]] = ...,
             allow_none: Literal[True] = ...,

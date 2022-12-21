@@ -149,6 +149,7 @@ def mypy_instance_typing():
     class T(HasTraits):
         inst = Instance(Foo)
         oinst = Instance(Foo, allow_none=True)
+        oinst_string = Instance("Foo", allow_none=True)
 
     t = T()
     reveal_type(t.inst)  # R: traitlets.tests.test_typing.Foo
@@ -157,6 +158,7 @@ def mypy_instance_typing():
         T.inst.tag(sync=True)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
     )
     reveal_type(t.oinst)  # R: Union[traitlets.tests.test_typing.Foo, None]
+    reveal_type(t.oinst_string)  # R: Union[Any, None]
     reveal_type(
         T.oinst  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
     )
