@@ -792,7 +792,7 @@ def test_deep_alias():
             self.foo = Foo(parent=self)
 
     class TestApp(Application):
-        name = "test"  # type:ignore
+        name = "test"
 
         aliases = {"val": "Bar.Foo.val"}
         classes = [Foo, Bar]
