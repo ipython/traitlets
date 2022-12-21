@@ -3,7 +3,12 @@ from typing import Optional
 import pytest
 from typing_extensions import reveal_type
 
-from traitlets import Bool, CInt, HasTraits, Int, TCPAddress
+from traitlets import Bool, CInt, HasTraits, Instance, Int, TCPAddress
+
+
+class Foo:
+    def __init__(self, c):
+        self.c = c
 
 
 @pytest.mark.mypy_testing
@@ -132,3 +137,29 @@ def mypy_tcp_typing():
     t.tcp = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Tuple[str, int]")  [assignment]
     t.otcp = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Optional[Tuple[str, int]]")  [assignment]
     t.tcp = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Tuple[str, int]")  [assignment]
+
+
+@pytest.mark.mypy_testing
+def mypy_instance_typing():
+    class T(HasTraits):
+        inst = Instance(Foo)
+        oinst = Instance(Foo, allow_none=True)
+
+    t = T()
+    reveal_type(t.inst)  # R: traitlets.tests.test_typing.Foo
+    reveal_type(T.inst)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
+    reveal_type(
+        T.inst.tag(sync=True)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
+    )
+    reveal_type(t.oinst)  # R: Union[traitlets.tests.test_typing.Foo, None]
+    reveal_type(
+        T.oinst  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
+    )
+    reveal_type(
+        T.oinst.tag(  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
+            sync=True
+        )
+    )
+    t.inst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Foo")  [assignment]
+    t.oinst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Optional[Foo]")  [assignment]
+    t.inst = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Foo")  [assignment]

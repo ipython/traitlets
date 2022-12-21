@@ -112,7 +112,7 @@ class TestTraitType(TestCase):
         self.assertEqual(a._notify_new, 10)
 
     def test_validate(self):
-        class MyTT(TraitType):
+        class MyTT(TraitType[int, int]):
             def validate(self, inst, value):
                 return -1
 
@@ -127,7 +127,7 @@ class TestTraitType(TestCase):
         self.assertEqual(a.tt, -1)
 
     def test_default_validate(self):
-        class MyIntTT(TraitType):
+        class MyIntTT(TraitType[int, int]):
             def validate(self, obj, value):
                 if isinstance(value, int):
                     return value
@@ -154,7 +154,7 @@ class TestTraitType(TestCase):
 
     def test_error(self):
         class A(HasTraits):
-            tt = TraitType()
+            tt = TraitType[int, int]()
 
         a = A()
         self.assertRaises(TraitError, A.tt.error, a, 10)
@@ -271,14 +271,14 @@ class TestTraitType(TestCase):
         self.assertEqual(a._trait_values, {"x": 11})
 
     def test_tag_metadata(self):
-        class MyIntTT(TraitType):
+        class MyIntTT(TraitType[int, int]):
             metadata = {"a": 1, "b": 2}
 
         a = MyIntTT(10).tag(b=3, c=4)
         self.assertEqual(a.metadata, {"a": 1, "b": 3, "c": 4})
 
     def test_metadata_localized_instance(self):
-        class MyIntTT(TraitType):
+        class MyIntTT(TraitType[int, int]):
             metadata = {"a": 1, "b": 2}
 
         a = MyIntTT(10)
@@ -326,7 +326,7 @@ class TestTraitType(TestCase):
         self.assertEqual(Foo().bar, {})
 
     def test_deprecated_metadata_access(self):
-        class MyIntTT(TraitType):
+        class MyIntTT(TraitType[int, int]):
             metadata = {"a": 1, "b": 2}
 
         a = MyIntTT(10)
@@ -395,12 +395,12 @@ class TestHasDescriptorsMeta(TestCase):
 
     def test_this_class(self):
         class A(HasTraits):
-            t = This()
-            tt = This()
+            t = This["A"]()
+            tt = This["A"]()
 
         class B(A):
-            tt = This()
-            ttt = This()
+            tt = This["A"]()
+            ttt = This["A"]()
 
         self.assertEqual(A.t.this_class, A)
         self.assertEqual(B.t.this_class, A)
@@ -1098,7 +1098,7 @@ class TestInstance(TestCase):
         class Bah:
             pass
 
-        class FooInstance(Instance):
+        class FooInstance(Instance[Foo]):
             klass = Foo
 
         class A(HasTraits):
@@ -1174,7 +1174,7 @@ class TestInstance(TestCase):
 
         def inner():
             class A(HasTraits):
-                inst = Instance(Foo())
+                inst = Instance(Foo())  # type:ignore
 
         self.assertRaises(TraitError, inner)
 
@@ -1182,7 +1182,7 @@ class TestInstance(TestCase):
 class TestThis(TestCase):
     def test_this_class(self):
         class Foo(HasTraits):
-            this = This()
+            this = This["Foo"]()
 
         f = Foo()
         self.assertEqual(f.this, None)
@@ -1193,7 +1193,7 @@ class TestThis(TestCase):
 
     def test_this_inst(self):
         class Foo(HasTraits):
-            this = This()
+            this = This["Foo"]()
 
         f = Foo()
         f.this = Foo()
@@ -1201,7 +1201,7 @@ class TestThis(TestCase):
 
     def test_subclass(self):
         class Foo(HasTraits):
-            t = This()
+            t = This["Foo"]()
 
         class Bar(Foo):
             pass
@@ -1215,7 +1215,7 @@ class TestThis(TestCase):
 
     def test_subclass_override(self):
         class Foo(HasTraits):
-            t = This()
+            t = This["Foo"]()
 
         class Bar(Foo):
             t = This()
@@ -2479,12 +2479,12 @@ def test_notification_order():
 ###
 class ForwardDeclaredInstanceTrait(HasTraits):
 
-    value = ForwardDeclaredInstance("ForwardDeclaredBar", allow_none=True)
+    value = ForwardDeclaredInstance["ForwardDeclaredBar"]("ForwardDeclaredBar", allow_none=True)
 
 
 class ForwardDeclaredTypeTrait(HasTraits):
 
-    value = ForwardDeclaredType("ForwardDeclaredBar", allow_none=True)
+    value = ForwardDeclaredType[t.Any, t.Any]("ForwardDeclaredBar", allow_none=True)
 
 
 class ForwardDeclaredInstanceListTrait(HasTraits):

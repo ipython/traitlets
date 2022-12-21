@@ -150,23 +150,23 @@ class Application(SingletonConfigurable):
 
     # The name of the application, will usually match the name of the command
     # line application
-    name: t.Union[str, Unicode] = Unicode("application")
+    name = Unicode("application")
 
     log = Any(help="Logger or LoggerAdapter instance", allow_none=False)
 
     # The description of the application that is printed at the beginning
     # of the help.
-    description: t.Union[str, Unicode] = Unicode("This is an application.")
+    description = Unicode("This is an application.")
     # default section descriptions
-    option_description: t.Union[str, Unicode] = Unicode(option_description)
-    keyvalue_description: t.Union[str, Unicode] = Unicode(keyvalue_description)
-    subcommand_description: t.Union[str, Unicode] = Unicode(subcommand_description)
+    option_description = Unicode(option_description)
+    keyvalue_description = Unicode(keyvalue_description)
+    subcommand_description = Unicode(subcommand_description)
 
     python_config_loader_class = PyFileConfigLoader
     json_config_loader_class = JSONFileConfigLoader
 
     # The usage and example string that goes at the end of the help string.
-    examples: t.Union[str, Unicode] = Unicode()
+    examples = Unicode()
 
     # A sequence of Configurable subclasses whose config=True attributes will
     # be exposed at the command line.
@@ -193,18 +193,16 @@ class Application(SingletonConfigurable):
                     yield parent
 
     # The version string of this application.
-    version: t.Union[str, Unicode] = Unicode("0.0")
+    version = Unicode("0.0")
 
     # the argv used to initialize the application
     argv: t.Union[t.List[str], List] = List()
 
     # Whether failing to load config files should prevent startup
-    raise_config_file_errors: t.Union[bool, Bool] = Bool(
-        TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR
-    )
+    raise_config_file_errors = Bool(TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR)
 
     # The log level for the application
-    log_level: t.Union[str, int, Enum] = Enum(  # type:ignore[assignment]
+    log_level = Enum(
         (0, 10, 20, 30, 40, 50, "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"),
         default_value=logging.WARN,
         help="Set the log level by value or name.",
@@ -212,11 +210,11 @@ class Application(SingletonConfigurable):
 
     _log_formatter_cls = LevelFormatter
 
-    log_datefmt: t.Union[str, Unicode] = Unicode(  # type:ignore[assignment]
+    log_datefmt = Unicode(
         "%Y-%m-%d %H:%M:%S", help="The date format used by logging formatters for %(asctime)s"
     ).tag(config=True)
 
-    log_format: t.Union[str, Unicode] = Unicode(  # type:ignore[assignment]
+    log_format = Unicode(
         "[%(name)s]%(highlevel)s %(message)s",
         help="The Logging format template",
     ).tag(config=True)
@@ -423,11 +421,11 @@ class Application(SingletonConfigurable):
 
     _loaded_config_files = List()
 
-    show_config: t.Union[bool, Bool] = Bool(  # type:ignore[assignment]
+    show_config = Bool(
         help="Instead of starting the Application, dump configuration to stdout"
     ).tag(config=True)
 
-    show_config_json: t.Union[bool, Bool] = Bool(  # type:ignore[assignment]
+    show_config_json = Bool(
         help="Instead of starting the Application, dump configuration to stdout (as JSON)"
     ).tag(config=True)
 
