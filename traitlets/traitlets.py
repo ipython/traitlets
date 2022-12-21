@@ -39,7 +39,6 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
-import collections.abc
 import contextlib
 import enum
 import inspect
@@ -2160,25 +2159,25 @@ class Instance(ClassBasedTraitType[T, T]):
 
         @t.overload
         def __new__(
-            cls, kind: type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
         ) -> "Instance[T]":
             ...
 
         @t.overload
         def __new__(
-            cls, kind: type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
         ) -> "Instance[T | None]":
             ...
 
         @t.overload
         def __new__(
-            cls, kind: type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
+            cls, kind: t.Type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
         ) -> "Instance[T]":
             ...
 
         # see: https://github.com/python/mypy/issues/1020
         def __new__(  # type: ignore[misc]
-            cls, kind: type[T], *, allow_none: t.Literal[True, False]
+            cls, kind: t.Type[T], *, allow_none: t.Literal[True, False]
         ) -> "Instance[T] | Instance[T | None]":
             ...
 
@@ -3086,25 +3085,25 @@ class Container(Instance[T]):
 
         @t.overload
         def __new__(
-            cls, kind: type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
         ) -> "Container[T]":
             ...
 
         @t.overload
         def __new__(
-            cls, kind: type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
         ) -> "Container[T | None]":
             ...
 
         @t.overload
         def __new__(
-            cls, kind: type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
+            cls, kind: t.Type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
         ) -> "Container[T]":
             ...
 
         # see: https://github.com/python/mypy/issues/1020
         def __new__(  # type: ignore[misc]
-            cls, kind: type[T], *, allow_none: t.Literal[True, False]
+            cls, kind: t.Type[T], *, allow_none: t.Literal[True, False]
         ) -> "Container[T] | Container[T | None]":
             ...
 
@@ -3828,7 +3827,7 @@ class TCPAddress(TraitType[G, S]):
             help: t.Optional[str] = ...,
             config: t.Any = ...,
             **kwargs: t.Dict[str, t.Any],
-        ) -> "TCPAddress[tuple[str, int], tuple[str, int]]":
+        ) -> "TCPAddress[t.Tuple[str, int], t.Tuple[str, int]]":
             ...
 
         @t.overload
@@ -3840,7 +3839,7 @@ class TCPAddress(TraitType[G, S]):
             help: t.Optional[str] = ...,
             config: t.Any = ...,
             **kwargs: t.Dict[str, t.Any],
-        ) -> "TCPAddress[t.Optional[tuple[str, int]], t.Optional[tuple[str, int]]]":
+        ) -> "TCPAddress[t.Optional[t.Tuple[str, int]], t.Optional[t.Tuple[str, int]]]":
             ...
 
         def __new__(  # type: ignore[misc]
@@ -3852,8 +3851,8 @@ class TCPAddress(TraitType[G, S]):
             config: t.Any = None,
             **kwargs: t.Dict[str, t.Any],
         ) -> t.Union[
-            "TCPAddress[t.Optional[tuple[str, int]], t.Optional[tuple[str, int]]]",
-            "TCPAddress[tuple[str, int], tuple[str, int]]",
+            "TCPAddress[t.Optional[t.Tuple[str, int]], t.Optional[t.Tuple[str, int]]]",
+            "TCPAddress[t.Tuple[str, int], t.Tuple[str, int]]",
         ]:
             ...
 
@@ -3876,7 +3875,7 @@ class TCPAddress(TraitType[G, S]):
         return (ip, port)
 
 
-class CRegExp(TraitType[re.Pattern[t.Any], t.Union[re.Pattern[t.Any], str]]):
+class CRegExp(TraitType["re.Pattern[t.Any]", t.Union["re.Pattern[t.Any]", str]]):
     """A casting compiled regular expression trait.
 
     Accepts both strings and compiled regular expressions. The resulting
@@ -3988,9 +3987,7 @@ class UseEnum(TraitType[t.Any, t.Any]):
         return self._info(as_rst=True)
 
 
-class Callable(
-    TraitType[collections.abc.Callable[..., t.Any], collections.abc.Callable[..., t.Any]]
-):
+class Callable(TraitType[t.Callable[..., t.Any], t.Callable[..., t.Any]]):
     """A trait which is callable.
 
     Notes
