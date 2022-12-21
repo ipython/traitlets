@@ -529,7 +529,7 @@ S = t.TypeVar("S")
 # Self from typing extension doesn't work well with mypy https://github.com/python/mypy/pull/14041
 # see https://peps.python.org/pep-0673/#use-in-generic-classes
 # Self = t.TypeVar("Self", bound="TraitType[Any, Any]")
-from typing_extensions import Self
+from typing_extensions import Literal, Self
 
 
 class TraitType(BaseDescriptor, t.Generic[G, S]):
@@ -707,7 +707,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         def __new__(  # type: ignore[misc]
             cls,
             default_value: t.Union[S, Sentinel] = Undefined,
-            allow_none: t.Literal[False] = False,
+            allow_none: Literal[False] = False,
             read_only: t.Optional[bool] = None,
             help: t.Optional[str] = None,
             config: t.Any = None,
@@ -719,7 +719,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         def __new__(
             cls,
             default_value: t.Union[S, None, Sentinel] = Undefined,
-            allow_none: t.Literal[True] = True,
+            allow_none: Literal[True] = True,
             read_only: t.Optional[bool] = None,
             help: t.Optional[str] = None,
             config: t.Any = None,
@@ -730,7 +730,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         def __new__(  # type: ignore[no-untyped-def, misc]
             cls,
             default_value: t.Union[S, None, Sentinel] = Undefined,
-            allow_none: t.Literal[True, False] = False,
+            allow_none: Literal[True, False] = False,
             read_only=None,
             help=None,
             config=None,
@@ -2159,13 +2159,13 @@ class Instance(ClassBasedTraitType[T, T]):
 
         @t.overload
         def __new__(
-            cls, kind: t.Type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: Literal[False], **kwargs: t.Any
         ) -> "Instance[T]":
             ...
 
         @t.overload
         def __new__(
-            cls, kind: t.Type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: Literal[True], **kwargs: t.Any
         ) -> "Instance[T | None]":
             ...
 
@@ -2177,7 +2177,7 @@ class Instance(ClassBasedTraitType[T, T]):
 
         # see: https://github.com/python/mypy/issues/1020
         def __new__(  # type: ignore[misc]
-            cls, kind: t.Type[T], *, allow_none: t.Literal[True, False]
+            cls, kind: t.Type[T], *, allow_none: Literal[True, False]
         ) -> "Instance[T] | Instance[T | None]":
             ...
 
@@ -2426,13 +2426,13 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
 
         @t.overload
         def __new__(
-            cls, default_value: str = "", *, allow_none: t.Literal[False], **kwargs: t.Any
+            cls, default_value: str = "", *, allow_none: Literal[False], **kwargs: t.Any
         ) -> "Any":
             ...
 
         @t.overload
         def __new__(
-            cls, default_value: str = "", *, allow_none: t.Literal[True], **kwargs: t.Any
+            cls, default_value: str = "", *, allow_none: Literal[True], **kwargs: t.Any
         ) -> "Any":
             ...
 
@@ -2449,7 +2449,7 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
 
         # see: https://github.com/python/mypy/issues/1020
         def __new__(  # type: ignore[misc]
-            cls, default_value: str = "", *, allow_none: t.Literal[True, False]
+            cls, default_value: str = "", *, allow_none: Literal[True, False]
         ) -> "Any":
             ...
 
@@ -2511,7 +2511,7 @@ class Int(TraitType[G, S]):
     def __init__(
         self: "Int[int, int]",
         default_value: t.Union[int, Sentinel] = ...,
-        allow_none: t.Literal[False] = ...,
+        allow_none: Literal[False] = ...,
         **kwargs: t.Dict[str, t.Any],
     ):
         ...
@@ -2520,7 +2520,7 @@ class Int(TraitType[G, S]):
     def __init__(
         self: "Int[t.Optional[int], t.Optional[int]]",
         default_value: t.Union[int, Sentinel, None] = ...,
-        allow_none: t.Literal[True] = ...,
+        allow_none: Literal[True] = ...,
         **kwargs: t.Dict[str, t.Any],
     ):
         ...
@@ -2553,7 +2553,7 @@ class CInt(Int[G, S]):
         def __init__(
             self: "CInt[int, t.Any]",
             default_value: t.Union[int, Sentinel] = ...,
-            allow_none: t.Literal[False] = ...,
+            allow_none: Literal[False] = ...,
             **kwargs: t.Dict[str, t.Any],
         ):
             ...
@@ -2562,7 +2562,7 @@ class CInt(Int[G, S]):
         def __init__(
             self: "CInt[t.Optional[int], t.Any]",
             default_value: t.Union[int, Sentinel, None] = ...,
-            allow_none: t.Literal[True] = ...,
+            allow_none: Literal[True] = ...,
             **kwargs: t.Dict[str, t.Any],
         ):
             ...
@@ -2707,13 +2707,13 @@ class Unicode(TraitType[str, t.Union[str, bytes]]):
 
         @t.overload
         def __new__(
-            cls, default_value: str = "", *, allow_none: t.Literal[False], **kwargs: t.Any
+            cls, default_value: str = "", *, allow_none: Literal[False], **kwargs: t.Any
         ) -> "Unicode":
             ...
 
         @t.overload
         def __new__(
-            cls, default_value: str = "", *, allow_none: t.Literal[True], **kwargs: t.Any
+            cls, default_value: str = "", *, allow_none: Literal[True], **kwargs: t.Any
         ) -> "Unicode":
             ...
 
@@ -2730,7 +2730,7 @@ class Unicode(TraitType[str, t.Union[str, bytes]]):
 
         # see: https://github.com/python/mypy/issues/1020
         def __new__(  # type: ignore[misc]
-            cls, default_value: str = "", *, allow_none: t.Literal[True, False]
+            cls, default_value: str = "", *, allow_none: Literal[True, False]
         ) -> "Unicode":
             ...
 
@@ -3046,13 +3046,13 @@ class Container(Instance[T]):
 
         @t.overload
         def __new__(
-            cls, kind: t.Type[T], *, allow_none: t.Literal[False], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: Literal[False], **kwargs: t.Any
         ) -> "Container[T]":
             ...
 
         @t.overload
         def __new__(
-            cls, kind: t.Type[T], *, allow_none: t.Literal[True], **kwargs: t.Any
+            cls, kind: t.Type[T], *, allow_none: Literal[True], **kwargs: t.Any
         ) -> "Container[T | None]":
             ...
 
@@ -3064,7 +3064,7 @@ class Container(Instance[T]):
 
         # see: https://github.com/python/mypy/issues/1020
         def __new__(  # type: ignore[misc]
-            cls, kind: t.Type[T], *, allow_none: t.Literal[True, False]
+            cls, kind: t.Type[T], *, allow_none: Literal[True, False]
         ) -> "Container[T] | Container[T | None]":
             ...
 
@@ -3783,7 +3783,7 @@ class TCPAddress(TraitType[G, S]):
         def __new__(  # type: ignore[misc]
             cls,
             default_value: t.Union[bool, Sentinel] = ...,
-            allow_none: t.Literal[False] = False,
+            allow_none: Literal[False] = False,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
@@ -3795,7 +3795,7 @@ class TCPAddress(TraitType[G, S]):
         def __new__(
             cls,
             default_value: t.Union[bool, None, Sentinel] = ...,
-            allow_none: t.Literal[True] = True,
+            allow_none: Literal[True] = True,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
@@ -3806,7 +3806,7 @@ class TCPAddress(TraitType[G, S]):
         def __new__(  # type: ignore[misc]
             cls,
             default_value: t.Union[bool, None, Sentinel] = Undefined,
-            allow_none: t.Literal[True, False] = False,
+            allow_none: Literal[True, False] = False,
             read_only: t.Optional[bool] = None,
             help: t.Optional[str] = None,
             config: t.Any = None,
