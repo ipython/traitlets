@@ -742,14 +742,14 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
     if t.TYPE_CHECKING:
 
         @t.overload
-        def __get__(self, obj: None, cls: type[t.Any]) -> Self:
+        def __get__(self, obj: None, cls: t.Type[t.Any]) -> Self:
             ...
 
         @t.overload
-        def __get__(self, obj: t.Any, cls: type[t.Any]) -> G:
+        def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> G:
             ...
 
-    def __get__(self, obj: t.Union["HasTraits", None], cls: type[t.Any]) -> t.Union[Self, G]:
+    def __get__(self, obj: t.Union["HasTraits", None], cls: t.Type[t.Any]) -> t.Union[Self, G]:
         """Get the value of the trait by self.name for the instance.
 
         Default values are instantiated when :meth:`HasTraits.__new__`
@@ -2455,14 +2455,14 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
             ...
 
         @t.overload
-        def __get__(self, obj: None, cls: type[t.Any]) -> "Any":
+        def __get__(self, obj: None, cls: t.Type[t.Any]) -> "Any":
             ...
 
         @t.overload
-        def __get__(self, obj: t.Any, cls: type[t.Any]) -> t.Any:
+        def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> t.Any:
             ...
 
-        def __get__(self, obj: t.Union[t.Any, None], cls: type[t.Any]) -> t.Union[t.Any, "Any"]:
+        def __get__(self, obj: t.Union[t.Any, None], cls: t.Type[t.Any]) -> t.Union[t.Any, "Any"]:
             ...
 
     default_value: t.Optional[t.Any] = None
@@ -2536,14 +2536,14 @@ class Int(TraitType[G, S]):
     # if we use Self and a modern mypy, we don't need to do this
     # if t.TYPE_CHECKING:
     #     @t.overload
-    #     def __get__(self, obj: None, cls: type[t.Any]) -> "Int[G, S]":
+    #     def __get__(self, obj: None, cls: t.Type[t.Any]) -> "Int[G, S]":
     #         ...
 
     #     @t.overload
-    #     def __get__(self, obj: t.Any, cls: type[t.Any]) -> G:
+    #     def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> G:
     #         ...
 
-    #     def __get__(self, obj: t.Union[t.Any, None], cls: type[t.Any]) -> t.Union[G, "Int[G, S]"]:
+    #     def __get__(self, obj: t.Union[t.Any, None], cls: t.Type[t.Any]) -> t.Union[G, "Int[G, S]"]:
     #         ...
 
     # mypy infers Int[<nothing>, <nothing>] if this constructor exists
@@ -2775,14 +2775,14 @@ class Unicode(TraitType[str, t.Union[str, bytes]]):
             ...
 
         @t.overload
-        def __get__(self, obj: None, cls: type[t.Any]) -> "Unicode":
+        def __get__(self, obj: None, cls: t.Type[t.Any]) -> "Unicode":
             ...
 
         @t.overload
-        def __get__(self, obj: t.Any, cls: type[t.Any]) -> str:
+        def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> str:
             ...
 
-        def __get__(self, obj: t.Union[t.Any, None], cls: type[t.Any]) -> t.Union[str, "Unicode"]:
+        def __get__(self, obj: t.Union[t.Any, None], cls: t.Type[t.Any]) -> t.Union[str, "Unicode"]:
             ...
 
     def validate(self, obj, value):
