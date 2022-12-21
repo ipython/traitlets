@@ -2829,40 +2829,30 @@ class Bool(TraitType[G, S]):
     if t.TYPE_CHECKING:
 
         @t.overload
-        def __new__(  # type: ignore[misc]
-            cls,
+        def __init__(
+            self: "Bool[bool, t.Union[bool, int]]",
             default_value: t.Union[bool, Sentinel] = ...,
-            allow_none: t.Literal[False] = False,
+            allow_none: Literal[False] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
             **kwargs: t.Dict[str, t.Any],
-        ) -> "Bool[bool, t.Union[bool, int]]":
+        ):
             ...
 
         @t.overload
-        def __new__(
-            cls,
-            default_value: t.Union[bool, None, Sentinel] = ...,
-            allow_none: t.Literal[True] = True,
+        def __init__(
+            self: "Bool[t.Optional[bool], t.Union[bool, int, None]]",
+            default_value: t.Union[bool, Sentinel, None] = ...,
+            allow_none: Literal[True] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
             **kwargs: t.Dict[str, t.Any],
-        ) -> "Bool[t.Optional[bool], t.Union[bool, int, None]]":
+        ):
             ...
 
-        def __new__(  # type: ignore[misc]
-            cls,
-            default_value: t.Union[bool, None, Sentinel] = Undefined,
-            allow_none: t.Literal[True, False] = False,
-            read_only: t.Optional[bool] = None,
-            help: t.Optional[str] = None,
-            config: t.Any = None,
-            **kwargs: t.Dict[str, t.Any],
-        ) -> t.Union[
-            "Bool[t.Optional[bool], t.Union[bool, int, None]]", "Bool[bool, t.Union[bool, int]]"
-        ]:
+        def __init__(self, **kwargs):
             ...
 
     def validate(self, obj, value):
