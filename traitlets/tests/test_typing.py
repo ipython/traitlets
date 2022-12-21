@@ -87,31 +87,21 @@ def mypy_cint_typing():
         oi = CInt(42, allow_none=True).tag(sync=True)
 
     t = T()
-    reveal_type(CInt(True))  # R: traitlets.traitlets.CInt[builtins.int, Union[builtins.int, Any]]
+    reveal_type(CInt(42))  # R: traitlets.traitlets.CInt[builtins.int, Any]
+    reveal_type(CInt(42).tag(sync=True))  # R: traitlets.traitlets.CInt[builtins.int, Any]
     reveal_type(
-        CInt(True).tag(  # R: traitlets.traitlets.CInt[builtins.int, Union[builtins.int, Any]]
-            sync=True
-        )
+        CInt(None, allow_none=True)  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Any]
     )
     reveal_type(
-        CInt(  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Union[builtins.int, Any, None]]
+        CInt(  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Any]
             None, allow_none=True
-        )
+        ).tag(sync=True)
     )
-    reveal_type(
-        CInt(  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Union[builtins.int, Any, None]]
-            None, allow_none=True
-        ).tag(
-            sync=True
-        )
-    )
-    reveal_type(T.i)  # R: traitlets.traitlets.CInt[builtins.int, Union[builtins.int, Any]]
+    reveal_type(T.i)  # R: traitlets.traitlets.CInt[builtins.int, Any]
     reveal_type(t.i)  # R: builtins.int
     reveal_type(t.oi)  # R: Union[builtins.int, None]
-    reveal_type(T.i)  # R: traitlets.traitlets.CInt[builtins.int, Union[builtins.int, Any]]
-    reveal_type(
-        T.oi  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Union[builtins.int, Any, None]]
-    )
+    reveal_type(T.i)  # R: traitlets.traitlets.CInt[builtins.int, Any]
+    reveal_type(T.oi)  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Any]
 
 
 @pytest.mark.mypy_testing

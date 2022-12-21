@@ -2498,60 +2498,37 @@ def _validate_bounds(trait, obj, value):
     return value
 
 
+# I = t.TypeVar('I', t.Optional[int], int)
+
+
 class Int(TraitType[G, S]):
     """An int trait."""
 
     default_value = 0
     info_text = "an int"
 
-    if t.TYPE_CHECKING:
+    @t.overload
+    def __init__(
+        self: "Int[int, int]",
+        default_value: t.Union[int, Sentinel] = ...,
+        allow_none: t.Literal[False] = ...,
+        **kwargs: t.Dict[str, t.Any],
+    ):
+        ...
 
-        @t.overload
-        def __new__(  # type: ignore[misc]
-            cls,
-            default_value: t.Union[int, Sentinel] = ...,
-            allow_none: t.Literal[False] = ...,
-            **kwargs: t.Dict[str, t.Any],
-        ) -> "Int[int, int]":
-            ...
+    @t.overload
+    def __init__(
+        self: "Int[t.Optional[int], t.Optional[int]]",
+        default_value: t.Union[int, Sentinel, None] = ...,
+        allow_none: t.Literal[True] = ...,
+        **kwargs: t.Dict[str, t.Any],
+    ):
+        ...
 
-        @t.overload
-        def __new__(
-            cls,
-            default_value: t.Union[int, None, Sentinel] = ...,
-            allow_none: t.Literal[True] = ...,
-            **kwargs: t.Dict[str, t.Any],
-        ) -> "Int[t.Optional[int], t.Optional[int]]":
-            ...
-
-        def __new__(  # type: ignore[misc]
-            cls,
-            default_value: t.Union[int, None, Sentinel] = Undefined,
-            allow_none: t.Literal[True, False] = False,
-            **kwargs: t.Dict[str, t.Any],
-        ) -> t.Union["Int[t.Optional[int], t.Optional[int]]", "Int[int, int]"]:
-            ...
-
-    # if we use Self and a modern mypy, we don't need to do this
-    # if t.TYPE_CHECKING:
-    #     @t.overload
-    #     def __get__(self, obj: None, cls: t.Type[t.Any]) -> "Int[G, S]":
-    #         ...
-
-    #     @t.overload
-    #     def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> G:
-    #         ...
-
-    #     def __get__(self, obj: t.Union[t.Any, None], cls: t.Type[t.Any]) -> t.Union[G, "Int[G, S]"]:
-    #         ...
-
-    # mypy infers Int[<nothing>, <nothing>] if this constructor exists
-    if not t.TYPE_CHECKING:
-
-        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
-            self.min = kwargs.pop("min", None)
-            self.max = kwargs.pop("max", None)
-            super().__init__(default_value=default_value, allow_none=allow_none, **kwargs)
+    def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
+        self.min = kwargs.pop("min", None)
+        self.max = kwargs.pop("max", None)
+        super().__init__(default_value=default_value, allow_none=allow_none, **kwargs)
 
     def validate(self, obj, value):
         if not isinstance(value, int):
@@ -2573,40 +2550,24 @@ class CInt(Int[G, S]):
     if t.TYPE_CHECKING:
 
         @t.overload
-        def __new__(  # type: ignore[misc]
-            cls,
+        def __init__(
+            self: "CInt[int, t.Any]",
             default_value: t.Union[int, Sentinel] = ...,
-            allow_none: t.Literal[False] = False,
-            read_only: t.Optional[bool] = ...,
-            help: t.Optional[str] = ...,
-            config: t.Any = ...,
+            allow_none: t.Literal[False] = ...,
             **kwargs: t.Dict[str, t.Any],
-        ) -> "CInt[int, t.Union[int, t.Any]]":
+        ):
             ...
 
         @t.overload
-        def __new__(
-            cls,
-            default_value: t.Union[int, None, Sentinel] = ...,
-            allow_none: t.Literal[True] = True,
-            read_only: t.Optional[bool] = ...,
-            help: t.Optional[str] = ...,
-            config: t.Any = ...,
+        def __init__(
+            self: "CInt[t.Optional[int], t.Any]",
+            default_value: t.Union[int, Sentinel, None] = ...,
+            allow_none: t.Literal[True] = ...,
             **kwargs: t.Dict[str, t.Any],
-        ) -> "CInt[t.Optional[int], t.Union[int, t.Any, None]]":
+        ):
             ...
 
-        def __new__(  # type: ignore[misc]
-            cls,
-            default_value: t.Union[bool, None, Sentinel] = Undefined,
-            allow_none: t.Literal[True, False] = False,
-            read_only: t.Optional[bool] = None,
-            help: t.Optional[str] = None,
-            config: t.Any = None,
-            **kwargs: t.Dict[str, t.Any],
-        ) -> t.Union[
-            "CInt[t.Optional[int], t.Union[int, t.Any, None]]", "CInt[int, t.Union[int, t.Any]]"
-        ]:
+        def __init__(self, default_value=Undefined, allow_none=False, **kwargs):
             ...
 
     def validate(self, obj, value):
