@@ -1,9 +1,14 @@
+import typing
 from typing import Optional
 
 import pytest
-from typing_extensions import reveal_type
 
 from traitlets import Bool, CInt, HasTraits, Instance, Int, TCPAddress
+
+if not typing.TYPE_CHECKING:
+
+    def reveal_type(*args, **kwargs):
+        pass
 
 
 class Foo:
