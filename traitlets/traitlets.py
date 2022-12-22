@@ -533,6 +533,8 @@ T = t.TypeVar("T")
 from typing_extensions import Literal, Self
 
 
+# We use a type for the getter (G) and setter (G) because we allow
+# for traits to cast (for instance CInt will use G=int, S=t.Any)
 class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
 
@@ -708,7 +710,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         def __new__(  # type: ignore[misc]
             cls,
             default_value: t.Union[S, Sentinel] = Undefined,
-            allow_none: Literal[False] = False,
+            allow_none: Literal[False] = ...,
             read_only: t.Optional[bool] = None,
             help: t.Optional[str] = None,
             config: t.Any = None,
@@ -720,7 +722,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         def __new__(
             cls,
             default_value: t.Union[S, None, Sentinel] = Undefined,
-            allow_none: Literal[True] = True,
+            allow_none: Literal[True] = ...,
             read_only: t.Optional[bool] = None,
             help: t.Optional[str] = None,
             config: t.Any = None,
@@ -739,15 +741,13 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         ) -> t.Union["TraitType[t.Optional[G], S]", "TraitType[G, S]"]:
             ...
 
-    if t.TYPE_CHECKING:
+    @t.overload
+    def __get__(self, obj: None, cls: t.Type[t.Any]) -> Self:
+        ...
 
-        @t.overload
-        def __get__(self, obj: None, cls: t.Type[t.Any]) -> Self:
-            ...
-
-        @t.overload
-        def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> G:
-            ...
+    @t.overload
+    def __get__(self, obj: t.Any, cls: t.Type[t.Any]) -> G:
+        ...
 
     def __get__(self, obj: t.Union["HasTraits", None], cls: t.Type[t.Any]) -> t.Union[Self, G]:
         """Get the value of the trait by self.name for the instance.
@@ -3927,7 +3927,7 @@ class TCPAddress(TraitType[G, S]):
         def __new__(  # type: ignore[misc]
             cls,
             default_value: t.Union[bool, Sentinel] = ...,
-            allow_none: Literal[False] = False,
+            allow_none: Literal[False] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
@@ -3939,7 +3939,7 @@ class TCPAddress(TraitType[G, S]):
         def __new__(
             cls,
             default_value: t.Union[bool, None, Sentinel] = ...,
-            allow_none: Literal[True] = True,
+            allow_none: Literal[True] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
