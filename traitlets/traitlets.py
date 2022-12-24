@@ -534,7 +534,7 @@ from typing_extensions import Literal, Self
 
 
 # We use a type for the getter (G) and setter (G) because we allow
-# for traits to cast (for instance CInt will use G=int, S=t.Any).
+# for traits to cast (for instance CInt will use G=int, S=t.Any)
 class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
 
@@ -542,7 +542,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
     allow_none: bool = False
     read_only: bool = False
     info_text: str = "any value"
-    default_value: t.Any = Undefined
+    default_value: t.Optional[t.Any] = Undefined
 
     def __init__(
         self: "TraitType[G, S]",
@@ -550,7 +550,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         allow_none: bool = False,
         read_only: t.Optional[bool] = None,
         help: t.Optional[str] = None,
-        config: t.Optional[t.Any] = None,
+        config: t.Any = None,
         **kwargs: t.Any,
     ):
         """Declare a traitlet.
@@ -703,9 +703,8 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             return value  # type: ignore
 
     if t.TYPE_CHECKING:
-        # this gives ok type information, but not specific enough (e.g. it will)
+        # this gives ok type information, but not specific enought (e.g. it will)
         # always be a TraitType, not a subclass, like Bool
-
         @t.overload
         def __new__(  # type: ignore[misc]
             cls,
@@ -2106,13 +2105,7 @@ class Type(ClassBasedTraitType[G, S]):
         ):
             ...
 
-    def __init__(
-        self,
-        default_value=Undefined,
-        klass=None,
-        allow_none=False,
-        **kwargs,
-    ):
+    def __init__(self, default_value=Undefined, klass=None, allow_none=False, **kwargs):
         """Construct a Type trait
 
         A Type trait specifies that its values must be subclasses of
@@ -2279,9 +2272,6 @@ class Instance(ClassBasedTraitType[T, T]):
         args: t.Optional[t.Tuple[t.Any, ...]] = None,
         kw: t.Optional[t.Dict[str, t.Any]] = None,
         allow_none: bool = False,
-        read_only: t.Optional[bool] = False,
-        help: t.Optional[str] = "",
-        config: t.Optional[t.Any] = None,
         **kwargs: t.Any,
     ) -> None:
         """Construct an Instance trait.
@@ -2551,6 +2541,18 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
             *,
             allow_none: Literal[True, False] = ...,
             help: t.Optional[str] = ...,
+            read_only: t.Optional[bool] = False,
+            config: t.Any = None,
+            **kwargs: t.Any,
+        ):
+            ...
+
+        def __init__(
+            self: "Any",
+            default_value: str = ...,
+            *,
+            allow_none: t.Optional[bool] = False,
+            help: t.Optional[str] = "",
             read_only: t.Optional[bool] = False,
             config: t.Any = None,
             **kwargs: t.Any,
@@ -3253,18 +3255,12 @@ class Container(Instance[T]):
     To be subclassed by overriding klass.
     """
 
-    klass: t.Optional[t.Type[T]] = None
-    _cast_types: t.Any = ()
-    _valid_defaults = SequenceTypes
-    _trait = None
-    _literal_from_string_pairs: t.Any = ("[]", "()")
-
     if t.TYPE_CHECKING:
 
         @t.overload
         def __init__(
             self: "Container[T]",
-            trait: t.Type[T],
+            kind: t.Type[T],
             *,
             allow_none: Literal[False],
             read_only: t.Optional[bool] = ...,
@@ -3277,7 +3273,7 @@ class Container(Instance[T]):
         @t.overload
         def __init__(
             self: "Container[T | None]",
-            trait: t.Optional[t.Type[T]],
+            kind: t.Type[T],
             *,
             allow_none: Literal[True],
             read_only: t.Optional[bool] = ...,
@@ -3290,15 +3286,22 @@ class Container(Instance[T]):
         @t.overload
         def __init__(
             self: "Container[T]",
-            trait: t.Type[T],
+            kind: t.Type[T],
             *,
             help: str = ...,
             read_only: bool = ...,
             config: t.Any = ...,
+            trait: t.Any = ...,
             default_value: t.Any = ...,
             **kwargs: t.Any,
         ):
             ...
+
+    klass: t.Optional[t.Type[T]] = None
+    _cast_types: t.Any = ()
+    _valid_defaults = SequenceTypes
+    _trait = None
+    _literal_from_string_pairs: t.Any = ("[]", "()")
 
     def __init__(self, trait=None, default_value=Undefined, **kwargs):
         """Create a container trait type from a list, set, or tuple.
