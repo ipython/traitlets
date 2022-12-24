@@ -703,8 +703,8 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             return value  # type: ignore
 
     if t.TYPE_CHECKING:
-        # this gives ok type information, but not specific enought (e.g. it will)
-        # always be a TraitType, not a subclass, like Bool
+        # This gives ok type information, but not specific enough (e.g. it will)
+        # always be a TraitType, not a subclass, like Bool.
         @t.overload
         def __new__(  # type: ignore[misc]
             cls,
