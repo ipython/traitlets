@@ -534,24 +534,24 @@ from typing_extensions import Literal, Self
 
 
 # We use a type for the getter (G) and setter (G) because we allow
-# for traits to cast (for instance CInt will use G=int, S=t.Any)
+# for traits to cast (for instance CInt will use G=int, S=t.Any).
 class TraitType(BaseDescriptor, t.Generic[G, S]):
     """A base class for all trait types."""
 
     metadata: t.Dict[str, t.Any] = {}
-    allow_none = False
-    read_only = False
-    info_text = "any value"
-    default_value: t.Optional[t.Any] = Undefined
+    allow_none: bool = False
+    read_only: bool = False
+    info_text: str = "any value"
+    default_value: t.Any = Undefined
 
     def __init__(
-        self,
-        default_value=Undefined,
-        allow_none=False,
-        read_only=None,
-        help=None,
-        config=None,
-        **kwargs,
+        self: "TraitType[G, S]",
+        default_value: t.Any = Undefined,
+        allow_none: bool = False,
+        read_only: t.Optional[bool] = None,
+        help: t.Optional[str] = None,
+        config: t.Optional[t.Any] = None,
+        **kwargs: t.Any,
     ):
         """Declare a traitlet.
 
@@ -703,7 +703,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             return value  # type: ignore
 
     if t.TYPE_CHECKING:
-        # this gives ok type information, but not specific enought (e.g. it will)
+        # this gives ok type information, but not specific enough (e.g. it will)
         # always be a TraitType, not a subclass, like Bool
 
         @t.overload
@@ -2060,6 +2060,9 @@ class Type(ClassBasedTraitType[G, S]):
             default_value: t.Union[Sentinel, None, str] = ...,
             klass: t.Union[None, str] = ...,
             allow_none: Literal[False] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -2070,6 +2073,9 @@ class Type(ClassBasedTraitType[G, S]):
             default_value: t.Union[S, Sentinel, None, str] = ...,
             klass: t.Union[None, str] = ...,
             allow_none: Literal[True] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -2080,6 +2086,9 @@ class Type(ClassBasedTraitType[G, S]):
             default_value: t.Union[S, Sentinel, str] = ...,
             klass: t.Type[S] = ...,
             allow_none: Literal[False] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -2090,11 +2099,23 @@ class Type(ClassBasedTraitType[G, S]):
             default_value: t.Union[S, Sentinel, None, str] = ...,
             klass: t.Type[S] = ...,
             allow_none: Literal[True] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
 
-    def __init__(self, default_value=Undefined, klass=None, allow_none=False, **kwargs):
+    def __init__(
+        self,
+        default_value=Undefined,
+        klass=None,
+        allow_none=False,
+        read_only=False,
+        help="",
+        config=None,
+        **kwargs,
+    ):
         """Construct a Type trait
 
         A Type trait specifies that its values must be subclasses of
@@ -2206,6 +2227,9 @@ class Instance(ClassBasedTraitType[T, T]):
             args: t.Optional[t.Tuple[t.Any, ...]] = ...,
             kw: t.Optional[t.Dict[str, t.Any]] = ...,
             allow_none: Literal[False] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2217,6 +2241,9 @@ class Instance(ClassBasedTraitType[T, T]):
             args: t.Optional[t.Tuple[t.Any, ...]] = ...,
             kw: t.Optional[t.Dict[str, t.Any]] = ...,
             allow_none: Literal[True] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2228,6 +2255,9 @@ class Instance(ClassBasedTraitType[T, T]):
             args: t.Optional[t.Tuple[t.Any, ...]] = ...,
             kw: t.Optional[t.Dict[str, t.Any]] = ...,
             allow_none: Literal[False] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2239,6 +2269,9 @@ class Instance(ClassBasedTraitType[T, T]):
             args: t.Optional[t.Tuple[t.Any, ...]] = ...,
             kw: t.Optional[t.Dict[str, t.Any]] = ...,
             allow_none: Literal[True] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2249,6 +2282,9 @@ class Instance(ClassBasedTraitType[T, T]):
         args: t.Optional[t.Tuple[t.Any, ...]] = None,
         kw: t.Optional[t.Dict[str, t.Any]] = None,
         allow_none: bool = False,
+        read_only: t.Optional[bool] = False,
+        help: t.Optional[str] = "",
+        config: t.Optional[t.Any] = None,
         **kwargs: t.Any,
     ) -> None:
         """Construct an Instance trait.
@@ -2486,32 +2522,54 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
     if t.TYPE_CHECKING:
 
         @t.overload
-        def __new__(
-            cls, default_value: str = "", *, allow_none: Literal[False], **kwargs: t.Any
-        ) -> "Any":
-            ...
-
-        @t.overload
-        def __new__(
-            cls, default_value: str = "", *, allow_none: Literal[True], **kwargs: t.Any
-        ) -> "Any":
-            ...
-
-        @t.overload
-        def __new__(
-            cls,
-            default_value: str = "",
+        def __init__(
+            self: "Any",
+            default_value: str = ...,
             *,
-            help: str = "",
-            read_only: bool = False,
-            config: t.Any = None,
-        ) -> "Any":
+            allow_none: Literal[False],
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
+            **kwargs: t.Any,
+        ):
             ...
 
-        # see: https://github.com/python/mypy/issues/1020
-        def __new__(  # type: ignore[misc]
-            cls, default_value: str = "", *, allow_none: Literal[True, False]
-        ) -> "Any":
+        @t.overload
+        def __init__(
+            self: "Any",
+            default_value: str = ...,
+            *,
+            allow_none: Literal[True],
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
+            **kwargs: t.Any,
+        ):
+            ...
+
+        @t.overload
+        def __init__(
+            self: "Any",
+            default_value: str = ...,
+            *,
+            allow_none: Literal[True, False] = ...,
+            help: t.Optional[str] = ...,
+            read_only: t.Optional[bool] = False,
+            config: t.Any = None,
+            **kwargs: t.Any,
+        ):
+            ...
+
+        def __init__(
+            self: "Any",
+            default_value: str = ...,
+            *,
+            allow_none: t.Optional[bool] = False,
+            help: t.Optional[str] = "",
+            read_only: t.Optional[bool] = False,
+            config: t.Any = None,
+            **kwargs: t.Any,
+        ):
             ...
 
         @t.overload
@@ -2573,6 +2631,9 @@ class Int(TraitType[G, S]):
         self: "Int[int, int]",
         default_value: t.Union[int, Sentinel] = ...,
         allow_none: Literal[False] = ...,
+        read_only: t.Optional[bool] = ...,
+        help: t.Optional[str] = ...,
+        config: t.Optional[t.Any] = ...,
         **kwargs: t.Any,
     ):
         ...
@@ -2582,6 +2643,9 @@ class Int(TraitType[G, S]):
         self: "Int[t.Optional[int], t.Optional[int]]",
         default_value: t.Union[int, Sentinel, None] = ...,
         allow_none: Literal[True] = ...,
+        read_only: t.Optional[bool] = ...,
+        help: t.Optional[str] = ...,
+        config: t.Optional[t.Any] = ...,
         **kwargs: t.Any,
     ):
         ...
@@ -2615,6 +2679,9 @@ class CInt(Int[G, S]):
             self: "CInt[int, t.Any]",
             default_value: t.Union[t.Any, Sentinel] = ...,
             allow_none: Literal[False] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -2624,6 +2691,9 @@ class CInt(Int[G, S]):
             self: "CInt[t.Optional[int], t.Any]",
             default_value: t.Union[t.Any, Sentinel, None] = ...,
             allow_none: Literal[True] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -2654,6 +2724,9 @@ class Float(TraitType[G, S]):
         self: "Float[float, t.Union[int, float]]",
         default_value: t.Union[float, Sentinel] = ...,
         allow_none: Literal[False] = ...,
+        read_only: t.Optional[bool] = ...,
+        help: t.Optional[str] = ...,
+        config: t.Optional[t.Any] = ...,
         **kwargs: t.Any,
     ):
         ...
@@ -2663,6 +2736,9 @@ class Float(TraitType[G, S]):
         self: "Float[t.Optional[int], t.Union[int, float, None]]",
         default_value: t.Union[float, Sentinel, None] = ...,
         allow_none: Literal[True] = ...,
+        read_only: t.Optional[bool] = ...,
+        help: t.Optional[str] = ...,
+        config: t.Optional[t.Any] = ...,
         **kwargs: t.Any,
     ):
         ...
@@ -2698,6 +2774,9 @@ class CFloat(Float[G, S]):
             self: "CFloat[float, t.Any]",
             default_value: t.Any = ...,
             allow_none: Literal[False] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -2707,6 +2786,9 @@ class CFloat(Float[G, S]):
             self: "CFloat[t.Optional[float], t.Any]",
             default_value: t.Any = ...,
             allow_none: Literal[True] = ...,
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ):
             ...
@@ -3186,37 +3268,53 @@ class Container(Instance[T]):
     To be subclassed by overriding klass.
     """
 
-    if t.TYPE_CHECKING:
-
-        @t.overload
-        def __new__(
-            cls, kind: t.Type[T], *, allow_none: Literal[False], **kwargs: t.Any
-        ) -> "Container[T]":
-            ...
-
-        @t.overload
-        def __new__(
-            cls, kind: t.Type[T], *, allow_none: Literal[True], **kwargs: t.Any
-        ) -> "Container[T | None]":
-            ...
-
-        @t.overload
-        def __new__(
-            cls, kind: t.Type[T], *, help: str = "", read_only: bool = False, config: t.Any = None
-        ) -> "Container[T]":
-            ...
-
-        # see: https://github.com/python/mypy/issues/1020
-        def __new__(  # type: ignore[misc]
-            cls, kind: t.Type[T], *, allow_none: Literal[True, False]
-        ) -> "Container[T] | Container[T | None]":
-            ...
-
     klass: t.Optional[t.Type[T]] = None
     _cast_types: t.Any = ()
     _valid_defaults = SequenceTypes
     _trait = None
     _literal_from_string_pairs: t.Any = ("[]", "()")
+
+    if t.TYPE_CHECKING:
+
+        @t.overload
+        def __init__(
+            self: "Container[T]",
+            kind: t.Type[T],
+            *,
+            allow_none: Literal[False],
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
+            **kwargs: t.Any,
+        ):
+            ...
+
+        @t.overload
+        def __init__(
+            self: "Container[T | None]",
+            kind: t.Type[T],
+            *,
+            allow_none: Literal[True],
+            read_only: t.Optional[bool] = ...,
+            help: t.Optional[str] = ...,
+            config: t.Optional[t.Any] = ...,
+            **kwargs: t.Any,
+        ):
+            ...
+
+        @t.overload
+        def __init__(
+            self: "Container[T]",
+            kind: t.Type[T],
+            *,
+            help: str = ...,
+            read_only: bool = ...,
+            config: t.Any = ...,
+            trait: t.Any = ...,
+            default_value: t.Any = ...,
+            **kwargs: t.Any,
+        ):
+            ...
 
     def __init__(self, trait=None, default_value=Undefined, **kwargs):
         """Create a container trait type from a list, set, or tuple.
@@ -3924,41 +4022,41 @@ class TCPAddress(TraitType[G, S]):
     if t.TYPE_CHECKING:
 
         @t.overload
-        def __new__(  # type: ignore[misc]
-            cls,
+        def __init__(
+            self: "TCPAddress[t.Tuple[str, int], t.Tuple[str, int]]",
             default_value: t.Union[bool, Sentinel] = ...,
             allow_none: Literal[False] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
             **kwargs: t.Any,
-        ) -> "TCPAddress[t.Tuple[str, int], t.Tuple[str, int]]":
+        ):
             ...
 
         @t.overload
-        def __new__(
-            cls,
+        def __init__(
+            self: "TCPAddress[t.Optional[t.Tuple[str, int]], t.Optional[t.Tuple[str, int]]]",
             default_value: t.Union[bool, None, Sentinel] = ...,
             allow_none: Literal[True] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
             config: t.Any = ...,
             **kwargs: t.Any,
-        ) -> "TCPAddress[t.Optional[t.Tuple[str, int]], t.Optional[t.Tuple[str, int]]]":
+        ):
             ...
 
-        def __new__(  # type: ignore[misc]
-            cls,
+        def __init__(
+            self: t.Union[
+                "TCPAddress[t.Optional[t.Tuple[str, int]], t.Optional[t.Tuple[str, int]]]",
+                "TCPAddress[t.Tuple[str, int], t.Tuple[str, int]]",
+            ],
             default_value: t.Union[bool, None, Sentinel] = Undefined,
             allow_none: Literal[True, False] = False,
             read_only: t.Optional[bool] = None,
             help: t.Optional[str] = None,
             config: t.Any = None,
             **kwargs: t.Any,
-        ) -> t.Union[
-            "TCPAddress[t.Optional[t.Tuple[str, int]], t.Optional[t.Tuple[str, int]]]",
-            "TCPAddress[t.Tuple[str, int], t.Tuple[str, int]]",
-        ]:
+        ):
             ...
 
     def validate(self, obj, value):
