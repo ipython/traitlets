@@ -2111,9 +2111,6 @@ class Type(ClassBasedTraitType[G, S]):
         default_value=Undefined,
         klass=None,
         allow_none=False,
-        read_only=False,
-        help="",
-        config=None,
         **kwargs,
     ):
         """Construct a Type trait
@@ -2554,18 +2551,6 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
             *,
             allow_none: Literal[True, False] = ...,
             help: t.Optional[str] = ...,
-            read_only: t.Optional[bool] = False,
-            config: t.Any = None,
-            **kwargs: t.Any,
-        ):
-            ...
-
-        def __init__(
-            self: "Any",
-            default_value: str = ...,
-            *,
-            allow_none: t.Optional[bool] = False,
-            help: t.Optional[str] = "",
             read_only: t.Optional[bool] = False,
             config: t.Any = None,
             **kwargs: t.Any,
@@ -3279,7 +3264,7 @@ class Container(Instance[T]):
         @t.overload
         def __init__(
             self: "Container[T]",
-            kind: t.Type[T],
+            trait: t.Type[T],
             *,
             allow_none: Literal[False],
             read_only: t.Optional[bool] = ...,
@@ -3292,7 +3277,7 @@ class Container(Instance[T]):
         @t.overload
         def __init__(
             self: "Container[T | None]",
-            kind: t.Type[T],
+            trait: t.Optional[t.Type[T]],
             *,
             allow_none: Literal[True],
             read_only: t.Optional[bool] = ...,
@@ -3305,12 +3290,11 @@ class Container(Instance[T]):
         @t.overload
         def __init__(
             self: "Container[T]",
-            kind: t.Type[T],
+            trait: t.Type[T],
             *,
             help: str = ...,
             read_only: bool = ...,
             config: t.Any = ...,
-            trait: t.Any = ...,
             default_value: t.Any = ...,
             **kwargs: t.Any,
         ):
