@@ -2219,7 +2219,6 @@ class Instance(ClassBasedTraitType[T, T]):
             allow_none: Literal[False] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
-            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2233,7 +2232,6 @@ class Instance(ClassBasedTraitType[T, T]):
             allow_none: Literal[True] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
-            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2247,7 +2245,6 @@ class Instance(ClassBasedTraitType[T, T]):
             allow_none: Literal[False] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
-            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2261,7 +2258,6 @@ class Instance(ClassBasedTraitType[T, T]):
             allow_none: Literal[True] = ...,
             read_only: t.Optional[bool] = ...,
             help: t.Optional[str] = ...,
-            config: t.Optional[t.Any] = ...,
             **kwargs: t.Any,
         ) -> None:
             ...
@@ -2272,6 +2268,8 @@ class Instance(ClassBasedTraitType[T, T]):
         args: t.Optional[t.Tuple[t.Any, ...]] = None,
         kw: t.Optional[t.Dict[str, t.Any]] = None,
         allow_none: bool = False,
+        read_only: t.Optional[bool] = None,
+        help: t.Optional[str] = None,
         **kwargs: t.Any,
     ) -> None:
         """Construct an Instance trait.
@@ -3255,53 +3253,51 @@ class Container(Instance[T]):
     To be subclassed by overriding klass.
     """
 
-    if t.TYPE_CHECKING:
-
-        @t.overload
-        def __init__(
-            self: "Container[T]",
-            kind: t.Type[T],
-            *,
-            allow_none: Literal[False],
-            read_only: t.Optional[bool] = ...,
-            help: t.Optional[str] = ...,
-            config: t.Optional[t.Any] = ...,
-            **kwargs: t.Any,
-        ):
-            ...
-
-        @t.overload
-        def __init__(
-            self: "Container[T | None]",
-            kind: t.Type[T],
-            *,
-            allow_none: Literal[True],
-            read_only: t.Optional[bool] = ...,
-            help: t.Optional[str] = ...,
-            config: t.Optional[t.Any] = ...,
-            **kwargs: t.Any,
-        ):
-            ...
-
-        @t.overload
-        def __init__(
-            self: "Container[T]",
-            kind: t.Type[T],
-            *,
-            help: str = ...,
-            read_only: bool = ...,
-            config: t.Any = ...,
-            trait: t.Any = ...,
-            default_value: t.Any = ...,
-            **kwargs: t.Any,
-        ):
-            ...
-
     klass: t.Optional[t.Type[T]] = None
     _cast_types: t.Any = ()
     _valid_defaults = SequenceTypes
     _trait = None
     _literal_from_string_pairs: t.Any = ("[]", "()")
+
+    @t.overload
+    def __init__(
+        self: "Container[T]",
+        kind: t.Type[T],
+        *,
+        allow_none: Literal[False],
+        read_only: t.Optional[bool] = ...,
+        help: t.Optional[str] = ...,
+        config: t.Optional[t.Any] = ...,
+        **kwargs: t.Any,
+    ):
+        ...
+
+    @t.overload
+    def __init__(
+        self: "Container[T | None]",
+        kind: t.Type[T],
+        *,
+        allow_none: Literal[True],
+        read_only: t.Optional[bool] = ...,
+        help: t.Optional[str] = ...,
+        config: t.Optional[t.Any] = ...,
+        **kwargs: t.Any,
+    ):
+        ...
+
+    @t.overload
+    def __init__(
+        self: "Container[T]",
+        kind: t.Type[T],
+        *,
+        help: str = ...,
+        read_only: bool = ...,
+        config: t.Any = ...,
+        trait: t.Any = ...,
+        default_value: t.Any = ...,
+        **kwargs: t.Any,
+    ):
+        ...
 
     def __init__(self, trait=None, default_value=Undefined, **kwargs):
         """Create a container trait type from a list, set, or tuple.
