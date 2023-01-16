@@ -149,11 +149,11 @@ class Application(SingletonConfigurable):
 
     # The name of the application, will usually match the name of the command
     # line application
-    name: t.Union[str, Unicode] = Unicode("application")
+    name: t.Union[str, Unicode] = "application"
 
     # The description of the application that is printed at the beginning
     # of the help.
-    description: t.Union[str, Unicode] = Unicode("This is an application.")
+    description: str = "This is an application."
     # default section descriptions
     option_description: t.Union[str, Unicode] = Unicode(option_description)
     keyvalue_description: t.Union[str, Unicode] = Unicode(keyvalue_description)
