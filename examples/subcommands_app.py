@@ -27,7 +27,7 @@ class PrintHello(Configurable):
 
 
 class FooApp(Application):
-    name = Unicode("foo")
+    name = "foo"
     classes = [PrintHello]
     aliases = {
         "print-name": "PrintHello.greet_name",
@@ -41,7 +41,7 @@ class FooApp(Application):
 
 
 class BarApp(Application):
-    name = Unicode("bar")
+    name = "bar"
     classes = [PrintHello]
     aliases = {
         "print-name": "PrintHello.greet_name",
@@ -60,8 +60,8 @@ class BarApp(Application):
 
 
 class MainApp(Application):
-    name = Unicode("subcommand-example-app")
-    description = Unicode("demonstrates app with subcommands")
+    name = "subcommand-example-app"
+    description = "demonstrates app with subcommands"
     subcommands = {
         # Subcommands should be a dictionary mapping from the subcommand name
         # to one of the following:
