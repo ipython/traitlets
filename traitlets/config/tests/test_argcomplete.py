@@ -2,6 +2,9 @@
 Tests for argcomplete handling by traitlets.config.application.Application
 """
 
+# Copyright (c) IPython Development Team.
+# Distributed under the terms of the Modified BSD License.
+
 import io
 import os
 import typing as t
@@ -21,8 +24,19 @@ class ArgcompleteApp(Application):
 
     argcomplete_kwargs: t.Dict[str, t.Any]
 
+    def __init__(self, *args, **kwargs):
+        # For subcommands, inherit argcomplete_kwargs from parent app
+        parent = kwargs.get("parent")
+        super().__init__(*args, **kwargs)
+        if parent:
+            argcomplete_kwargs = getattr(parent, "argcomplete_kwargs", None)
+            if argcomplete_kwargs:
+                self.argcomplete_kwargs = argcomplete_kwargs
+
     def _create_loader(self, argv, aliases, flags, classes):
-        loader = KVArgParseConfigLoader(argv, aliases, flags, classes=classes, log=self.log)
+        loader = KVArgParseConfigLoader(
+            argv, aliases, flags, classes=classes, log=self.log, subcommands=self.subcommands
+        )
         loader._argcomplete_kwargs = self.argcomplete_kwargs  # type: ignore[attr-defined]
         return loader
 
@@ -169,24 +183,34 @@ class TestArgcomplete:
         assert completions == ["--val=foo", "--val=bar"] or completions == ["foo", "bar"]
         assert self.run_completer(app, "app --val  --log-level=", point=10) == ["foo", "bar"]
 
-    # TODO: don't have easy way of testing subcommands yet, since we want
-    # to inject _argcomplete_kwargs to subapp. Could use mocking for this
-    # def test_complete_subcommands_subapp1(self, argcomplete_on):
-    #     # subcommand handling modifies _ARGCOMPLETE env var global state, so
-    #     # only can test one completion per unit test
-    #     app = MainApp()
-    #     assert set(self.run_completer(app, "app subapp1 --Sub")) > {
-    #         '--SubApp1.show_config',
-    #         '--SubApp1.log_level',
-    #         '--SubApp1.log_format',
-    #     }
-    #
-    # def test_complete_subcommands_subapp2(self, argcomplete_on):
-    #     app = MainApp()
-    #     assert set(self.run_completer(app, "app subapp2 --")) > {
-    #         '--Application.',
-    #         '--SubApp2.',
-    #     }
+    def test_complete_subcommands(self, argcomplete_on):
+        app = MainApp()
+        assert set(self.run_completer(app, "app ")) >= {"subapp1", "subapp2"}
+        assert set(self.run_completer(app, "app sub")) == {"subapp1", "subapp2"}
+        assert set(self.run_completer(app, "app subapp1")) == {"subapp1"}
+
+    def test_complete_subcommands_subapp1(self, argcomplete_on):
+        # subcommand handling modifies _ARGCOMPLETE env var global state, so
+        # only can test one completion per unit test
+        app = MainApp()
+        try:
+            assert set(self.run_completer(app, "app subapp1 --Sub")) > {
+                '--SubApp1.show_config',
+                '--SubApp1.log_level',
+                '--SubApp1.log_format',
+            }
+        finally:
+            SubApp1.clear_instance()
+
+    def test_complete_subcommands_subapp2(self, argcomplete_on):
+        app = MainApp()
+        try:
+            assert set(self.run_completer(app, "app subapp2 --")) > {
+                '--Application.',
+                '--SubApp2.',
+            }
+        finally:
+            SubApp2.clear_instance()
 
     def test_complete_subcommands_main(self, argcomplete_on):
         app = MainApp()
