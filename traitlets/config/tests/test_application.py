@@ -633,6 +633,9 @@ class TestApplication(TestCase):
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)  # Set by factory.
 
+        Root.clear_instance()
+        Sub1.clear_instance()
+
     def test_loaded_config_files(self):
         app = MyApp()
         app.log = logging.getLogger()
