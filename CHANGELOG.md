@@ -2,6 +2,26 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.9.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.8.1...c11a4d942b08df5c19be88b6cc81dfa8302fef9b))
+
+### Enhancements made
+
+- Polishing argcomplete support [#829](https://github.com/ipython/traitlets/pull/829) ([@azjps](https://github.com/azjps))
+
+### Maintenance and upkeep improvements
+
+- Test that name and description can be set via constructor. [#826](https://github.com/ipython/traitlets/pull/826) ([@Carreau](https://github.com/Carreau))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-01-09&to=2023-01-30&type=c))
+
+[@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2023-01-09..2023-01-30&type=Issues) | [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-01-09..2023-01-30&type=Issues) | [@Carreau](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2023-01-09..2023-01-30&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.8.1
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.8.0...18814204c7e7987851cc1836a36863b4fab60165))
@@ -21,8 +41,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2022-12-19&to=2023-01-09&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2022-12-19..2023-01-09&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2022-12-19..2023-01-09&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2022-12-19..2023-01-09&type=Issues) | [@rmorshea](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2022-12-19..2023-01-09&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.8.0
 
