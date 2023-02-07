@@ -349,7 +349,7 @@ class Config(dict):  # type:ignore[type-arg]
             if not isinstance(value, Config):
                 raise ValueError(
                     "values whose keys begin with an uppercase "
-                    "char must be Config instances: %r, %r" % (key, value)
+                    "char must be Config instances: {!r}, {!r}".format(key, value)
                 )
         dict.__setitem__(self, key, value)
 
@@ -1037,8 +1037,8 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                         # flag sets 'action', so can't have flag & alias with custom action
                         # on the same name
                         raise ArgumentError(
-                            "The alias `%s` for the 'append' sequence "
-                            "config-trait `%s` cannot be also a flag!'" % (key, traitname)
+                            "The alias `{}` for the 'append' sequence "
+                            "config-trait `{}` cannot be also a flag!'".format(key, traitname)
                         )
                     # For argcomplete, check if any either an argcompleter metadata tag or method
                     # is available. If so, it should be a callable which takes the command-line key

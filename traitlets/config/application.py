@@ -446,7 +446,7 @@ class Application(SingletonConfigurable):
         if cls not in self.classes:
             if self.classes is cls.classes:
                 # class attr, assign instead of insert
-                self.classes = [cls] + self.classes
+                self.classes = [cls, *self.classes]
             else:
                 self.classes.insert(0, self.__class__)
 
@@ -947,7 +947,7 @@ class Application(SingletonConfigurable):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
-        for (config, fname) in self._load_config_files(
+        for config, fname in self._load_config_files(
             filename,
             path=path,
             log=self.log,
