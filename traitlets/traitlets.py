@@ -2547,7 +2547,9 @@ class Unicode(TraitType):
                     s = s[1:-1]
                     warn(
                         "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
-                        "You can use {!r} instead of {!r} if you require traitlets >=5.".format(s, old_s),
+                        "You can use {!r} instead of {!r} if you require traitlets >=5.".format(
+                            s, old_s
+                        ),
                         FutureWarning,
                     )
         return s
