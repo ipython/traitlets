@@ -43,7 +43,6 @@ class MultipleInstanceError(ConfigurableError):
 
 
 class Configurable(HasTraits):
-
     config = Instance(Config, (), {})
     parent = Instance("traitlets.config.configurable.Configurable", allow_none=True)
 
@@ -558,8 +557,8 @@ class SingletonConfigurable(LoggingConfigurable):
             return cls._instance
         else:
             raise MultipleInstanceError(
-                "An incompatible sibling of '%s' is already instantiated"
-                " as singleton: %s" % (cls.__name__, type(cls._instance).__name__)
+                "An incompatible sibling of '{}' is already instantiated"
+                " as singleton: {}".format(cls.__name__, type(cls._instance).__name__)
             )
 
     @classmethod

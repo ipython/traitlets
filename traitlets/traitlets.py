@@ -573,12 +573,12 @@ class TraitType(BaseDescriptor):
                 assert f is not None
             mod = f.f_globals.get("__name__") or ""
             pkg = mod.split(".", 1)[0]
-            key = tuple(["metadata-tag", pkg] + sorted(kwargs))
+            key = ("metadata-tag", pkg, *sorted(kwargs))
             if _should_warn(key):
                 warn(
-                    "metadata %s was set from the constructor. "
+                    "metadata {} was set from the constructor. "
                     "With traitlets 4.1, metadata should be set using the .tag() method, "
-                    "e.g., Int().tag(key1='value1', key2='value2')" % (kwargs,),
+                    "e.g., Int().tag(key1='value1', key2='value2')".format(kwargs),
                     DeprecationWarning,
                     stacklevel=stacklevel,
                 )
@@ -758,7 +758,7 @@ class TraitType(BaseDescriptor):
 
     def __or__(self, other):
         if isinstance(other, Union):
-            return Union([self] + other.trait_types)
+            return Union([self, *other.trait_types])
         else:
             return Union([self, other])
 
@@ -2044,8 +2044,8 @@ class Type(ClassBasedTraitType):
                 value = self._resolve_string(value)
             except ImportError as e:
                 raise TraitError(
-                    "The '%s' trait of %s instance must be a type, but "
-                    "%r could not be imported" % (self.name, obj, value)
+                    "The '{}' trait of {} instance must be a type, but "
+                    "{!r} could not be imported".format(self.name, obj, value)
                 ) from e
         try:
             if issubclass(value, self.klass):  # type:ignore[arg-type]
@@ -2309,7 +2309,7 @@ class Union(TraitType):
         if isinstance(other, Union):
             return Union(self.trait_types + other.trait_types)
         else:
-            return Union(self.trait_types + [other])
+            return Union([*self.trait_types, other])
 
     def from_string(self, s):
         for trait_type in self.trait_types:
@@ -2498,7 +2498,7 @@ class Bytes(TraitType):
                     s = s[2:-1]
                     warn(
                         "Supporting extra quotes around Bytes is deprecated in traitlets 5.0. "
-                        "Use %r instead of %r." % (s, old_s),
+                        "Use {!r} instead of {!r}.".format(s, old_s),
                         FutureWarning,
                     )
                     break
@@ -2547,7 +2547,7 @@ class Unicode(TraitType):
                     s = s[1:-1]
                     warn(
                         "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
-                        "You can use %r instead of %r if you require traitlets >=5." % (s, old_s),
+                        "You can use {!r} instead of {!r} if you require traitlets >=5.".format(s, old_s),
                         FutureWarning,
                     )
         return s
