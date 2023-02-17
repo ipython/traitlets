@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "traitlets"
 authors = [{name = "IPython Development Team", email = "ipython-dev@python.org"}]
 description = "Traitlets Python configuration system"
-license = {file = "COPYING.md"}
+license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["Interactive", "Interpreter", "Shell", "Web"]
 classifiers = [
