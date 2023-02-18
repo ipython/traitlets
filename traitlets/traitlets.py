@@ -234,7 +234,7 @@ def is_trait(t):
     return isinstance(t, TraitType) or (isinstance(t, type) and issubclass(t, TraitType))
 
 
-def parse_notifier_name(names):
+def parse_notifier_name(names) -> t.List[t.Union[str, Sentinel]]:
     """Convert the name argument to a list of names.
 
     Examples
@@ -1625,7 +1625,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type="change"):
+    def observe(
+        self,
+        handler,
+        names: t.Union[str, Sentinel, t.List[t.Union[str, Sentinel]]] = All,
+        type: t.Union[Sentinel, str] = "change",
+    ):
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1655,7 +1660,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         for n in names:
             self._add_notifiers(handler, n, type)
 
-    def unobserve(self, handler, names=All, type="change"):
+    def unobserve(
+        self,
+        handler,
+        names: t.Union[str, Sentinel, t.List[t.Union[str, Sentinel]]] = All,
+        type: t.Union[Sentinel, str] = "change",
+    ):
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notifications.
@@ -1676,7 +1686,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         for n in names:
             self._remove_notifiers(handler, n, type)
 
-    def unobserve_all(self, name=All):
+    def unobserve_all(self, name: t.Union[str, t.Any] = All):
         """Remove trait change handlers of any type for the specified name.
         If name is not specified, removes all trait notifiers."""
         if name is All:
