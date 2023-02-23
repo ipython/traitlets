@@ -234,7 +234,9 @@ def is_trait(t):
     return isinstance(t, TraitType) or (isinstance(t, type) and issubclass(t, TraitType))
 
 
-def parse_notifier_name(names):
+def parse_notifier_name(
+    names: t.Union[Sentinel, str, t.Iterable[t.Union[Sentinel, str]]]
+) -> t.Iterable[t.Any]:
     """Convert the name argument to a list of names.
 
     Examples
@@ -250,12 +252,14 @@ def parse_notifier_name(names):
     """
     if names is All or isinstance(names, str):
         return [names]
+    elif isinstance(names, Sentinel):
+        raise TypeError("`names` must be either `All`, a str, or a list of strs.")
     else:
         if not names or All in names:
             return [All]
         for n in names:
             if not isinstance(n, str):
-                raise TypeError("names must be strings, not %r" % n)
+                raise TypeError(f"names must be strings, not {type(n).__name__}({n!r})")
         return names
 
 
@@ -1625,7 +1629,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type="change"):
+    def observe(
+        self,
+        handler: t.Callable[..., t.Any],
+        names: t.Union[Sentinel, str, t.Iterable[t.Union[Sentinel, str]]] = All,
+        type: t.Union[Sentinel, str] = "change",
+    ) -> None:
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1651,11 +1660,15 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._add_notifiers(handler, n, type)
+        for name in parse_notifier_name(names):
+            self._add_notifiers(handler, name, type)
 
-    def unobserve(self, handler, names=All, type="change"):
+    def unobserve(
+        self,
+        handler: t.Callable[..., t.Any],
+        names: t.Union[Sentinel, str, t.Iterable[t.Union[Sentinel, str]]] = All,
+        type: t.Union[Sentinel, str] = "change",
+    ) -> None:
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notifications.
@@ -1672,11 +1685,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._remove_notifiers(handler, n, type)
+        for name in parse_notifier_name(names):
+            self._remove_notifiers(handler, name, type)
 
-    def unobserve_all(self, name=All):
+    def unobserve_all(self, name: t.Union[str, t.Any] = All) -> None:
         """Remove trait change handlers of any type for the specified name.
         If name is not specified, removes all trait notifiers."""
         if name is All:
