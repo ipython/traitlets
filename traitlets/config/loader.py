@@ -342,7 +342,7 @@ class Config(dict):  # type:ignore[type-arg]
                 dict.__setitem__(self, key, v)
                 return v
             else:
-                raise KeyError
+                raise
 
     def __setitem__(self, key, value):
         if _is_section_key(key):
