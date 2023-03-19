@@ -9,7 +9,7 @@ import os
 import typing as t
 
 try:
-    import argcomplete  # type: ignore[import]
+    import argcomplete
     from argcomplete import CompletionFinder
 except ImportError:
     # This module and its utility methods are written to not crash even
@@ -20,8 +20,8 @@ except ImportError:
                 raise ModuleNotFoundError("No module named 'argcomplete'")
             raise AttributeError(f"argcomplete stub module has no attribute '{attr}'")
 
-    argcomplete = StubModule()
-    CompletionFinder = object
+    argcomplete = StubModule()  # type:ignore
+    CompletionFinder = object  # type:ignore
 
 
 def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
