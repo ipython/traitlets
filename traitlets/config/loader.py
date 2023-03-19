@@ -1114,7 +1114,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
     ) -> None:
         """If argcomplete is enabled, allow triggering command-line autocompletion"""
         try:
-            import argcomplete  # type: ignore[import]  # noqa
+            import argcomplete  # noqa
         except ImportError:
             return
 
