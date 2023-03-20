@@ -2,6 +2,7 @@ import inspect
 import os
 import warnings
 
+
 def warn(msg, category, *, stacklevel, source=None):
     """Like warnings.warn(), but category and stacklevel are required.
 
@@ -44,6 +45,7 @@ def deprecated_method(method, cls, method_name, msg):
 
 
 _deprecations_shown = set()
+
 
 def should_warn(key):
     """Add our own checks for too many deprecation warnings.

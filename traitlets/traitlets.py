@@ -49,12 +49,12 @@ import types
 import typing as t
 from ast import literal_eval
 
-from .utils.warnings import warn, deprecated_method, should_warn
 from .utils.bunch import Bunch
 from .utils.descriptions import add_article, class_of, describe, repr_type
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .utils.warnings import deprecated_method, should_warn, warn
 
 SequenceTypes = (list, tuple, set, frozenset)
 
