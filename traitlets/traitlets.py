@@ -2511,7 +2511,7 @@ class Bytes(TraitType):
                     warn(
                         "Supporting extra quotes around Bytes is deprecated in traitlets 5.0. "
                         "Use {!r} instead of {!r}.".format(s, old_s),
-                        FutureWarning,
+                        DeprecationWarning,
                     )
                     break
         return s.encode("utf8")
@@ -2562,7 +2562,7 @@ class Unicode(TraitType):
                         "You can use {!r} instead of {!r} if you require traitlets >=5.".format(
                             s, old_s
                         ),
-                        FutureWarning,
+                        DeprecationWarning,
                     )
         return s
 
@@ -2946,7 +2946,7 @@ class Container(Instance):
                     "You can pass `--{0} item` ... multiple times to add items to a list.".format(
                         clsname + self.name, r
                     ),
-                    FutureWarning,
+                    DeprecationWarning,
                 )
                 return self.klass(literal_eval(r))  # type:ignore[operator]
         sig = inspect.signature(self.item_from_string)
@@ -3454,7 +3454,7 @@ class Dict(Instance):
                     self.name,
                     s_list[0],
                 ),
-                FutureWarning,
+                DeprecationWarning,
             )
 
             return literal_eval(s_list[0])
