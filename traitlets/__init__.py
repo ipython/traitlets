@@ -1,10 +1,9 @@
 """Traitlets Python configuration system"""
-from warnings import warn
-
 from . import traitlets
 from ._version import __version__, version_info
 from .traitlets import *
 from .utils.bunch import Bunch
+from .utils.warnings import warn
 from .utils.decorators import signature_has_traits
 from .utils.importstring import import_item
 

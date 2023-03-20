@@ -11,11 +11,10 @@ import os
 import re
 import sys
 import typing as t
-import warnings
 
 from traitlets.traitlets import Any, Container, Dict, HasTraits, List, Undefined
 
-from ..utils import cast_unicode, filefind
+from ..utils import cast_unicode, filefind, warnings
 
 # -----------------------------------------------------------------------------
 # Exceptions

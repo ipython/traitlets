@@ -5,7 +5,6 @@
 
 
 import logging
-import warnings
 from copy import deepcopy
 from textwrap import dedent
 
@@ -21,6 +20,7 @@ from traitlets.traitlets import (
     validate,
 )
 from traitlets.utils.text import indent, wrap_paragraphs
+from traitlets.utils import warnings
 
 from .loader import Config, DeferredConfig, LazyConfigValue, _is_section_key
 
@@ -184,7 +184,7 @@ class Configurable(HasTraits):
                     if isinstance(self, LoggingConfigurable):
                         warn = self.log.warning
                     else:
-                        warn = lambda msg: warnings.warn(msg, stacklevel=9)  # noqa[E371]
+                        warn = lambda msg: warnings.warn(msg, UserWarning, stacklevel=9)  # noqa[E371]
                     matches = get_close_matches(name, traits)
                     msg = "Config option `{option}` not recognized by `{klass}`.".format(
                         option=name, klass=self.__class__.__name__
@@ -452,7 +452,9 @@ class LoggingConfigurable(Configurable):
             # warn about unsupported type, but be lenient to allow for duck typing
             warnings.warn(
                 f"{self.__class__.__name__}.log should be a Logger or LoggerAdapter,"
-                f" got {proposal.value}."
+                f" got {proposal.value}.",
+                UserWarning,
+                stacklevel=2
             )
         return proposal.value
 
