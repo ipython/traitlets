@@ -161,8 +161,6 @@ class TraitError(Exception):
 # Utilities
 # -----------------------------------------------------------------------------
 
-_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*$")
-
 
 def isidentifier(s):
     return s.isidentifier()
