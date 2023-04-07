@@ -22,9 +22,9 @@ from traitlets.traitlets import (
     List,
     Set,
     Unicode,
-    _deprecations_shown,
     validate,
 )
+from traitlets.utils.warnings import _deprecations_shown
 
 from ...tests._warnings import expected_warnings
 
