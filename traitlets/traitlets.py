@@ -48,13 +48,13 @@ import sys
 import types
 import typing as t
 from ast import literal_eval
-from warnings import warn, warn_explicit
 
 from .utils.bunch import Bunch
 from .utils.descriptions import add_article, class_of, describe, repr_type
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .utils.warnings import deprecated_method, should_warn, warn
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -161,59 +161,9 @@ class TraitError(Exception):
 # Utilities
 # -----------------------------------------------------------------------------
 
-_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*$")
-
 
 def isidentifier(s):
     return s.isidentifier()
-
-
-_deprecations_shown = set()
-
-
-def _should_warn(key):
-    """Add our own checks for too many deprecation warnings.
-
-    Limit to once per package.
-    """
-    env_flag = os.environ.get("TRAITLETS_ALL_DEPRECATIONS")
-    if env_flag and env_flag != "0":
-        return True
-
-    if key not in _deprecations_shown:
-        _deprecations_shown.add(key)
-        return True
-    else:
-        return False
-
-
-def _deprecated_method(method, cls, method_name, msg):
-    """Show deprecation warning about a magic method definition.
-
-    Uses warn_explicit to bind warning to method definition instead of triggering code,
-    which isn't relevant.
-    """
-    warn_msg = "{classname}.{method_name} is deprecated in traitlets 4.1: {msg}".format(
-        classname=cls.__name__, method_name=method_name, msg=msg
-    )
-
-    for parent in inspect.getmro(cls):
-        if method_name in parent.__dict__:
-            cls = parent
-            break
-    # limit deprecation messages to once per package
-    package_name = cls.__module__.split(".", 1)[0]
-    key = (package_name, msg)
-    if not _should_warn(key):
-        return
-    try:
-        fname = inspect.getsourcefile(method) or "<unknown>"
-        lineno = inspect.getsourcelines(method)[1] or 0
-    except (OSError, TypeError) as e:
-        # Failed to inspect for some reason
-        warn(warn_msg + ("\n(inspection failed) %s" % e), DeprecationWarning)
-    else:
-        warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
 
 def _safe_literal_eval(s):
@@ -578,7 +528,7 @@ class TraitType(BaseDescriptor):
             mod = f.f_globals.get("__name__") or ""
             pkg = mod.split(".", 1)[0]
             key = ("metadata-tag", pkg, *sorted(kwargs))
-            if _should_warn(key):
+            if should_warn(key):
                 warn(
                     "metadata {} was set from the constructor. "
                     "With traitlets 4.1, metadata should be set using the .tag() method, "
@@ -751,7 +701,7 @@ class TraitType(BaseDescriptor):
         elif hasattr(obj, "_%s_validate" % self.name):
             meth_name = "_%s_validate" % self.name
             cross_validate = getattr(obj, meth_name)
-            _deprecated_method(
+            deprecated_method(
                 cross_validate,
                 obj.__class__,
                 meth_name,
@@ -1139,6 +1089,7 @@ def observe_compat(func):
                 "A parent of %s._%s_changed has adopted the new (traitlets 4.1) @observe(change) API"
                 % (clsname, change_or_name),
                 DeprecationWarning,
+                stacklevel=2,
             )
             change = Bunch(
                 type="change",
@@ -1544,7 +1495,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         if event['type'] == "change" and hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
-                _deprecated_method(
+                deprecated_method(
                     class_value,
                     self.__class__,
                     magic_name,
@@ -1724,7 +1675,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             if hasattr(self, magic_name):
                 class_value = getattr(self.__class__, magic_name)
                 if not isinstance(class_value, ValidateHandler):
-                    _deprecated_method(
+                    deprecated_method(
                         class_value,
                         self.__class__,
                         magic_name,
@@ -2511,7 +2462,8 @@ class Bytes(TraitType):
                     warn(
                         "Supporting extra quotes around Bytes is deprecated in traitlets 5.0. "
                         "Use {!r} instead of {!r}.".format(s, old_s),
-                        FutureWarning,
+                        DeprecationWarning,
+                        stacklevel=2,
                     )
                     break
         return s.encode("utf8")
@@ -2562,7 +2514,8 @@ class Unicode(TraitType):
                         "You can use {!r} instead of {!r} if you require traitlets >=5.".format(
                             s, old_s
                         ),
-                        FutureWarning,
+                        DeprecationWarning,
+                        stacklevel=2,
                     )
         return s
 
@@ -2946,7 +2899,8 @@ class Container(Instance):
                     "You can pass `--{0} item` ... multiple times to add items to a list.".format(
                         clsname + self.name, r
                     ),
-                    FutureWarning,
+                    DeprecationWarning,
+                    stacklevel=2,
                 )
                 return self.klass(literal_eval(r))  # type:ignore[operator]
         sig = inspect.signature(self.item_from_string)
@@ -3454,7 +3408,8 @@ class Dict(Instance):
                     self.name,
                     s_list[0],
                 ),
-                FutureWarning,
+                DeprecationWarning,
+                stacklevel=2,
             )
 
             return literal_eval(s_list[0])
