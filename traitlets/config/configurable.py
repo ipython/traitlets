@@ -186,7 +186,7 @@ class Configurable(HasTraits):
                     else:
 
                         def warn(msg):
-                            return warnings.warn(msg, UserWarning, stacklevel=9)  # noqa[E371]
+                            return warnings.warn(msg, UserWarning, stacklevel=9)
 
                     matches = get_close_matches(name, traits)
                     msg = "Config option `{option}` not recognized by `{klass}`.".format(
