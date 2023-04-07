@@ -184,8 +184,10 @@ class Configurable(HasTraits):
                     if isinstance(self, LoggingConfigurable):
                         warn = self.log.warning
                     else:
+
                         def warn(msg):
                             return warnings.warn(msg, UserWarning, stacklevel=9)  # noqa[E371]
+
                     matches = get_close_matches(name, traits)
                     msg = "Config option `{option}` not recognized by `{klass}`.".format(
                         option=name, klass=self.__class__.__name__
