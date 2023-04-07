@@ -206,7 +206,7 @@ unfixable = [
 "traitlets/tests/*" = ["B011", "F841", "C408", "E402", "T201", "B007", "N802", "F841",
                        "B018", "S301"]
 # B003 Assigning to os.environ doesn't clear the environment
-"traitlets/config/tests/*" = ["B003"]
+"traitlets/config/tests/*" = ["B003", "B018", "S301"]
 # F401 `_version.__version__` imported but unused
 # F403 `from .traitlets import *` used; unable to detect undefined names
 "traitlets/*__init__.py" = ["F401", "F403"]
