@@ -2,7 +2,6 @@
 
 [![Tests](https://github.com/ipython/traitlets/actions/workflows/tests.yml/badge.svg)](https://github.com/ipython/traitlets/actions/workflows/tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](https://traitlets.readthedocs.io/en/latest/?badge=latest)
-[![codecov](https://codecov.io/gh/ipython/traitlets/branch/main/graph/badge.svg?token=HcsbLGEmI1)](https://codecov.io/gh/ipython/traitlets)
 [![Tidelift](https://tidelift.com/subscription/pkg/pypi-traitlets)](https://tidelift.com/badges/package/pypi/traitlets)
 
 |               |                                      |
