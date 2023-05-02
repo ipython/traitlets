@@ -753,9 +753,8 @@ class TraitType(BaseDescriptor):
                 chain = " of ".join(describe("a", t) for t in error.args[2:])
                 if obj is not None:
                     error.args = (
-                        "The '%s' trait of %s instance contains %s which "
-                        "expected %s, not %s."
-                        % (
+                        "The '{}' trait of {} instance contains {} which "
+                        "expected {}, not {}.".format(
                             self.name,
                             describe("an", obj),
                             chain,
@@ -765,9 +764,8 @@ class TraitType(BaseDescriptor):
                     )
                 else:
                     error.args = (
-                        "The '%s' trait contains %s which "
-                        "expected %s, not %s."
-                        % (
+                        "The '{}' trait contains {} which "
+                        "expected {}, not {}.".format(
                             self.name,
                             chain,
                             error.args[1],
@@ -1086,8 +1084,7 @@ def observe_compat(func):
         else:
             clsname = self.__class__.__name__
             warn(
-                "A parent of %s._%s_changed has adopted the new (traitlets 4.1) @observe(change) API"
-                % (clsname, change_or_name),
+                f"A parent of {clsname}._{change_or_name}_changed has adopted the new (traitlets 4.1) @observe(change) API",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -3320,8 +3317,7 @@ class Dict(Instance):
     def element_error(self, obj, element, validator, side="Values"):
         e = (
             side
-            + " of the '%s' trait of %s instance must be %s, but a value of %s was specified."
-            % (self.name, class_of(obj), validator.info(), repr_type(element))
+            + f" of the '{self.name}' trait of {class_of(obj)} instance must be {validator.info()}, but a value of {repr_type(element)} was specified."
         )
         raise TraitError(e)
 
@@ -3432,8 +3428,7 @@ class Dict(Instance):
 
         if "=" not in s:
             raise TraitError(
-                "'%s' options must have the form 'key=value', got %s"
-                % (
+                "'{}' options must have the form 'key=value', got {}".format(
                     self.__class__.__name__,
                     repr(s),
                 )
