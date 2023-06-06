@@ -3377,7 +3377,7 @@ class Dict(Instance):
     def from_string(self, s):
         """Load value from a single string"""
         if not isinstance(s, str):
-            raise TypeError(f"from_string expects a string, got {repr(s)} of type {type(s)}")
+            raise TypeError(f"from_string expects a string, got {s!r} of type {type(s)}")
         try:
             return self.from_string_list([s])
         except Exception:
