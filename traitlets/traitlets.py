@@ -502,6 +502,8 @@ class TraitType(BaseDescriptor):
 
         If *read_only* is True, attempts to directly modify a trait attribute raises a TraitError.
 
+        If *help* is a string, it provides documentation on the purpose of the attribute.
+
         Extra metadata can be associated with the traitlet using the .tag() convenience method
         or by using the traitlet instance's .metadata dictionary.
         """
