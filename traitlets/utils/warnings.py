@@ -17,9 +17,7 @@ def deprecated_method(method, cls, method_name, msg):
     Uses warn_explicit to bind warning to method definition instead of triggering code,
     which isn't relevant.
     """
-    warn_msg = "{classname}.{method_name} is deprecated in traitlets 4.1: {msg}".format(
-        classname=cls.__name__, method_name=method_name, msg=msg
-    )
+    warn_msg = f"{cls.__name__}.{method_name} is deprecated in traitlets 4.1: {msg}"
 
     for parent in inspect.getmro(cls):
         if method_name in parent.__dict__:
