@@ -189,9 +189,7 @@ class Configurable(HasTraits):
                             return warnings.warn(msg, UserWarning, stacklevel=9)
 
                     matches = get_close_matches(name, traits)
-                    msg = "Config option `{option}` not recognized by `{klass}`.".format(
-                        option=name, klass=self.__class__.__name__
-                    )
+                    msg = f"Config option `{name}` not recognized by `{self.__class__.__name__}`."
 
                     if len(matches) == 1:
                         msg += f"  Did you mean `{matches[0]}`?"
