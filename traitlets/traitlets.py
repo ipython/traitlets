@@ -2539,7 +2539,7 @@ class ObjectName(TraitType):
 
     info_text = "a valid object identifier in Python"
 
-    coerce_str = staticmethod(lambda _, s: s)  # type:ignore[no-any-return]
+    coerce_str = staticmethod(lambda _, s: s)
 
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
@@ -2713,11 +2713,7 @@ class FuzzyEnum(Enum):
 
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
-        match_func = (
-            (lambda v, c: v in c)
-            if substring_matching
-            else (lambda v, c: c.startswith(v))  # type:ignore[no-any-return]
-        )
+        match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
@@ -2907,7 +2903,8 @@ class Container(Instance):
             item_from_string = self.item_from_string
         else:
             # backward-compat: allow item_from_string to ignore index arg
-            item_from_string = lambda s, index=None: self.item_from_string(s)  # noqa[E371]
+            def item_from_string(s, index=None):
+                return self.item_from_string(s)  # noqa[E371]
 
         return self.klass(
             [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
@@ -3430,10 +3427,7 @@ class Dict(Instance):
 
         if "=" not in s:
             raise TraitError(
-                "'{}' options must have the form 'key=value', got {}".format(
-                    self.__class__.__name__,
-                    repr(s),
-                )
+                f"'{self.__class__.__name__}' options must have the form 'key=value', got {s!r}"
             )
         key, value = s.split("=", 1)
 
@@ -3525,7 +3519,7 @@ class UseEnum(TraitType):
         assert issubclass(enum_class, enum.Enum), "REQUIRE: enum.Enum, but was: %r" % enum_class
         allow_none = kwargs.get("allow_none", False)
         if default_value is None and not allow_none:
-            default_value = list(enum_class.__members__.values())[0]
+            default_value = next(iter(enum_class.__members__.values()))
         super().__init__(default_value=default_value, **kwargs)
         self.enum_class = enum_class
         self.name_prefix = enum_class.__name__ + "."
