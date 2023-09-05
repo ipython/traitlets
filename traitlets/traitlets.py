@@ -322,8 +322,8 @@ class link:
             setattr(self.target[0], self.target[1], self._transform(change.new))
             if getattr(self.source[0], self.source[1]) != change.new:
                 raise TraitError(
-                    "Broken link {}: the source value changed while updating "
-                    "the target.".format(self)
+                    f"Broken link {self}: the source value changed while updating "
+                    "the target."
                 )
 
     def _update_source(self, change):
@@ -333,8 +333,8 @@ class link:
             setattr(self.source[0], self.source[1], self._transform_inv(change.new))
             if getattr(self.target[0], self.target[1]) != change.new:
                 raise TraitError(
-                    "Broken link {}: the target value changed while updating "
-                    "the source.".format(self)
+                    f"Broken link {self}: the target value changed while updating "
+                    "the source."
                 )
 
     def unlink(self):
@@ -532,9 +532,9 @@ class TraitType(BaseDescriptor):
             key = ("metadata-tag", pkg, *sorted(kwargs))
             if should_warn(key):
                 warn(
-                    "metadata {} was set from the constructor. "
+                    f"metadata {kwargs} was set from the constructor. "
                     "With traitlets 4.1, metadata should be set using the .tag() method, "
-                    "e.g., Int().tag(key1='value1', key2='value2')".format(kwargs),
+                    "e.g., Int().tag(key1='value1', key2='value2')",
                     DeprecationWarning,
                     stacklevel=stacklevel,
                 )
@@ -2006,8 +2006,8 @@ class Type(ClassBasedTraitType):
                 value = self._resolve_string(value)
             except ImportError as e:
                 raise TraitError(
-                    "The '{}' trait of {} instance must be a type, but "
-                    "{!r} could not be imported".format(self.name, obj, value)
+                    f"The '{self.name}' trait of {obj} instance must be a type, but "
+                    f"{value!r} could not be imported"
                 ) from e
         try:
             if issubclass(value, self.klass):  # type:ignore[arg-type]
@@ -2308,19 +2308,15 @@ def _validate_bounds(trait, obj, value):
     """
     if trait.min is not None and value < trait.min:
         raise TraitError(
-            "The value of the '{name}' trait of {klass} instance should "
-            "not be less than {min_bound}, but a value of {value} was "
-            "specified".format(
-                name=trait.name, klass=class_of(obj), value=value, min_bound=trait.min
-            )
+            f"The value of the '{trait.name}' trait of {class_of(obj)} instance should "
+            f"not be less than {trait.min}, but a value of {value} was "
+            "specified"
         )
     if trait.max is not None and value > trait.max:
         raise TraitError(
-            "The value of the '{name}' trait of {klass} instance should "
-            "not be greater than {max_bound}, but a value of {value} was "
-            "specified".format(
-                name=trait.name, klass=class_of(obj), value=value, max_bound=trait.max
-            )
+            f"The value of the '{trait.name}' trait of {class_of(obj)} instance should "
+            f"not be greater than {trait.max}, but a value of {value} was "
+            "specified"
         )
     return value
 
@@ -2460,7 +2456,7 @@ class Bytes(TraitType):
                     s = s[2:-1]
                     warn(
                         "Supporting extra quotes around Bytes is deprecated in traitlets 5.0. "
-                        "Use {!r} instead of {!r}.".format(s, old_s),
+                        f"Use {s!r} instead of {old_s!r}.",
                         DeprecationWarning,
                         stacklevel=2,
                     )
@@ -2510,9 +2506,7 @@ class Unicode(TraitType):
                     s = s[1:-1]
                     warn(
                         "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
-                        "You can use {!r} instead of {!r} if you require traitlets >=5.".format(
-                            s, old_s
-                        ),
+                        f"You can use {s!r} instead of {old_s!r} if you require traitlets >=5.",
                         DeprecationWarning,
                         stacklevel=2,
                     )
@@ -3398,11 +3392,8 @@ class Dict(Instance):
             return None
         if len(s_list) == 1 and s_list[0].startswith("{") and s_list[0].endswith("}"):
             warn(
-                "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
-                "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
-                    self.name,
-                    s_list[0],
-                ),
+                f"--{self.name}={s_list[0]} for dict-traits is deprecated in traitlets 5.0. "
+                f"You can pass --{self.name} <key=value> ... multiple times to add items to a dict.",
                 DeprecationWarning,
                 stacklevel=2,
             )
