@@ -503,9 +503,7 @@ class Application(SingletonConfigurable):
 
             for traitname in sorted(class_config):
                 value = class_config[traitname]
-                print(
-                    f"  .{traitname} = {pprint.pformat(value, **pformat_kwargs)}"
-                )
+                print(f"  .{traitname} = {pprint.pformat(value, **pformat_kwargs)}")
 
     def print_alias_help(self):
         """Print the alias parts of the help."""
