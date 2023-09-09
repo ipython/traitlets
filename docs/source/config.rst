@@ -127,28 +127,28 @@ subclass
     from traitlets.config.configurable import Configurable
     from traitlets import Int, Float, Unicode, Bool
 
-    class MyClass(Configurable):
+    class School(Configurable):
         name = Unicode('defaultname', help="the name of the object").tag(config=True)
         ranking = Integer(0, help="the class's ranking").tag(config=True)
         value = Float(99.0)
         # The rest of the class implementation would go here..
 
-    # Construct from config via MyClass(config=..)
+    # Construct from config via School(config=..)
 
-In this example, we see that :class:`MyClass` has three attributes, two
+In this example, we see that :class:`School` has three attributes, two
 of which (``name``, ``ranking``) can be configured.  All of the attributes
-are given types and default values.  If a :class:`MyClass` is instantiated,
+are given types and default values.  If a :class:`School` is instantiated,
 but not configured, these default values will be used.  But let's see how
 to configure this class in a configuration file
 
 .. code-block:: python
 
     # Sample config file
-    c.MyClass.name = 'coolname'
-    c.MyClass.ranking = 10
+    c.School.name = 'coolname'
+    c.School.ranking = 10
 
 After this configuration file is loaded, the values set in it will override
-the class defaults anytime a :class:`MyClass` is created.  Furthermore,
+the class defaults anytime a :class:`School` is created.  Furthermore,
 these attributes will be type checked and validated anytime they are set.
 This type checking is handled by the :mod:`traitlets` module,
 which provides the :class:`~traitlets.Unicode`, :class:`~traitlets.Integer` and
@@ -167,7 +167,7 @@ attribute of ``c`` is not the actual class, but instead is another
 
 .. note::
 
-    The careful reader may wonder how the ``ClassName`` (``MyClass`` in
+    The careful reader may wonder how the ``ClassName`` (``School`` in
     the above example) attribute of the configuration object ``c`` gets
     created. These attributes are created on the fly by the
     :class:`~traitlets.config.Config` instance, using a simple naming
@@ -191,7 +191,7 @@ JSON configuration file:
 .. code-block:: json
 
     {
-      "MyClass": {
+      "School": {
         "name": "coolname",
         "ranking": 10
       }
@@ -218,8 +218,8 @@ example that loads all of the values from the file :file:`base_config.py`:
     :caption: examples/docs/configs/base_config.py
 
     c = get_config()  # noqa
-    c.MyClass.name = 'coolname'
-    c.MyClass.ranking = 100
+    c.School.name = 'Harvard'
+    c.School.ranking = 100
 
 into the configuration file :file:`main_config.py`:
 
@@ -233,7 +233,7 @@ into the configuration file :file:`main_config.py`:
     load_subconfig('base_config.py')  # noqa
 
     # Now override one of the values
-    c.MyClass.name = 'bettername'
+    c.School.name = 'bettername'
 
 In a situation like this the :func:`load_subconfig` makes sure that the
 search path for sub-configuration files is inherited from that of the parent.
