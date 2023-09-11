@@ -25,7 +25,7 @@ class App(Application):
     )
 
     def start(self):
-        print(f"key={self.key}")
+        print(f"key={self.key.decode('utf8')}")
 
 
 if __name__ == "__main__":

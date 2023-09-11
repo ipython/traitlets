@@ -182,6 +182,7 @@ class Configurable(HasTraits):
                     from difflib import get_close_matches
 
                     if isinstance(self, LoggingConfigurable):
+                        assert self.log is not None
                         warn = self.log.warning
                     else:
 
@@ -462,6 +463,7 @@ class LoggingConfigurable(Configurable):
     @default("log")
     def _log_default(self):
         if isinstance(self.parent, LoggingConfigurable):
+            assert self.parent is not None
             return self.parent.log
         from traitlets import log
 

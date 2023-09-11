@@ -20,9 +20,10 @@ classifiers = [
 urls = {Homepage = "https://github.com/ipython/traitlets"}
 requires-python = ">=3.7"
 dynamic = ["version"]
+dependencies = ["typing_extensions>=4.0.1"]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-mock", "pre-commit", "argcomplete>=2.0"]
+test = ["pytest>=7.0,<7.2", "pytest-mock", "pre-commit", "argcomplete>=2.0", "pytest-mypy-testing", "mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f35268cb605b7345726f257f960#egg=mypy"]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",
@@ -31,6 +32,9 @@ docs = [
 
 [tool.hatch.version]
 path = "traitlets/_version.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.envs.docs]
 features = ["docs"]
@@ -52,7 +56,7 @@ nowarn = "test -W default {args}"
 
 [tool.hatch.envs.typing]
 features = ["test"]
-dependencies = ["mypy>=0.990"]
+dependencies = ["mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f35268cb605b7345726f257f960#egg=mypy"]
 [tool.hatch.envs.typing.scripts]
 test = "mypy --install-types --non-interactive {args:.}"
 
@@ -89,7 +93,7 @@ warn_unused_configs = true
 warn_redundant_casts = true
 warn_return_any = true
 warn_unused_ignores = true
-exclude = ["examples/docs/configs"]
+exclude = ["examples/docs/configs", "traitlets/tests/test_typing.py"]
 
 [tool.pytest.ini_options]
 addopts = "--durations=10 -ra --showlocals --doctest-modules --color yes --ignore examples/docs/configs"
