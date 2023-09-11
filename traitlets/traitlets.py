@@ -3178,8 +3178,10 @@ class FuzzyEnum(Enum[G, S]):
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
         match_func = (
-            (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
-        )  # type:ignore[no-any-return]
+            (lambda v, c: v in c)
+            if substring_matching
+            else (lambda v, c: c.startswith(v))  # type:ignore[no-any-return]
+        )
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
