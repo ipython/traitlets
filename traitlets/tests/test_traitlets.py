@@ -2423,12 +2423,10 @@ def test_notification_order():
 # Traits for Forward Declaration Tests
 ###
 class ForwardDeclaredInstanceTrait(HasTraits):
-
     value = ForwardDeclaredInstance["ForwardDeclaredBar"]("ForwardDeclaredBar", allow_none=True)
 
 
 class ForwardDeclaredTypeTrait(HasTraits):
-
     value = ForwardDeclaredType[t.Any, t.Any]("ForwardDeclaredBar", allow_none=True)
 
 
