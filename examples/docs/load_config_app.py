@@ -5,16 +5,16 @@
 Example:
 
     $ ./examples/docs/load_config_app.py
-    bettername ranking:100
+    The school Caltech has a rank of 1.
 
-    $ ./examples/docs/load_config_app.py --name cli_name
-    cli_name ranking:100
+    $ ./examples/docs/load_config_app.py --name Duke
+    The school Duke has a rank of 1.
 
-    $ ./examples/docs/load_config_app.py --name cli_name --MyApp.MyClass.ranking=99
-    cli_name ranking:99
+    $ ./examples/docs/load_config_app.py --name Duke --MyApp.MyClass.ranking=12
+    The school Duke has a rank of 12.
 
     $ ./examples/docs/load_config_app.py -c ""
-    default ranking:0
+    The school MIT has a rank of 1.
 """
 
 from pathlib import Path
@@ -23,22 +23,22 @@ from traitlets import Int, Unicode
 from traitlets.config import Application, Configurable
 
 
-class MyClass(Configurable):
-    name = Unicode(default_value="default").tag(config=True)
-    ranking = Int().tag(config=True)
+class School(Configurable):
+    name = Unicode(default_value="MIT").tag(config=True)
+    ranking = Int(default_value=1).tag(config=True)
 
     def __str__(self):
-        return f"{self.name} ranking:{self.ranking}"
+        return f"The school {self.name} has a rank of {self.ranking}."
 
 
 class MyApp(Application):
-    classes = [MyClass]
+    classes = [School]
     config_file = Unicode(default_value="main_config", help="base name of config file").tag(
         config=True
     )
     aliases = {
-        "name": "MyClass.name",
-        "ranking": "MyClass.ranking",
+        "name": "School.name",
+        "ranking": "School.ranking",
         ("c", "config-file"): "MyApp.config_file",
     }
 
@@ -48,7 +48,7 @@ class MyApp(Application):
             self.load_config_file(self.config_file, [Path(__file__).parent / "configs"])
 
     def start(self):
-        print(MyClass(parent=self))
+        print(School(parent=self))
 
 
 if __name__ == "__main__":

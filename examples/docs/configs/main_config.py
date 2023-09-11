@@ -6,4 +6,4 @@ c = get_config()  # noqa
 load_subconfig('base_config.py')  # noqa
 
 # Now override one of the values
-c.MyClass.name = 'bettername'
+c.School.name = 'Caltech'
