@@ -23,7 +23,7 @@ dynamic = ["version"]
 dependencies = ["typing_extensions>=4.0.1"]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0,<7.2", "pytest-mock", "pre-commit", "argcomplete>=2.0", "pytest-mypy-testing", "mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f35268cb605b7345726f257f960#egg=mypy"]
+test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=2.0", "pytest-mypy-testing", "mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f35268cb605b7345726f257f960#egg=mypy"]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",
