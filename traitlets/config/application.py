@@ -444,7 +444,7 @@ class Application(SingletonConfigurable):
     def _show_config_changed(self, change):
         if change.new:
             self._save_start = self.start
-            self.start = self.start_show_config  # type:ignore[method-assign]
+            self.start = self.start_show_config  # type:ignore[assignment]
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
