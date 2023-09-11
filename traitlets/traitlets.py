@@ -48,13 +48,13 @@ import sys
 import types
 import typing as t
 from ast import literal_eval
-from warnings import warn, warn_explicit
 
 from .utils.bunch import Bunch
 from .utils.descriptions import add_article, class_of, describe, repr_type
 from .utils.getargspec import getargspec
 from .utils.importstring import import_item
 from .utils.sentinel import Sentinel
+from .utils.warnings import deprecated_method, should_warn, warn
 
 SequenceTypes = (list, tuple, set, frozenset)
 
@@ -161,59 +161,9 @@ class TraitError(Exception):
 # Utilities
 # -----------------------------------------------------------------------------
 
-_name_re = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*$")
-
 
 def isidentifier(s):
     return s.isidentifier()
-
-
-_deprecations_shown = set()
-
-
-def _should_warn(key):
-    """Add our own checks for too many deprecation warnings.
-
-    Limit to once per package.
-    """
-    env_flag = os.environ.get("TRAITLETS_ALL_DEPRECATIONS")
-    if env_flag and env_flag != "0":
-        return True
-
-    if key not in _deprecations_shown:
-        _deprecations_shown.add(key)
-        return True
-    else:
-        return False
-
-
-def _deprecated_method(method, cls, method_name, msg):
-    """Show deprecation warning about a magic method definition.
-
-    Uses warn_explicit to bind warning to method definition instead of triggering code,
-    which isn't relevant.
-    """
-    warn_msg = "{classname}.{method_name} is deprecated in traitlets 4.1: {msg}".format(
-        classname=cls.__name__, method_name=method_name, msg=msg
-    )
-
-    for parent in inspect.getmro(cls):
-        if method_name in parent.__dict__:
-            cls = parent
-            break
-    # limit deprecation messages to once per package
-    package_name = cls.__module__.split(".", 1)[0]
-    key = (package_name, msg)
-    if not _should_warn(key):
-        return
-    try:
-        fname = inspect.getsourcefile(method) or "<unknown>"
-        lineno = inspect.getsourcelines(method)[1] or 0
-    except (OSError, TypeError) as e:
-        # Failed to inspect for some reason
-        warn(warn_msg + ("\n(inspection failed) %s" % e), DeprecationWarning)
-    else:
-        warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
 
 def _safe_literal_eval(s):
@@ -234,7 +184,9 @@ def is_trait(t):
     return isinstance(t, TraitType) or (isinstance(t, type) and issubclass(t, TraitType))
 
 
-def parse_notifier_name(names):
+def parse_notifier_name(
+    names: t.Union[Sentinel, str, t.Iterable[t.Union[Sentinel, str]]]
+) -> t.Iterable[t.Any]:
     """Convert the name argument to a list of names.
 
     Examples
@@ -250,12 +202,14 @@ def parse_notifier_name(names):
     """
     if names is All or isinstance(names, str):
         return [names]
+    elif isinstance(names, Sentinel):
+        raise TypeError("`names` must be either `All`, a str, or a list of strs.")
     else:
         if not names or All in names:
             return [All]
         for n in names:
             if not isinstance(n, str):
-                raise TypeError("names must be strings, not %r" % n)
+                raise TypeError(f"names must be strings, not {type(n).__name__}({n!r})")
         return names
 
 
@@ -368,8 +322,7 @@ class link:
             setattr(self.target[0], self.target[1], self._transform(change.new))
             if getattr(self.source[0], self.source[1]) != change.new:
                 raise TraitError(
-                    "Broken link {}: the source value changed while updating "
-                    "the target.".format(self)
+                    f"Broken link {self}: the source value changed while updating " "the target."
                 )
 
     def _update_source(self, change):
@@ -379,8 +332,7 @@ class link:
             setattr(self.source[0], self.source[1], self._transform_inv(change.new))
             if getattr(self.target[0], self.target[1]) != change.new:
                 raise TraitError(
-                    "Broken link {}: the target value changed while updating "
-                    "the source.".format(self)
+                    f"Broken link {self}: the target value changed while updating " "the source."
                 )
 
     def unlink(self):
@@ -561,6 +513,8 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
 
         If *read_only* is True, attempts to directly modify a trait attribute raises a TraitError.
 
+        If *help* is a string, it documents the attribute's purpose.
+
         Extra metadata can be associated with the traitlet using the .tag() convenience method
         or by using the traitlet instance's .metadata dictionary.
         """
@@ -586,12 +540,12 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                 assert f is not None
             mod = f.f_globals.get("__name__") or ""
             pkg = mod.split(".", 1)[0]
-            key = tuple(["metadata-tag", pkg] + sorted(kwargs))
-            if _should_warn(key):
+            key = ("metadata-tag", pkg, *sorted(kwargs))
+            if should_warn(key):
                 warn(
-                    "metadata %s was set from the constructor. "
+                    f"metadata {kwargs} was set from the constructor. "
                     "With traitlets 4.1, metadata should be set using the .tag() method, "
-                    "e.g., Int().tag(key1='value1', key2='value2')" % (kwargs,),
+                    "e.g., Int().tag(key1='value1', key2='value2')",
                     DeprecationWarning,
                     stacklevel=stacklevel,
                 )
@@ -806,7 +760,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         elif hasattr(obj, "_%s_validate" % self.name):
             meth_name = "_%s_validate" % self.name
             cross_validate = getattr(obj, meth_name)
-            _deprecated_method(
+            deprecated_method(
                 cross_validate,
                 obj.__class__,
                 meth_name,
@@ -817,7 +771,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
 
     def __or__(self, other):
         if isinstance(other, Union):
-            return Union([self] + other.trait_types)
+            return Union([self, *other.trait_types])
         else:
             return Union([self, other])
 
@@ -858,9 +812,8 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                 chain = " of ".join(describe("a", t) for t in error.args[2:])
                 if obj is not None:
                     error.args = (
-                        "The '%s' trait of %s instance contains %s which "
-                        "expected %s, not %s."
-                        % (
+                        "The '{}' trait of {} instance contains {} which "
+                        "expected {}, not {}.".format(
                             self.name,
                             describe("an", obj),
                             chain,
@@ -870,9 +823,8 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                     )
                 else:
                     error.args = (
-                        "The '%s' trait contains %s which "
-                        "expected %s, not %s."
-                        % (
+                        "The '{}' trait contains {} which "
+                        "expected {}, not {}.".format(
                             self.name,
                             chain,
                             error.args[1],
@@ -1079,6 +1031,7 @@ class MetaHasTraits(MetaHasDescriptors):
                 cls._traits[name] = value
                 trait = value
                 default_method_name = "_%s_default" % name
+                mro_trait = mro
                 try:
                     mro_trait = mro[: mro.index(trait.this_class) + 1]  # type:ignore[arg-type]
                 except ValueError:
@@ -1190,9 +1143,9 @@ def observe_compat(func):
         else:
             clsname = self.__class__.__name__
             warn(
-                "A parent of %s._%s_changed has adopted the new (traitlets 4.1) @observe(change) API"
-                % (clsname, change_or_name),
+                f"A parent of {clsname}._{change_or_name}_changed has adopted the new (traitlets 4.1) @observe(change) API",
                 DeprecationWarning,
+                stacklevel=2,
             )
             change = Bunch(
                 type="change",
@@ -1397,7 +1350,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             def ignore(*_ignore_args):
                 pass
 
-            self.notify_change = ignore  # type:ignore[assignment]
+            self.notify_change = ignore  # type:ignore[method-assign]
             self._cross_validation_lock = True
             changes = {}
             for key, value in kwargs.items():
@@ -1528,7 +1481,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             try:
                 # Replace notify_change with `hold`, caching and compressing
                 # notifications, disable cross validation and yield.
-                self.notify_change = hold  # type:ignore[assignment]
+                self.notify_change = hold  # type:ignore[method-assign]
                 self._cross_validation_lock = True
                 yield
                 # Cross validate final values when context is released.
@@ -1538,7 +1491,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     self.set_trait(name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
-                self.notify_change = lambda x: None  # type:ignore[assignment]
+                self.notify_change = lambda x: None  # type:ignore[method-assign]
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
@@ -1598,7 +1551,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         if event['type'] == "change" and hasattr(self, magic_name):
             class_value = getattr(self.__class__, magic_name)
             if not isinstance(class_value, ObserveHandler):
-                _deprecated_method(
+                deprecated_method(
                     class_value,
                     self.__class__,
                     magic_name,
@@ -1683,7 +1636,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         else:
             self.observe(_callback_wrapper(handler), names=name)
 
-    def observe(self, handler, names=All, type="change"):
+    def observe(
+        self,
+        handler: t.Callable[..., t.Any],
+        names: t.Union[Sentinel, str, t.Iterable[t.Union[Sentinel, str]]] = All,
+        type: t.Union[Sentinel, str] = "change",
+    ) -> None:
         """Setup a handler to be called when a trait changes.
 
         This is used to setup dynamic notifications of trait changes.
@@ -1709,11 +1667,15 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             The type of notification to filter by. If equal to All, then all
             notifications are passed to the observe handler.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._add_notifiers(handler, n, type)
+        for name in parse_notifier_name(names):
+            self._add_notifiers(handler, name, type)
 
-    def unobserve(self, handler, names=All, type="change"):
+    def unobserve(
+        self,
+        handler: t.Callable[..., t.Any],
+        names: t.Union[Sentinel, str, t.Iterable[t.Union[Sentinel, str]]] = All,
+        type: t.Union[Sentinel, str] = "change",
+    ) -> None:
         """Remove a trait change handler.
 
         This is used to unregister handlers to trait change notifications.
@@ -1730,11 +1692,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             The type of notification to filter by. If All, the specified handler
             is uninstalled from the list of notifiers corresponding to all types.
         """
-        names = parse_notifier_name(names)
-        for n in names:
-            self._remove_notifiers(handler, n, type)
+        for name in parse_notifier_name(names):
+            self._remove_notifiers(handler, name, type)
 
-    def unobserve_all(self, name=All):
+    def unobserve_all(self, name: t.Union[str, t.Any] = All) -> None:
         """Remove trait change handlers of any type for the specified name.
         If name is not specified, removes all trait notifiers."""
         if name is All:
@@ -1770,7 +1731,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             if hasattr(self, magic_name):
                 class_value = getattr(self.__class__, magic_name)
                 if not isinstance(class_value, ValidateHandler):
-                    _deprecated_method(
+                    deprecated_method(
                         class_value,
                         self.__class__,
                         magic_name,
@@ -2156,8 +2117,8 @@ class Type(ClassBasedTraitType[G, S]):
                 value = self._resolve_string(value)
             except ImportError as e:
                 raise TraitError(
-                    "The '%s' trait of %s instance must be a type, but "
-                    "%r could not be imported" % (self.name, obj, value)
+                    f"The '{self.name}' trait of {obj} instance must be a type, but "
+                    f"{value!r} could not be imported"
                 ) from e
         try:
             if issubclass(value, self.klass):  # type:ignore[arg-type]
@@ -2484,7 +2445,7 @@ class Union(TraitType[t.Any, t.Any]):
         if isinstance(other, Union):
             return Union(self.trait_types + other.trait_types)
         else:
-            return Union(self.trait_types + [other])
+            return Union([*self.trait_types, other])
 
     def from_string(self, s):
         for trait_type in self.trait_types:
@@ -2585,19 +2546,15 @@ def _validate_bounds(trait, obj, value):
     """
     if trait.min is not None and value < trait.min:
         raise TraitError(
-            "The value of the '{name}' trait of {klass} instance should "
-            "not be less than {min_bound}, but a value of {value} was "
-            "specified".format(
-                name=trait.name, klass=class_of(obj), value=value, min_bound=trait.min
-            )
+            f"The value of the '{trait.name}' trait of {class_of(obj)} instance should "
+            f"not be less than {trait.min}, but a value of {value} was "
+            "specified"
         )
     if trait.max is not None and value > trait.max:
         raise TraitError(
-            "The value of the '{name}' trait of {klass} instance should "
-            "not be greater than {max_bound}, but a value of {value} was "
-            "specified".format(
-                name=trait.name, klass=class_of(obj), value=value, max_bound=trait.max
-            )
+            f"The value of the '{trait.name}' trait of {class_of(obj)} instance should "
+            f"not be greater than {trait.max}, but a value of {value} was "
+            "specified"
         )
     return value
 
@@ -2846,8 +2803,9 @@ class Bytes(TraitType[bytes, bytes]):
                     s = s[2:-1]
                     warn(
                         "Supporting extra quotes around Bytes is deprecated in traitlets 5.0. "
-                        "Use %r instead of %r." % (s, old_s),
-                        FutureWarning,
+                        f"Use {s!r} instead of {old_s!r}.",
+                        DeprecationWarning,
+                        stacklevel=2,
                     )
                     break
         return s.encode("utf8")
@@ -2924,8 +2882,9 @@ class Unicode(TraitType[G, S]):
                     s = s[1:-1]
                     warn(
                         "Supporting extra quotes around strings is deprecated in traitlets 5.0. "
-                        "You can use %r instead of %r if you require traitlets >=5." % (s, old_s),
-                        FutureWarning,
+                        f"You can use {s!r} instead of {old_s!r} if you require traitlets >=5.",
+                        DeprecationWarning,
+                        stacklevel=2,
                     )
         return s
 
@@ -2979,7 +2938,7 @@ class ObjectName(TraitType[str, str]):
 
     info_text = "a valid object identifier in Python"
 
-    coerce_str = staticmethod(lambda _, s: s)  # type:ignore[no-any-return]
+    coerce_str = staticmethod(lambda _, s: s)
 
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
@@ -3218,11 +3177,7 @@ class FuzzyEnum(Enum[G, S]):
 
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
-        match_func = (
-            (lambda v, c: v in c)
-            if substring_matching
-            else (lambda v, c: c.startswith(v))  # type:ignore[no-any-return]
-        )
+        match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
@@ -3443,7 +3398,8 @@ class Container(Instance[T]):
                     "You can pass `--{0} item` ... multiple times to add items to a list.".format(
                         clsname + self.name, r
                     ),
-                    FutureWarning,
+                    DeprecationWarning,
+                    stacklevel=2,
                 )
                 return self.klass(literal_eval(r))  # type:ignore[call-arg]
         sig = inspect.signature(self.item_from_string)
@@ -3451,7 +3407,8 @@ class Container(Instance[T]):
             item_from_string = self.item_from_string
         else:
             # backward-compat: allow item_from_string to ignore index arg
-            item_from_string = lambda s, index=None: self.item_from_string(s)  # noqa[E371]
+            def item_from_string(s, index=None):
+                return self.item_from_string(s)  # noqa[E371]
 
         return self.klass(  # type:ignore[call-arg]
             [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
@@ -3863,8 +3820,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
     def element_error(self, obj, element, validator, side="Values"):
         e = (
             side
-            + " of the '%s' trait of %s instance must be %s, but a value of %s was specified."
-            % (self.name, class_of(obj), validator.info(), repr_type(element))
+            + f" of the '{self.name}' trait of {class_of(obj)} instance must be {validator.info()}, but a value of {repr_type(element)} was specified."
         )
         raise TraitError(e)
 
@@ -3924,7 +3880,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
     def from_string(self, s):
         """Load value from a single string"""
         if not isinstance(s, str):
-            raise TypeError(f"from_string expects a string, got {repr(s)} of type {type(s)}")
+            raise TypeError(f"from_string expects a string, got {s!r} of type {type(s)}")
         try:
             return self.from_string_list([s])
         except Exception:
@@ -3946,12 +3902,10 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
             return None
         if len(s_list) == 1 and s_list[0].startswith("{") and s_list[0].endswith("}"):
             warn(
-                "--{0}={1} for dict-traits is deprecated in traitlets 5.0. "
-                "You can pass --{0} <key=value> ... multiple times to add items to a dict.".format(
-                    self.name,
-                    s_list[0],
-                ),
-                FutureWarning,
+                f"--{self.name}={s_list[0]} for dict-traits is deprecated in traitlets 5.0. "
+                f"You can pass --{self.name} <key=value> ... multiple times to add items to a dict.",
+                DeprecationWarning,
+                stacklevel=2,
             )
 
             return literal_eval(s_list[0])
@@ -3974,11 +3928,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
 
         if "=" not in s:
             raise TraitError(
-                "'%s' options must have the form 'key=value', got %s"
-                % (
-                    self.__class__.__name__,
-                    repr(s),
-                )
+                f"'{self.__class__.__name__}' options must have the form 'key=value', got {s!r}"
             )
         key, value = s.split("=", 1)
 
@@ -4110,7 +4060,7 @@ class UseEnum(TraitType[t.Any, t.Any]):
         assert issubclass(enum_class, enum.Enum), "REQUIRE: enum.Enum, but was: %r" % enum_class
         allow_none = kwargs.get("allow_none", False)
         if default_value is None and not allow_none:
-            default_value = list(enum_class.__members__.values())[0]
+            default_value = next(iter(enum_class.__members__.values()))
         super().__init__(default_value=default_value, **kwargs)
         self.enum_class = enum_class
         self.name_prefix = enum_class.__name__ + "."

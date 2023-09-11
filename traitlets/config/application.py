@@ -444,7 +444,7 @@ class Application(SingletonConfigurable):
     def _show_config_changed(self, change):
         if change.new:
             self._save_start = self.start
-            self.start = self.start_show_config  # type:ignore[assignment]
+            self.start = self.start_show_config  # type:ignore[method-assign]
 
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
@@ -454,7 +454,7 @@ class Application(SingletonConfigurable):
         if cls not in self.classes:
             if self.classes is cls.classes:
                 # class attr, assign instead of insert
-                self.classes = [cls] + self.classes
+                self.classes = [cls, *self.classes]
             else:
                 self.classes.insert(0, self.__class__)
 
@@ -511,12 +511,7 @@ class Application(SingletonConfigurable):
 
             for traitname in sorted(class_config):
                 value = class_config[traitname]
-                print(
-                    "  .{} = {}".format(
-                        traitname,
-                        pprint.pformat(value, **pformat_kwargs),
-                    )
-                )
+                print(f"  .{traitname} = {pprint.pformat(value, **pformat_kwargs)}")
 
     def print_alias_help(self):
         """Print the alias parts of the help."""
@@ -739,7 +734,7 @@ class Application(SingletonConfigurable):
         This prevents issues such as an alias pointing to InteractiveShell,
         but a config file setting the same trait in TerminalInteraciveShell
         getting inappropriate priority over the command-line arg.
-        Also, loaders expect ``(key: longname)`` and not ````key: (longname, help)`` items.
+        Also, loaders expect ``(key: longname)`` and not ``key: (longname, help)`` items.
 
         Only aliases with exactly one descendent in the class list
         will be promoted.
@@ -793,7 +788,9 @@ class Application(SingletonConfigurable):
         return flags, aliases
 
     def _create_loader(self, argv, aliases, flags, classes):
-        return KVArgParseConfigLoader(argv, aliases, flags, classes=classes, log=self.log)
+        return KVArgParseConfigLoader(
+            argv, aliases, flags, classes=classes, log=self.log, subcommands=self.subcommands
+        )
 
     @classmethod
     def _get_sys_argv(cls, check_argcomplete: bool = False) -> t.List[str]:
@@ -953,7 +950,7 @@ class Application(SingletonConfigurable):
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
-        for (config, fname) in self._load_config_files(
+        for config, fname in self._load_config_files(
             filename,
             path=path,
             log=self.log,

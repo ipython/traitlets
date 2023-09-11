@@ -34,7 +34,6 @@ pjoin = os.path.join
 
 
 class Foo(Configurable):
-
     i = Integer(
         0,
         help="""
@@ -51,7 +50,6 @@ class Foo(Configurable):
 
 
 class Bar(Configurable):
-
     b = Integer(0, help="The integer b.").tag(config=True)
     enabled = Bool(True, help="Enable bar.").tag(config=True)
     tb = Tuple(()).tag(config=True, multiplicity="*")
@@ -62,7 +60,6 @@ class Bar(Configurable):
 
 
 class MyApp(Application):
-
     name = Unicode("myapp")
     running = Bool(False, help="Is the app running?").tag(config=True)
     classes = List([Bar, Foo])  # type:ignore
@@ -136,6 +133,10 @@ class TestApplication(TestCase):
         self.assertEqual(app.running, False)
         self.assertEqual(app.classes, [MyApp, Bar, Foo])  # type:ignore
         self.assertEqual(app.config_file, "")
+
+    def test_app_name_set_via_constructor(self):
+        app = MyApp(name='set_via_constructor')
+        assert app.name == "set_via_constructor"
 
     def test_mro_discovery(self):
         app = MyApp()
@@ -471,7 +472,6 @@ class TestApplication(TestCase):
         self.assertEqual(app.config.MyApp.log_level, "CRITICAL")
 
     def test_extra_args(self):
-
         app = MyApp()
         app.parse_command_line(["--Bar.b=5", "extra", "args", "--disable"])
         app.init_bar()
@@ -632,6 +632,9 @@ class TestApplication(TestCase):
         # Check parent hierarchy.
         self.assertIs(app.subapp.parent, app)
         self.assertIs(app.subapp.subapp.parent, app.subapp)  # Set by factory.
+
+        Root.clear_instance()
+        Sub1.clear_instance()
 
     def test_loaded_config_files(self):
         app = MyApp()

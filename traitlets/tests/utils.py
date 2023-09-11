@@ -4,7 +4,7 @@ from subprocess import PIPE, Popen
 
 def get_output_error_code(cmd):
     """Get stdout, stderr, and exit code from running a command"""
-    p = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE)  # noqa
     out, err = p.communicate()
     out = out.decode("utf8", "replace")  # type:ignore
     err = err.decode("utf8", "replace")  # type:ignore

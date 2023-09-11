@@ -46,12 +46,10 @@ class Foo(Configurable):
 
 
 class Bar(Configurable):
-
     enabled = Bool(True, help="Enable bar.").tag(config=True)
 
 
 class MyApp(Application):
-
     name = Unicode("myapp")
     running = Bool(False, help="Is the app running?").tag(config=True)
     classes = List([Bar, Foo])  # type:ignore[assignment]

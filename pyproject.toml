@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "traitlets"
 authors = [{name = "IPython Development Team", email = "ipython-dev@python.org"}]
 description = "Traitlets Python configuration system"
-license = {file = "COPYING.md"}
+license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["Interactive", "Interpreter", "Shell", "Web"]
 classifiers = [
@@ -49,7 +49,7 @@ nowarn = "test -W default {args}"
 
 [tool.hatch.envs.cov]
 features = ["test"]
-dependencies = ["coverage", "pytest-cov"]
+dependencies = ["coverage[toml]", "pytest-cov"]
 [tool.hatch.envs.cov.scripts]
 test = "python -m pytest -vv --cov traitlets --cov-branch --cov-report term-missing:skip-covered {args}"
 nowarn = "test -W default {args}"
@@ -61,7 +61,7 @@ dependencies = ["mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f352
 test = "mypy --install-types --non-interactive {args:.}"
 
 [tool.hatch.envs.lint]
-dependencies = ["black==22.10.0", "mdformat>0.7", "ruff==0.0.185"]
+dependencies = ["black==23.3.0", "mdformat>0.7", "ruff==0.0.281"]
 detached = true
 [tool.hatch.envs.lint.scripts]
 style = [
@@ -141,6 +141,10 @@ exclude_lines = [
 "@(abc\\.)?abstractmethod",
 ]
 
+[tool.coverage.run]
+relative_files = true
+source = ["traitlets"]
+
 [tool.black]
 line-length = 100
 skip-string-normalization = true
@@ -186,6 +190,10 @@ ignore = [
   "C408",
   # N801 Class name `directional_link` should use CapWords convention
   "N801",
+  # S110 `try`-`except`-`pass` detected
+  "S110",
+  # RUF012 Mutable class attributes should be annotated with `typing.ClassVar`
+  "RUF012",
 ]
 unfixable = [
   # Don't touch print statements
@@ -203,9 +211,12 @@ unfixable = [
 # B007 Loop control variable `i` not used within the loop body.
 # N802 Function name `assertIn` should be lowercase
 # F841 Local variable `t` is assigned to but never used
-"traitlets/tests/*" = ["B011", "F841", "C408", "E402", "T201", "B007", "N802", "F841"]
+# B018 Found useless expression
+# S301 `pickle` and modules that wrap...
+"traitlets/tests/*" = ["B011", "F841", "C408", "E402", "T201", "B007", "N802", "F841",
+                       "B018", "S301"]
 # B003 Assigning to os.environ doesn't clear the environment
-"traitlets/config/tests/*" = ["B003"]
+"traitlets/config/tests/*" = ["B003", "B018", "S301"]
 # F401 `_version.__version__` imported but unused
 # F403 `from .traitlets import *` used; unable to detect undefined names
 "traitlets/*__init__.py" = ["F401", "F403"]

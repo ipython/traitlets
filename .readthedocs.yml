@@ -5,10 +5,13 @@ formats:
   - epub
   - pdf
 python:
-  version: 3.8
   install:
     # install itself with pip install .
     - method: pip
       path: .
       extra_requirements:
         - docs
+build:
+  os: ubuntu-22.04
+  tools:
+     python: "3.11"

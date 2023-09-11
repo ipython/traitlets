@@ -1,11 +1,16 @@
 """Helper utilities for integrating argcomplete with traitlets"""
+
+# Copyright (c) IPython Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+
 import argparse
 import os
 import typing as t
 
 try:
-    import argcomplete  # type: ignore[import]
-    from argcomplete import CompletionFinder
+    import argcomplete
+    from argcomplete import CompletionFinder  # type:ignore
 except ImportError:
     # This module and its utility methods are written to not crash even
     # if argcomplete is not installed.
@@ -15,8 +20,8 @@ except ImportError:
                 raise ModuleNotFoundError("No module named 'argcomplete'")
             raise AttributeError(f"argcomplete stub module has no attribute '{attr}'")
 
-    argcomplete = StubModule()
-    CompletionFinder = object
+    argcomplete = StubModule()  # type:ignore
+    CompletionFinder = object  # type:ignore
 
 
 def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
@@ -40,7 +45,9 @@ def get_argcomplete_cwords() -> t.Optional[t.List[str]]:
             cword_suffix,
             comp_words,
             last_wordbreak_pos,
-        ) = argcomplete.split_line(comp_line, comp_point)
+        ) = argcomplete.split_line(  # type:ignore
+            comp_line, comp_point
+        )
     except ModuleNotFoundError:
         return None
 
@@ -68,7 +75,9 @@ def increment_argcomplete_index():
         os.environ["_ARGCOMPLETE"] = str(int(os.environ["_ARGCOMPLETE"]) + 1)
     except Exception:
         try:
-            argcomplete.debug("Unable to increment $_ARGCOMPLETE", os.environ["_ARGCOMPLETE"])
+            argcomplete.debug(  # type:ignore
+                "Unable to increment $_ARGCOMPLETE", os.environ["_ARGCOMPLETE"]
+            )
         except (KeyError, ModuleNotFoundError):
             pass
 
@@ -76,23 +85,25 @@ def increment_argcomplete_index():
 class ExtendedCompletionFinder(CompletionFinder):
     """An extension of CompletionFinder which dynamically completes class-trait based options
 
-    This finder mainly adds 2 functionalities:
+    This finder adds a few functionalities:
 
-    1. When completing options, it will add --Class. to the list of completions, for each
-    class in Application.classes that could complete the current option.
-    2. If it detects that we are currently trying to complete an option related to --Class.,
-    it will add the corresponding config traits of Class to the ArgumentParser instance,
+    1. When completing options, it will add ``--Class.`` to the list of completions, for each
+    class in `Application.classes` that could complete the current option.
+    2. If it detects that we are currently trying to complete an option related to ``--Class.``,
+    it will add the corresponding config traits of Class to the `ArgumentParser` instance,
     so that the traits' completers can be used.
+    3. If there are any subcommands, they are added as completions for the first word
 
-    Note that we are avoiding adding all config traits of all classes to the ArgumentParser,
+    Note that we are avoiding adding all config traits of all classes to the `ArgumentParser`,
     which would be easier but would add more runtime overhead and would also make completions
     appear more spammy.
 
-    These changes do require using the internals of argcomplete.CompletionFinder.
+    These changes do require using the internals of `argcomplete.CompletionFinder`.
     """
 
     _parser: argparse.ArgumentParser
-    config_classes: t.List[t.Any]  # Configurables
+    config_classes: t.List[t.Any] = []  # Configurables
+    subcommands: t.List[str] = []
 
     def match_class_completions(self, cword_prefix: str) -> t.List[t.Tuple[t.Any, str]]:
         """Match the word to be completed against our Configurable classes
@@ -182,6 +193,16 @@ class ExtendedCompletionFinder(CompletionFinder):
 
         completions: t.List[str]
         completions = super()._get_completions(comp_words, cword_prefix, *args)
+
+        # For subcommand-handling: it is difficult to get this to work
+        # using argparse subparsers, because the ArgumentParser accepts
+        # arbitrary extra_args, which ends up masking subparsers.
+        # Instead, check if comp_words only consists of the script,
+        # if so check if any subcommands start with cword_prefix.
+        if self.subcommands and len(comp_words) == 1:
+            argcomplete.debug("Adding subcommands for", cword_prefix)  # type:ignore
+            completions.extend(subc for subc in self.subcommands if subc.startswith(cword_prefix))
+
         return completions
 
     def _get_option_completions(

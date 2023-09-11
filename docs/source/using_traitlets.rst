@@ -122,7 +122,8 @@ Basic Example: Validating the Parity of a Trait
         parity_check.parity = 1
 
 Notice how all of the examples above return
-``proposal['value']``. This is necessary for validation to work
+``proposal['value']``. Returning a value
+is necessary for validation to work
 properly, since the new value of the trait will be the
 return value of the function decorated by ``@validate``. If this
 function does not have any ``return`` statement, then the returned

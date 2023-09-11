@@ -11,11 +11,10 @@ import os
 import re
 import sys
 import typing as t
-import warnings
 
 from traitlets.traitlets import Any, Container, Dict, HasTraits, List, Undefined
 
-from ..utils import cast_unicode, filefind
+from ..utils import cast_unicode, filefind, warnings
 
 # -----------------------------------------------------------------------------
 # Exceptions
@@ -342,14 +341,14 @@ class Config(dict):  # type:ignore[type-arg]
                 dict.__setitem__(self, key, v)
                 return v
             else:
-                raise KeyError
+                raise
 
     def __setitem__(self, key, value):
         if _is_section_key(key):
             if not isinstance(value, Config):
                 raise ValueError(
                     "values whose keys begin with an uppercase "
-                    "char must be Config instances: %r, %r" % (key, value)
+                    f"char must be Config instances: {key!r}, {value!r}"
                 )
         dict.__setitem__(self, key, value)
 
@@ -784,11 +783,15 @@ class _KVArgParser(argparse.ArgumentParser):
         return super().parse_known_args(args, namespace)
 
 
+# type aliases
+Flags = t.Union[str, t.Tuple[str, ...]]
+SubcommandsDict = t.Dict[str, t.Any]
+
+
 class ArgParseConfigLoader(CommandLineConfigLoader):
     """A loader that uses the argparse module to load from the command line."""
 
     parser_class = ArgumentParser
-    Flags = t.Union[str, t.Tuple[str, ...]]
 
     def __init__(
         self,
@@ -797,6 +800,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         flags: t.Optional[t.Dict[Flags, str]] = None,
         log: t.Any = None,
         classes: t.Optional[t.List[t.Type[t.Any]]] = None,
+        subcommands: t.Optional[SubcommandsDict] = None,
         *parser_args: t.Any,
         **parser_kw: t.Any,
     ) -> None:
@@ -837,6 +841,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         self.aliases = aliases or {}
         self.flags = flags or {}
         self.classes = classes
+        self.subcommands = subcommands  # only used for argcomplete currently
 
         self.parser_args = parser_args
         self.version = parser_kw.pop("version", None)
@@ -874,6 +879,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
         if classes is not None:
             self.classes = classes
         self._create_parser()
+        self._argcomplete(self.classes, self.subcommands)
         self._parse_args(argv)
         self._convert_to_config()
         return self.config
@@ -892,6 +898,12 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
 
     def _add_arguments(self, aliases, flags, classes):
         raise NotImplementedError("subclasses must implement _add_arguments")
+
+    def _argcomplete(
+        self, classes: t.List[t.Any], subcommands: t.Optional[SubcommandsDict]
+    ) -> None:
+        """If argcomplete is enabled, allow triggering command-line autocompletion"""
+        pass
 
     def _parse_args(self, args):
         """self.parser->self.parsed_data"""
@@ -1024,8 +1036,8 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                         # flag sets 'action', so can't have flag & alias with custom action
                         # on the same name
                         raise ArgumentError(
-                            "The alias `%s` for the 'append' sequence "
-                            "config-trait `%s` cannot be also a flag!'" % (key, traitname)
+                            f"The alias `{key}` for the 'append' sequence "
+                            f"config-trait `{traitname}` cannot be also a flag!'"
                         )
                     # For argcomplete, check if any either an argcompleter metadata tag or method
                     # is available. If so, it should be a callable which takes the command-line key
@@ -1047,7 +1059,6 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 if argcompleter is not None:
                     # argcomplete's completers are callables returning list of completion strings
                     action.completer = functools.partial(argcompleter, key=key)  # type: ignore
-        self.argcomplete(classes)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
@@ -1097,9 +1108,12 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
         """
         self.log.warning("Unrecognized alias: '%s', it will have no effect.", arg)
 
-    def argcomplete(self, classes: t.List[t.Any]) -> None:
+    def _argcomplete(
+        self, classes: t.List[t.Any], subcommands: t.Optional[SubcommandsDict]
+    ) -> None:
+        """If argcomplete is enabled, allow triggering command-line autocompletion"""
         try:
-            import argcomplete  # type: ignore[import]  # noqa
+            import argcomplete  # noqa
         except ImportError:
             return
 
@@ -1107,6 +1121,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
         finder = argcomplete_config.ExtendedCompletionFinder()
         finder.config_classes = classes
+        finder.subcommands = list(subcommands or [])
         # for ease of testing, pass through self._argcomplete_kwargs if set
         finder(self.parser, **getattr(self, "_argcomplete_kwargs", {}))
 
