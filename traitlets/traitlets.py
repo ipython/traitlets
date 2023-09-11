@@ -3408,7 +3408,7 @@ class Container(Instance[T]):
         else:
             # backward-compat: allow item_from_string to ignore index arg
             def item_from_string(s, index=None):
-                return self.item_from_string(s)  # noqa[E371]
+                return self.item_from_string(s)  # noqa: E371
 
         return self.klass(  # type:ignore[call-arg]
             [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]

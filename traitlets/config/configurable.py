@@ -5,7 +5,6 @@
 
 
 import logging
-import warnings
 from copy import deepcopy
 from textwrap import dedent
 
