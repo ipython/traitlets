@@ -18,7 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 urls = {Homepage = "https://github.com/ipython/traitlets"}
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dynamic = ["version"]
 dependencies = ["typing_extensions>=4.0.1"]
 
