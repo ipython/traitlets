@@ -1350,7 +1350,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             def ignore(*_ignore_args):
                 pass
 
-            self.notify_change = ignore  # type:ignore[assignment]
+            self.notify_change = ignore  # type:ignore[method-assign]
             self._cross_validation_lock = True
             changes = {}
             for key, value in kwargs.items():
@@ -1481,7 +1481,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             try:
                 # Replace notify_change with `hold`, caching and compressing
                 # notifications, disable cross validation and yield.
-                self.notify_change = hold  # type:ignore[assignment]
+                self.notify_change = hold  # type:ignore[method-assign]
                 self._cross_validation_lock = True
                 yield
                 # Cross validate final values when context is released.
@@ -1491,7 +1491,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     self.set_trait(name, value)
             except TraitError as e:
                 # Roll back in case of TraitError during final cross validation.
-                self.notify_change = lambda x: None  # type:ignore[assignment]
+                self.notify_change = lambda x: None  # type:ignore[method-assign]
                 for name, changes in cache.items():
                     for change in changes[::-1]:
                         # TODO: Separate in a rollback function per notification type.
@@ -2938,7 +2938,7 @@ class ObjectName(TraitType[str, str]):
 
     info_text = "a valid object identifier in Python"
 
-    coerce_str = staticmethod(lambda _, s: s)  # type:ignore[no-any-return]
+    coerce_str = staticmethod(lambda _, s: s)
 
     def validate(self, obj, value):
         value = self.coerce_str(obj, value)
@@ -3177,11 +3177,7 @@ class FuzzyEnum(Enum[G, S]):
 
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
-        match_func = (
-            (lambda v, c: v in c)
-            if substring_matching
-            else (lambda v, c: c.startswith(v))  # type:ignore[no-any-return]
-        )
+        match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
         value = conv_func(value)
         choices = self.values
         matches = [match_func(value, conv_func(c)) for c in choices]
