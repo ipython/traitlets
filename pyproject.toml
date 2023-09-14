@@ -20,7 +20,6 @@ classifiers = [
 urls = {Homepage = "https://github.com/ipython/traitlets"}
 requires-python = ">=3.8"
 dynamic = ["version"]
-dependencies = ["typing_extensions>=4.0.1"]
 
 [project.optional-dependencies]
 test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=3.0.3", "pytest-mypy-testing", "mypy>=1.5.1"]

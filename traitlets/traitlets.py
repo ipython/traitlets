@@ -481,7 +481,8 @@ T = t.TypeVar("T")
 # Self from typing extension doesn't work well with mypy https://github.com/python/mypy/pull/14041
 # see https://peps.python.org/pep-0673/#use-in-generic-classes
 # Self = t.TypeVar("Self", bound="TraitType[Any, Any]")
-from typing_extensions import Literal, Self
+if t.TYPE_CHECKING:
+    from typing_extensions import Literal, Self
 
 
 # We use a type for the getter (G) and setter (G) because we allow
