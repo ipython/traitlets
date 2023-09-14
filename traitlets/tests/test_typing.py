@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import sys
 import typing
 
 import pytest
 
 from traitlets import Bool, CInt, HasTraits, Instance, Int, TCPAddress
+
+pytestmark = pytest.mark.skipif(sys.version_info < 3.10, reason="Syntax changes in Python 3.10+")
+
 
 if not typing.TYPE_CHECKING:
 
