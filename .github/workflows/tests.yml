@@ -62,7 +62,7 @@ jobs:
           dependency_type: minimum
       - name: Run the unit tests
         run: |
-          hatch run test:nowarn || hatch run test:nowarn --lf
+          hatch run test:nowarn || hatch -v run test:nowarn --lf
 
   test_lint:
     name: Test Lint
