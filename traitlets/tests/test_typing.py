@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import typing
-from typing import Optional
 
 import pytest
 
@@ -55,15 +56,15 @@ def mypy_bool_typing():
         T.ob  # R: traitlets.traitlets.Bool[Union[builtins.bool, None], Union[builtins.bool, builtins.int, None]]
     )
     # we would expect this to be Optional[Union[bool, int]], but...
-    t.b = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "bool | int")  [assignment]
-    t.b = None  # E: Incompatible types in assignment (expression has type "None", variable has type "bool | int")  [assignment]
+    t.b = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Union[bool, int]")  [assignment]
+    t.b = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Union[bool, int]")  [assignment]
 
 
 @pytest.mark.mypy_testing
 def mypy_int_typing():
     class T(HasTraits):
         i: Int[int, int] = Int(42).tag(sync=True)
-        oi: Int[Optional[int], Optional[int]] = Int(42, allow_none=True).tag(sync=True)
+        oi: Int[int | None, int | None] = Int(42, allow_none=True).tag(sync=True)
 
     t = T()
     reveal_type(Int(True))  # R: traitlets.traitlets.Int[builtins.int, builtins.int]
@@ -121,27 +122,27 @@ def mypy_tcp_typing():
         otcp = TCPAddress(None, allow_none=True)
 
     t = T()
-    reveal_type(t.tcp)  # R: tuple[builtins.str, builtins.int]
+    reveal_type(t.tcp)  # R: Tuple[builtins.str, builtins.int]
     reveal_type(
-        T.tcp  # R: traitlets.traitlets.TCPAddress[tuple[builtins.str, builtins.int], tuple[builtins.str, builtins.int]]
+        T.tcp  # R: traitlets.traitlets.TCPAddress[Tuple[builtins.str, builtins.int], Tuple[builtins.str, builtins.int]]
     )
     reveal_type(
-        T.tcp.tag(  # R: traitlets.traitlets.TCPAddress[tuple[builtins.str, builtins.int], tuple[builtins.str, builtins.int]]
+        T.tcp.tag(  # R:traitlets.traitlets.TCPAddress[Tuple[builtins.str, builtins.int], Tuple[builtins.str, builtins.int]]
             sync=True
         )
     )
-    reveal_type(t.otcp)  # R: Union[tuple[builtins.str, builtins.int], None]
+    reveal_type(t.otcp)  # R: Union[Tuple[builtins.str, builtins.int], None]
     reveal_type(
-        T.otcp  # R: traitlets.traitlets.TCPAddress[Union[tuple[builtins.str, builtins.int], None], Union[tuple[builtins.str, builtins.int], None]]
+        T.otcp  # R: traitlets.traitlets.TCPAddress[Union[Tuple[builtins.str, builtins.int], None], Union[Tuple[builtins.str, builtins.int], None]]
     )
     reveal_type(
-        T.otcp.tag(  # R: traitlets.traitlets.TCPAddress[Union[tuple[builtins.str, builtins.int], None], Union[tuple[builtins.str, builtins.int], None]]
+        T.otcp.tag(  # R: traitlets.traitlets.TCPAddress[Union[Tuple[builtins.str, builtins.int], None], Union[Tuple[builtins.str, builtins.int], None]]
             sync=True
         )
     )
-    t.tcp = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "tuple[str, int]")  [assignment]
-    t.otcp = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "tuple[str, int] | None")  [assignment]
-    t.tcp = None  # E: Incompatible types in assignment (expression has type "None", variable has type "tuple[str, int]")  [assignment]
+    t.tcp = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Tuple[str, int]")  [assignment]
+    t.otcp = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Optional[Tuple[str, int]]")  [assignment]
+    t.tcp = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Tuple[str, int]")  [assignment]
 
 
 @pytest.mark.mypy_testing
@@ -168,5 +169,5 @@ def mypy_instance_typing():
         )
     )
     t.inst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Foo")  [assignment]
-    t.oinst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Foo | None")
+    t.oinst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Optional[Foo]")  [assignment]
     t.inst = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Foo")  [assignment]
