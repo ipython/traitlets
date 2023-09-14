@@ -23,7 +23,7 @@ dynamic = ["version"]
 dependencies = ["typing_extensions>=4.0.1"]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=2.0", "pytest-mypy-testing", "mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f35268cb605b7345726f257f960#egg=mypy"]
+test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=2.0", "pytest-mypy-testing", "mypy>=1.5.1"]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",
@@ -56,7 +56,6 @@ nowarn = "test -W default {args}"
 
 [tool.hatch.envs.typing]
 features = ["test"]
-dependencies = ["mypy @ git+https://github.com/python/mypy.git@cb1d1a0baba37f35268cb605b7345726f257f960#egg=mypy"]
 [tool.hatch.envs.typing.scripts]
 test = "mypy --install-types --non-interactive {args:.}"
 
