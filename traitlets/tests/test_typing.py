@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import typing
-from typing import Optional
 
 import pytest
 
@@ -63,7 +64,7 @@ def mypy_bool_typing():
 def mypy_int_typing():
     class T(HasTraits):
         i: Int[int, int] = Int(42).tag(sync=True)
-        oi: Int[Optional[int], Optional[int]] = Int(42, allow_none=True).tag(sync=True)
+        oi: Int[int | None, int | None] = Int(42, allow_none=True).tag(sync=True)
 
     t = T()
     reveal_type(Int(True))  # R: traitlets.traitlets.Int[builtins.int, builtins.int]
