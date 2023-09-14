@@ -2,6 +2,44 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.10.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.9.0...cf529d886957d9214e9247c11a16945e4884b971))
+
+### Enhancements made
+
+- Added type hints to HasTraits.observe() and friends. (#834 [#834](https://github.com/ipython/traitlets/pull/834) ([@scholer](https://github.com/scholer))
+- feat: trait typing [#818](https://github.com/ipython/traitlets/pull/818) ([@maartenbreddels](https://github.com/maartenbreddels))
+
+### Maintenance and upkeep improvements
+
+- Update pytest requirement from \<7.2,>=7.0 to >=7.0,\<7.5 [#861](https://github.com/ipython/traitlets/pull/861) ([@dependabot](https://github.com/dependabot))
+- Bump actions/checkout from 3 to 4 [#860](https://github.com/ipython/traitlets/pull/860) ([@dependabot](https://github.com/dependabot))
+- Fix typing [#848](https://github.com/ipython/traitlets/pull/848) ([@blink1073](https://github.com/blink1073))
+- Update docs config [#843](https://github.com/ipython/traitlets/pull/843) ([@blink1073](https://github.com/blink1073))
+- Use local coverage [#842](https://github.com/ipython/traitlets/pull/842) ([@blink1073](https://github.com/blink1073))
+- Adjust argcomplete typings [#839](https://github.com/ipython/traitlets/pull/839) ([@blink1073](https://github.com/blink1073))
+- Better warnings [#838](https://github.com/ipython/traitlets/pull/838) ([@NickCrews](https://github.com/NickCrews))
+- Update typings (#836 [#836](https://github.com/ipython/traitlets/pull/836) ([@blink1073](https://github.com/blink1073))
+
+### Documentation improvements
+
+- rename `MyClass` to `School` [#858](https://github.com/ipython/traitlets/pull/858) ([@metaperl](https://github.com/metaperl))
+- Even though returning a value from a validation method is ideal, by no means is `proposal['value']` the only thing that can be returned [#855](https://github.com/ipython/traitlets/pull/855) ([@metaperl](https://github.com/metaperl))
+- Document help parameter of TraitType.__init__(). [#847](https://github.com/ipython/traitlets/pull/847) ([@metaperl](https://github.com/metaperl))
+
+### Other merged PRs
+
+- Clean up license (#832)Co-authored-by: pre-commit-ci\[bot\] \<66853113+pre-commit-ci\[bot\]@users.noreply.github.com> [#832](https://github.com/ipython/traitlets/pull/832) ([@dcsaba89](https://github.com/dcsaba89))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-01-30&to=2023-09-14&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-01-30..2023-09-14&type=Issues) | [@dcsaba89](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adcsaba89+updated%3A2023-01-30..2023-09-14&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2023-01-30..2023-09-14&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2023-01-30..2023-09-14&type=Issues) | [@metaperl](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ametaperl+updated%3A2023-01-30..2023-09-14&type=Issues) | [@NickCrews](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ANickCrews+updated%3A2023-01-30..2023-09-14&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-01-30..2023-09-14&type=Issues) | [@rmorshea](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2023-01-30..2023-09-14&type=Issues) | [@saulshanabrook](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Asaulshanabrook+updated%3A2023-01-30..2023-09-14&type=Issues) | [@scholer](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ascholer+updated%3A2023-01-30..2023-09-14&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.9.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.8.1...c11a4d942b08df5c19be88b6cc81dfa8302fef9b))
@@ -19,8 +57,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-01-09&to=2023-01-30&type=c))
 
 [@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2023-01-09..2023-01-30&type=Issues) | [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-01-09..2023-01-30&type=Issues) | [@Carreau](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2023-01-09..2023-01-30&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.8.1
 
