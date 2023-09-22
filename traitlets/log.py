@@ -2,10 +2,11 @@
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import logging
 
-_logger = None
+_logger: logging.Logger | None = None
 
 
 def get_logger() -> logging.Logger:

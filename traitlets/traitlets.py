@@ -1236,12 +1236,20 @@ def default(name: str) -> DefaultHandler:
 FuncT = t.TypeVar("FuncT", bound=t.Callable[..., t.Any])
 
 
-class EventHandler(BaseDescriptor, t.Generic[FuncT]):
-    def _init_call(self, func):
+class EventHandler(BaseDescriptor):
+    def _init_call(self, func: FuncT) -> EventHandler:
         self.func = func
         return self
 
-    def __call__(self, *args: t.Any, **kwargs: t.Any) -> FuncT:
+    @t.overload
+    def __call__(self, func: FuncT, *args: t.Any, **kwargs: t.Any) -> FuncT:
+        ...
+
+    @t.overload
+    def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
+        ...
+
+    def __call__(self, *args: t.Any, **kwargs: t.Any) -> t.Any:
         """Pass `*args` and `**kwargs` to the handler's function if it exists."""
         if hasattr(self, "func"):
             return self.func(*args, **kwargs)
@@ -2074,6 +2082,9 @@ class Type(ClassBasedTraitType[G, S]):
         default_value: t.Any = Undefined,
         klass: t.Any = None,
         allow_none: bool = False,
+        read_only: bool | None = None,
+        help: str | None = None,
+        config: t.Any | None = None,
         **kwargs: t.Any,
     ) -> None:
         """Construct a Type trait
@@ -2117,7 +2128,14 @@ class Type(ClassBasedTraitType[G, S]):
 
         self.klass = klass
 
-        super().__init__(new_default_value, allow_none=allow_none, **kwargs)
+        super().__init__(
+            new_default_value,
+            allow_none=allow_none,
+            read_only=read_only,
+            help=help,
+            config=config,
+            **kwargs,
+        )
 
     def validate(self, obj, value):
         """Validates that the value is a valid object instance."""
@@ -2286,7 +2304,7 @@ class Instance(ClassBasedTraitType[T, T]):
         self.default_args = args
         self.default_kwargs = kw
 
-        super().__init__(allow_none=allow_none, **kwargs)
+        super().__init__(allow_none=allow_none, read_only=read_only, help=help, **kwargs)
 
     def validate(self, obj, value):
         assert self.klass is not None
@@ -2602,11 +2620,24 @@ class Int(TraitType[G, S]):
         ...
 
     def __init__(
-        self, default_value: t.Any = Undefined, allow_none: bool = False, **kwargs: t.Any
+        self,
+        default_value: t.Any = Undefined,
+        allow_none: bool = False,
+        read_only: bool | None = None,
+        help: str | None = None,
+        config: t.Any | None = None,
+        **kwargs: t.Any,
     ) -> None:
         self.min = kwargs.pop("min", None)
         self.max = kwargs.pop("max", None)
-        super().__init__(default_value=default_value, allow_none=allow_none, **kwargs)
+        super().__init__(
+            default_value=default_value,
+            allow_none=allow_none,
+            read_only=read_only,
+            help=help,
+            config=config,
+            **kwargs,
+        )
 
     def validate(self, obj, value):
         if not isinstance(value, int):
@@ -2652,7 +2683,13 @@ class CInt(Int[G, S]):
             ...
 
         def __init__(
-            self, default_value: t.Any = Undefined, allow_none: bool = False, **kwargs: t.Any
+            self: CInt[int | None, t.Any],
+            default_value: t.Any | Sentinel | None = ...,
+            allow_none: bool = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any | None = ...,
+            **kwargs: t.Any,
         ) -> None:
             ...
 
@@ -2699,11 +2736,24 @@ class Float(TraitType[G, S]):
         ...
 
     def __init__(
-        self, default_value: t.Any = Undefined, allow_none: bool = False, **kwargs: t.Any
+        self: Float[int | None, int | float | None],
+        default_value: float | Sentinel | None = Undefined,
+        allow_none: bool = False,
+        read_only: bool | None = False,
+        help: str | None = None,
+        config: t.Any | None = None,
+        **kwargs: t.Any,
     ) -> None:
         self.min = kwargs.pop("min", -float("inf"))
         self.max = kwargs.pop("max", float("inf"))
-        super().__init__(default_value=default_value, allow_none=allow_none, **kwargs)
+        super().__init__(
+            default_value=default_value,
+            allow_none=allow_none,
+            read_only=read_only,
+            help=help,
+            config=config,
+            **kwargs,
+        )
 
     def validate(self, obj, value):
         if isinstance(value, int):
@@ -2751,7 +2801,13 @@ class CFloat(Float[G, S]):
             ...
 
         def __init__(
-            self, default_value: t.Any = Undefined, allow_none: bool = False, **kwargs: t.Any
+            self: CFloat[float | None, t.Any],
+            default_value: t.Any = ...,
+            allow_none: bool = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any | None = ...,
+            **kwargs: t.Any,
         ) -> None:
             ...
 
@@ -2873,7 +2929,15 @@ class Unicode(TraitType[G, S]):
         ) -> None:
             ...
 
-        def __init__(self, **kwargs: t.Any) -> None:
+        def __init__(
+            self: Unicode[str | None, str | bytes | None],
+            default_value: str | Sentinel | None = ...,
+            allow_none: bool = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any = ...,
+            **kwargs: t.Any,
+        ) -> None:
             ...
 
     def validate(self, obj, value):
@@ -2938,7 +3002,15 @@ class CUnicode(Unicode[G, S], TraitType[str, t.Any]):
         ) -> None:
             ...
 
-        def __init__(self, **kwargs: t.Any) -> None:
+        def __init__(
+            self: CUnicode[str | None, t.Any],
+            default_value: str | Sentinel | None = ...,
+            allow_none: bool = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any = ...,
+            **kwargs: t.Any,
+        ) -> None:
             ...
 
     def validate(self, obj, value):
@@ -3013,7 +3085,15 @@ class Bool(TraitType[G, S]):
         ) -> None:
             ...
 
-        def __init__(self, **kwargs: t.Any) -> None:
+        def __init__(
+            self: Bool[bool | None, bool | int | None],
+            default_value: bool | Sentinel | None = ...,
+            allow_none: bool = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any = ...,
+            **kwargs: t.Any,
+        ) -> None:
             ...
 
     def validate(self, obj, value):
@@ -3077,7 +3157,15 @@ class CBool(Bool[G, S]):
         ) -> None:
             ...
 
-        def __init__(self, **kwargs: t.Any) -> None:
+        def __init__(
+            self: CBool[bool | None, t.Any],
+            default_value: bool | Sentinel | None = ...,
+            allow_none: bool = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any = ...,
+            **kwargs: t.Any,
+        ) -> None:
             ...
 
     def validate(self, obj, value):
@@ -3234,7 +3322,6 @@ class Container(Instance[T]):
     @t.overload
     def __init__(
         self: Container[T],
-        kind: type[T],
         *,
         allow_none: Literal[False],
         read_only: bool | None = ...,
@@ -3247,7 +3334,6 @@ class Container(Instance[T]):
     @t.overload
     def __init__(
         self: Container[T | None],
-        kind: type[T],
         *,
         allow_none: Literal[True],
         read_only: bool | None = ...,
@@ -3260,19 +3346,24 @@ class Container(Instance[T]):
     @t.overload
     def __init__(
         self: Container[T],
-        kind: type[T],
         *,
+        trait: t.Any = ...,
+        default_value: t.Any = ...,
         help: str = ...,
         read_only: bool = ...,
         config: t.Any = ...,
-        trait: t.Any = ...,
-        default_value: t.Any = ...,
         **kwargs: t.Any,
     ) -> None:
         ...
 
     def __init__(
-        self, trait: t.Any = None, default_value: t.Any = Undefined, **kwargs: t.Any
+        self,
+        trait: t.Any | None = None,
+        default_value: t.Any = Undefined,
+        help: str | None = None,
+        read_only: bool | None = None,
+        config: t.Any | None = None,
+        **kwargs: t.Any,
     ) -> None:
         """Create a container trait type from a list, set, or tuple.
 
@@ -3343,7 +3434,9 @@ class Container(Instance[T]):
         elif trait is not None:
             raise TypeError("`trait` must be a Trait or None, got %s" % repr_type(trait))
 
-        super().__init__(klass=self.klass, args=args, **kwargs)
+        super().__init__(
+            klass=self.klass, args=args, help=help, read_only=read_only, config=config, **kwargs
+        )
 
     def validate(self, obj, value):
         if isinstance(value, self._cast_types):
@@ -3512,7 +3605,7 @@ class List(Container[t.List[t.Any]]):
 class Set(Container[t.Set[t.Any]]):
     """An instance of a Python set."""
 
-    klass = set  # type:ignore[assignment]
+    klass = set
     _cast_types = (tuple, list)
 
     _literal_from_string_pairs = ("[]", "()", "{}")
@@ -3552,7 +3645,9 @@ class Set(Container[t.Set[t.Any]]):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        super().__init__(trait, default_value, minlen=minlen, maxlen=maxlen, **kwargs)
+        super().__init__(
+            trait=trait, default_value=default_value, minlen=minlen, maxlen=maxlen, **kwargs
+        )
 
     def default_value_repr(self):
         # Ensure default value is sorted for a reproducible build

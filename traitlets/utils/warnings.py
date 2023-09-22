@@ -14,10 +14,7 @@ def warn(msg: str, category: t.Any, *, stacklevel: int, source: t.Any = None) ->
     warnings.warn(msg, category=category, stacklevel=stacklevel, source=source)
 
 
-FuncT = t.TypeVar("FuncT", bound=t.Callable[..., t.Any])
-
-
-def deprecated_method(method: FuncT, cls: t.Any, method_name: str, msg: str) -> FuncT:
+def deprecated_method(method: t.Any, cls: t.Any, method_name: str, msg: str) -> None:
     """Show deprecation warning about a magic method definition.
 
     Uses warn_explicit to bind warning to method definition instead of triggering code,
@@ -51,7 +48,7 @@ def deprecated_method(method: FuncT, cls: t.Any, method_name: str, msg: str) -> 
 _deprecations_shown = set()
 
 
-def should_warn(key: str) -> bool:
+def should_warn(key: t.Any) -> bool:
     """Add our own checks for too many deprecation warnings.
 
     Limit to once per package.
