@@ -8,7 +8,7 @@ import logging
 _logger = None
 
 
-def get_logger():
+def get_logger() -> logging.Logger:
     """Grab the global logger instance.
 
     If a global Application is instantiated, grab its logger.
