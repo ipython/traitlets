@@ -3577,8 +3577,8 @@ class List(Container[t.List[t.Any]]):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        self._minlen = minlen
         self._maxlen = maxlen
+        self._minlen = minlen
         super().__init__(trait=trait, default_value=default_value, **kwargs)
 
     def length_error(self, obj, value):
@@ -3645,9 +3645,29 @@ class Set(Container[t.Set[t.Any]]):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        super().__init__(
-            trait=trait, default_value=default_value, minlen=minlen, maxlen=maxlen, **kwargs
+        self._maxlen = maxlen
+        self._minlen = minlen
+        super().__init__(trait=trait, default_value=default_value, **kwargs)
+
+    def length_error(self, obj, value):
+        e = (
+            "The '%s' trait of %s instance must be of length %i <= L <= %i, but a value of %s was specified."
+            % (self.name, class_of(obj), self._minlen, self._maxlen, value)
         )
+        raise TraitError(e)
+
+    def validate_elements(self, obj, value):
+        length = len(value)
+        if length < self._minlen or length > self._maxlen:
+            self.length_error(obj, value)
+
+        return super().validate_elements(obj, value)
+
+    def set(self, obj, value):
+        if isinstance(value, str):
+            return super().set(obj, [value])
+        else:
+            return super().set(obj, value)
 
     def default_value_repr(self):
         # Ensure default value is sorted for a reproducible build
