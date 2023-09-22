@@ -3552,7 +3552,7 @@ class Set(Container[t.Set[t.Any]]):
         maxlen : Int [ default sys.maxsize ]
             The maximum length of the input list
         """
-        super().__init__(trait, default_value, minlen, maxlen, **kwargs)
+        super().__init__(trait, default_value, minlen=minlen, maxlen=maxlen, **kwargs)
 
     def default_value_repr(self):
         # Ensure default value is sorted for a reproducible build

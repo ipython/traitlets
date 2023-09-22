@@ -131,9 +131,9 @@ def mypy_unicode_typing():
 
     t = T()
     reveal_type(
-        Unicode(
+        Unicode(  # R: traitlets.traitlets.Unicode[builtins.str, Union[builtins.str, builtins.bytes]]
             "foo"
-        )  # R: traitlets.traitlets.Unicode[builtins.str, Union[builtins.str, builtins.bytes]]
+        )
     )
     reveal_type(
         Unicode(  # R: traitlets.traitlets.Unicode[builtins.str, Union[builtins.str, builtins.bytes]]
