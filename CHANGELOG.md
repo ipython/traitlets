@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.10.1
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.10.0...c0a3afdb2dcb28bd7ade6dd730604df8f3fbfc78))
+
+### Maintenance and upkeep improvements
+
+- Typing upgrades [#868](https://github.com/ipython/traitlets/pull/868) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-09-14&to=2023-09-26&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-09-14..2023-09-26&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.10.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.9.0...6588680dc69be75676ca3835b4061b1784232600))
@@ -38,8 +54,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-01-30&to=2023-09-14&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-01-30..2023-09-14&type=Issues) | [@dcsaba89](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adcsaba89+updated%3A2023-01-30..2023-09-14&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2023-01-30..2023-09-14&type=Issues) | [@maartenbreddels](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Amaartenbreddels+updated%3A2023-01-30..2023-09-14&type=Issues) | [@metaperl](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ametaperl+updated%3A2023-01-30..2023-09-14&type=Issues) | [@NickCrews](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ANickCrews+updated%3A2023-01-30..2023-09-14&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-01-30..2023-09-14&type=Issues) | [@rmorshea](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2023-01-30..2023-09-14&type=Issues) | [@saulshanabrook](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Asaulshanabrook+updated%3A2023-01-30..2023-09-14&type=Issues) | [@scholer](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ascholer+updated%3A2023-01-30..2023-09-14&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.9.0
 
