@@ -1486,6 +1486,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     return past_changes
 
             def hold(change):
+                if not isinstance(change, Bunch):
+                # cast to bunch if given a dict
+                    change = Bunch(change)
                 name = change.name
                 cache[name] = compress(cache.get(name), change)
 
