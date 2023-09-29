@@ -354,18 +354,14 @@ def mypy_instance_typing():
         oinst_string = Instance("Foo", allow_none=True)
 
     t = T()
-    reveal_type(t.inst)  # R: traitlets.tests.test_typing.Foo
-    reveal_type(T.inst)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
-    reveal_type(
-        T.inst.tag(sync=True)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
-    )
-    reveal_type(t.oinst)  # R: Union[traitlets.tests.test_typing.Foo, None]
+    reveal_type(t.inst)  # R: tests.test_typing.Foo
+    reveal_type(T.inst)  # R: traitlets.traitlets.Instance[tests.test_typing.Foo]
+    reveal_type(T.inst.tag(sync=True))  # R: traitlets.traitlets.Instance[tests.test_typing.Foo]
+    reveal_type(t.oinst)  # R: Union[tests.test_typing.Foo, None]
     reveal_type(t.oinst_string)  # R: Union[Any, None]
+    reveal_type(T.oinst)  # R: traitlets.traitlets.Instance[Union[tests.test_typing.Foo, None]]
     reveal_type(
-        T.oinst  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
-    )
-    reveal_type(
-        T.oinst.tag(  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
+        T.oinst.tag(  # R: traitlets.traitlets.Instance[Union[tests.test_typing.Foo, None]]
             sync=True
         )
     )

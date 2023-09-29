@@ -1,5 +1,5 @@
 """Traitlets Python configuration system"""
-from typing import Any
+import typing as _t
 
 from . import traitlets
 from ._version import __version__, version_info
@@ -21,7 +21,7 @@ __all__ = [
 
 
 class Sentinel(traitlets.Sentinel):  # type:ignore[name-defined]
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: _t.Any, **kwargs: _t.Any) -> None:
         super().__init__(*args, **kwargs)
         warn(
             """
