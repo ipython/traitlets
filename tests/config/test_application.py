@@ -23,8 +23,7 @@ from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, U
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config, KVArgParseConfigLoader
-
-from ..utilities import check_help_all_output, check_help_output, get_output_error_code
+from traitlets.tests.utils import check_help_all_output, check_help_output, get_output_error_code
 
 try:
     from unittest import mock
