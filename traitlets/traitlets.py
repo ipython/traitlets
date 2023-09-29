@@ -38,6 +38,9 @@ Inheritance diagram:
 #
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
+
+# ruff: noqa: ANN201, ANN001, ANN204, ANN102, ANN003, ANN206, ANN002
+
 from __future__ import annotations
 
 import contextlib
@@ -213,16 +216,16 @@ def parse_notifier_name(names: Sentinel | str | t.Iterable[Sentinel | str]) -> t
 
 
 class _SimpleTest:
-    def __init__(self, value):
+    def __init__(self, value) -> None:
         self.value = value
 
     def __call__(self, test):
         return test == self.value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<SimpleTest(%r)" % self.value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
 

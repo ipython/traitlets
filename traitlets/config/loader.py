@@ -2,6 +2,7 @@
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
+# ruff: noqa: ANN201, ANN001, ANN204, ANN102, ANN003, ANN206, ANN002
 from __future__ import annotations
 
 import argparse
@@ -50,10 +51,10 @@ class ArgumentError(ConfigLoaderError):
 
 
 class _Sentinel:
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Sentinel deprecated>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<deprecated>"
 
 
@@ -208,7 +209,7 @@ class LazyConfigValue(HasTraits):
             d["inserts"] = self._inserts
         return d
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self._value is not None:
             return f"<{self.__class__.__name__} value={self._value!r}>"
         else:
@@ -294,7 +295,7 @@ class Config(dict):  # type:ignore[type-arg]
                     collisions[section][key] = f"{mine[key]!r} ignored, using {theirs[key]!r}"
         return collisions
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         # allow nested contains of the form `"Section.key" in config`
         if "." in key:
             first, remainder = key.split(".", 1)
@@ -344,7 +345,7 @@ class Config(dict):  # type:ignore[type-arg]
             else:
                 raise
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         if _is_section_key(key):
             if not isinstance(value, Config):
                 raise ValueError(
@@ -361,7 +362,7 @@ class Config(dict):  # type:ignore[type-arg]
         except KeyError as e:
             raise AttributeError(e) from e
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key, value) -> None:
         if key.startswith("__"):
             return dict.__setattr__(self, key, value)
         try:
@@ -369,7 +370,7 @@ class Config(dict):  # type:ignore[type-arg]
         except KeyError as e:
             raise AttributeError(e) from e
 
-    def __delattr__(self, key):
+    def __delattr__(self, key) -> None:
         if key.startswith("__"):
             return dict.__delattr__(self, key)
         try:
@@ -420,7 +421,7 @@ class DeferredConfigString(str, DeferredConfig):
             # this will raise a more informative error when config is loaded.
             return s
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._super_repr()})"
 
 
@@ -462,7 +463,7 @@ class DeferredConfigList(list, DeferredConfig):  # type:ignore[type-arg]
             # this will raise a more informative error when config is loaded.
             return src
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self._super_repr()})"
 
 
@@ -749,7 +750,7 @@ class _DefaultOptionDict(dict):  # type:ignore[type-arg]
             metavar=key.lstrip("-"),
         )
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         if "=" in key:
             return False
         if super().__contains__(key):

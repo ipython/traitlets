@@ -3,7 +3,7 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-
+# ruff: noqa: ANN201, ANN001, ANN204, ANN102, ANN003, ANN206, ANN002
 import functools
 import json
 import logging
@@ -1032,7 +1032,7 @@ class Application(SingletonConfigurable):
         self.close_handlers()
         sys.exit(exit_status)
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close_handlers()
 
     @classmethod

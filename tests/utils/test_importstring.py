@@ -8,7 +8,7 @@
 import os
 from unittest import TestCase
 
-from ..importstring import import_item
+from traitlets.utils.importstring import import_item
 
 
 class TestImportItem(TestCase):

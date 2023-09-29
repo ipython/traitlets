@@ -1,4 +1,4 @@
-from ..bunch import Bunch
+from traitlets.utils.bunch import Bunch
 
 
 def test_bunch():

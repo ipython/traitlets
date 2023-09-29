@@ -23,7 +23,8 @@ from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, U
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config, KVArgParseConfigLoader
-from traitlets.tests.utils import check_help_all_output, check_help_output, get_output_error_code
+
+from ..utilities import check_help_all_output, check_help_output, get_output_error_code
 
 try:
     from unittest import mock
@@ -601,7 +602,7 @@ class TestApplication(TestCase):
             with self.assertRaises(SyntaxError):
                 app.load_config_file(name, path=[td])
 
-    def test_subcommands_instanciation(self):
+    def test_subcommands_instantiation(self):
         """Try all ways to specify how to create sub-apps."""
         app = Root.instance()
         app.parse_command_line(["sub1"])
@@ -694,7 +695,7 @@ def test_cli_multi_scalar(caplog):
 
 class Root(Application):
     subcommands = {
-        "sub1": ("traitlets.config.tests.test_application.Sub1", "import string"),
+        "sub1": ("tests.config.test_application.Sub1", "import string"),
     }
 
 

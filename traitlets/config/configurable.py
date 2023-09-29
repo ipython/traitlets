@@ -2,7 +2,7 @@
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
-
+# ruff: noqa: ANN201, ANN001, ANN204, ANN102, ANN003, ANN206, ANN002
 
 import logging
 import typing as t

@@ -1,8 +1,8 @@
 from inspect import Parameter, signature
 from unittest import TestCase
 
-from ...traitlets import HasTraits, Int, Unicode
-from ..decorators import signature_has_traits
+from traitlets import HasTraits, Int, Unicode
+from traitlets.utils.decorators import signature_has_traits
 
 
 class TestExpandSignature(TestCase):
