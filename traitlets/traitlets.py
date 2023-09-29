@@ -216,11 +216,11 @@ def parse_notifier_name(names: Sentinel | str | t.Iterable[Sentinel | str]) -> t
 
 
 class _SimpleTest:
-    def __init__(self, value) -> None:
+    def __init__(self, value: t.Any) -> None:
         self.value = value
 
-    def __call__(self, test):
-        return test == self.value
+    def __call__(self, test: t.Any) -> bool:
+        return bool(test == self.value)
 
     def __repr__(self) -> str:
         return "<SimpleTest(%r)" % self.value

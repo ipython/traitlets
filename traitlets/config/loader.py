@@ -295,7 +295,7 @@ class Config(dict):  # type:ignore[type-arg]
                     collisions[section][key] = f"{mine[key]!r} ignored, using {theirs[key]!r}"
         return collisions
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: t.Any) -> bool:
         # allow nested contains of the form `"Section.key" in config`
         if "." in key:
             first, remainder = key.split(".", 1)
@@ -345,7 +345,7 @@ class Config(dict):  # type:ignore[type-arg]
             else:
                 raise
 
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(self, key: str, value: t.Any) -> None:
         if _is_section_key(key):
             if not isinstance(value, Config):
                 raise ValueError(
@@ -362,7 +362,7 @@ class Config(dict):  # type:ignore[type-arg]
         except KeyError as e:
             raise AttributeError(e) from e
 
-    def __setattr__(self, key, value) -> None:
+    def __setattr__(self, key: str, value: t.Any) -> None:
         if key.startswith("__"):
             return dict.__setattr__(self, key, value)
         try:
@@ -370,7 +370,7 @@ class Config(dict):  # type:ignore[type-arg]
         except KeyError as e:
             raise AttributeError(e) from e
 
-    def __delattr__(self, key) -> None:
+    def __delattr__(self, key: str) -> None:
         if key.startswith("__"):
             return dict.__delattr__(self, key)
         try:
@@ -750,7 +750,7 @@ class _DefaultOptionDict(dict):  # type:ignore[type-arg]
             metavar=key.lstrip("-"),
         )
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: t.Any) -> bool:
         if "=" in key:
             return False
         if super().__contains__(key):

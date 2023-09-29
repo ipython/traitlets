@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import sys
 from subprocess import PIPE, Popen
+from typing import Any
 
 
-def get_output_error_code(cmd: str) -> tuple[str, str, int]:
+def get_output_error_code(cmd: str | list[str]) -> tuple[str, str, Any]:
     """Get stdout, stderr, and exit code from running a command"""
     p = Popen(cmd, stdout=PIPE, stderr=PIPE)  # noqa
     out, err = p.communicate()
-    out = out.decode("utf8", "replace")  # type:ignore
-    err = err.decode("utf8", "replace")  # type:ignore
-    return out, err, p.returncode
+    out_str = out.decode("utf8", "replace")
+    err_str = err.decode("utf8", "replace")
+    return out_str, err_str, p.returncode
 
 
 def check_help_output(pkg: str, subcommand: str | None = None) -> tuple[str, str]:

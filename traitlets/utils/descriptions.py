@@ -119,7 +119,7 @@ def describe(
         )
 
 
-def _prefix(value: Any):
+def _prefix(value: Any) -> str:
     if isinstance(value, types.MethodType):
         name = describe(None, value.__self__, verbose=True) + "."
     else:

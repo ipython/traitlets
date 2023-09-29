@@ -56,7 +56,7 @@ nowarn = "test -W default {args}"
 [tool.hatch.envs.typing]
 features = ["test"]
 [tool.hatch.envs.typing.scripts]
-test = "mypy --install-types --non-interactive {args:.}"
+test = "mypy --install-types --non-interactive {args}"
 
 [tool.hatch.envs.lint]
 dependencies = ["black==23.3.0", "mdformat>0.7", "ruff==0.0.281"]
@@ -74,6 +74,7 @@ fmt = [
 ]
 
 [tool.mypy]
+files = "traitlets"
 python_version = "3.8"
 check_untyped_defs = true
 disallow_any_generics = true
