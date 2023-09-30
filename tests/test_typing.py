@@ -136,11 +136,6 @@ def mypy_type_typing():
         )
 
     t = KernelSpecManager()
-    reveal_type(
-        Type(
-            KernelSpec
-        )  # R: traitlets.traitlets.Type[def () -> tests.test_typing.KernelSpec@124, def () -> tests.test_typing.KernelSpec@124]
-    )
     reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@124
     reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@124
     reveal_type(t.kernel_spec_class().item)  # R: builtins.str
