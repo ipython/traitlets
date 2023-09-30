@@ -134,11 +134,14 @@ def mypy_type_typing():
             subclassing of the KernelSpecManager for customized behavior.
             """,
         )
+        other_class = Type("foo.bar.baz")
 
     t = KernelSpecManager()
     reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@124
     reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@124
     reveal_type(t.kernel_spec_class().item)  # R: builtins.str
+    reveal_type(t.other_class)  # R: Any
+    reveal_type(t.other_class())  # R: Any
 
 
 @pytest.mark.mypy_testing
