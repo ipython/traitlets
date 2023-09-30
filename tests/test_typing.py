@@ -140,7 +140,7 @@ def mypy_type_typing():
     reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@124
     reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@124
     reveal_type(t.kernel_spec_class().item)  # R: builtins.str
-    reveal_type(t.other_class)  # R: Any
+    reveal_type(t.other_class)  # R: builtins.type
     reveal_type(t.other_class())  # R: Any
 
 
