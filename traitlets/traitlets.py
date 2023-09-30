@@ -2030,7 +2030,7 @@ class Type(ClassBasedTraitType[G, S]):
 
         @t.overload
         def __init__(
-            self: Type[object, object],
+            self: Type[type, type],
             default_value: Sentinel | None | str = ...,
             klass: None | str = ...,
             allow_none: Literal[False] = ...,
@@ -2043,8 +2043,8 @@ class Type(ClassBasedTraitType[G, S]):
 
         @t.overload
         def __init__(
-            self: Type[object | None, object | None],
-            default_value: S | Sentinel | None | str = ...,
+            self: Type[type | None, type | None],
+            default_value: Sentinel | None | str = ...,
             klass: None | str = ...,
             allow_none: Literal[True] = ...,
             read_only: bool | None = ...,
@@ -2057,7 +2057,7 @@ class Type(ClassBasedTraitType[G, S]):
         @t.overload
         def __init__(
             self: Type[S, S],
-            default_value: S | Sentinel | str = ...,
+            default_value: S = ...,
             klass: type[S] = ...,
             allow_none: Literal[False] = ...,
             read_only: bool | None = ...,
@@ -2070,7 +2070,7 @@ class Type(ClassBasedTraitType[G, S]):
         @t.overload
         def __init__(
             self: Type[S | None, S | None],
-            default_value: S | Sentinel | None | str = ...,
+            default_value: S | None = ...,
             klass: type[S] = ...,
             allow_none: Literal[True] = ...,
             read_only: bool | None = ...,

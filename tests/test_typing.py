@@ -120,6 +120,31 @@ def mypy_dict_typing():
 
 
 @pytest.mark.mypy_testing
+def mypy_type_typing():
+    class KernelSpec:
+        item = Unicode("foo")
+
+    class KernelSpecManager(HasTraits):
+        """A manager for kernel specs."""
+
+        kernel_spec_class = Type(
+            KernelSpec,
+            config=True,
+            help="""The kernel spec class.  This is configurable to allow
+            subclassing of the KernelSpecManager for customized behavior.
+            """,
+        )
+
+    t = KernelSpecManager()
+    reveal_type(
+        Type(KernelSpec)
+    )  # R: traitlets.traitlets.Type[def () -> tests.test_typing.KernelSpec@125, def () -> tests.test_typing.KernelSpec@125]
+    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@125
+    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@125
+    reveal_type(t.kernel_spec_class().item)  # R: builtins.str
+
+
+@pytest.mark.mypy_testing
 def mypy_unicode_typing():
     class T(HasTraits):
         export_format = Unicode(
