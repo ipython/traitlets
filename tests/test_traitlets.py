@@ -60,7 +60,6 @@ from traitlets import (
     traitlets,
     validate,
 )
-from traitlets.tests.test_traitlets import TraitTestBase
 from traitlets.utils import cast_unicode
 
 from ._warnings import expected_warnings
@@ -1232,6 +1231,59 @@ class TestThis(TestCase):
 
         with self.assertRaises(TraitError):
             tree.leaves = [1, 2]
+
+
+class TraitTestBase(TestCase):
+    """A best testing class for basic trait types."""
+
+    def assign(self, value):
+        self.obj.value = value  # type:ignore
+
+    def coerce(self, value):
+        return value
+
+    def test_good_values(self):
+        if hasattr(self, "_good_values"):
+            for value in self._good_values:
+                self.assign(value)
+                self.assertEqual(self.obj.value, self.coerce(value))  # type:ignore
+
+    def test_bad_values(self):
+        if hasattr(self, "_bad_values"):
+            for value in self._bad_values:
+                try:
+                    self.assertRaises(TraitError, self.assign, value)
+                except AssertionError:
+                    assert False, value
+
+    def test_default_value(self):
+        if hasattr(self, "_default_value"):
+            self.assertEqual(self._default_value, self.obj.value)  # type:ignore
+
+    def test_allow_none(self):
+        if (
+            hasattr(self, "_bad_values")
+            and hasattr(self, "_good_values")
+            and None in self._bad_values
+        ):
+            trait = self.obj.traits()["value"]  # type:ignore
+            try:
+                trait.allow_none = True
+                self._bad_values.remove(None)
+                # skip coerce. Allow None casts None to None.
+                self.assign(None)
+                self.assertEqual(self.obj.value, None)  # type:ignore
+                self.test_good_values()
+                self.test_bad_values()
+            finally:
+                # tear down
+                trait.allow_none = False
+                self._bad_values.append(None)
+
+    def tearDown(self):
+        # restore default value after tests, if set
+        if hasattr(self, "_default_value"):
+            self.obj.value = self._default_value  # type:ignore
 
 
 class AnyTrait(HasTraits):
