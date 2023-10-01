@@ -99,6 +99,7 @@ T = TypeVar("T", bound=Callable[..., Any])
 AnyLogger = logging.Logger | logging.LoggerAdapter
 StrDict = dict[str, t.Any]
 ArgvType = list[str] | None
+ClassesType = list[type[Configurable]]
 
 
 def catch_config_error(method: T) -> T:
@@ -166,13 +167,13 @@ class Application(SingletonConfigurable):
     json_config_loader_class = JSONFileConfigLoader
 
     # The usage and example string that goes at the end of the help string.
-    example = Unicode()
+    examples = Unicode()
 
     # A sequence of Configurable subclasses whose config=True attributes will
     # be exposed at the command line.
-    classes: list[type[t.Any]] = []
+    classes: ClassesType = []
 
-    def _classes_inc_parents(self, classes: list[type[Any]] | None = None):
+    def _classes_inc_parents(self, classes: ClassesType | None = None):
         """Iterate through configurable classes, including configurable parents
 
         :param classes:
@@ -783,7 +784,7 @@ class Application(SingletonConfigurable):
         argv: list[str] | None,
         aliases: StrDict,
         flags: StrDict,
-        classes: list[type[t.Any]] | None,
+        classes: ClassesType | None,
     ):
         return KVArgParseConfigLoader(
             argv, aliases, flags, classes=classes, log=self.log, subcommands=self.subcommands
@@ -969,7 +970,7 @@ class Application(SingletonConfigurable):
         self.update_config(new_config)
 
     def _classes_with_config_traits(
-        self, classes: list[type[t.Any]] | None = None
+        self, classes: ClassesType | None = None
     ) -> t.Generator[t.Any, None, None]:
         """
         Yields only classes with configurable traits, and their subclasses.
@@ -1010,7 +1011,7 @@ class Application(SingletonConfigurable):
             if inc_yes:
                 yield cl
 
-    def generate_config_file(self, classes: list[type[t.Any]] | None = None) -> str:
+    def generate_config_file(self, classes: ClassesType | None = None) -> str:
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append("")
