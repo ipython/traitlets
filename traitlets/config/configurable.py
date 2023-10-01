@@ -11,7 +11,6 @@ from textwrap import dedent
 
 from traitlets.traitlets import (
     Any,
-    Bunch,
     Container,
     Dict,
     HasTraits,
@@ -23,6 +22,7 @@ from traitlets.traitlets import (
     validate,
 )
 from traitlets.utils import warnings
+from traitlets.utils.bunch import Bunch
 from traitlets.utils.text import indent, wrap_paragraphs
 
 from .loader import Config, DeferredConfig, LazyConfigValue, _is_section_key
@@ -30,6 +30,8 @@ from .loader import Config, DeferredConfig, LazyConfigValue, _is_section_key
 # -----------------------------------------------------------------------------
 # Helper classes for Configurables
 # -----------------------------------------------------------------------------
+
+LoggerType = t.Union[logging.Logger, logging.LoggerAdapter[t.Any]]
 
 
 class ConfigurableError(Exception):
@@ -47,9 +49,7 @@ class MultipleInstanceError(ConfigurableError):
 
 class Configurable(HasTraits):
     config = Instance(Config, (), {})
-    parent: Configurable | None = Instance(
-        "traitlets.config.configurable.Configurable", allow_none=True
-    )
+    parent = Instance("traitlets.config.configurable.Configurable", allow_none=True)
 
     def __init__(self, **kwargs: t.Any) -> None:
         """Create a configurable given a config config.
@@ -193,7 +193,7 @@ class Configurable(HasTraits):
                         warn = self.log.warning
                     else:
 
-                        def warn(msg: str) -> None:
+                        def warn(msg: t.Any) -> None:
                             return warnings.warn(msg, UserWarning, stacklevel=9)
 
                     matches = get_close_matches(name, traits)
@@ -260,7 +260,10 @@ class Configurable(HasTraits):
 
     @classmethod
     def class_get_trait_help(
-        cls, trait: TraitType, inst: HasTraits | None = None, helptext: str | None = None
+        cls,
+        trait: TraitType[t.Any, t.Any],
+        inst: HasTraits | None = None,
+        helptext: str | None = None,
     ) -> str:
         """Get the helptext string for a single trait.
 
@@ -299,7 +302,7 @@ class Configurable(HasTraits):
             lines.append(indent("Choices: %s" % trait.info()))
 
         if inst is not None:
-            lines.append(indent(f"Current: {getattr(inst, trait.name)!r}"))
+            lines.append(indent(f"Current: {getattr(inst, trait.name or '')!r}"))
         else:
             try:
                 dvr = trait.default_value_repr()
@@ -318,7 +321,9 @@ class Configurable(HasTraits):
         print(cls.class_get_help(inst))
 
     @classmethod
-    def _defining_class(cls, trait: TraitType, classes: list[HasTraits]) -> Configurable:
+    def _defining_class(
+        cls, trait: TraitType[t.Any, t.Any], classes: t.Sequence[type[HasTraits]]
+    ) -> type[Configurable]:
         """Get the class that defines a trait
 
         For reducing redundant help output in config files.
@@ -346,7 +351,7 @@ class Configurable(HasTraits):
         return defining_cls
 
     @classmethod
-    def class_config_section(cls, classes: list[HasTraits] | None = None) -> str:
+    def class_config_section(cls, classes: t.Sequence[type[HasTraits]] | None = None) -> str:
         """Get the config section for this class.
 
         Parameters
@@ -455,10 +460,10 @@ class LoggingConfigurable(Configurable):
     is to get the logger from the currently running Application.
     """
 
-    log: logging.Logger | logging.LoggerAdapter = Any(help="Logger or LoggerAdapter instance")
+    log = Any(help="Logger or LoggerAdapter instance", allow_none=False)
 
     @validate("log")
-    def _validate_log(self, proposal: Bunch) -> logging.Logger | logging.LoggerAdapter:
+    def _validate_log(self, proposal: Bunch) -> LoggerType:
         if not isinstance(proposal.value, (logging.Logger, logging.LoggerAdapter)):
             # warn about unsupported type, but be lenient to allow for duck typing
             warnings.warn(
@@ -467,18 +472,18 @@ class LoggingConfigurable(Configurable):
                 UserWarning,
                 stacklevel=2,
             )
-        return proposal.value
+        return proposal.value  # type:ignore[no-any-return]
 
     @default("log")
-    def _log_default(self) -> logging.Logger | logging.LoggerAdapter:
+    def _log_default(self) -> LoggerType:
         if isinstance(self.parent, LoggingConfigurable):
             assert self.parent is not None
-            return self.parent.log
+            return t.cast(logging.Logger, self.parent.log)
         from traitlets import log
 
         return log.get_logger()
 
-    def _get_log_handler(self) -> logging.Handler:
+    def _get_log_handler(self) -> logging.Handler | None:
         """Return the default Handler
 
         Returns None if none can be found
@@ -486,16 +491,16 @@ class LoggingConfigurable(Configurable):
         Deprecated, this now returns the first log handler which may or may
         not be the default one.
         """
-        logger = self.log
-        if isinstance(logger, logging.LoggerAdapter):
-            logger = logger.logger
+        if not self.log:
+            return None
+        logger = self.log if isinstance(self.log, logging.Logger) else self.log.logger
         if not getattr(logger, "handlers", None):
             # no handlers attribute or empty handlers list
             return None
-        return logger.handlers[0]
+        return logger.handlers[0]  # type:ignore[no-any-return]
 
 
-T = t.TypeVar('T', bound='SingletonConfigurable')
+CT = t.TypeVar('CT', bound='SingletonConfigurable')
 
 
 class SingletonConfigurable(LoggingConfigurable):
@@ -509,7 +514,7 @@ class SingletonConfigurable(LoggingConfigurable):
     _instance = None
 
     @classmethod
-    def _walk_mro(cls) -> t.Generator[HasTraits, None, None]:
+    def _walk_mro(cls) -> t.Generator[type[SingletonConfigurable], None, None]:
         """Walk the cls.mro() for parent classes that are also singletons
 
         For use in instance()
@@ -535,7 +540,7 @@ class SingletonConfigurable(LoggingConfigurable):
                 subclass._instance = None
 
     @classmethod
-    def instance(cls: type[T], *args: t.Any, **kwargs: t.Any) -> T:
+    def instance(cls: type[CT], *args: t.Any, **kwargs: t.Any) -> CT:
         """Returns a global instance of this class.
 
         This method create a new instance if none have previously been created

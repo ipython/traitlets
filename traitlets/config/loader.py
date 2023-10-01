@@ -786,7 +786,6 @@ class _KVArgParser(argparse.ArgumentParser):
 
 
 # type aliases
-Flags = t.Union[str, t.Tuple[str, ...]]
 SubcommandsDict = t.Dict[str, t.Any]
 
 
@@ -798,8 +797,8 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
     def __init__(
         self,
         argv: list[str] | None = None,
-        aliases: dict[Flags, str] | None = None,
-        flags: dict[Flags, str] | None = None,
+        aliases: dict[str, str] | None = None,
+        flags: dict[str, str] | None = None,
         log: t.Any = None,
         classes: list[type[t.Any]] | None = None,
         subcommands: SubcommandsDict | None = None,
@@ -916,7 +915,7 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
                 if alias in self.flags:
                     continue
                 if not isinstance(alias, tuple):
-                    alias = (alias,)
+                    alias = (alias,)  # type:ignore[assignment]
                 for al in alias:
                     if len(al) == 1:
                         unpacked_aliases["-" + al] = "--" + alias_target

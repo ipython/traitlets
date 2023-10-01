@@ -1126,7 +1126,7 @@ def observe(*names: Sentinel | str, type: str = "change") -> ObserveHandler:
     return ObserveHandler(names, type=type)
 
 
-def observe_compat(func):
+def observe_compat(func: FuncT) -> FuncT:
     """Backward-compatibility shim decorator for observers
 
     Use with:
@@ -1140,9 +1140,11 @@ def observe_compat(func):
     Allows adoption of new observer API without breaking subclasses that override and super.
     """
 
-    def compatible_observer(self, change_or_name, old=Undefined, new=Undefined):
+    def compatible_observer(
+        self: t.Any, change_or_name: str, old: t.Any = Undefined, new: t.Any = Undefined
+    ) -> t.Any:
         if isinstance(change_or_name, dict):
-            change = change_or_name
+            change = Bunch(change_or_name)
         else:
             clsname = self.__class__.__name__
             warn(
@@ -1159,7 +1161,7 @@ def observe_compat(func):
             )
         return func(self, change)
 
-    return compatible_observer
+    return t.cast(FuncT, compatible_observer)
 
 
 def validate(*names: Sentinel | str) -> ValidateHandler:
