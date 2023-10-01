@@ -891,7 +891,7 @@ class Application(SingletonConfigurable):
     def _load_config_files(
         cls,
         basefilename: str,
-        path: list[str] | str | None = None,
+        path: list[str | None] | str | None = None,
         log: AnyLogger | None = None,
         raise_config_file_errors: bool = False,
     ) -> t.Generator[t.Any, None, None]:
@@ -899,8 +899,6 @@ class Application(SingletonConfigurable):
 
         yield each config object in turn.
         """
-        if not path:
-            return
         if not isinstance(path, list):
             path = [path]
         for current in reversed(path):
