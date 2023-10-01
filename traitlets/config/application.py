@@ -95,11 +95,12 @@ else:
 
 IS_PYTHONW = sys.executable and sys.executable.endswith("pythonw.exe")
 
-T = TypeVar("T", bound=Callable[..., Any])
-AnyLogger = logging.Logger | logging.LoggerAdapter
-StrDict = dict[str, t.Any]
-ArgvType = list[str] | None
-ClassesType = list[type[Configurable]]
+if t.TYPE_CHECKING:
+    T = TypeVar("T", bound=Callable[..., Any])
+    AnyLogger = logging.Logger | logging.LoggerAdapter
+    StrDict = dict[str, t.Any]
+    ArgvType = list[str] | None
+    ClassesType = list[type[Configurable]]
 
 
 def catch_config_error(method: T) -> T:
