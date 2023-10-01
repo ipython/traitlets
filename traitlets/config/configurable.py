@@ -31,7 +31,10 @@ from .loader import Config, DeferredConfig, LazyConfigValue, _is_section_key
 # Helper classes for Configurables
 # -----------------------------------------------------------------------------
 
-LoggerType = t.Union[logging.Logger, logging.LoggerAdapter[t.Any]]
+if t.TYPE_CHECKING:
+    LoggerType = t.Union[logging.Logger, logging.LoggerAdapter[t.Any]]
+else:
+    LoggerType = t.Any
 
 
 class ConfigurableError(Exception):

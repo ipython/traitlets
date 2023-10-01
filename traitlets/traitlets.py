@@ -39,7 +39,7 @@ Inheritance diagram:
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
 
-# ruff: noqa: ANN201, ANN001, ANN204, ANN102, ANN003, ANN206, ANN002
+# ruff: noqa: ANN001, ANN204, ANN201, ANN003, ANN206, ANN002
 
 from __future__ import annotations
 
@@ -297,7 +297,7 @@ class link:
 
         self.link()
 
-    def link(self):
+    def link(self) -> None:
         try:
             setattr(
                 self.target[0],
@@ -337,7 +337,7 @@ class link:
                     f"Broken link {self}: the target value changed while updating " "the source."
                 )
 
-    def unlink(self):
+    def unlink(self) -> None:
         self.source[0].unobserve(self._update_target, names=self.source[1])
         self.target[0].unobserve(self._update_source, names=self.target[1])
 
@@ -381,7 +381,7 @@ class directional_link:
         self.source, self.target = source, target
         self.link()
 
-    def link(self):
+    def link(self) -> None:
         try:
             setattr(
                 self.target[0],
@@ -405,7 +405,7 @@ class directional_link:
         with self._busy_updating():
             setattr(self.target[0], self.target[1], self._transform(change.new))
 
-    def unlink(self):
+    def unlink(self) -> None:
         self.source[0].unobserve(self._update, names=self.source[1])
 
 
