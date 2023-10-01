@@ -162,6 +162,8 @@ ignore = [
   "ANN401",
   # Missing type annotation for `self` in method
   "ANN101",
+  #  Missing type annotation for `cls` in classmethod
+  "ANN102",
   # ANN202 Missing return type annotation for private function
   "ANN202",
   # Allow non-abstract empty methods in abstract base classes
