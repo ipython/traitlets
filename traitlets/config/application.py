@@ -196,7 +196,7 @@ class Application(SingletonConfigurable):
                     yield parent
 
     # The version string of this application.
-    version = Unicode("0.0")
+    version: str | Unicode[str, str | bytes] = Unicode("0.0")
 
     # the argv used to initialize the application
     argv = List()
