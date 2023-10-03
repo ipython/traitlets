@@ -891,7 +891,7 @@ class Application(SingletonConfigurable):
     def _load_config_files(
         cls,
         basefilename: str,
-        path: list[str | None] | None = None,
+        path: str | t.Sequence[str | None] | None,
         log: AnyLogger | None = None,
         raise_config_file_errors: bool = False,
     ) -> t.Generator[t.Any, None, None]:
@@ -899,7 +899,7 @@ class Application(SingletonConfigurable):
 
         yield each config object in turn.
         """
-        if not isinstance(path, list):
+        if isinstance(path, str) or path is None:
             path = [path]
         for current in reversed(path):
             # path list is in descending priority order, so load files backwards:
