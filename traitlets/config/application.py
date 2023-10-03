@@ -400,7 +400,7 @@ class Application(SingletonConfigurable):
     # this must be a dict of two-tuples,
     # the first element being the application class/import string
     # and the second being the help string for the subcommand
-    subcommands = Dict()
+    subcommands: dict[str, t.Any] | Dict = Dict()
     # parse_command_line will initialize a subapp, if requested
     subapp = Instance("traitlets.config.application.Application", allow_none=True)
 
@@ -949,7 +949,9 @@ class Application(SingletonConfigurable):
         return self._loaded_config_files[:]
 
     @catch_config_error
-    def load_config_file(self, filename: str, path: list[str | None] | None = None) -> None:
+    def load_config_file(
+        self, filename: str, path: str | t.Sequence[str | None] | None = None
+    ) -> None:
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
@@ -1032,7 +1034,7 @@ class Application(SingletonConfigurable):
                     handler.close()
             self._logging_configured = False
 
-    def exit(self, exit_status: int = 0) -> None:
+    def exit(self, exit_status: int | str | None = 0) -> None:
         self.log.debug("Exiting application: %s" % self.name)
         self.close_handlers()
         sys.exit(exit_status)
