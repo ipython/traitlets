@@ -153,21 +153,21 @@ class Application(SingletonConfigurable):
 
     # The name of the application, will usually match the name of the command
     # line application
-    name = Unicode("application")
+    name: str | Unicode[str, str | bytes] = Unicode("application")
 
     # The description of the application that is printed at the beginning
     # of the help.
-    description = Unicode("This is an application.")
+    description: str | Unicode[str, str | bytes] = Unicode("This is an application.")
     # default section descriptions
-    option_description = Unicode(option_description)
-    keyvalue_description = Unicode(keyvalue_description)
-    subcommand_description = Unicode(subcommand_description)
+    option_description: str | Unicode[str, str | bytes] = Unicode(option_description)
+    keyvalue_description: str | Unicode[str, str | bytes] = Unicode(keyvalue_description)
+    subcommand_description: str | Unicode[str, str | bytes] = Unicode(subcommand_description)
 
     python_config_loader_class = PyFileConfigLoader
     json_config_loader_class = JSONFileConfigLoader
 
     # The usage and example string that goes at the end of the help string.
-    examples = Unicode()
+    examples: str | Unicode[str, str | bytes] = Unicode()
 
     # A sequence of Configurable subclasses whose config=True attributes will
     # be exposed at the command line.
@@ -891,7 +891,7 @@ class Application(SingletonConfigurable):
     def _load_config_files(
         cls,
         basefilename: str,
-        path: list[str | None] | str | None = None,
+        path: list[str | None] | None = None,
         log: AnyLogger | None = None,
         raise_config_file_errors: bool = False,
     ) -> t.Generator[t.Any, None, None]:
@@ -949,7 +949,7 @@ class Application(SingletonConfigurable):
         return self._loaded_config_files[:]
 
     @catch_config_error
-    def load_config_file(self, filename: str, path: str | None = None) -> None:
+    def load_config_file(self, filename: str, path: list[str | None] | None = None) -> None:
         """Load config files by filename and path."""
         filename, ext = os.path.splitext(filename)
         new_config = Config()
