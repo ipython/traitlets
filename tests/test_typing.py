@@ -120,6 +120,31 @@ def mypy_dict_typing():
 
 
 @pytest.mark.mypy_testing
+def mypy_type_typing():
+    class KernelSpec:
+        item = Unicode("foo")
+
+    class KernelSpecManager(HasTraits):
+        """A manager for kernel specs."""
+
+        kernel_spec_class = Type(
+            KernelSpec,
+            config=True,
+            help="""The kernel spec class.  This is configurable to allow
+            subclassing of the KernelSpecManager for customized behavior.
+            """,
+        )
+        other_class = Type("foo.bar.baz")
+
+    t = KernelSpecManager()
+    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@124
+    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@124
+    reveal_type(t.kernel_spec_class().item)  # R: builtins.str
+    reveal_type(t.other_class)  # R: builtins.type
+    reveal_type(t.other_class())  # R: Any
+
+
+@pytest.mark.mypy_testing
 def mypy_unicode_typing():
     class T(HasTraits):
         export_format = Unicode(
@@ -354,18 +379,14 @@ def mypy_instance_typing():
         oinst_string = Instance("Foo", allow_none=True)
 
     t = T()
-    reveal_type(t.inst)  # R: traitlets.tests.test_typing.Foo
-    reveal_type(T.inst)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
-    reveal_type(
-        T.inst.tag(sync=True)  # R: traitlets.traitlets.Instance[traitlets.tests.test_typing.Foo]
-    )
-    reveal_type(t.oinst)  # R: Union[traitlets.tests.test_typing.Foo, None]
+    reveal_type(t.inst)  # R: tests.test_typing.Foo
+    reveal_type(T.inst)  # R: traitlets.traitlets.Instance[tests.test_typing.Foo]
+    reveal_type(T.inst.tag(sync=True))  # R: traitlets.traitlets.Instance[tests.test_typing.Foo]
+    reveal_type(t.oinst)  # R: Union[tests.test_typing.Foo, None]
     reveal_type(t.oinst_string)  # R: Union[Any, None]
+    reveal_type(T.oinst)  # R: traitlets.traitlets.Instance[Union[tests.test_typing.Foo, None]]
     reveal_type(
-        T.oinst  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
-    )
-    reveal_type(
-        T.oinst.tag(  # R: traitlets.traitlets.Instance[Union[traitlets.tests.test_typing.Foo, None]]
+        T.oinst.tag(  # R: traitlets.traitlets.Instance[Union[tests.test_typing.Foo, None]]
             sync=True
         )
     )
