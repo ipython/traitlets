@@ -2,6 +2,22 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.11.2
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.11.1...e238765a0ba28fc68318cff75e852958d5c65c93))
+
+### Maintenance and upkeep improvements
+
+- More typing cleanup [#877](https://github.com/ipython/traitlets/pull/877) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-03&to=2023-10-03&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-03..2023-10-03&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.11.1
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.11.0...292a699ad1a3a3ece760a8335cae73927cccd711))
@@ -15,8 +31,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-03&to=2023-10-03&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-03..2023-10-03&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.11.0
 
