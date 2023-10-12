@@ -22,7 +22,7 @@ import sys
 HERE = osp.abspath(osp.dirname(__file__))
 ROOT = osp.dirname(osp.dirname(HERE))
 
-from traitlets import version_info, __version__
+from traitlets import __version__, version_info
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
