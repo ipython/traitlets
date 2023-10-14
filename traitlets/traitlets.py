@@ -965,7 +965,7 @@ class MetaHasDescriptors(type):
     instantiated and sets their name attribute.
     """
 
-    def __new__(mcls, name, bases, classdict):  # noqa
+    def __new__(mcls, name, bases, classdict, **kwds):  # noqa
         """Create the HasDescriptors class."""
         for k, v in classdict.items():
             # ----------------------------------------------------------------
@@ -981,11 +981,11 @@ class MetaHasDescriptors(type):
                 classdict[k] = v()
             # ----------------------------------------------------------------
 
-        return super().__new__(mcls, name, bases, classdict)
+        return super().__new__(mcls, name, bases, classdict, **kwds)
 
-    def __init__(cls, name: str, bases: t.Any, classdict: t.Any) -> None:
+    def __init__(cls, name: str, bases: t.Any, classdict: t.Any, **kwds) -> None:
         """Finish initializing the HasDescriptors class."""
-        super().__init__(name, bases, classdict)
+        super().__init__(name, bases, classdict, **kwds)
         cls.setup_class(classdict)
 
     def setup_class(cls, classdict):
