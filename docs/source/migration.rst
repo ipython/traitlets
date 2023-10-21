@@ -8,7 +8,7 @@ However, it is a backward-compatible release and the deprecated APIs
 will be supported for some time.
 
 Separation of metadata and keyword arguments in ``TraitType`` constructors
--------------------------------------------------------------------------
+--------------------------------------------------------------------------
 
 In traitlets 4.0, trait types constructors used all unrecognized keyword
 arguments passed to the constructor (like ``sync`` or ``config``) to
