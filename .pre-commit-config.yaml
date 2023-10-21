@@ -1,21 +1,23 @@
 ci:
   autoupdate_schedule: monthly
+  autoupdate_commit_msg: "chore: update pre-commit hooks"
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      - id: end-of-file-fixer
       - id: check-case-conflict
+      - id: check-ast
+      - id: check-docstring-first
       - id: check-executables-have-shebangs
-      - id: requirements-txt-fixer
       - id: check-added-large-files
       - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-json
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
-      - id: forbid-new-submodules
-      - id: check-builtin-literals
+      - id: end-of-file-fixer
       - id: trailing-whitespace
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
@@ -27,14 +29,47 @@ repos:
     rev: 0.7.17
     hooks:
       - id: mdformat
+        additional_dependencies:
+          [mdformat-gfm, mdformat-frontmatter, mdformat-footnote]
 
-  - repo: https://github.com/psf/black
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v3.0.2"
+    hooks:
+      - id: prettier
+        types_or: [yaml, html, json]
+
+  - repo: https://github.com/adamchainz/blacken-docs
+    rev: "1.16.0"
+    hooks:
+      - id: blacken-docs
+        additional_dependencies: [black==23.7.0]
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 23.7.0
     hooks:
       - id: black
 
+  - repo: https://github.com/codespell-project/codespell
+    rev: "v2.2.5"
+    hooks:
+      - id: codespell
+        args: ["-L", "sur,nd"]
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: "v1.10.0"
+    hooks:
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.287
+    rev: v0.1.1
     hooks:
       - id: ruff
-        args: ["--fix"]
+        args: ["--fix", "--show-fixes"]
+
+  - repo: https://github.com/scientific-python/cookie
+    rev: "2023.08.23"
+    hooks:
+      - id: sp-repo-review
+        additional_dependencies: ["repo-review[cli]"]

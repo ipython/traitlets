@@ -59,7 +59,7 @@ features = ["test"]
 test = "mypy --install-types --non-interactive {args}"
 
 [tool.hatch.envs.lint]
-dependencies = ["black==23.3.0", "mdformat>0.7", "ruff==0.0.281"]
+dependencies = ["black==23.3.0", "mdformat>0.7", "ruff==0.1.1"]
 detached = true
 [tool.hatch.envs.lint.scripts]
 style = [
@@ -76,27 +76,26 @@ fmt = [
 [tool.mypy]
 files = "traitlets"
 python_version = "3.8"
-check_untyped_defs = true
-disallow_any_generics = true
-disallow_incomplete_defs = true
-disallow_untyped_decorators = true
-explicit_package_bases = true
-namespace_packages = true
-no_implicit_optional = true
-no_implicit_reexport = true
+strict = true
+disallow_any_generics = false
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+no_implicit_reexport = false
 pretty = true
 show_error_context = true
 show_error_codes = true
-strict_equality = true
-strict_optional = true
-warn_unused_configs = true
-warn_redundant_casts = true
-warn_return_any = true
-warn_unused_ignores = true
+warn_return_any = false
+warn_unreachable = true
 exclude = ["examples/docs/configs", "traitlets/tests/test_typing.py"]
 
 [tool.pytest.ini_options]
-addopts = "--durations=10 -ra --showlocals --doctest-modules --color yes --ignore examples/docs/configs"
+minversion = "6.0"
+xfail_strict = true
+log_cli_level = "info"
+addopts = [
+  "-raXs", "--durations=10", "--color=yes", "--doctest-modules",
+   "--showlocals", "--strict-markers", "--strict-config",
+   "--ignore-glob=tests/dotipython*"
+]
 testpaths = [
     "tests",
     "examples",
@@ -230,3 +229,6 @@ unfixable = [
 "traitlets/*__init__.py" = ["F401", "F403"]
 "docs/*" = ["ANN"]
 "examples/*" = ["ANN"]
+
+[tool.repo-review]
+ignore = ["PY007", "PP308", "GH102", "PC140"]
