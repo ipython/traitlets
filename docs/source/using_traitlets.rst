@@ -23,10 +23,11 @@ subclasses:
     from traitlets import HasTraits, Int, Unicode, default
     import getpass
 
+
     class Identity(HasTraits):
         username = Unicode()
 
-        @default('username')
+        @default("username")
         def _default_username(self):
             return getpass.getuser()
 
@@ -35,7 +36,8 @@ subclasses:
     class Foo(HasTraits):
         bar = Int()
 
-    foo = Foo(bar='3')  # raises a TraitError
+
+    foo = Foo(bar="3")  # raises a TraitError
 
 ::
 
@@ -53,16 +55,19 @@ Traitlets implement the observer pattern
         bar = Int()
         baz = Unicode()
 
+
     foo = Foo()
 
-    def func(change):
-        print(change['old'])
-        print(change['new'])   # as of traitlets 4.3, one should be able to
-                               # write print(change.new) instead
 
-    foo.observe(func, names=['bar'])
+    def func(change):
+        print(change["old"])
+        print(change["new"])  # as of traitlets 4.3, one should be able to
+        # write print(change.new) instead
+
+
+    foo.observe(func, names=["bar"])
     foo.bar = 1  # prints '0\n 1'
-    foo.baz = 'abc'  # prints nothing
+    foo.baz = "abc"  # prints nothing
 
 When observers are methods of the class, a decorator syntax can be used.
 
@@ -72,10 +77,10 @@ When observers are methods of the class, a decorator syntax can be used.
         bar = Int()
         baz = Unicode()
 
-        @observe('bar')
+        @observe("bar")
         def _observe_bar(self, change):
-            print(change['old'])
-            print(change['new'])
+            print(change["old"])
+            print(change["new"])
 
 Validation and Coercion
 -----------------------
@@ -94,24 +99,25 @@ Basic Example: Validating the Parity of a Trait
 
     from traitlets import HasTraits, TraitError, Int, Bool, validate
 
+
     class Parity(HasTraits):
         data = Int()
         parity = Int()
 
-        @validate('data')
+        @validate("data")
         def _valid_data(self, proposal):
-            if proposal['value'] % 2 != self.parity:
-                raise TraitError('data and parity should be consistent')
-            return proposal['value']
+            if proposal["value"] % 2 != self.parity:
+                raise TraitError("data and parity should be consistent")
+            return proposal["value"]
 
-        @validate('parity')
+        @validate("parity")
         def _valid_parity(self, proposal):
-            parity = proposal['value']
+            parity = proposal["value"]
             if parity not in [0, 1]:
-                raise TraitError('parity should be 0 or 1')
+                raise TraitError("parity should be 0 or 1")
             if self.data % 2 != parity:
-                raise TraitError('data and parity should be consistent')
-            return proposal['value']
+                raise TraitError("data and parity should be consistent")
+            return proposal["value"]
 
 
     parity_check = Parity(data=2)
@@ -142,16 +148,16 @@ properties.
 
     from traitlets import HasTraits, Dict, Bool, Unicode
 
-    class Nested(HasTraits):
 
-        value = Dict(per_key_traits={
-            'configuration': Dict(value_trait=Unicode()),
-            'flag': Bool()
-        })
+    class Nested(HasTraits):
+        value = Dict(
+            per_key_traits={"configuration": Dict(value_trait=Unicode()), "flag": Bool()}
+        )
+
 
     n = Nested()
     n.value = dict(flag=True, configuration={})  # OK
-    n.value = dict(flag=True, configuration='')  # raises a TraitError.
+    n.value = dict(flag=True, configuration="")  # raises a TraitError.
 
 
 However, for deeply nested properties it might be more appropriate to use an
@@ -162,33 +168,34 @@ external validator:
     import jsonschema
 
     value_schema = {
-         'type' : 'object',
-         'properties' : {
-             'price' : { 'type' : 'number' },
-             'name' : { 'type' : 'string' },
-         },
-     }
+        "type": "object",
+        "properties": {
+            "price": {"type": "number"},
+            "name": {"type": "string"},
+        },
+    }
 
     from traitlets import HasTraits, Dict, TraitError, validate, default
 
-    class Schema(HasTraits):
 
+    class Schema(HasTraits):
         value = Dict()
 
-        @default('value')
+        @default("value")
         def _default_value(self):
-            return dict(name='', price=1)
+            return dict(name="", price=1)
 
-        @validate('value')
+        @validate("value")
         def _validate_value(self, proposal):
             try:
-                jsonschema.validate(proposal['value'], value_schema)
+                jsonschema.validate(proposal["value"], value_schema)
             except jsonschema.ValidationError as e:
                 raise TraitError(e)
-            return proposal['value']
+            return proposal["value"]
+
 
     s = Schema()
-    s.value = dict(name='', price='1')  # raises a TraitError
+    s.value = dict(name="", price="1")  # raises a TraitError
 
 
 Holding Trait Cross-Validation and Notifications

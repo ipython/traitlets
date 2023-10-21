@@ -127,11 +127,13 @@ subclass
     from traitlets.config.configurable import Configurable
     from traitlets import Int, Float, Unicode, Bool
 
+
     class School(Configurable):
-        name = Unicode('defaultname', help="the name of the object").tag(config=True)
+        name = Unicode("defaultname", help="the name of the object").tag(config=True)
         ranking = Integer(0, help="the class's ranking").tag(config=True)
         value = Float(99.0)
         # The rest of the class implementation would go here..
+
 
     # Construct from config via School(config=..)
 
@@ -144,7 +146,7 @@ to configure this class in a configuration file
 .. code-block:: python
 
     # Sample config file
-    c.School.name = 'coolname'
+    c.School.name = "coolname"
     c.School.ranking = 10
 
 After this configuration file is loaded, the values set in it will override
@@ -218,7 +220,7 @@ example that loads all of the values from the file :file:`base_config.py`:
     :caption: examples/docs/configs/base_config.py
 
     c = get_config()  # noqa
-    c.School.name = 'Harvard'
+    c.School.name = "Harvard"
     c.School.ranking = 100
 
 into the configuration file :file:`main_config.py`:
@@ -230,10 +232,10 @@ into the configuration file :file:`main_config.py`:
     c = get_config()  # noqa
 
     # Load everything from base_config.py
-    load_subconfig('base_config.py')  # noqa
+    load_subconfig("base_config.py")  # noqa
 
     # Now override one of the values
-    c.School.name = 'bettername'
+    c.School.name = "bettername"
 
 In a situation like this the :func:`load_subconfig` makes sure that the
 search path for sub-configuration files is inherited from that of the parent.
@@ -253,13 +255,16 @@ to be reflected in the configuration system.  Here is a simple example:
     from traitlets.config import Application, Configurable
     from traitlets import Integer, Float, Unicode, Bool
 
+
     class Foo(Configurable):
-        name = Unicode('fooname', config=True)
+        name = Unicode("fooname", config=True)
         value = Float(100.0, config=True)
 
+
     class Bar(Foo):
-        name = Unicode('barname', config=True)
+        name = Unicode("barname", config=True)
         othervalue = Int(0, config=True)
+
 
     # construct Bar(config=..)
 
@@ -271,7 +276,7 @@ and :class:`Bar`:
     # config file
     c = get_config()  # noqa
 
-    c.Foo.name = 'bestname'
+    c.Foo.name = "bestname"
     c.Bar.othervalue = 10
 
 This class hierarchy and configuration file accomplishes the following:
@@ -306,9 +311,11 @@ start the application:
 
     from traitlets.config import Application
 
+
     class MyApp(Application):
         def start(self):
             pass  # app logic goes here
+
 
     if __name__ == "__main__":
         MyApp.launch_instance()
@@ -325,11 +332,11 @@ is the same as adding:
 .. code-block:: python
 
     c.InteractiveShell.autoindent = False
-    c.BaseIPythonApplication.profile = 'myprofile'
+    c.BaseIPythonApplication.profile = "myprofile"
 
 to your configuration file. Command-line arguments take precedence over
 values read from configuration files. (This is done in
-:meth:`Application.load_config_file()` by merging `Application.cli_config`
+:meth:`Application.load_config_file()` by merging ``Application.cli_config``
 over values read from configuration files.)
 
 Note that even though :class:`Application` is a :class:`SingletonConfigurable`, multiple
@@ -342,17 +349,21 @@ them as one would with any other :class:`Configurable`:
 
     from traitlets.config import Application
 
+
     class OtherApp(Application):
         def start(self):
             print("other")
 
+
     class MyApp(Application):
         classes = [OtherApp]
+
         def start(self):
             # similar to OtherApp.launch_instance(), but without singleton
             self.other_app = OtherApp(config=self.config)
             self.other_app.initialize(["--OtherApp.log_level", "INFO"])
             self.other_app.start()
+
 
     if __name__ == "__main__":
         MyApp.launch_instance()
@@ -451,8 +462,10 @@ For example:
     from traitlets import Bool
     from traitlets.config import Application, Configurable
 
+
     class Foo(Configurable):
         enabled = Bool(False, help="whether enabled").tag(config=True)
+
 
     class App(Application):
         classes = [Foo]
@@ -461,6 +474,7 @@ For example:
             "dry-run": "App.dry_run",
             ("f", "foo-enabled"): ("Foo.enabled", "whether foo is enabled"),
         }
+
 
     if __name__ == "__main__":
         App.launch_instance()
@@ -500,21 +514,30 @@ And a runnable code example:
     from traitlets import Bool
     from traitlets.config import Application, Configurable
 
+
     class Foo(Configurable):
         enabled = Bool(False, help="whether enabled").tag(config=True)
+
 
     class App(Application):
         classes = [Foo]
         dry_run = Bool(False, help="dry run test").tag(config=True)
         flags = {
             "dry-run": ({"App": {"dry_run": True}}, dry_run.help),
-            ("f", "enable-foo"): ({
-               "Foo": {"enabled": True},
-            }, "Enable foo"),
-            ("disable-foo"): ({
-               "Foo": {"enabled": False},
-            }, "Disable foo"),
+            ("f", "enable-foo"): (
+                {
+                    "Foo": {"enabled": True},
+                },
+                "Enable foo",
+            ),
+            ("disable-foo"): (
+                {
+                    "Foo": {"enabled": False},
+                },
+                "Disable foo",
+            ),
         }
+
 
     if __name__ == "__main__":
         App.launch_instance()
@@ -572,8 +595,10 @@ For example (refer to ``examples/subcommands_app.py`` for a more complete exampl
 
     from traitlets.config import Application
 
+
     class SubApp1(Application):
         pass
+
 
     class SubApp2(Application):
         @classmethod
@@ -581,11 +606,13 @@ For example (refer to ``examples/subcommands_app.py`` for a more complete exampl
             app.clear_instance()  # since Application is singleton, need to clear main app
             return cls.instance(parent=app)
 
+
     class MainApp(Application):
         subcommands = {
             "subapp1": (SubApp1, "First subapp"),
             "subapp2": (SubApp2.get_subapp_instance, "Second subapp"),
         }
+
 
     if __name__ == "__main__":
         MainApp.launch_instance()
@@ -600,8 +627,8 @@ of setting up :class:`~traitlets.config.Application`, refer to the
 `application examples <https://github.com/ipython/traitlets/tree/main/examples>`__.
 
 
-Other `Application` members
----------------------------
+Other ``Application`` members
+-----------------------------
 
 The following are typically set as class variables of :class:`~traitlets.config.Application`
 subclasses, but can also be set as instance variables.
@@ -619,7 +646,7 @@ subclasses, but can also be set as instance variables.
   menu and other messages
 
 * ``.log_level``, ``.log_datefmt``, ``.log_format``, ``.logging_config``: Configurable options
-  to control application logging, which is emitted via the logger `Application.log`. For more
+  to control application logging, which is emitted via the logger ``Application.log``. For more
   information about these, refer to their respective traits' ``.help``.
 
 * ``.show_config``, ``.show_config_json``: Configurable boolean options, which if set to ``True``,
@@ -705,9 +732,11 @@ This could for example allow specifying hex-encoded bytes on the command-line:
     from traitlets.config import Application
     from traitlets import Bytes
 
+
     class HexBytes(Bytes):
         def from_string(self, s):
             return a2b_hex(s)
+
 
     class App(Application):
         aliases = {"key": "App.key"}
@@ -717,11 +746,12 @@ This could for example allow specifying hex-encoded bytes on the command-line:
 
             Specify as hex on the command-line.
             """,
-            config=True
+            config=True,
         )
 
         def start(self):
             print(f"key={self.key}")
+
 
     if __name__ == "__main__":
         App.launch_instance()
@@ -742,7 +772,7 @@ by passing the key multiple times, e.g.::
 
 to produce the list ``["a", "b"]``
 
-or for dictionaries use `key=value`::
+or for dictionaries use ``key=value``::
 
     myprogram -d a=5 -d b=10
 
@@ -769,6 +799,7 @@ This handling is good enough that we can recommend defining aliases for containe
     from traitlets.config import Application
     from traitlets import Dict, Integer, List, Unicode
 
+
     class App(Application):
         aliases = {"x": "App.x", "y": "App.y"}
         x = List(Unicode(), config=True)
@@ -777,6 +808,7 @@ This handling is good enough that we can recommend defining aliases for containe
         def start(self):
             print(f"x={self.x}")
             print(f"y={self.y}")
+
 
     if __name__ == "__main__":
         App.launch_instance()
@@ -800,7 +832,7 @@ specified on the command-line and is responsible for turning the list of strings
 into the appropriate type.
 Each item is then passed to :meth:`.List.item_from_string` which is responsible
 for handling the item,
-such as casting to integer or parsing `key=value` in the case of a Dict.
+such as casting to integer or parsing ``key=value`` in the case of a Dict.
 
 The deprecated :py:func:`ast.literal_eval` handling is preserved for backward-compatibility
 in the event of a single item that 'looks like' a list or dict literal.
@@ -824,12 +856,12 @@ to set a ``PathList`` trait with ``["/bin", "/usr/local/bin", "/opt/bin"]``.
 
 .. _argcomplete:
 
-Command-line tab completion with `argcomplete`
-----------------------------------------------
+Command-line tab completion with ``argcomplete``
+------------------------------------------------
 
 .. versionadded:: 5.8
 
-`traitlets` has limited support for command-line tab completion for scripts
+``traitlets`` has limited support for command-line tab completion for scripts
 based on :class:`~traitlets.config.Application` using
 `argcomplete <https://github.com/kislyuk/argcomplete>`__. To use this,
 follow the instructions for setting up argcomplete;
@@ -874,41 +906,41 @@ Detailed examples of these can be found in the docstring of
 `examples/argcomplete_app.py <https://github.com/ipython/traitlets/blob/main/examples/argcomplete_app.py>`__.
 
 
-Caveats with `argcomplete` handling
-***********************************
+Caveats with ``argcomplete`` handling
+*************************************
 
-The support for `argcomplete` is still relatively new and may not work with all ways in
+The support for ``argcomplete`` is still relatively new and may not work with all ways in
 which an :class:`~traitlets.config.Application` is used. Some known caveats:
 
-* `argcomplete` is called when any `Application` first constructs and uses a
+* ``argcomplete`` is called when any ``Application`` first constructs and uses a
   :class:`~traitlets.config.KVArgParseConfigLoader` instance, which constructs
-  a `argparse.ArgumentParser` instance.
+  a ``argparse.ArgumentParser`` instance.
   We assume that this is usually first done in scripts when parsing the command-line arguments,
   but technically a script can first call ``Application.initialize(["other", "args"])`` for
   some other reason.
 
-* `traitlets` does not actually add ``"--Class.trait"`` options to the `ArgumentParser`,
+* ``traitlets`` does not actually add ``"--Class.trait"`` options to the ``ArgumentParser``,
   but instead directly parses them from ``argv``. In order to complete these, a custom
   :class:`~traitlets.config.argcomplete_config.CompletionFinder` is subclassed from
   ``argcomplete.CompletionFinder``, which dynamically inserts the ``"--Class.""`` and ``"--Class.trait"``
   completions when it thinks suitable. However, this handling may be a bit fragile.
 
-* Because `traitlets` initializes configs from `argv` and not from `ArgumentParser`, it may be
+* Because ``traitlets`` initializes configs from ``argv`` and not from ``ArgumentParser``, it may be
   more difficult to write custom completers which dynamically provide completions based on the
   state of other parsed arguments.
 
-* Subcommand handling is especially tricky. `argcomplete`'s strategy is to call the python script
-  with no arguments e.g. ``len(sys.argv) == 1``, run until `argcomplete` is called on an `ArgumentParser`
-  and determine what completions are available. On the other hand, `traitlet`'s subcommand-handling
+* Subcommand handling is especially tricky. ``argcomplete`` libraries' strategy is to call the python script
+  with no arguments e.g. ``len(sys.argv) == 1``, run until ``argcomplete`` is called on an ``ArgumentParser``
+  and determine what completions are available. On the other hand, the ``traitlet``  subcommand-handling
   strategy is to check ``sys.argv[1]`` and see if it matches a subcommand, and if so then dynamically
   load the subcommand app and initialize it with ``sys.argv[1:]``. To reconcile these two different
-  approaches, some hacking was done to get `traitlets` to recognize the current command-line as seen
-  by `argcomplete`, and to get `argcomplete` to start parsing command-line arguments after subcommands
+  approaches, some hacking was done to get ``traitlets`` to recognize the current command-line as seen
+  by ``argcomplete``, and to get ``argcomplete`` to start parsing command-line arguments after subcommands
   have been evaluated.
 
   * Currently, completing subcommands themselves is not yet supported.
 
-  * Some applications like `Jupyter` have custom ways of constructing subcommands or parsing ``argv``
+  * Some applications like ``Jupyter`` have custom ways of constructing subcommands or parsing ``argv``
     which complicates matters even further.
 
 More details about these caveats can be found in the `original pull request <https://github.com/ipython/traitlets/pull/811>`__.

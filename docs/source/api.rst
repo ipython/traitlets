@@ -41,7 +41,7 @@ Dynamic default values
 .. autofunction:: default
 
 To calculate a default value dynamically, decorate a method of your class with
-`@default({traitname})`. This method will be called on the instance, and should
+``@default({traitname})``. This method will be called on the instance, and should
 return the default value. For example::
 
     import getpass

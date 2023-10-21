@@ -665,7 +665,7 @@ class TestApplication(TestCase):
             with self.assertRaises(AttributeError):
                 app.loaded_config_files = "/foo"  # type:ignore
 
-            # ensure it can't be udpated via append
+            # ensure it can't be updated via append
             app.loaded_config_files.append("/bar")
             self.assertEqual(len(app.loaded_config_files), 1)
 
