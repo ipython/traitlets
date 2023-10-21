@@ -10,19 +10,35 @@ license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["Interactive", "Interpreter", "Shell", "Web"]
 classifiers = [
+    "Framework :: IPython",
+    "Framework :: Jupyter",
     "Intended Audience :: Developers",
-    "Intended Audience :: System Administrators",
     "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python",
+    "Typing :: Typed",
 ]
-urls = {Homepage = "https://github.com/ipython/traitlets"}
 requires-python = ">=3.8"
 dynamic = ["version"]
 
+[project.urls]
+Homepage = "https://github.com/ipython/traitlets"
+Documentation = "https://traitlets.readthedocs.io"
+Source = "https://github.com/ipython/traitlets"
+Funding = "https://numfocus.org"
+Tracker = "https://github.com/ipython/traitlets/issues"
+
 [project.optional-dependencies]
-test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=3.0.3", "pytest-mypy-testing", "mypy>=1.6.0"]
+test = [
+    "argcomplete>=3.0.3",
+    "mypy>=1.6.0",
+    "pre-commit",
+    "pytest-mock",
+    "pytest-mypy-testing",
+    "pytest>=7.0,<7.5",
+]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",
