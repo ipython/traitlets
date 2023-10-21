@@ -1057,9 +1057,9 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 action = paa(*keys, **argparse_kwds)
                 if argcompleter is not None:
                     # argcomplete's completers are callables returning list of completion strings
-                    action.completer = functools.partial(
+                    action.completer = functools.partial(  # type:ignore[attr-defined]
                         argcompleter, key=key
-                    )  # type:ignore[attr-defined]
+                    )
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
