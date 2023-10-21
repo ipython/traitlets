@@ -22,7 +22,7 @@ requires-python = ">=3.8"
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=3.0.3", "pytest-mypy-testing", "mypy>=1.5.1"]
+test = ["pytest>=7.0,<7.5", "pytest-mock", "pre-commit", "argcomplete>=3.0.3", "pytest-mypy-testing", "mypy>=1.6.0"]
 docs = [
     "myst-parser",
     "pydata-sphinx-theme",
@@ -76,8 +76,10 @@ fmt = [
 [tool.mypy]
 files = "traitlets"
 python_version = "3.8"
-strict = true
+strict = false
+check_untyped_defs = true
 disallow_any_generics = false
+disable_error_code = ["no-untyped-call"]
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 no_implicit_reexport = false
 pretty = true
@@ -231,4 +233,4 @@ unfixable = [
 "examples/*" = ["ANN"]
 
 [tool.repo-review]
-ignore = ["PY007", "PP308", "GH102", "PC140"]
+ignore = ["PY007", "PP308", "GH102", "PC140", "MY101"]

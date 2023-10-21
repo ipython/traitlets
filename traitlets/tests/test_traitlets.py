@@ -10,7 +10,7 @@ class TraitTestBase(TestCase):
     """A best testing class for basic trait types."""
 
     def assign(self, value: Any) -> None:
-        self.obj.value = value  # type:ignore
+        self.obj.value = value  # type:ignore[attr-defined]
 
     def coerce(self, value: Any) -> Any:
         return value
@@ -19,7 +19,7 @@ class TraitTestBase(TestCase):
         if hasattr(self, "_good_values"):
             for value in self._good_values:
                 self.assign(value)
-                self.assertEqual(self.obj.value, self.coerce(value))  # type:ignore
+                self.assertEqual(self.obj.value, self.coerce(value))  # type:ignore[attr-defined]
 
     def test_bad_values(self) -> None:
         if hasattr(self, "_bad_values"):
@@ -31,7 +31,7 @@ class TraitTestBase(TestCase):
 
     def test_default_value(self) -> None:
         if hasattr(self, "_default_value"):
-            self.assertEqual(self._default_value, self.obj.value)  # type:ignore
+            self.assertEqual(self._default_value, self.obj.value)  # type:ignore[attr-defined]
 
     def test_allow_none(self) -> None:
         if (
@@ -39,13 +39,13 @@ class TraitTestBase(TestCase):
             and hasattr(self, "_good_values")
             and None in self._bad_values
         ):
-            trait = self.obj.traits()["value"]  # type:ignore
+            trait = self.obj.traits()["value"]  # type:ignore[attr-defined]
             try:
                 trait.allow_none = True
                 self._bad_values.remove(None)
                 # skip coerce. Allow None casts None to None.
                 self.assign(None)
-                self.assertEqual(self.obj.value, None)  # type:ignore
+                self.assertEqual(self.obj.value, None)  # type:ignore[attr-defined]
                 self.test_good_values()
                 self.test_bad_values()
             finally:
@@ -56,4 +56,4 @@ class TraitTestBase(TestCase):
     def tearDown(self) -> None:
         # restore default value after tests, if set
         if hasattr(self, "_default_value"):
-            self.obj.value = self._default_value  # type:ignore
+            self.obj.value = self._default_value  # type:ignore[attr-defined]
