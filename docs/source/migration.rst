@@ -7,8 +7,8 @@ configuring traitlets and a couple of other changes.
 However, it is a backward-compatible release and the deprecated APIs
 will be supported for some time.
 
-Separation of metadata and keyword arguments in ``TraitType`` contructors
--------------------------------------------------------------------------
+Separation of metadata and keyword arguments in ``TraitType`` constructors
+--------------------------------------------------------------------------
 
 In traitlets 4.0, trait types constructors used all unrecognized keyword
 arguments passed to the constructor (like ``sync`` or ``config``) to
@@ -20,7 +20,7 @@ populate the metadata for a trait type instance is to use the new
 
 .. code:: python
 
-    x = Int(allow_none=True, sync=True)      # deprecated
+    x = Int(allow_none=True, sync=True)  # deprecated
     x = Int(allow_none=True).tag(sync=True)  # ok
 
 We also deprecated the ``get_metadata`` method. The metadata of a trait
@@ -50,9 +50,7 @@ register and unregister handlers (instead of passing ``remove=True`` to
 
 .. code:: python
 
-    {
-        'type': The type of notification.
-    }
+    {"type": "<The type of notification.>"}
 
 In the case where ``type`` is the string ``'change'``, the following
 additional attributes are provided:
@@ -60,10 +58,10 @@ additional attributes are provided:
 .. code:: python
 
     {
-        'owner': the HasTraits instance,
-        'old': the old trait attribute value,
-        'new': the new trait attribute value,
-        'name': the name of the changing attribute,
+        "owner": "<the HasTraits instance>",
+        "old": "<the old trait attribute value>",
+        "new": "<the new trait attribute value>",
+        "name": "<the name of the changing attribute>",
     }
 
 The ``type`` key in the change dictionary is meant to enable protocols
@@ -76,16 +74,18 @@ for other notification types. By default, its value is equal to the
 
     from traitlets import HasTraits, Int, Unicode
 
-    class Foo(HasTraits):
 
+    class Foo(HasTraits):
         bar = Int()
         baz = Unicode()
+
 
     def handle_change(change):
         print("{name} changed from {old} to {new}".format(**change))
 
+
     foo = Foo()
-    foo.observe(handle_change, names='bar')
+    foo.observe(handle_change, names="bar")
 
 The new ``@observe`` decorator
 ------------------------------
@@ -104,17 +104,17 @@ by notification type.
     class Foo(HasTraits):
         bar = Int()
         baz = EnventfulContainer()  # hypothetical trait type emitting
-                                    # other notifications types
+        # other notifications types
 
-        @observe('bar')  # 'change' notifications for `bar`
+        @observe("bar")  # 'change' notifications for `bar`
         def handler_bar(self, change):
             pass
 
-        @observe('baz ', type='element_change')  # 'element_change' notifications for `baz`
+        @observe("baz ", type="element_change")  # 'element_change' notifications for `baz`
         def handler_baz(self, change):
             pass
 
-        @observe('bar', 'baz', type=All)  # all notifications for `bar` and `baz`
+        @observe("bar", "baz", type=All)  # all notifications for `bar` and `baz`
         def handler_all(self, change):
             pass
 
@@ -134,23 +134,25 @@ subclasses of ``trait.this_type``.
 
     from traitlets import HasTraits, Int, Float, default
 
+
     class A(HasTraits):
         bar = Int()
 
-        @default('bar')
+        @default("bar")
         def get_bar_default(self):
             return 11
 
+
     class B(A):
         bar = Float()  # This ignores the default generator
-                       # defined in the base class A
+        # defined in the base class A
+
 
     class C(B):
-
-        @default('bar')
+        @default("bar")
         def some_other_default(self):  # This should not be ignored since
-            return 3.0                 # it is defined in a class derived
-                                       # from B.a.this_class.
+            return 3.0  # it is defined in a class derived
+            # from B.a.this_class.
 
 Deprecation of magic method for cross-validation
 ------------------------------------------------
@@ -170,9 +172,9 @@ The method decorated with the ``@validate`` decorator take a single
 .. code:: python
 
     {
-        'trait': the trait type instance being validated
-        'value': the proposed value,
-        'owner': the underlying HasTraits instance,
+        "trait": "<the trait type instance being validated>",
+        "value": "<the proposed value>",
+        "owner": "<the underlying HasTraits instance>",
     }
 
 Custom validators may raise ``TraitError`` exceptions in case of invalid
@@ -184,24 +186,26 @@ proposal, and should return the value that will be eventually assigned.
 
     from traitlets import HasTraits, TraitError, Int, Bool, validate
 
+
     class Parity(HasTraits):
         value = Int()
         parity = Int()
 
-        @validate('value')
+        @validate("value")
         def _valid_value(self, proposal):
-            if proposal['value'] % 2 != self.parity:
-                raise TraitError('value and parity should be consistent')
-            return proposal['value']
+            if proposal["value"] % 2 != self.parity:
+                raise TraitError("value and parity should be consistent")
+            return proposal["value"]
 
-        @validate('parity')
+        @validate("parity")
         def _valid_parity(self, proposal):
-            parity = proposal['value']
+            parity = proposal["value"]
             if parity not in [0, 1]:
-                raise TraitError('parity should be 0 or 1')
+                raise TraitError("parity should be 0 or 1")
             if self.value % 2 != parity:
-                raise TraitError('value and parity should be consistent')
-            return proposal['value']
+                raise TraitError("value and parity should be consistent")
+            return proposal["value"]
+
 
     parity_check = Parity(value=2)
 
@@ -228,9 +232,11 @@ Take for instance the following class:
 
     from traitlets import HasTraits, Unicode
 
+
     class Parent(HasTraits):
         prefix = Unicode()
         path = Unicode()
+
         def _path_changed(self, name, old, new):
             self.prefix = os.path.dirname(new)
 
@@ -239,6 +245,8 @@ And you know another package has the subclass:
 .. code:: python
 
     from parent import Parent
+
+
     class Child(Parent):
         def _path_changed(self, name, old, new):
             super()._path_changed(name, old, new)
@@ -254,11 +262,12 @@ which automatically shims the deprecated signature into the new signature:
 
     from traitlets import HasTraits, Unicode, observe, observe_compat
 
+
     class Parent(HasTraits):
         prefix = Unicode()
         path = Unicode()
 
-        @observe('path')
-        @observe_compat # <- this allows super()._path_changed in subclasses to work with the old signature.
+        @observe("path")
+        @observe_compat  # <- this allows super()._path_changed in subclasses to work with the old signature.
         def _path_changed(self, change):
-            self.prefix = os.path.dirname(change['value'])
+            self.prefix = os.path.dirname(change["value"])

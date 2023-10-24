@@ -231,7 +231,7 @@
 - Fix version_info
 - Make generated config files more lintable
 - Fix union trait from string
-- Add security.md, and tidelift bage
+- Add security.md, and tidelift badge
 
 ## 5.3.0
 
