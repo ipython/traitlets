@@ -2,6 +2,32 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.12.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.11.2...b018581f0acd75844bbd7584e233c3ab3126501b))
+
+### Enhancements made
+
+- Pass \*\*kwds in MetaHasDescriptors __new__ and __init__ [#881](https://github.com/ipython/traitlets/pull/881) ([@fleming79](https://github.com/fleming79))
+
+### Maintenance and upkeep improvements
+
+- Adopt sp-repo-review [#883](https://github.com/ipython/traitlets/pull/883) ([@blink1073](https://github.com/blink1073))
+- Cleanup after remove Python 2 support [#882](https://github.com/ipython/traitlets/pull/882) ([@shadchin](https://github.com/shadchin))
+- Add more project URLs, trove classifiers [#879](https://github.com/ipython/traitlets/pull/879) ([@bollwyvl](https://github.com/bollwyvl))
+
+### Documentation improvements
+
+- Fix docs version [#880](https://github.com/ipython/traitlets/pull/880) ([@bollwyvl](https://github.com/bollwyvl))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-03&to=2023-10-24&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-03..2023-10-24&type=Issues) | [@bollwyvl](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Abollwyvl+updated%3A2023-10-03..2023-10-24&type=Issues) | [@fleming79](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Afleming79+updated%3A2023-10-03..2023-10-24&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-10-03..2023-10-24&type=Issues) | [@shadchin](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ashadchin+updated%3A2023-10-03..2023-10-24&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.11.2
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.11.1...e238765a0ba28fc68318cff75e852958d5c65c93))
@@ -15,8 +41,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-03&to=2023-10-03&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-03..2023-10-03&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.11.1
 
