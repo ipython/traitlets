@@ -103,8 +103,8 @@ def mypy_list_typing() -> None:
     reveal_type(List([""]).tag(sync=True))  # R: traitlets.traitlets.List[builtins.str]
     reveal_type(List(None, allow_none=True))  # R: traitlets.traitlets.List[<nothing>]
     reveal_type(
-        List(None, allow_none=True).tag(sync=True)
-    )  # R: traitlets.traitlets.List[<nothing>]
+        List(None, allow_none=True).tag(sync=True)  # R: traitlets.traitlets.List[<nothing>]
+    )
     reveal_type(T.latex_command)  # R: traitlets.traitlets.List[builtins.str]
     reveal_type(t.latex_command)  # R: builtins.list[builtins.str]
 
@@ -117,8 +117,8 @@ def mypy_dict_typing() -> None:
     t = T()
     reveal_type(Dict(None, allow_none=True))  # R: traitlets.traitlets.Dict[builtins.str, Any]
     reveal_type(
-        Dict(None, allow_none=True).tag(sync=True)
-    )  # R: traitlets.traitlets.Dict[builtins.str, Any]
+        Dict(None, allow_none=True).tag(sync=True)  # R: traitlets.traitlets.Dict[builtins.str, Any]
+    )
     reveal_type(T.foo)  # R: traitlets.traitlets.Dict[builtins.str, Any]
     reveal_type(t.foo)  # R: builtins.dict[builtins.str, Any]
 
@@ -141,8 +141,8 @@ def mypy_type_typing() -> None:
         other_class = Type("foo.bar.baz")
 
     t = KernelSpecManager()
-    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@124
-    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@124
+    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@128
+    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@128
     reveal_type(t.kernel_spec_class().item)  # R: builtins.str
     reveal_type(t.other_class)  # R: builtins.type
     reveal_type(t.other_class())  # R: Any
