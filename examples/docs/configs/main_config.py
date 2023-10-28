@@ -3,7 +3,7 @@
 c = get_config()  # noqa
 
 # Load everything from base_config.py
-load_subconfig('base_config.py')  # noqa
+load_subconfig("base_config.py")  # noqa
 
 # Now override one of the values
-c.School.name = 'Caltech'
+c.School.name = "Caltech"
