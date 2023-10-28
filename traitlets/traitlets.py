@@ -63,6 +63,11 @@ SequenceTypes = (list, tuple, set, frozenset)
 # backward compatibility, use to differ between Python 2 and 3.
 ClassTypes = (type,)
 
+if t.TYPE_CHECKING:
+    from typing_extensions import TypeVar
+else:
+    from typing import TypeVar
+
 # exports:
 
 __all__ = [
@@ -474,9 +479,9 @@ class BaseDescriptor:
         pass
 
 
-G = t.TypeVar("G")
-S = t.TypeVar("S")
-T = t.TypeVar("T")
+G = TypeVar("G")
+S = TypeVar("S")
+T = TypeVar("T")
 
 
 # Self from typing extension doesn't work well with mypy https://github.com/python/mypy/pull/14041
@@ -484,6 +489,9 @@ T = t.TypeVar("T")
 # Self = t.TypeVar("Self", bound="TraitType[Any, Any]")
 if t.TYPE_CHECKING:
     from typing_extensions import Literal, Self
+
+    K = TypeVar("K", default=str)
+    V = TypeVar("V", default=t.Any)
 
 
 # We use a type for the getter (G) and setter (G) because we allow
@@ -657,44 +665,6 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             raise TraitError("Unexpected error in TraitType: default value not set properly") from e
         else:
             return t.cast(G, value)
-
-    if t.TYPE_CHECKING:
-        # This gives ok type information, but not specific enough (e.g. it will)
-        # always be a TraitType, not a subclass, like Bool.
-        @t.overload
-        def __new__(  # type: ignore[misc]
-            cls,
-            default_value: S | Sentinel = Undefined,
-            allow_none: Literal[False] = ...,
-            read_only: bool | None = None,
-            help: str | None = None,
-            config: t.Any = None,
-            **kwargs: t.Any,
-        ) -> TraitType[G, S]:
-            ...
-
-        @t.overload
-        def __new__(
-            cls,
-            default_value: S | None | Sentinel = Undefined,
-            allow_none: Literal[True] = ...,
-            read_only: bool | None = None,
-            help: str | None = None,
-            config: t.Any = None,
-            **kwargs: t.Any,
-        ) -> TraitType[G | None, S]:
-            ...
-
-        def __new__(  # type: ignore[no-untyped-def, misc]
-            cls,
-            default_value: S | None | Sentinel = Undefined,
-            allow_none: Literal[True, False] = False,
-            read_only=None,
-            help=None,
-            config=None,
-            **kwargs,
-        ) -> TraitType[G | None, S] | TraitType[G, S]:
-            ...
 
     @t.overload
     def __get__(self, obj: None, cls: type[t.Any]) -> Self:
@@ -3205,30 +3175,69 @@ class CBool(Bool[G, S]):
             self.error(obj, value)
 
 
-class Enum(TraitType[G, S]):
+class Enum(TraitType[G, G]):
     """An enum whose value must be in a given sequence."""
 
+    if t.TYPE_CHECKING:
+
+        @t.overload
+        def __init__(
+            self: Enum[G],
+            values: t.Sequence[G],
+            default_value: G | Sentinel = ...,
+            allow_none: Literal[False] = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any = ...,
+            **kwargs: t.Any,
+        ) -> None:
+            ...
+
+        @t.overload
+        def __init__(
+            self: Enum[G | None],
+            values: t.Sequence[G] | None,
+            default_value: G | Sentinel | None = ...,
+            allow_none: Literal[True] = ...,
+            read_only: bool | None = ...,
+            help: str | None = ...,
+            config: t.Any = ...,
+            **kwargs: t.Any,
+        ) -> None:
+            ...
+
     def __init__(
-        self: Enum[t.Any, t.Any], values: t.Any, default_value: t.Any = Undefined, **kwargs: t.Any
+        self: Enum[G],
+        values: t.Sequence[G] | None,
+        default_value: G | Sentinel | None = Undefined,
+        allow_none: bool = False,
+        read_only: bool | None = None,
+        help: str | None = None,
+        config: t.Any = None,
+        **kwargs: t.Any,
     ) -> None:
         self.values = values
         if kwargs.get("allow_none", False) and default_value is Undefined:
             default_value = None
+        kwargs["allow_none"] = allow_none
+        kwargs["read_only"] = read_only
+        kwargs["help"] = help
+        kwargs["config"] = config
         super().__init__(default_value, **kwargs)
 
     def validate(self, obj: t.Any, value: t.Any) -> G:
-        if value in self.values:
+        if self.values and value in self.values:
             return t.cast(G, value)
         self.error(obj, value)
 
     def _choices_str(self, as_rst: bool = False) -> str:
         """Returns a description of the trait choices (not none)."""
-        choices = self.values
+        choices = self.values or []
         if as_rst:
-            choices = "|".join("``%r``" % x for x in choices)
+            choice_str = "|".join("``%r``" % x for x in choices)
         else:
-            choices = repr(list(choices))
-        return t.cast(str, choices)
+            choice_str = repr(list(choices))
+        return choice_str
 
     def _info(self, as_rst: bool = False) -> str:
         """Returns a description of the trait."""
@@ -3252,14 +3261,14 @@ class Enum(TraitType[G, S]):
 
     def argcompleter(self, **kwargs: t.Any) -> list[str]:
         """Completion hints for argcomplete"""
-        return [str(v) for v in self.values]
+        return [str(v) for v in self.values or []]
 
 
-class CaselessStrEnum(Enum[G, S]):
+class CaselessStrEnum(Enum[G]):
     """An enum of strings where the case should be ignored."""
 
     def __init__(
-        self: CaselessStrEnum[t.Any, t.Any],
+        self: CaselessStrEnum[t.Any],
         values: t.Any,
         default_value: t.Any = Undefined,
         **kwargs: t.Any,
@@ -3270,7 +3279,8 @@ class CaselessStrEnum(Enum[G, S]):
         if not isinstance(value, str):
             self.error(obj, value)
 
-        for v in self.values:
+        for v in self.values or []:
+            assert isinstance(v, str)
             if v.lower() == value.lower():
                 return t.cast(G, v)
         self.error(obj, value)
@@ -3287,7 +3297,7 @@ class CaselessStrEnum(Enum[G, S]):
         return self._info(as_rst=True)
 
 
-class FuzzyEnum(Enum[G, S]):
+class FuzzyEnum(Enum[G]):
     """An case-ignoring enum matching choices by unique prefixes/substrings."""
 
     case_sensitive = False
@@ -3295,7 +3305,7 @@ class FuzzyEnum(Enum[G, S]):
     substring_matching = False
 
     def __init__(
-        self: FuzzyEnum[t.Any, t.Any],
+        self: FuzzyEnum[t.Any],
         values: t.Any,
         default_value: t.Any = Undefined,
         case_sensitive: bool = False,
@@ -3314,12 +3324,12 @@ class FuzzyEnum(Enum[G, S]):
         substring_matching = self.substring_matching
         match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
         value = conv_func(value)  # type:ignore[no-untyped-call]
-        choices = self.values
+        choices = self.values or []
         matches = [match_func(value, conv_func(c)) for c in choices]  # type:ignore[no-untyped-call]
         if sum(matches) == 1:
             for v, m in zip(choices, matches):
                 if m:
-                    return t.cast(G, v)
+                    return v
 
         self.error(obj, value)
 
@@ -3567,16 +3577,16 @@ class Container(Instance[T]):
             return s
 
 
-class List(Container[t.List[t.Any]]):
+class List(Container[t.List[T]]):
     """An instance of a Python list."""
 
-    klass = list
+    klass = list  # type:ignore[assignment]
     _cast_types: t.Any = (tuple,)
 
     def __init__(
         self,
-        trait: t.Any = None,
-        default_value: t.Any = Undefined,
+        trait: t.List[T] | t.Tuple[T] | t.Set[T] | Sentinel | TraitType[T, t.Any] | None = None,
+        default_value: t.List[T] | t.Tuple[T] | t.Set[T] | Sentinel | None = Undefined,
         minlen: int = 0,
         maxlen: int = sys.maxsize,
         **kwargs: t.Any,
@@ -3627,7 +3637,7 @@ class List(Container[t.List[t.Any]]):
 
     def set(self, obj: t.Any, value: t.Any) -> None:
         if isinstance(value, str):
-            return super().set(obj, [value])
+            return super().set(obj, [value])  # type:ignore[list-item]
         else:
             return super().set(obj, value)
 
@@ -3841,7 +3851,7 @@ class Tuple(Container[t.Tuple[t.Any, ...]]):
         # to opt out of instance_init
 
 
-class Dict(Instance[t.Dict[t.Any, t.Any]]):
+class Dict(Instance["dict[K, V]"]):
     """An instance of a Python dict.
 
     One or more traits can be passed to the constructor
@@ -3861,10 +3871,10 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
 
     def __init__(
         self,
-        value_trait: t.Any = None,
+        value_trait: TraitType[t.Any, t.Any] | dict[K, V] | Sentinel | None = None,
         per_key_traits: t.Any = None,
-        key_trait: t.Any = None,
-        default_value: t.Any = Undefined,
+        key_trait: TraitType[t.Any, t.Any] | None = None,
+        default_value: dict[K, V] | Sentinel | None = Undefined,
         **kwargs: t.Any,
     ) -> None:
         """Create a dict trait type from a Python dict.
@@ -3933,6 +3943,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         # Handling positional arguments
         if default_value is Undefined and value_trait is not None:
             if not is_trait(value_trait):
+                assert not isinstance(value_trait, TraitType)
                 default_value = value_trait
                 value_trait = None
 
@@ -3956,7 +3967,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         # Case where a type of TraitType is provided rather than an instance
         if is_trait(value_trait):
             if isinstance(value_trait, type):
-                warn(
+                warn(  # type:ignore[unreachable]
                     "Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                     " Passing types is deprecated in traitlets 4.1.",
                     DeprecationWarning,
@@ -3971,7 +3982,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
 
         if is_trait(key_trait):
             if isinstance(key_trait, type):
-                warn(
+                warn(  # type:ignore[unreachable]
                     "Traits should be given as instances, not types (for example, `Int()`, not `Int`)"
                     " Passing types is deprecated in traitlets 4.1.",
                     DeprecationWarning,
@@ -3995,14 +4006,14 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         )
         raise TraitError(e)
 
-    def validate(self, obj: t.Any, value: t.Any) -> dict[str, t.Any] | None:
+    def validate(self, obj: t.Any, value: t.Any) -> dict[K, V] | None:
         value = super().validate(obj, value)
         if value is None:
             return value
         value_dict = self.validate_elements(obj, value)
         return value_dict
 
-    def validate_elements(self, obj: t.Any, value: dict[t.Any, t.Any]) -> dict[t.Any, t.Any] | None:
+    def validate_elements(self, obj: t.Any, value: dict[t.Any, t.Any]) -> dict[K, V] | None:
         per_key_override = self._per_key_traits or {}
         key_trait = self._key_trait
         value_trait = self._value_trait
@@ -4048,12 +4059,12 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         # explicitly not calling super().subclass_init(cls)
         # to opt out of instance_init
 
-    def from_string(self, s: str) -> t.Any:
+    def from_string(self, s: str) -> dict[K, V] | None:
         """Load value from a single string"""
         if not isinstance(s, str):
             raise TypeError(f"from_string expects a string, got {s!r} of type {type(s)}")
         try:
-            return self.from_string_list([s])
+            return t.cast("dict[K, V]", self.from_string_list([s]))
         except Exception:
             test = _safe_literal_eval(s)
             if isinstance(test, dict):
@@ -4086,7 +4097,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
             combined.update(d)
         return combined
 
-    def item_from_string(self, s: str) -> dict[t.Any, t.Any]:
+    def item_from_string(self, s: str) -> dict[K, V]:
         """Cast a single-key dict from a string.
 
         Evaluated when parsing CLI configuration from a string.
@@ -4111,7 +4122,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         value_trait = (self._per_key_traits or {}).get(key, self._value_trait)
         if value_trait:
             value = value_trait.from_string(value)
-        return {key: value}
+        return t.cast("dict[K, V]", {key: value})
 
 
 class TCPAddress(TraitType[G, S]):
