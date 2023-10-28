@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import typing
+import typing as t
 
 import pytest
 
@@ -24,9 +24,9 @@ from traitlets import (
 )
 from traitlets.config import Config
 
-if not typing.TYPE_CHECKING:
+if not t.TYPE_CHECKING:
 
-    def reveal_type(*args, **kwargs):
+    def reveal_type(*args: t.Any, **kwargs: t.Any) -> None:
         pass
 
 
@@ -34,12 +34,12 @@ if not typing.TYPE_CHECKING:
 
 
 class Foo:
-    def __init__(self, c):
+    def __init__(self, c: t.Any) -> None:
         self.c = c
 
 
 @pytest.mark.mypy_testing
-def mypy_decorator_typing():
+def mypy_decorator_typing() -> None:
     class T(HasTraits):
         foo = Unicode("").tag(config=True)
 
@@ -48,11 +48,11 @@ def mypy_decorator_typing():
             return "hi"
 
         @observe("foo")
-        def _foo_observer(self, change: typing.Any) -> bool:
+        def _foo_observer(self, change: t.Any) -> bool:
             return True
 
         @validate("foo")
-        def _foo_validate(self, commit: typing.Any) -> bool:
+        def _foo_validate(self, commit: t.Any) -> bool:
             return True
 
     t = T()
@@ -62,7 +62,7 @@ def mypy_decorator_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_config_typing():
+def mypy_config_typing() -> None:
     c = Config(
         {
             "ExtractOutputPreprocessor": {"enabled": True},
@@ -72,7 +72,7 @@ def mypy_config_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_union_typing():
+def mypy_union_typing() -> None:
     class T(HasTraits):
         style = Union(
             [Unicode("default"), Type(klass=object)],
@@ -90,7 +90,7 @@ def mypy_union_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_list_typing():
+def mypy_list_typing() -> None:
     class T(HasTraits):
         latex_command = List(
             ["xelatex", "{filename}", "-quiet"], help="Shell command used to compile latex."
@@ -106,7 +106,7 @@ def mypy_list_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_dict_typing():
+def mypy_dict_typing() -> None:
     class T(HasTraits):
         foo = Dict({}, help="Shell command used to compile latex.").tag(config=True)
 
@@ -120,7 +120,7 @@ def mypy_dict_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_type_typing():
+def mypy_type_typing() -> None:
     class KernelSpec:
         item = Unicode("foo")
 
@@ -145,7 +145,7 @@ def mypy_type_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_unicode_typing():
+def mypy_unicode_typing() -> None:
     class T(HasTraits):
         export_format = Unicode(
             allow_none=False,
@@ -163,9 +163,7 @@ def mypy_unicode_typing():
     reveal_type(
         Unicode(  # R: traitlets.traitlets.Unicode[builtins.str, Union[builtins.str, builtins.bytes]]
             ""
-        ).tag(
-            sync=True
-        )
+        ).tag(sync=True)
     )
     reveal_type(
         Unicode(  # R: traitlets.traitlets.Unicode[Union[builtins.str, None], Union[builtins.str, builtins.bytes, None]]
@@ -175,9 +173,7 @@ def mypy_unicode_typing():
     reveal_type(
         Unicode(  # R: traitlets.traitlets.Unicode[Union[builtins.str, None], Union[builtins.str, builtins.bytes, None]]
             None, allow_none=True
-        ).tag(
-            sync=True
-        )
+        ).tag(sync=True)
     )
     reveal_type(
         T.export_format  # R: traitlets.traitlets.Unicode[builtins.str, Union[builtins.str, builtins.bytes]]
@@ -186,7 +182,7 @@ def mypy_unicode_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_set_typing():
+def mypy_set_typing() -> None:
     class T(HasTraits):
         remove_cell_tags = Set(
             Unicode(),
@@ -222,7 +218,7 @@ def mypy_set_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_any_typing():
+def mypy_any_typing() -> None:
     class T(HasTraits):
         attributes = Any(
             config=True,
@@ -244,7 +240,7 @@ def mypy_any_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_bool_typing():
+def mypy_bool_typing() -> None:
     class T(HasTraits):
         b = Bool(True).tag(sync=True)
         ob = Bool(None, allow_none=True).tag(sync=True)
@@ -266,9 +262,7 @@ def mypy_bool_typing():
     reveal_type(
         Bool(  # R: traitlets.traitlets.Bool[Union[builtins.bool, None], Union[builtins.bool, builtins.int, None]]
             None, allow_none=True
-        ).tag(
-            sync=True
-        )
+        ).tag(sync=True)
     )
     reveal_type(
         T.b  # R: traitlets.traitlets.Bool[builtins.bool, Union[builtins.bool, builtins.int]]
@@ -287,7 +281,7 @@ def mypy_bool_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_int_typing():
+def mypy_int_typing() -> None:
     class T(HasTraits):
         i: Int[int, int] = Int(42).tag(sync=True)
         oi: Int[int | None, int | None] = Int(42, allow_none=True).tag(sync=True)
@@ -318,7 +312,7 @@ def mypy_int_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_cint_typing():
+def mypy_cint_typing() -> None:
     class T(HasTraits):
         i = CInt(42).tag(sync=True)
         oi = CInt(42, allow_none=True).tag(sync=True)
@@ -342,7 +336,7 @@ def mypy_cint_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_tcp_typing():
+def mypy_tcp_typing() -> None:
     class T(HasTraits):
         tcp = TCPAddress()
         otcp = TCPAddress(None, allow_none=True)
@@ -372,7 +366,7 @@ def mypy_tcp_typing():
 
 
 @pytest.mark.mypy_testing
-def mypy_instance_typing():
+def mypy_instance_typing() -> None:
     class T(HasTraits):
         inst = Instance(Foo)
         oinst = Instance(Foo, allow_none=True)
