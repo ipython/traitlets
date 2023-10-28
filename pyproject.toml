@@ -92,7 +92,7 @@ fmt = [
 [tool.mypy]
 files = "traitlets"
 python_version = "3.8"
-strict = false
+strict = true
 check_untyped_defs = true
 disallow_any_generics = false
 disable_error_code = ["no-untyped-call"]
@@ -170,19 +170,13 @@ target-version = ["py37"]
 [tool.ruff]
 target-version = "py37"
 line-length = 100
+
+[tool.ruff.lint]
 select = [
-  "A", "ANN", "B", "C", "E", "F", "FBT", "I", "N", "Q", "RUF", "S", "T",
+  "A", "B", "C", "E", "F", "FBT", "I", "N", "Q", "RUF", "S", "T",
   "UP", "W", "YTT",
 ]
 ignore = [
-  # Dynamically typed expressions (typing.Any) are disallowed in `key`
-  "ANN401",
-  # Missing type annotation for `self` in method
-  "ANN101",
-  #  Missing type annotation for `cls` in classmethod
-  "ANN102",
-  # ANN202 Missing return type annotation for private function
-  "ANN202",
   # Allow non-abstract empty methods in abstract base classes
   "B027",
   # Ignore McCabe complexity
@@ -231,7 +225,7 @@ unfixable = [
   "RUF100",
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # B011 Do not call assert False since python -O removes these calls
 # F841 local variable 'foo' is assigned to but never used
 # C408 Unnecessary `dict` call
@@ -242,15 +236,13 @@ unfixable = [
 # F841 Local variable `t` is assigned to but never used
 # B018 Found useless expression
 # S301 `pickle` and modules that wrap..."
-"tests/*" = ["ANN", "B011", "F841", "C408", "E402", "T201", "B007", "N802", "F841",
+"tests/*" = ["B011", "F841", "C408", "E402", "T201", "B007", "N802", "F841",
                        "B018", "S301"]
 # B003 Assigning to os.environ doesn't clear the environment
 "tests/config/*" = ["B003", "B018", "S301"]
 # F401 `_version.__version__` imported but unused
 # F403 `from .traitlets import *` used; unable to detect undefined names
 "traitlets/*__init__.py" = ["F401", "F403"]
-"docs/*" = ["ANN"]
-"examples/*" = ["ANN"]
 
 [tool.repo-review]
 ignore = ["PY007", "PP308", "GH102", "PC140", "MY101"]

@@ -481,7 +481,7 @@ class LoggingConfigurable(Configurable):
                 UserWarning,
                 stacklevel=2,
             )
-        return proposal.value  # type:ignore[no-any-return]
+        return proposal.value
 
     @default("log")
     def _log_default(self) -> LoggerType:
@@ -506,10 +506,10 @@ class LoggingConfigurable(Configurable):
         if not getattr(logger, "handlers", None):
             # no handlers attribute or empty handlers list
             return None
-        return logger.handlers[0]  # type:ignore[no-any-return]
+        return logger.handlers[0]
 
 
-CT = t.TypeVar('CT', bound='SingletonConfigurable')
+CT = t.TypeVar("CT", bound="SingletonConfigurable")
 
 
 class SingletonConfigurable(LoggingConfigurable):
