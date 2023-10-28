@@ -851,13 +851,13 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                     e = "The '{}' trait of {} instance expected {}, not {}.".format(
                         self.name,
                         class_of(obj),
-                        self.info(),
+                        info or self.info(),
                         describe("the", value),
                     )
                 else:
                     e = "The '{}' trait expected {}, not {}.".format(
                         self.name,
-                        self.info(),
+                        info or self.info(),
                         describe("the", value),
                     )
                 raise TraitError(e)
