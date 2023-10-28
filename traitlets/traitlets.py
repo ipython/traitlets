@@ -3217,7 +3217,7 @@ class Enum(TraitType[G, G]):
         **kwargs: t.Any,
     ) -> None:
         self.values = values
-        if kwargs.get("allow_none", False) and default_value is Undefined:
+        if allow_none is True and default_value is Undefined:
             default_value = None
         kwargs["allow_none"] = allow_none
         kwargs["read_only"] = read_only
