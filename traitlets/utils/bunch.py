@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 
-class Bunch(dict):
+class Bunch(dict):  # type:ignore[type-arg]
     """A dict with attribute-access"""
 
     def __getattr__(self, key: str) -> Any:

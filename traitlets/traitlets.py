@@ -165,7 +165,7 @@ class TraitError(Exception):
 
 
 def isidentifier(s: t.Any) -> bool:
-    return s.isidentifier()
+    return t.cast(bool, s.isidentifier())
 
 
 def _safe_literal_eval(s: str) -> t.Any:
@@ -590,12 +590,12 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         in the same way that dynamic defaults defined by ``@default`` are.
         """
         if self.default_value is not Undefined:
-            return self.default_value
+            return t.cast(G, self.default_value)
         elif hasattr(self, "make_dynamic_default"):
-            return self.make_dynamic_default()
+            return t.cast(G, self.make_dynamic_default())
         else:
             # Undefined will raise in TraitType.get
-            return self.default_value
+            return t.cast(G, self.default_value)
 
     def get_default_value(self) -> G | None:
         """DEPRECATED: Retrieve the static default value for this trait.
@@ -606,7 +606,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.default_value
+        return t.cast(G, self.default_value)
 
     def init_default_value(self, obj: t.Any) -> G | None:
         """DEPRECATED: Set the static default value for the trait type."""
@@ -651,12 +651,12 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                     type="default",
                 )
             )
-            return value
+            return t.cast(G, value)
         except Exception as e:
             # This should never be reached.
             raise TraitError("Unexpected error in TraitType: default value not set properly") from e
         else:
-            return value
+            return t.cast(G, value)
 
     if t.TYPE_CHECKING:
         # This gives ok type information, but not specific enough (e.g. it will)
@@ -754,7 +754,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
             value = self.validate(obj, value)
         if obj._cross_validation_lock is False:
             value = self._cross_validate(obj, value)
-        return value
+        return t.cast(G, value)
 
     def _cross_validate(self, obj: t.Any, value: t.Any) -> G | None:
         if self.name in obj._trait_validators:
@@ -770,9 +770,9 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                 "use @validate decorator instead.",
             )
             value = cross_validate(value, self)
-        return value
+        return t.cast(G, value)
 
-    def __or__(self, other: TraitType) -> Union:
+    def __or__(self, other: TraitType[t.Any, t.Any]) -> Union:
         if isinstance(other, Union):
             return Union([self, *other.trait_types])
         else:
@@ -938,9 +938,9 @@ class _CallbackWrapper:
     def __eq__(self, other: t.Any) -> bool:
         # The wrapper is equal to the wrapped element
         if isinstance(other, _CallbackWrapper):
-            return self.cb == other.cb
+            return bool(self.cb == other.cb)
         else:
-            return self.cb == other
+            return bool(self.cb == other)
 
     def __call__(self, change: Bunch) -> None:
         # The wrapper is callable
@@ -1806,7 +1806,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         return list(cls.class_traits(**metadata))
 
     @classmethod
-    def class_traits(cls: type[HasTraits], **metadata: t.Any) -> dict[str, TraitType]:
+    def class_traits(cls: type[HasTraits], **metadata: t.Any) -> dict[str, TraitType[t.Any, t.Any]]:
         """Get a ``dict`` of all the traits of this class.  The dictionary
         is keyed on the name and the values are the TraitType objects.
 
@@ -1840,7 +1840,9 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         return result
 
     @classmethod
-    def class_own_traits(cls: type[HasTraits], **metadata: t.Any) -> dict[str, TraitType]:
+    def class_own_traits(
+        cls: type[HasTraits], **metadata: t.Any
+    ) -> dict[str, TraitType[t.Any, t.Any]]:
         """Get a dict of all the traitlets defined on this class, not a parent.
 
         Works like `class_traits`, except for excluding traits from parents.
@@ -1925,7 +1927,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 raise TraitError(f"'{n}' is not a trait of '{type(self).__name__}' instances")
 
         if len(names) == 1 and len(metadata) == 0:
-            return self._get_trait_default_generator(names[0])(self)
+            return t.cast(Sentinel, self._get_trait_default_generator(names[0])(self))
 
         trait_names = self.trait_names(**metadata)
         trait_names.extend(names)
@@ -1939,7 +1941,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         """Get a list of all the names of this class' traits."""
         return list(self.traits(**metadata))
 
-    def traits(self, **metadata: t.Any) -> dict[str, TraitType]:
+    def traits(self, **metadata: t.Any) -> dict[str, TraitType[t.Any, t.Any]]:
         """Get a ``dict`` of all the traits of this class.  The dictionary
         is keyed on the name and the values are the TraitType objects.
 
@@ -2163,7 +2165,7 @@ class Type(ClassBasedTraitType[G, S]):
             **kwargs,
         )
 
-    def validate(self, obj: t.Any, value: t.Any) -> None:
+    def validate(self, obj: t.Any, value: t.Any) -> G:
         """Validates that the value is a valid object instance."""
         if isinstance(value, str):
             try:
@@ -2175,7 +2177,7 @@ class Type(ClassBasedTraitType[G, S]):
                 ) from e
         try:
             if issubclass(value, self.klass):  # type:ignore[arg-type]
-                return value
+                return t.cast(G, value)
         except Exception:
             pass
 
@@ -2337,7 +2339,7 @@ class Instance(ClassBasedTraitType[T, T]):
         if self.allow_none and value is None:
             return value
         if isinstance(value, self.klass):  # type:ignore[arg-type]
-            return value
+            return t.cast(T, value)
         else:
             self.error(obj, value)
 
@@ -2369,7 +2371,7 @@ class Instance(ClassBasedTraitType[T, T]):
         return repr(self.make_dynamic_default())
 
     def from_string(self, s: str) -> T | None:
-        return _safe_literal_eval(s)
+        return t.cast(T, _safe_literal_eval(s))
 
 
 class ForwardDeclaredMixin:
@@ -2481,7 +2483,7 @@ class Union(TraitType[t.Any, t.Any]):
         # explicitly not calling super().subclass_init(cls)
         # to opt out of instance_init
 
-    def validate(self, obj: t.Any, value: t.Any) -> None:
+    def validate(self, obj: t.Any, value: t.Any) -> t.Any:
         with obj.cross_validation_lock:
             for trait_type in self.trait_types:
                 try:
@@ -2590,7 +2592,9 @@ class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
         pass  # fully opt out of instance_init
 
 
-def _validate_bounds(trait: Int | Float, obj: t.Any, value: t.Any) -> t.Any:
+def _validate_bounds(
+    trait: Int[t.Any, t.Any] | Float[t.Any, t.Any], obj: t.Any, value: t.Any
+) -> t.Any:
     """
     Validate that a number to be applied to a trait is between bounds.
 
@@ -2668,12 +2672,12 @@ class Int(TraitType[G, S]):
     def validate(self, obj: t.Any, value: t.Any) -> G:
         if not isinstance(value, int):
             self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+        return t.cast(G, _validate_bounds(self, obj, value))
 
-    def from_string(self, s: str) -> G | None:
+    def from_string(self, s: str) -> G:
         if self.allow_none and s == "None":
-            return None
-        return int(s)
+            return t.cast(G, None)
+        return t.cast(G, int(s))
 
     def subclass_init(self, cls: type[t.Any]) -> None:
         pass  # fully opt out of instance_init
@@ -2724,7 +2728,7 @@ class CInt(Int[G, S]):
             value = int(value)
         except Exception:
             self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+        return t.cast(G, _validate_bounds(self, obj, value))
 
 
 Long, CLong = Int, CInt
@@ -2781,17 +2785,17 @@ class Float(TraitType[G, S]):
             **kwargs,
         )
 
-    def validate(self, obj: t.Any, value: t.Any) -> float | None:
+    def validate(self, obj: t.Any, value: t.Any) -> G:
         if isinstance(value, int):
             value = float(value)
         if not isinstance(value, float):
             self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+        return t.cast(G, _validate_bounds(self, obj, value))
 
-    def from_string(self, s: str) -> float | None:
+    def from_string(self, s: str) -> G:
         if self.allow_none and s == "None":
-            return None
-        return float(s)
+            return t.cast(G, None)
+        return t.cast(G, float(s))
 
     def subclass_init(self, cls: type[t.Any]) -> None:
         pass  # fully opt out of instance_init
@@ -2837,12 +2841,12 @@ class CFloat(Float[G, S]):
         ) -> None:
             ...
 
-    def validate(self, obj: t.Any, value: t.Any) -> float | None:
+    def validate(self, obj: t.Any, value: t.Any) -> G:
         try:
             value = float(value)
         except Exception:
             self.error(obj, value)
-        return _validate_bounds(self, obj, value)
+        return t.cast(G, _validate_bounds(self, obj, value))
 
 
 class Complex(TraitType[complex, t.Union[complex, float, int]]):
@@ -2966,20 +2970,20 @@ class Unicode(TraitType[G, S]):
         ) -> None:
             ...
 
-    def validate(self, obj: t.Any, value: t.Any) -> str | None:
+    def validate(self, obj: t.Any, value: t.Any) -> G:
         if isinstance(value, str):
-            return value
+            return t.cast(G, value)
         if isinstance(value, bytes):
             try:
-                return value.decode("ascii", "strict")
+                return t.cast(G, value.decode("ascii", "strict"))
             except UnicodeDecodeError as e:
                 msg = "Could not decode {!r} for unicode trait '{}' of {} instance."
                 raise TraitError(msg.format(value, self.name, class_of(obj))) from e
         self.error(obj, value)
 
-    def from_string(self, s: str) -> str | None:
+    def from_string(self, s: str) -> G:
         if self.allow_none and s == "None":
-            return None
+            return t.cast(G, None)
         s = os.path.expanduser(s)
         if len(s) >= 2:
             # handle deprecated "1"
@@ -2993,7 +2997,7 @@ class Unicode(TraitType[G, S]):
                         DeprecationWarning,
                         stacklevel=2,
                     )
-        return s
+        return t.cast(G, s)
 
     def subclass_init(self, cls: type[t.Any]) -> None:
         pass  # fully opt out of instance_init
@@ -3039,9 +3043,9 @@ class CUnicode(Unicode[G, S], TraitType[str, t.Any]):
         ) -> None:
             ...
 
-    def validate(self, obj: t.Any, value: t.Any) -> str:
+    def validate(self, obj: t.Any, value: t.Any) -> G:
         try:
-            return str(value)
+            return t.cast(G, str(value))
         except Exception:
             self.error(obj, value)
 
@@ -3122,24 +3126,24 @@ class Bool(TraitType[G, S]):
         ) -> None:
             ...
 
-    def validate(self, obj: t.Any, value: t.Any) -> bool | None:
+    def validate(self, obj: t.Any, value: t.Any) -> G:
         if isinstance(value, bool):
-            return value
+            return t.cast(G, value)
         elif isinstance(value, int):
             if value == 1:
-                return True
+                return t.cast(G, True)
             elif value == 0:
-                return False
+                return t.cast(G, False)
         self.error(obj, value)
 
-    def from_string(self, s: str) -> G | None:
+    def from_string(self, s: str) -> G:
         if self.allow_none and s == "None":
-            return None
+            return t.cast(G, None)
         s = s.lower()
         if s in {"true", "1"}:
-            return True
+            return t.cast(G, True)
         elif s in {"false", "0"}:
-            return False
+            return t.cast(G, False)
         else:
             raise ValueError("%r is not 1, 0, true, or false")
 
@@ -3196,7 +3200,7 @@ class CBool(Bool[G, S]):
 
     def validate(self, obj: t.Any, value: t.Any) -> G:
         try:
-            return bool(value)
+            return t.cast(G, bool(value))
         except Exception:
             self.error(obj, value)
 
@@ -3214,7 +3218,7 @@ class Enum(TraitType[G, S]):
 
     def validate(self, obj: t.Any, value: t.Any) -> G:
         if value in self.values:
-            return value
+            return t.cast(G, value)
         self.error(obj, value)
 
     def _choices_str(self, as_rst: bool = False) -> str:
@@ -3224,7 +3228,7 @@ class Enum(TraitType[G, S]):
             choices = "|".join("``%r``" % x for x in choices)
         else:
             choices = repr(list(choices))
-        return choices
+        return t.cast(str, choices)
 
     def _info(self, as_rst: bool = False) -> str:
         """Returns a description of the trait."""
@@ -3237,11 +3241,11 @@ class Enum(TraitType[G, S]):
     def info_rst(self) -> str:
         return self._info(as_rst=True)
 
-    def from_string(self, s: str) -> G | None:
+    def from_string(self, s: str) -> G:
         try:
             return self.validate(None, s)
         except TraitError:
-            return _safe_literal_eval(s)
+            return t.cast(G, _safe_literal_eval(s))
 
     def subclass_init(self, cls: type[t.Any]) -> None:
         pass  # fully opt out of instance_init
@@ -3268,7 +3272,7 @@ class CaselessStrEnum(Enum[G, S]):
 
         for v in self.values:
             if v.lower() == value.lower():
-                return v
+                return t.cast(G, v)
         self.error(obj, value)
 
     def _info(self, as_rst: bool = False) -> str:
@@ -3309,13 +3313,13 @@ class FuzzyEnum(Enum[G, S]):
         conv_func = (lambda c: c) if self.case_sensitive else lambda c: c.lower()
         substring_matching = self.substring_matching
         match_func = (lambda v, c: v in c) if substring_matching else (lambda v, c: c.startswith(v))
-        value = conv_func(value)
+        value = conv_func(value)  # type:ignore[no-untyped-call]
         choices = self.values
-        matches = [match_func(value, conv_func(c)) for c in choices]
+        matches = [match_func(value, conv_func(c)) for c in choices]  # type:ignore[no-untyped-call]
         if sum(matches) == 1:
             for v, m in zip(choices, matches):
                 if m:
-                    return v
+                    return t.cast(G, v)
 
         self.error(obj, value)
 
@@ -3342,7 +3346,7 @@ class Container(Instance[T]):
     klass: type[T] | None = None
     _cast_types: t.Any = ()
     _valid_defaults = SequenceTypes
-    _trait = None
+    _trait: t.Any = None
     _literal_from_string_pairs: t.Any = ("[]", "()")
 
     @t.overload
@@ -3474,12 +3478,12 @@ class Container(Instance[T]):
 
         value = self.validate_elements(obj, value)
 
-        return value
+        return t.cast(T, value)
 
     def validate_elements(self, obj: t.Any, value: t.Any) -> T | None:
         validated = []
         if self._trait is None or isinstance(self._trait, Any):
-            return value
+            return t.cast(T, value)
         for v in value:
             try:
                 v = self._trait._validate(obj, v)
@@ -3545,20 +3549,20 @@ class Container(Instance[T]):
             item_from_string = self.item_from_string
         else:
             # backward-compat: allow item_from_string to ignore index arg
-            def item_from_string(s: str, index: int | None = None) -> T | None:
-                return self.item_from_string(s)
+            def item_from_string(s: str, index: int | None = None) -> T | str:
+                return t.cast(T, self.item_from_string(s))
 
         return self.klass(  # type:ignore[call-arg]
             [item_from_string(s, index=idx) for idx, s in enumerate(s_list)]
         )
 
-    def item_from_string(self, s: str, index: int | None = None) -> t.Any:
+    def item_from_string(self, s: str, index: int | None = None) -> T | str:
         """Cast a single item from a string
 
         Evaluated when parsing CLI configuration from a string
         """
         if self._trait:
-            return self._trait.from_string(s)
+            return t.cast(T, self._trait.from_string(s))
         else:
             return s
 
@@ -3802,7 +3806,7 @@ class Tuple(Container[t.Tuple[t.Any, ...]]):
             return s
         return self._traits[index].from_string(s)
 
-    def validate_elements(self, obj: t.Any, value: t.Any) -> tuple[t.Any, ...] | None:
+    def validate_elements(self, obj: t.Any, value: t.Any) -> t.Any:
         if not self._traits:
             # nothing to validate
             return value
@@ -3995,10 +3999,10 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         value = super().validate(obj, value)
         if value is None:
             return value
-        value = self.validate_elements(obj, value)
-        return value
+        value_dict = self.validate_elements(obj, value)
+        return value_dict
 
-    def validate_elements(self, obj: t.Any, value: t.Any) -> dict[str, t.Any] | None:
+    def validate_elements(self, obj: t.Any, value: dict[t.Any, t.Any]) -> dict[t.Any, t.Any] | None:
         per_key_override = self._per_key_traits or {}
         key_trait = self._key_trait
         value_trait = self._value_trait
@@ -4044,7 +4048,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
         # explicitly not calling super().subclass_init(cls)
         # to opt out of instance_init
 
-    def from_string(self, s: str) -> dict[str, t.Any] | None:
+    def from_string(self, s: str) -> t.Any:
         """Load value from a single string"""
         if not isinstance(s, str):
             raise TypeError(f"from_string expects a string, got {s!r} of type {type(s)}")
@@ -4056,7 +4060,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
                 return test
             raise
 
-    def from_string_list(self, s_list: list[str]) -> dict[str, t.Any] | None:
+    def from_string_list(self, s_list: list[str]) -> t.Any:
         """Return a dict from a list of config strings.
 
         This is where we parse CLI configuration.
@@ -4082,7 +4086,7 @@ class Dict(Instance[t.Dict[t.Any, t.Any]]):
             combined.update(d)
         return combined
 
-    def item_from_string(self, s: str) -> dict[str, t.Any]:
+    def item_from_string(self, s: str) -> dict[t.Any, t.Any]:
         """Cast a single-key dict from a string.
 
         Evaluated when parsing CLI configuration from a string.
@@ -4303,7 +4307,7 @@ class Callable(TraitType[t.Callable[..., t.Any], t.Callable[..., t.Any]]):
 
     info_text = "a callable"
 
-    def validate(self, obj: t.Any, value: t.Any) -> None:
+    def validate(self, obj: t.Any, value: t.Any) -> t.Any:
         if callable(value):
             return value
         else:

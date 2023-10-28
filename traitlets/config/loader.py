@@ -2,7 +2,6 @@
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
-# ruff: noqa: ANN201, ANN001, ANN204, ANN102, ANN003, ANN206, ANN002
 from __future__ import annotations
 
 import argparse
@@ -115,7 +114,7 @@ class LazyConfigValue(HasTraits):
         """like list.extend, but for the front"""
         self._prepend[:0] = other
 
-    def merge_into(self, other: t.Any) -> LazyConfigValue:
+    def merge_into(self, other: t.Any) -> t.Any:
         """
         Merge with another earlier LazyConfigValue or an earlier container.
         This is useful when having global system-wide configuration files.
@@ -225,7 +224,7 @@ def _is_section_key(key: str) -> bool:
         return False
 
 
-class Config(dict):
+class Config(dict):  # type:ignore[type-arg]
     """An attribute-based dict that can do smart merges.
 
     Accessing a field on a config object for the first time populates the key
@@ -385,7 +384,7 @@ class DeferredConfig:
 
     pass
 
-    def get_value(self, trait: TraitType) -> t.Any:
+    def get_value(self, trait: TraitType[t.Any, t.Any]) -> t.Any:
         raise NotImplementedError("Implement in subclasses")
 
     def _super_repr(self) -> str:
@@ -411,7 +410,7 @@ class DeferredConfigString(str, DeferredConfig):
     .. versionadded:: 5.0
     """
 
-    def get_value(self, trait: TraitType) -> t.Any:
+    def get_value(self, trait: TraitType[t.Any, t.Any]) -> t.Any:
         """Get the value stored in this string"""
         s = str(self)
         try:
@@ -426,7 +425,7 @@ class DeferredConfigString(str, DeferredConfig):
         return f"{self.__class__.__name__}({self._super_repr()})"
 
 
-class DeferredConfigList(list, DeferredConfig):
+class DeferredConfigList(t.List[t.Any], DeferredConfig):
     """Config value for loading config from a list of strings
 
     Interpretation is deferred until it is loaded into the trait.
@@ -442,7 +441,7 @@ class DeferredConfigList(list, DeferredConfig):
     .. versionadded:: 5.0
     """
 
-    def get_value(self, trait: TraitType) -> t.Any:
+    def get_value(self, trait: TraitType[t.Any, t.Any]) -> t.Any:
         """Get the value stored in this string"""
         if hasattr(trait, "from_string_list"):
             src = list(self)
@@ -581,7 +580,7 @@ class JSONFileConfigLoader(FileConfigLoader):
 
     def _read_file_as_dict(self) -> dict[str, t.Any]:
         with open(self.full_filename) as f:
-            return json.load(f)
+            return t.cast("dict[str, t.Any]", json.load(f))
 
     def _convert_to_config(self, dictionary: dict[str, t.Any]) -> Config:
         if "version" in dictionary:
@@ -668,7 +667,9 @@ class CommandLineConfigLoader(ConfigLoader):
     here.
     """
 
-    def _exec_config_str(self, lhs: t.Any, rhs: t.Any, trait: TraitType | None = None) -> None:
+    def _exec_config_str(
+        self, lhs: t.Any, rhs: t.Any, trait: TraitType[t.Any, t.Any] | None = None
+    ) -> None:
         """execute self.config.<lhs> = <rhs>
 
         * expands ~ with expanduser
@@ -724,13 +725,13 @@ class _KVAction(argparse.Action):
     Always
     """
 
-    def __call__(
+    def __call__(  # type:ignore[override]
         self,
         parser: argparse.ArgumentParser,
         namespace: dict[str, t.Any],
         values: t.Sequence[t.Any],
         option_string: str | None = None,
-    ) -> None:  # type:ignore[override]
+    ) -> None:
         if isinstance(values, str):
             values = [values]
         values = ["-" if v is _DASH_REPLACEMENT else v for v in values]
@@ -743,7 +744,7 @@ class _KVAction(argparse.Action):
         setattr(namespace, self.dest, items)
 
 
-class _DefaultOptionDict(dict):
+class _DefaultOptionDict(dict):  # type:ignore[type-arg]
     """Like the default options dict
 
     but acts as if all --Class.trait options are predefined
@@ -784,9 +785,9 @@ class _DefaultOptionDict(dict):
 class _KVArgParser(argparse.ArgumentParser):
     """subclass of ArgumentParser where any --Class.trait option is implicitly defined"""
 
-    def parse_known_args(
+    def parse_known_args(  # type:ignore[override]
         self, args: t.Sequence[str] | None = None, namespace: argparse.Namespace | None = None
-    ) -> tuple[argparse.Namespace | None, list[str]]:  # type:ignore[override]
+    ) -> tuple[argparse.Namespace | None, list[str]]:
         # must be done immediately prior to parsing because if we do it in init,
         # registration of explicit actions via parser.add_option will fail during setup
         for container in (self, self._optionals):
@@ -1137,7 +1138,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
         from . import argcomplete_config
 
-        finder = argcomplete_config.ExtendedCompletionFinder()
+        finder = argcomplete_config.ExtendedCompletionFinder()  # type:ignore[no-untyped-call]
         finder.config_classes = classes
         finder.subcommands = list(subcommands or [])
         # for ease of testing, pass through self._argcomplete_kwargs if set

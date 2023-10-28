@@ -164,7 +164,7 @@ class Configurable(HasTraits):
         self,
         cfg: Config,
         section_names: list[str] | None = None,
-        traits: dict[str, TraitType] | None = None,
+        traits: dict[str, TraitType[t.Any, t.Any]] | None = None,
     ) -> None:
         """load traits from a Config object"""
 
@@ -481,7 +481,7 @@ class LoggingConfigurable(Configurable):
                 UserWarning,
                 stacklevel=2,
             )
-        return proposal.value
+        return t.cast(LoggerType, proposal.value)
 
     @default("log")
     def _log_default(self) -> LoggerType:
@@ -502,7 +502,9 @@ class LoggingConfigurable(Configurable):
         """
         if not self.log:
             return None
-        logger = self.log if isinstance(self.log, logging.Logger) else self.log.logger
+        logger: logging.Logger = (
+            self.log if isinstance(self.log, logging.Logger) else self.log.logger
+        )
         if not getattr(logger, "handlers", None):
             # no handlers attribute or empty handlers list
             return None
