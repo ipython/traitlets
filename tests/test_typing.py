@@ -168,8 +168,8 @@ def mypy_type_typing() -> None:
     reveal_type(t.other_kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@129
     reveal_type(t.other_kernel_spec_class())  # R: tests.test_typing.KernelSpec@129
     reveal_type(
-        t.gateway_token_renewer_class
-    )  # R: def () -> tests.test_typing.GatewayTokenRenewerBase@135
+        t.gateway_token_renewer_class  # R: def () -> tests.test_typing.GatewayTokenRenewerBase@135
+    )
     reveal_type(t.gateway_token_renewer_class())  # R: tests.test_typing.GatewayTokenRenewerBase@135
 
 
