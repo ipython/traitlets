@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import typing as t
+from abc import ABC
 
 import pytest
 
@@ -128,6 +129,12 @@ def mypy_type_typing() -> None:
     class KernelSpec:
         item = Unicode("foo")
 
+    class KernelSpecSubclass(KernelSpec):
+        other = Unicode("bar")
+
+    class GatewayTokenRenewerBase(ABC):
+        item = Unicode("foo")
+
     class KernelSpecManager(HasTraits):
         """A manager for kernel specs."""
 
@@ -140,12 +147,30 @@ def mypy_type_typing() -> None:
         )
         other_class = Type("foo.bar.baz")
 
+        other_kernel_spec_class = Type(
+            default_value=KernelSpecSubclass,
+            klass=KernelSpec,
+            config=True,
+        )
+
+        gateway_token_renewer_class = Type(
+            klass=GatewayTokenRenewerBase,
+            config=True,
+            help="""The class to use for Gateway token renewal. (JUPYTER_GATEWAY_TOKEN_RENEWER_CLASS env var)""",
+        )
+
     t = KernelSpecManager()
-    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@128
-    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@128
+    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@129
+    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@129
     reveal_type(t.kernel_spec_class().item)  # R: builtins.str
     reveal_type(t.other_class)  # R: builtins.type
     reveal_type(t.other_class())  # R: Any
+    reveal_type(t.other_kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@129
+    reveal_type(t.other_kernel_spec_class())  # R: tests.test_typing.KernelSpec@129
+    reveal_type(
+        t.gateway_token_renewer_class
+    )  # R: def () -> tests.test_typing.GatewayTokenRenewerBase@135
+    reveal_type(t.gateway_token_renewer_class())  # R: tests.test_typing.GatewayTokenRenewerBase@135
 
 
 @pytest.mark.mypy_testing

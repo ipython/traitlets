@@ -2053,7 +2053,7 @@ class Type(ClassBasedTraitType[G, S]):
         def __init__(
             self: Type[S, S],
             default_value: S = ...,
-            klass: type[S] = ...,
+            klass: S = ...,
             allow_none: Literal[False] = ...,
             read_only: bool | None = ...,
             help: str | None = ...,
@@ -2066,7 +2066,7 @@ class Type(ClassBasedTraitType[G, S]):
         def __init__(
             self: Type[S | None, S | None],
             default_value: S | None = ...,
-            klass: type[S] = ...,
+            klass: S = ...,
             allow_none: Literal[True] = ...,
             read_only: bool | None = ...,
             help: str | None = ...,
