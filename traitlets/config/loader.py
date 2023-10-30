@@ -98,9 +98,9 @@ class LazyConfigValue(HasTraits):
     _value = None
 
     # list methods
-    _extend: List = List()
-    _prepend: List = List()
-    _inserts: List = List()
+    _extend: List[t.Any] = List()
+    _prepend: List[t.Any] = List()
+    _inserts: List[t.Any] = List()
 
     def append(self, obj: t.Any) -> None:
         """Append an item to a List"""

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 import typing as t
+from abc import ABC
 
 import pytest
 
@@ -9,6 +11,7 @@ from traitlets import (
     Bool,
     CInt,
     Dict,
+    Enum,
     HasTraits,
     Instance,
     Int,
@@ -97,12 +100,14 @@ def mypy_list_typing() -> None:
         ).tag(config=True)
 
     t = T()
-    reveal_type(List("foo"))  # R: traitlets.traitlets.List
-    reveal_type(List("").tag(sync=True))  # R: traitlets.traitlets.List
-    reveal_type(List(None, allow_none=True))  # R: traitlets.traitlets.List
-    reveal_type(List(None, allow_none=True).tag(sync=True))  # R: traitlets.traitlets.List
-    reveal_type(T.latex_command)  # R: traitlets.traitlets.List
-    reveal_type(t.latex_command)  # R: builtins.list[Any]
+    reveal_type(List(["foo"]))  # R: traitlets.traitlets.List[builtins.str]
+    reveal_type(List([""]).tag(sync=True))  # R: traitlets.traitlets.List[builtins.str]
+    reveal_type(List(None, allow_none=True))  # R: traitlets.traitlets.List[<nothing>]
+    reveal_type(
+        List(None, allow_none=True).tag(sync=True)  # R: traitlets.traitlets.List[<nothing>]
+    )
+    reveal_type(T.latex_command)  # R: traitlets.traitlets.List[builtins.str]
+    reveal_type(t.latex_command)  # R: builtins.list[builtins.str]
 
 
 @pytest.mark.mypy_testing
@@ -111,17 +116,23 @@ def mypy_dict_typing() -> None:
         foo = Dict({}, help="Shell command used to compile latex.").tag(config=True)
 
     t = T()
-    reveal_type(Dict("foo"))  # R: traitlets.traitlets.Dict
-    reveal_type(Dict("").tag(sync=True))  # R: traitlets.traitlets.Dict
-    reveal_type(Dict(None, allow_none=True))  # R: traitlets.traitlets.Dict
-    reveal_type(Dict(None, allow_none=True).tag(sync=True))  # R: traitlets.traitlets.Dict
-    reveal_type(T.foo)  # R: traitlets.traitlets.Dict
-    reveal_type(t.foo)  # R: builtins.dict[Any, Any]
+    reveal_type(Dict(None, allow_none=True))  # R: traitlets.traitlets.Dict[builtins.str, Any]
+    reveal_type(
+        Dict(None, allow_none=True).tag(sync=True)  # R: traitlets.traitlets.Dict[builtins.str, Any]
+    )
+    reveal_type(T.foo)  # R: traitlets.traitlets.Dict[builtins.str, Any]
+    reveal_type(t.foo)  # R: builtins.dict[builtins.str, Any]
 
 
 @pytest.mark.mypy_testing
 def mypy_type_typing() -> None:
     class KernelSpec:
+        item = Unicode("foo")
+
+    class KernelSpecSubclass(KernelSpec):
+        other = Unicode("bar")
+
+    class GatewayTokenRenewerBase(ABC):
         item = Unicode("foo")
 
     class KernelSpecManager(HasTraits):
@@ -136,12 +147,30 @@ def mypy_type_typing() -> None:
         )
         other_class = Type("foo.bar.baz")
 
+        other_kernel_spec_class = Type(
+            default_value=KernelSpecSubclass,
+            klass=KernelSpec,
+            config=True,
+        )
+
+        gateway_token_renewer_class = Type(
+            klass=GatewayTokenRenewerBase,
+            config=True,
+            help="""The class to use for Gateway token renewal. (JUPYTER_GATEWAY_TOKEN_RENEWER_CLASS env var)""",
+        )
+
     t = KernelSpecManager()
-    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@124
-    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@124
+    reveal_type(t.kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@129
+    reveal_type(t.kernel_spec_class())  # R: tests.test_typing.KernelSpec@129
     reveal_type(t.kernel_spec_class().item)  # R: builtins.str
     reveal_type(t.other_class)  # R: builtins.type
     reveal_type(t.other_class())  # R: Any
+    reveal_type(t.other_kernel_spec_class)  # R: def () -> tests.test_typing.KernelSpec@129
+    reveal_type(t.other_kernel_spec_class())  # R: tests.test_typing.KernelSpec@129
+    reveal_type(
+        t.gateway_token_renewer_class  # R: def () -> tests.test_typing.GatewayTokenRenewerBase@135
+    )
+    reveal_type(t.gateway_token_renewer_class())  # R: tests.test_typing.GatewayTokenRenewerBase@135
 
 
 @pytest.mark.mypy_testing
@@ -179,6 +208,42 @@ def mypy_unicode_typing() -> None:
         T.export_format  # R: traitlets.traitlets.Unicode[builtins.str, Union[builtins.str, builtins.bytes]]
     )
     reveal_type(t.export_format)  # R: builtins.str
+
+
+@pytest.mark.mypy_testing
+def mypy_enum_typing() -> None:
+    class T(HasTraits):
+        log_level = Enum(
+            (0, 10, 20, 30, 40, 50),
+            default_value=logging.WARN,
+            help="Set the log level by value or name.",
+        ).tag(config=True)
+
+    t = T()
+    reveal_type(
+        Enum(  # R: traitlets.traitlets.Enum[builtins.str]
+            ("foo",)
+        )
+    )
+    reveal_type(
+        Enum(  # R: traitlets.traitlets.Enum[builtins.str]
+            [""]
+        ).tag(sync=True)
+    )
+    reveal_type(
+        Enum(  # R: traitlets.traitlets.Enum[None]
+            None, allow_none=True
+        )
+    )
+    reveal_type(
+        Enum(  # R: traitlets.traitlets.Enum[None]
+            None, allow_none=True
+        ).tag(sync=True)
+    )
+    reveal_type(
+        T.log_level  # R: traitlets.traitlets.Enum[builtins.int]
+    )
+    reveal_type(t.log_level)  # R: builtins.int
 
 
 @pytest.mark.mypy_testing
