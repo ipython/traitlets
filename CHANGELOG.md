@@ -2,6 +2,27 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.13.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.12.0...dacbf9b03ebecbd09604ab2fa41e088e3f60b403))
+
+### Bugs fixed
+
+- Use passed-in `info` argument for `TraitType.error()` [#884](https://github.com/ipython/traitlets/pull/884) ([@kylebarron](https://github.com/kylebarron))
+
+### Maintenance and upkeep improvements
+
+- Improve generics handling [#886](https://github.com/ipython/traitlets/pull/886) ([@blink1073](https://github.com/blink1073))
+- Finish Strict Typing [#885](https://github.com/ipython/traitlets/pull/885) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-25&to=2023-10-30&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-25..2023-10-30&type=Issues) | [@kylebarron](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Akylebarron+updated%3A2023-10-25..2023-10-30&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.12.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.11.2...b018581f0acd75844bbd7584e233c3ab3126501b))
@@ -25,8 +46,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-03&to=2023-10-24&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-03..2023-10-24&type=Issues) | [@bollwyvl](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Abollwyvl+updated%3A2023-10-03..2023-10-24&type=Issues) | [@fleming79](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Afleming79+updated%3A2023-10-03..2023-10-24&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-10-03..2023-10-24&type=Issues) | [@shadchin](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ashadchin+updated%3A2023-10-03..2023-10-24&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.11.2
 
