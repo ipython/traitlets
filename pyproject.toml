@@ -227,4 +227,4 @@ unfixable = [
 "traitlets/*__init__.py" = ["F401", "F403"]
 
 [tool.repo-review]
-ignore = ["PY007", "PP308", "GH102", "PC140", "MY101"]
+ignore = ["PY007", "PP308", "GH102"]
