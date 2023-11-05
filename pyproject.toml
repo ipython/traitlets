@@ -97,7 +97,7 @@ minversion = "6.0"
 xfail_strict = true
 log_cli_level = "info"
 addopts = [
-  "-ra", "-Xs", "--durations=10", "--color=yes", "--doctest-modules",
+  "-ra", "--durations=10", "--color=yes", "--doctest-modules",
    "--showlocals", "--strict-markers", "--strict-config",
    "--ignore=examples/docs/configs"
 ]
