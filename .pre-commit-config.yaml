@@ -70,10 +70,10 @@ repos:
     rev: v0.1.5
     hooks:
       - id: ruff
-        types_or: [ python, jupyter ]
+        types_or: [python, jupyter]
         args: ["--fix", "--show-fixes"]
       - id: ruff-format
-        types_or: [ python, jupyter ]
+        types_or: [python, jupyter]
 
   - repo: https://github.com/scientific-python/cookie
     rev: "2023.10.27"
