@@ -96,7 +96,7 @@ else:
 IS_PYTHONW = sys.executable and sys.executable.endswith("pythonw.exe")
 
 T = t.TypeVar("T", bound=t.Callable[..., t.Any])
-AnyLogger = t.Union[logging.Logger, logging.LoggerAdapter]
+AnyLogger = t.Union[logging.Logger, "logging.LoggerAdapter[t.Any]"]
 StrDict = t.Dict[str, t.Any]
 ArgvType = t.Optional[t.List[str]]
 ClassesType = t.List[t.Type[Configurable]]
@@ -713,12 +713,12 @@ class Application(SingletonConfigurable):
             self.subapp = subapp.instance(parent=self)
         elif callable(subapp):
             # or ask factory to create it...
-            self.subapp = subapp(self)  # type:ignore[call-arg]
+            self.subapp = subapp(self)
         else:
             raise AssertionError("Invalid mappings for subcommand '%s'!" % subc)
 
         # ... and finally initialize subapp.
-        self.subapp.initialize(argv)  # type:ignore[union-attr]
+        self.subapp.initialize(argv)
 
     def flatten_flags(self) -> tuple[dict[str, t.Any], dict[str, t.Any]]:
         """Flatten flags and aliases for loaders, so cl-args override as expected.

@@ -33,7 +33,7 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 [project.optional-dependencies]
 test = [
     "argcomplete>=3.0.3",
-    "mypy>=1.6.0",
+    "mypy>=1.7.0",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
