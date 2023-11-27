@@ -23,6 +23,7 @@ from traitlets.config.loader import (
     ArgumentError,
     Config,
     ConfigFileNotFound,
+    DeferredConfigString,
     JSONFileConfigLoader,
     KVArgParseConfigLoader,
     PyFileConfigLoader,
@@ -967,6 +968,29 @@ class Application(SingletonConfigurable):
             ):  # only add to list of loaded files if not previously loaded
                 self._loaded_config_files.append(fname)
         # add self.cli_config to preserve CLI config priority
+        new_config.merge(self.cli_config)
+        self.update_config(new_config)
+
+    @catch_config_error
+    def load_config_environ(self) -> None:
+        """Load config files by environment."""
+
+        PREFIX = self.name.upper()
+        new_config = Config()
+
+        self.log.debug('Looping through config variables with prefix "%s"', PREFIX)
+
+        for k, v in os.environ.items():
+            if k.startswith(PREFIX):
+                self.log.debug('Seeing environ "%s"="%s"', k, v)
+                # use __ instead of . as separator in env variable.
+                # Warning, case sensitive !
+                _, *path, key = k.split("__")
+                section = new_config
+                for p in path:
+                    section = section[p]
+                setattr(section, key, DeferredConfigString(v))
+
         new_config.merge(self.cli_config)
         self.update_config(new_config)
 
