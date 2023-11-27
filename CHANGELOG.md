@@ -2,6 +2,28 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.14.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.13.0...4d7504601b9db9eb6f31dfc102b9c469c8517496))
+
+### Enhancements made
+
+- Add option to load  traitlets values from environement. [#856](https://github.com/ipython/traitlets/pull/856) ([@Carreau](https://github.com/Carreau))
+
+### Maintenance and upkeep improvements
+
+- Update types for mypy 1.7 [#892](https://github.com/ipython/traitlets/pull/892) ([@blink1073](https://github.com/blink1073))
+- chore: update pre-commit hooks [#890](https://github.com/ipython/traitlets/pull/890) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- Clean up lint handling [#888](https://github.com/ipython/traitlets/pull/888) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-30&to=2023-11-27&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-30..2023-11-27&type=Issues) | [@Carreau](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2023-10-30..2023-11-27&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-10-30..2023-11-27&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.13.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.12.0...dacbf9b03ebecbd09604ab2fa41e088e3f60b403))
@@ -20,8 +42,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-25&to=2023-10-30&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-25..2023-10-30&type=Issues) | [@kylebarron](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Akylebarron+updated%3A2023-10-25..2023-10-30&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.12.0
 
