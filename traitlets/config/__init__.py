@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from . import configurable
 from .application import Application, ApplicationError, LevelFormatter
-from .configurable import LoggingConfigurable, MultipleInstanceError, SingletonConfigurable
+from .configurable import (
+    Configurable,
+    LoggingConfigurable,
+    MultipleInstanceError,
+    SingletonConfigurable,
+)
 from .loader import Config
 
 __all__ = [
@@ -13,6 +18,7 @@ __all__ = [
     "ApplicationError",
     "LevelFormatter",
     "configurable",
+    "Configurable",
     "ConfigurableError",
     "MultipleInstanceError",
     "LoggingConfigurable",
