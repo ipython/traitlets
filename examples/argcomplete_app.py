@@ -63,13 +63,15 @@ Afterwards, try tab completing options to this script::
 If completions are not showing, you can set the environment variable ``_ARC_DEBUG=1``
 to assist in debugging argcomplete. This was last checked with ``argcomplete==1.12.3``.
 """
+from __future__ import annotations
+
 import json
 import os
 
 try:
     from argcomplete.completers import EnvironCompleter, SuppressCompleter
 except ImportError:
-    EnvironCompleter = SuppressCompleter = None  # type:ignore
+    EnvironCompleter = SuppressCompleter = None
 from traitlets import Bool, Enum, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
@@ -106,8 +108,7 @@ class EnvironPrinter(Configurable):
             if env_var not in os.environ:
                 if self.skip_if_missing:
                     continue
-                else:
-                    raise KeyError(f"Environment variable not set: {env_var}")
+                raise KeyError(f"Environment variable not set: {env_var}")
 
             value = os.environ[env_var]
             if self.style == "posix":

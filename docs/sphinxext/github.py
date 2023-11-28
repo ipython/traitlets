@@ -16,10 +16,11 @@ Authors
 #
 # Original Copyright (c) 2010 Doug Hellmann.  All rights reserved.
 #
+from __future__ import annotations
 
 from docutils import nodes, utils
 from docutils.parsers.rst.roles import set_classes
-from sphinx.util.logging import getLogger  # type:ignore
+from sphinx.util.logging import getLogger
 
 info = getLogger(__name__).info
 
@@ -50,8 +51,7 @@ def make_link_node(rawtext, app, type, slug, options):
     prefix = "#"
     if type == "pull":
         prefix = "PR " + prefix
-    node = nodes.reference(rawtext, prefix + utils.unescape(slug), refuri=ref, **options)
-    return node
+    return nodes.reference(rawtext, prefix + utils.unescape(slug), refuri=ref, **options)
 
 
 def ghissue_role(name, rawtext, text, lineno, inliner, options=None, content=None):
@@ -170,5 +170,4 @@ def setup(app):
     app.add_role("ghcommit", ghcommit_role)
     app.add_config_value("github_project_url", None, "env")
 
-    metadata = {"parallel_read_safe": True, "parallel_write_safe": True}
-    return metadata
+    return {"parallel_read_safe": True, "parallel_write_safe": True}

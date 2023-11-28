@@ -16,6 +16,7 @@ Example:
     $ ./examples/docs/load_config_app.py -c ""
     The school MIT has a rank of 1.
 """
+from __future__ import annotations
 
 from pathlib import Path
 

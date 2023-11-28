@@ -91,7 +91,6 @@ strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 pretty = true
 show_error_context = true
-show_error_codes = true
 warn_unreachable = true
 exclude = ["examples/docs/configs", "traitlets/tests/test_typing.py"]
 
@@ -156,58 +155,52 @@ source = ["traitlets"]
 line-length = 100
 
 [tool.ruff.lint]
-select = [
-  "A", "B", "C", "E", "F", "FBT", "I", "N", "Q", "RUF", "S", "T",
-  "UP", "W", "YTT",
+extend-select = [
+  "B",           # flake8-bugbear
+  "I",           # isort
+  "ARG",         # flake8-unused-arguments
+  "C4",          # flake8-comprehensions
+  # "EM",          # flake8-errmsg
+  "ICN",         # flake8-import-conventions
+  "G",           # flake8-logging-format
+  "PGH",         # pygrep-hooks
+  "PIE",         # flake8-pie
+  "PL",          # pylint
+  # "PTH",         # flake8-use-pathlib
+  "RET",         # flake8-return
+  "RUF",         # Ruff-specific
+  "SIM",         # flake8-simplify
+  "T20",         # flake8-print
+  "UP",          # pyupgrade
+  "YTT",         # flake8-2020
+  "EXE",         # flake8-executable
+  "PYI",         # flake8-pyi
+  "S",           # flake8-bandit
 ]
 ignore = [
-  # Allow non-abstract empty methods in abstract base classes
-  "B027",
-  # Ignore McCabe complexity
-  "C901",
-  # Allow boolean positional values in function calls, like `dict.get(... True)`
-  "FBT003",
-  # Use of `assert` detected
-  "S101",
-  # Line too long
-  "E501",
-  # Relative imports are banned
-  "TID252",
-  # Boolean ... in function definition
-  "FBT001", "FBT002",
-  # Module level import not at top of file
-  "E402",
-  # A001/A002/A003 .. is shadowing a python builtin
-  "A001", "A002", "A003",
-  # Possible hardcoded password
-  "S105", "S106",
-  # Q000 Single quotes found but double quotes preferred
-  "Q000",
-  # N806 Variable `B` in function should be lowercase
-  "N806",
-  # T201 `print` found
-  "T201",
-  # N802 Function name `CreateWellKnownSid` should be lowercase
-  "N802", "N803",
-  # C408 Unnecessary `dict` call (rewrite as a literal)
-  "C408",
-  # N801 Class name `directional_link` should use CapWords convention
-  "N801",
-  # S110 `try`-`except`-`pass` detected
-  "S110",
-  # RUF012 Mutable class attributes should be annotated with `typing.ClassVar`
-  "RUF012",
-  # non-pep585-annotation
-  "UP006",
-  # non-pep604-annotation
-  "UP007",
+  "PLR",    # Design related pylint codes
+  "B027",   # Allow non-abstract empty methods in abstract base classes
+  "S101",   # Use of `assert` detected
+  "E501",   # Line too long
+  "S105", "S106",   # Possible hardcoded password
+  "S110",   # S110 `try`-`except`-`pass` detected
+  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+  "UP006",  # non-pep585-annotation
+  "UP007",  # non-pep604-annotation
+  "ARG001", "ARG002",  # Unused function argument
+  "RET503",  # Missing explicit `return` at the end of function
+  "RET505",  # Unnecessary `else` after `return` statement
+  "SIM102", # Use a single `if` statement instead of nested `if` statements
+  "SIM105", # Use `contextlib.suppress(ValueError)`
+  "SIM108", # Use ternary operator
+  "SIM114", # Combine `if` branches using logical `or` operator"
+  "PLW2901" # `for` loop variable `path` overwritten by assignment target
 ]
 unfixable = [
-  # Don't touch print statements
-  "T201",
   # Don't touch noqa lines
   "RUF100",
 ]
+isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 # B011 Do not call assert False since python -O removes these calls
@@ -220,13 +213,13 @@ unfixable = [
 # F841 Local variable `t` is assigned to but never used
 # B018 Found useless expression
 # S301 `pickle` and modules that wrap..."
+# PGH003 Use specific rule codes when ignoring type issues
 "tests/*" = ["B011", "F841", "C408", "E402", "T201", "B007", "N802", "F841",
-                       "B018", "S301"]
+                       "B018", "S301", "ARG", "PGH003"]
+"traitlets/config/application.py" = ["T201"]
 # B003 Assigning to os.environ doesn't clear the environment
 "tests/config/*" = ["B003", "B018", "S301"]
 # F401 `_version.__version__` imported but unused
 # F403 `from .traitlets import *` used; unable to detect undefined names
 "traitlets/*__init__.py" = ["F401", "F403"]
-
-[tool.repo-review]
-ignore = ["PY007"]
+"examples/*" = ["T201"]

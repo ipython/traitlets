@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 """A simple example of using container traits in Application command-line"""
+from __future__ import annotations
 
 from traitlets import Dict, Integer, List, Unicode
 from traitlets.config import Application

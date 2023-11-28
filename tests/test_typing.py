@@ -41,7 +41,7 @@ class Foo:
         self.c = c
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_decorator_typing() -> None:
     class T(HasTraits):
         foo = Unicode("").tag(config=True)
@@ -64,7 +64,7 @@ def mypy_decorator_typing() -> None:
     reveal_type(t._foo_validate)  # R: Any
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_config_typing() -> None:
     c = Config(
         {
@@ -74,7 +74,7 @@ def mypy_config_typing() -> None:
     reveal_type(c)  # R: traitlets.config.loader.Config
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_union_typing() -> None:
     class T(HasTraits):
         style = Union(
@@ -92,7 +92,7 @@ def mypy_union_typing() -> None:
     reveal_type(t.style)  # R: Any
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_list_typing() -> None:
     class T(HasTraits):
         latex_command = List(
@@ -110,7 +110,7 @@ def mypy_list_typing() -> None:
     reveal_type(t.latex_command)  # R: builtins.list[builtins.str]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_dict_typing() -> None:
     class T(HasTraits):
         foo = Dict({}, help="Shell command used to compile latex.").tag(config=True)
@@ -124,7 +124,7 @@ def mypy_dict_typing() -> None:
     reveal_type(t.foo)  # R: builtins.dict[builtins.str, Any]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_type_typing() -> None:
     class KernelSpec:
         item = Unicode("foo")
@@ -173,7 +173,7 @@ def mypy_type_typing() -> None:
     reveal_type(t.gateway_token_renewer_class())  # R: tests.test_typing.GatewayTokenRenewerBase@135
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_unicode_typing() -> None:
     class T(HasTraits):
         export_format = Unicode(
@@ -210,7 +210,7 @@ def mypy_unicode_typing() -> None:
     reveal_type(t.export_format)  # R: builtins.str
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_enum_typing() -> None:
     class T(HasTraits):
         log_level = Enum(
@@ -246,7 +246,7 @@ def mypy_enum_typing() -> None:
     reveal_type(t.log_level)  # R: builtins.int
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_set_typing() -> None:
     class T(HasTraits):
         remove_cell_tags = Set(
@@ -282,7 +282,7 @@ def mypy_set_typing() -> None:
     reveal_type(t.safe_output_keys)  # R: builtins.set[Any]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_any_typing() -> None:
     class T(HasTraits):
         attributes = Any(
@@ -304,7 +304,7 @@ def mypy_any_typing() -> None:
     reveal_type(t.attributes)  # R: Any
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_bool_typing() -> None:
     class T(HasTraits):
         b = Bool(True).tag(sync=True)
@@ -345,7 +345,7 @@ def mypy_bool_typing() -> None:
     t.b = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Union[bool, int]")  [assignment]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_int_typing() -> None:
     class T(HasTraits):
         i: Int[int, int] = Int(42).tag(sync=True)
@@ -376,7 +376,7 @@ def mypy_int_typing() -> None:
     t.i = 1.2  # E: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_cint_typing() -> None:
     class T(HasTraits):
         i = CInt(42).tag(sync=True)
@@ -400,7 +400,7 @@ def mypy_cint_typing() -> None:
     reveal_type(T.oi)  # R: traitlets.traitlets.CInt[Union[builtins.int, None], Any]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_tcp_typing() -> None:
     class T(HasTraits):
         tcp = TCPAddress()
@@ -430,7 +430,7 @@ def mypy_tcp_typing() -> None:
     t.tcp = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Tuple[str, int]")  [assignment]
 
 
-@pytest.mark.mypy_testing
+@pytest.mark.mypy_testing()
 def mypy_instance_typing() -> None:
     class T(HasTraits):
         inst = Instance(Foo)

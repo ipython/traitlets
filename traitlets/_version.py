@@ -1,6 +1,8 @@
 """
 handle the current version info of traitlets.
 """
+from __future__ import annotations
+
 import re
 from typing import List
 

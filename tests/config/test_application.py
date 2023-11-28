@@ -4,6 +4,7 @@ Tests for traitlets.config.application.Application
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import contextlib
 import io
@@ -854,7 +855,7 @@ def test_get_default_logging_config_pythonw(monkeypatch):
     assert "loggers" in config
 
 
-@pytest.fixture
+@pytest.fixture()
 def caplogconfig(monkeypatch):
     """Capture logging config events for DictConfigurator objects.
 

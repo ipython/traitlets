@@ -14,6 +14,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+from __future__ import annotations
 
 import os.path as osp
 import shutil
@@ -22,7 +23,7 @@ import sys
 HERE = osp.abspath(osp.dirname(__file__))
 ROOT = osp.dirname(osp.dirname(HERE))
 
-from traitlets import __version__, version_info
+from traitlets import __version__, version_info  # noqa: E402
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

@@ -5,6 +5,7 @@
 #
 # Adapted from enthought.traits, Copyright (c) Enthought, Inc.,
 # also under the terms of the Modified BSD License.
+from __future__ import annotations
 
 import pickle
 import re
@@ -2150,7 +2151,7 @@ class TestLink(TestCase):
                 self.i = change.new * 2
 
         mc = MyClass()
-        l = link((mc, "i"), (mc, "j"))  # noqa
+        l = link((mc, "i"), (mc, "j"))  # noqa: E741
         self.assertRaises(TraitError, setattr, mc, "i", 2)
 
     def test_link_broken_at_target(self):
@@ -2163,7 +2164,7 @@ class TestLink(TestCase):
                 self.j = change.new * 2
 
         mc = MyClass()
-        l = link((mc, "i"), (mc, "j"))  # noqa
+        l = link((mc, "i"), (mc, "j"))  # noqa: E741
         self.assertRaises(TraitError, setattr, mc, "j", 2)
 
 
@@ -2393,7 +2394,7 @@ class OrderTraits(HasTraits):
     i = Unicode()
     j = Unicode()
     k = Unicode()
-    l = Unicode()  # noqa
+    l = Unicode()  # noqa: E741
 
     def _notify(self, name, old, new):
         """check the value of all traits when each trait change is triggered
@@ -2819,7 +2820,7 @@ def test_default_mro():
 
 def test_cls_self_argument():
     class X(HasTraits):
-        def __init__(__self, cls, self):  # noqa
+        def __init__(__self, cls, self):
             pass
 
     x = X(cls=None, self=None)
