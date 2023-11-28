@@ -2,17 +2,11 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
-from . import configurable
-from .application import Application, ApplicationError, LevelFormatter, get_config
-from .configurable import (
-    Configurable,
-    LoggingConfigurable,
-    MultipleInstanceError,
-    SingletonConfigurable,
-)
+from .application import *
+from .configurable import *
 from .loader import Config
 
-__all__ = [
+__all__ = [  # noqa: F405
     "Config",
     "Application",
     "ApplicationError",
@@ -23,5 +17,4 @@ __all__ = [
     "MultipleInstanceError",
     "LoggingConfigurable",
     "SingletonConfigurable",
-    "get_config",
 ]
