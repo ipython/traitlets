@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from . import configurable
-from .application import Application, ApplicationError, LevelFormatter
+from .application import Application, ApplicationError, LevelFormatter, get_config
 from .configurable import (
     Configurable,
     LoggingConfigurable,
@@ -23,4 +23,5 @@ __all__ = [
     "MultipleInstanceError",
     "LoggingConfigurable",
     "SingletonConfigurable",
+    "get_config",
 ]
