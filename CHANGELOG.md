@@ -8,7 +8,7 @@
 
 ### Enhancements made
 
-- Add option to load  traitlets values from environement. [#856](https://github.com/ipython/traitlets/pull/856) ([@Carreau](https://github.com/Carreau))
+- Add option to load  traitlets values from environment. [#856](https://github.com/ipython/traitlets/pull/856) ([@Carreau](https://github.com/Carreau))
 
 ### Maintenance and upkeep improvements
 
