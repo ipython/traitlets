@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from unittest import TestCase
 
-from pytest import mark
+import pytest
 
 from tests._warnings import expected_warnings
 from traitlets.config.application import Application
@@ -673,7 +673,7 @@ class TestLogger(TestCase):
         bar = Integer(config=True)
         baz = Integer(config=True)
 
-    @mark.skipif(not hasattr(TestCase, "assertLogs"), reason="requires TestCase.assertLogs")
+    @pytest.mark.skipif(not hasattr(TestCase, "assertLogs"), reason="requires TestCase.assertLogs")
     def test_warn_match(self):
         logger = logging.getLogger("test_warn_match")
         cfg = Config({"A": {"bat": 5}})

@@ -167,6 +167,7 @@ extend-select = [
   "PIE",         # flake8-pie
   "PL",          # pylint
   # "PTH",         # flake8-use-pathlib
+  "PT",          # flake8-pytest-style
   "RET",         # flake8-return
   "RUF",         # Ruff-specific
   "SIM",         # flake8-simplify
@@ -194,7 +195,9 @@ ignore = [
   "SIM105", # Use `contextlib.suppress(ValueError)`
   "SIM108", # Use ternary operator
   "SIM114", # Combine `if` branches using logical `or` operator"
-  "PLW2901" # `for` loop variable `path` overwritten by assignment target
+  "PLW2901", # `for` loop variable `path` overwritten by assignment target
+  # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
+  "PT001", "PT004", "PT005", "PT02", "PT009"
 ]
 unfixable = [
   # Don't touch noqa lines
@@ -223,3 +226,8 @@ isort.required-imports = ["from __future__ import annotations"]
 # F403 `from .traitlets import *` used; unable to detect undefined names
 "traitlets/*__init__.py" = ["F401", "F403"]
 "examples/*" = ["T201"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
+parametrize-names-type = "csv"

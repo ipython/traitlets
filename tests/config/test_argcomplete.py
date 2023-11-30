@@ -120,7 +120,7 @@ class TestArgcomplete:
         os.environ["COMP_LINE"] = command
         os.environ["COMP_POINT"] = str(point)
 
-        with pytest.raises(CustomError) as cm:
+        with pytest.raises(CustomError) as cm:  # noqa: PT012
             app.argcomplete_kwargs = dict(
                 output_stream=strio, exit_method=CustomError.exit, **kwargs
             )
@@ -217,4 +217,5 @@ class TestArgcomplete:
         app = MainApp()
         completions = set(self.run_completer(app, "app --"))
         assert completions > {"--Application.", "--MainApp."}
-        assert "--SubApp1." not in completions and "--SubApp2." not in completions
+        assert "--SubApp1." not in completions
+        assert "--SubApp2." not in completions

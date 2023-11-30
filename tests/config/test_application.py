@@ -18,7 +18,6 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase, mock
 
 import pytest
-from pytest import mark
 
 from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, Unicode
 from traitlets.config.application import Application
@@ -552,7 +551,7 @@ class TestApplication(TestCase):
                 app.init_bar()
                 self.assertEqual(app.bar.b, 1)
 
-    @mark.skipif(not hasattr(TestCase, "assertLogs"), reason="requires TestCase.assertLogs")
+    @pytest.mark.skipif(not hasattr(TestCase, "assertLogs"), reason="requires TestCase.assertLogs")
     def test_log_collisions(self):
         app = MyApp()
         app.log = logging.getLogger()
@@ -573,7 +572,7 @@ class TestApplication(TestCase):
         assert pjoin(td, name + ".py") in output
         assert pjoin(td, name + ".json") in output
 
-    @mark.skipif(not hasattr(TestCase, "assertLogs"), reason="requires TestCase.assertLogs")
+    @pytest.mark.skipif(not hasattr(TestCase, "assertLogs"), reason="requires TestCase.assertLogs")
     def test_log_bad_config(self):
         app = MyApp()
         app.log = logging.getLogger()

@@ -1255,7 +1255,7 @@ class TraitTestBase(TestCase):
                 try:
                     self.assertRaises(TraitError, self.assign, value)
                 except AssertionError:
-                    assert False, value
+                    assert False, value  # noqa: PT015
 
     def test_default_value(self):
         if hasattr(self, "_default_value"):
@@ -1785,7 +1785,7 @@ class TestMultiTuple(TraitTestBase):
 
 @pytest.mark.parametrize(
     "Trait",
-    (
+    (  # noqa: PT007
         List,
         Tuple,
         Set,
@@ -1809,7 +1809,7 @@ def test_allow_none_default_value(Trait):
 
 @pytest.mark.parametrize(
     "Trait, default_value",
-    ((List, []), (Tuple, ()), (Set, set()), (Dict, {}), (Integer, 0), (Unicode, "")),
+    ((List, []), (Tuple, ()), (Set, set()), (Dict, {}), (Integer, 0), (Unicode, "")),  # noqa: PT007
 )
 def test_default_value(Trait, default_value):
     class C(HasTraits):
@@ -1823,7 +1823,7 @@ def test_default_value(Trait, default_value):
 
 @pytest.mark.parametrize(
     "Trait, default_value",
-    ((List, []), (Tuple, ()), (Set, set())),
+    ((List, []), (Tuple, ()), (Set, set())),  # noqa: PT007
 )
 def test_subclass_default_value(Trait, default_value):
     """Test deprecated default_value=None behavior for Container subclass traits"""
@@ -2890,7 +2890,7 @@ def _from_string_test(traittype, s, expected):
     else:
         cast = trait.from_string
     if type(expected) is type and issubclass(expected, Exception):
-        with pytest.raises(expected):
+        with pytest.raises(expected):  # noqa: PT012
             value = cast(s)
             trait.validate(CrossValidationStub(), value)  # type:ignore
     else:
