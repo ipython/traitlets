@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 """A simple example of using Application subcommands, for docs"""
+from __future__ import annotations
 
 from traitlets.config import Application
 

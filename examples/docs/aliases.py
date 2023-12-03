@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 """A simple example of using Application aliases, for docs"""
+from __future__ import annotations
 
 from traitlets import Bool
 from traitlets.config import Application, Configurable

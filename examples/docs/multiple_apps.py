@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 """A simple example of one application calling another"""
+from __future__ import annotations
 
 from traitlets.config import Application
 

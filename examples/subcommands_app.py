@@ -12,6 +12,7 @@ Example:
     bar
     hello bob
 """
+from __future__ import annotations
 
 from traitlets import Enum, Unicode
 from traitlets.config.application import Application

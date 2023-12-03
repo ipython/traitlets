@@ -31,6 +31,8 @@ to set the following options:
 When the config attribute of an Application is updated, it will fire all of
 the trait's events for all of the config=True attributes.
 """
+from __future__ import annotations
+
 from traitlets import Bool, Dict, Enum, Int, List, Unicode
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
@@ -94,7 +96,7 @@ class MyApp(Application):
     config_file = Unicode("", help="Load this config file").tag(config=True)
 
     aliases = Dict(  # type:ignore[assignment]
-        dict(
+        dict(  # noqa: C408
             i="Foo.i",
             j="Foo.j",
             name="Foo.name",
@@ -106,7 +108,7 @@ class MyApp(Application):
     )
 
     flags = Dict(  # type:ignore[assignment]
-        dict(
+        dict(  # noqa: C408
             enable=({"Bar": {"enabled": True}}, "Enable Bar"),
             disable=({"Bar": {"enabled": False}}, "Disable Bar"),
             debug=({"MyApp": {"log_level": 10}}, "Set loglevel to DEBUG"),
