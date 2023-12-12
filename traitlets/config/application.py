@@ -973,8 +973,7 @@ class Application(SingletonConfigurable):
     @catch_config_error
     def load_config_environ(self) -> None:
         """Load config files by environment."""
-
-        PREFIX = self.name.upper()
+        PREFIX = self.name.upper().replace("-", "_")
         new_config = Config()
 
         self.log.debug('Looping through config variables with prefix "%s"', PREFIX)
