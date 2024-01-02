@@ -2,6 +2,27 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.14.1
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.0...a1108c92013f9da56a9dccb79f7a5453ffe8d1db))
+
+### Bugs fixed
+
+- FIX: map - to _ for environement variable prefix. [#895](https://github.com/ipython/traitlets/pull/895) ([@Carreau](https://github.com/Carreau))
+
+### Maintenance and upkeep improvements
+
+- chore: update pre-commit hooks [#894](https://github.com/ipython/traitlets/pull/894) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- Update ruff config [#893](https://github.com/ipython/traitlets/pull/893) ([@blink1073](https://github.com/blink1073))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-11-27&to=2024-01-02&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-11-27..2024-01-02&type=Issues) | [@Carreau](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2023-11-27..2024-01-02&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-11-27..2024-01-02&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.14.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.13.0...4d7504601b9db9eb6f31dfc102b9c469c8517496))
@@ -21,8 +42,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-10-30&to=2023-11-27&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-10-30..2023-11-27&type=Issues) | [@Carreau](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2023-10-30..2023-11-27&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-10-30..2023-11-27&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.13.0
 
