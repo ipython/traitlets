@@ -8,7 +8,7 @@
 
 ### Bugs fixed
 
-- FIX: map - to _ for environement variable prefix. [#895](https://github.com/ipython/traitlets/pull/895) ([@Carreau](https://github.com/Carreau))
+- FIX: map - to _ for environment variable prefix. [#895](https://github.com/ipython/traitlets/pull/895) ([@Carreau](https://github.com/Carreau))
 
 ### Maintenance and upkeep improvements
 
