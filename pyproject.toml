@@ -37,7 +37,7 @@ test = [
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
-    "pytest>=7.0,<8.1",
+    "pytest>=7.0,<8.2",
 ]
 docs = [
     "myst-parser",
