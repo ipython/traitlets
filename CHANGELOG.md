@@ -2,6 +2,24 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.14.2
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.1...2d0fb91f39a71c5528860e23bf9c2138e441b319))
+
+### Maintenance and upkeep improvements
+
+- Update Release Scripts [#900](https://github.com/ipython/traitlets/pull/900) ([@blink1073](https://github.com/blink1073))
+- chore: update pre-commit hooks [#897](https://github.com/ipython/traitlets/pull/897) ([@pre-commit-ci](https://github.com/pre-commit-ci))
+- Bump the actions group with 1 update [#896](https://github.com/ipython/traitlets/pull/896) ([@dependabot](https://github.com/dependabot))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2024-01-02&to=2024-03-12&type=c))
+
+[@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2024-01-02..2024-03-12&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2024-01-02..2024-03-12&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2024-01-02..2024-03-12&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.14.1
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.0...a1108c92013f9da56a9dccb79f7a5453ffe8d1db))
@@ -20,8 +38,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2023-11-27&to=2024-01-02&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2023-11-27..2024-01-02&type=Issues) | [@Carreau](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2023-11-27..2024-01-02&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2023-11-27..2024-01-02&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.14.0
 
