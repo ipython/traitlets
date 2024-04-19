@@ -2,6 +2,26 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.14.3
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.2...5cf34f6c42b6e39aa1e53394443efca3d7329e3b))
+
+### Bugs fixed
+
+- Fix assigning string value to Set [#903](https://github.com/ipython/traitlets/pull/903) ([@azjps](https://github.com/azjps))
+
+### Maintenance and upkeep improvements
+
+- Bump the actions group with 1 update [#899](https://github.com/ipython/traitlets/pull/899) ([@dependabot](https://github.com/dependabot))
+
+### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2024-03-12&to=2024-04-19&type=c))
+
+[@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2024-03-12..2024-04-19&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2024-03-12..2024-04-19&type=Issues)
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.14.2
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.1...2d0fb91f39a71c5528860e23bf9c2138e441b319))
@@ -17,8 +37,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2024-01-02&to=2024-03-12&type=c))
 
 [@blink1073](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ablink1073+updated%3A2024-01-02..2024-03-12&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2024-01-02..2024-03-12&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Apre-commit-ci+updated%3A2024-01-02..2024-03-12&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.14.1
 
