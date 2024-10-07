@@ -590,8 +590,8 @@ class SingletonConfigurable(LoggingConfigurable):
             return cls._instance
         else:
             raise MultipleInstanceError(
-                f"An incompatible sibling of '{cls.__name__}' is already instantiated"
-                f" as singleton: {type(cls._instance).__name__}"
+                f"An incompatible sibling of '{cls.__module__}.{cls.__name__}' is already instantiated"
+                f" as singleton: {type(cls._instance).__module__}.{type(cls._instance).__name__}"
             )
 
     @classmethod
