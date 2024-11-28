@@ -1062,7 +1062,11 @@ class Application(SingletonConfigurable):
         sys.exit(exit_status)
 
     def __del__(self) -> None:
-        self.close_handlers()
+        # __del__ may be called during process teardown,
+        # at which point any fraction of attributes and modules may have been cleared,
+        # e.g. even _accessing_ self.log may fail.
+        with suppress(Exception):
+            self.close_handlers()
 
     @classmethod
     def launch_instance(cls, argv: ArgvType = None, **kwargs: t.Any) -> None:
