@@ -19,7 +19,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
         with:
           package_name: ipython
-          package_spec: pip install -e ".[test]"
+          package_spec: -e ".[test]"
 
   nbconvert:
     runs-on: ubuntu-latest
@@ -30,7 +30,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
         with:
           package_name: nbconvert
-          package_spec: pip install -e ".[test]"
+          package_spec: -e ".[test]"
 
   jupyter_server:
     runs-on: ubuntu-latest
