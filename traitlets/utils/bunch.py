@@ -23,6 +23,6 @@ class Bunch(dict):  # type:ignore[type-arg]
         self.__setitem__(key, value)
 
     def __dir__(self) -> list[str]:
-        names = dir(Bunch)
+        names = super().__dir__()
         names.extend(self.keys())
         return names
