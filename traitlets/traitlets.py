@@ -175,7 +175,7 @@ def isidentifier(s: str) -> bool:
         DeprecationWarning,
         stacklevel=2,
     )
-    s.isidentifier()
+    return s.isidentifier()
 
 
 def _safe_literal_eval(s: str) -> t.Any:
