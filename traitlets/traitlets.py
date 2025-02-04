@@ -170,7 +170,12 @@ class TraitError(Exception):
 
 
 def isidentifier(s: str) -> bool:
-    return s.isidentifier()
+    warn(
+        "traitlets.traitlets.isidentifier(s) is deprecated since traitlets 5.14.4 Use `s.isidentifier()`.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    s.isidentifier()
 
 
 def _safe_literal_eval(s: str) -> t.Any:
@@ -3033,7 +3038,7 @@ class ObjectName(TraitType[str, str]):
     def validate(self, obj: t.Any, value: t.Any) -> str:
         value = self.coerce_str(obj, value)
 
-        if isinstance(value, str) and isidentifier(value):
+        if isinstance(value, str) and value.isidentifier():
             return value
         self.error(obj, value)
 
@@ -3049,7 +3054,7 @@ class DottedObjectName(ObjectName):
     def validate(self, obj: t.Any, value: t.Any) -> str:
         value = self.coerce_str(obj, value)
 
-        if isinstance(value, str) and all(isidentifier(a) for a in value.split(".")):
+        if isinstance(value, str) and all(a.isidentifier() for a in value.split(".")):
             return value
         self.error(obj, value)
 
