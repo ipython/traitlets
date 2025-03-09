@@ -1290,10 +1290,8 @@ class DefaultHandler(EventHandler):
 class HasDescriptors(metaclass=MetaHasDescriptors):
     """The base class for all classes that have descriptors."""
 
-    def __new__(*args: t.Any, **kwargs: t.Any) -> Self:  # type:ignore[misc, type-var]
-        # Pass cls as args[0] to allow "cls" as keyword argument
-        cls = args[0]
-        args = args[1:]
+    def __new__(cls, /, *args: t.Any, **kwargs: t.Any) -> Self:
+
 
         # This is needed because object.__new__ only accepts
         # the cls argument.
@@ -1303,7 +1301,7 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
         else:
             inst = new_meth(cls, *args, **kwargs)
         inst.setup_instance(*args, **kwargs)
-        return inst  # type:ignore[no-any-return]
+        return inst
 
     def setup_instance(*args: t.Any, **kwargs: t.Any) -> None:
         """
