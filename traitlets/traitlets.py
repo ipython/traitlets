@@ -1291,8 +1291,6 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
     """The base class for all classes that have descriptors."""
 
     def __new__(cls, /, *args: t.Any, **kwargs: t.Any) -> Self:
-
-
         # This is needed because object.__new__ only accepts
         # the cls argument.
         new_meth = super(HasDescriptors, cls).__new__
