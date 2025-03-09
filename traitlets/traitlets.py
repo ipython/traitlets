@@ -1301,13 +1301,10 @@ class HasDescriptors(metaclass=MetaHasDescriptors):
         inst.setup_instance(*args, **kwargs)
         return inst
 
-    def setup_instance(*args: t.Any, **kwargs: t.Any) -> None:
+    def setup_instance(self, /, *args: t.Any, **kwargs: t.Any) -> None:
         """
         This is called **before** self.__init__ is called.
         """
-        # Pass self as args[0] to allow "self" as keyword argument
-        self = args[0]
-        args = args[1:]
 
         self._cross_validation_lock = False
         cls = self.__class__
@@ -1329,11 +1326,8 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     _traits: dict[str, t.Any]
     _all_trait_default_generators: dict[str, t.Any]
 
-    def setup_instance(*args: t.Any, **kwargs: t.Any) -> None:
-        # Pass self as args[0] to allow "self" as keyword argument
-        self = args[0]
-        args = args[1:]
-
+    def setup_instance(self, /, *args: t.Any, **kwargs: t.Any) -> None:
+        
         # although we'd prefer to set only the initial values not present
         # in kwargs, we will overwrite them in `__init__`, and simply making
         # a copy of a dict is faster than checking for each key.
