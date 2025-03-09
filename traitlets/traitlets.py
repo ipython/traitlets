@@ -1327,7 +1327,6 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     _all_trait_default_generators: dict[str, t.Any]
 
     def setup_instance(self, /, *args: t.Any, **kwargs: t.Any) -> None:
-        
         # although we'd prefer to set only the initial values not present
         # in kwargs, we will overwrite them in `__init__`, and simply making
         # a copy of a dict is faster than checking for each key.
