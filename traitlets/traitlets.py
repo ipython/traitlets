@@ -44,6 +44,7 @@ from __future__ import annotations
 import contextlib
 import enum
 import inspect
+import numbers
 import os
 import re
 import sys
@@ -2635,6 +2636,15 @@ class Int(TraitType[G, S]):
         )
 
     def validate(self, obj: t.Any, value: t.Any) -> G:
+        if not isinstance(value, int) and isinstance(value, numbers.Number):
+            # allow casting integer-valued numbers to int
+            # allows for more concise assignment like `4e9` which is a float
+            try:
+                int_value = int(value)
+                if int_value == value:
+                    value = int_value
+            except Exception:
+                pass
         if not isinstance(value, int):
             self.error(obj, value)
         return _validate_bounds(self, obj, value)  # type:ignore[no-any-return]
