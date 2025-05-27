@@ -900,7 +900,7 @@ class Application(SingletonConfigurable):
         yield each config object in turn.
         """
         if os.path.isabs(basefilename):
-            path = None
+            path = [None]
         if isinstance(path, str) or path is None:
             path = [path]
         for current in reversed(path):
