@@ -6,7 +6,6 @@ from __future__ import annotations
 import re
 import textwrap
 from textwrap import indent as _indent
-from typing import List
 
 
 def indent(val: str) -> str:
@@ -32,7 +31,7 @@ def _dedent(text: str) -> str:
     return "\n".join([first, rest])
 
 
-def wrap_paragraphs(text: str, ncols: int = 80) -> List[str]:
+def wrap_paragraphs(text: str, ncols: int = 80) -> list[str]:
     """Wrap multiple paragraphs to fit a specified width.
 
     This is equivalent to textwrap.wrap, but with support for multiple
