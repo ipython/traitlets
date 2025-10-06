@@ -53,7 +53,7 @@ github_project_url = "https://github.com/ipython/traitlets"
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
-source_suffix = ".rst"
+source_suffix = {".rst": "restructuredtext"}
 
 # Add dev disclaimer.
 if version_info[-1] == "dev":
