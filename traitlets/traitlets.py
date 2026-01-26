@@ -501,7 +501,9 @@ T = TypeVar("T")
 # see https://peps.python.org/pep-0673/#use-in-generic-classes
 # Self = t.TypeVar("Self", bound="TraitType[Any, Any]")
 if t.TYPE_CHECKING:
-    from typing_extensions import Literal, Self
+    from typing import Literal
+
+    from typing_extensions import Self
 
     K = TypeVar("K", default=str)
     V = TypeVar("V", default=t.Any)
@@ -2370,7 +2372,7 @@ class ForwardDeclaredInstance(ForwardDeclaredMixin, Instance[T]):
     """
 
 
-class This(ClassBasedTraitType[t.Optional[T], t.Optional[T]]):
+class This(ClassBasedTraitType[T | None, T | None]):
     """A trait for instances of the class containing this trait.
 
     Because how how and when class bodies are executed, the ``This``
@@ -2483,7 +2485,7 @@ class Union(TraitType[t.Any, t.Any]):
 # -----------------------------------------------------------------------------
 
 
-class Any(TraitType[t.Optional[t.Any], t.Optional[t.Any]]):
+class Any(TraitType[t.Any | None, t.Any | None]):
     """A trait which allows any value."""
 
     if t.TYPE_CHECKING:
@@ -2582,7 +2584,7 @@ def _validate_bounds(
     return value
 
 
-# I = t.TypeVar('I', t.Optional[int], int)
+# I = t.TypeVar('I', int | None, int)
 
 
 class Int(TraitType[G, S]):
@@ -2824,7 +2826,7 @@ class CFloat(Float[G, S]):
         return _validate_bounds(self, obj, value)  # type:ignore[no-any-return]
 
 
-class Complex(TraitType[complex, t.Union[complex, float, int]]):
+class Complex(TraitType[complex, complex | float | int]):
     """A trait for complex numbers."""
 
     default_value = 0.0 + 0.0j
@@ -3332,7 +3334,7 @@ class FuzzyEnum(Enum[G]):
         choices = self.values or []
         matches = [match_func(value, conv_func(c)) for c in choices]  # type:ignore[no-untyped-call]
         if sum(matches) == 1:
-            for v, m in zip(choices, matches):
+            for v, m in zip(choices, matches, strict=True):
                 if m:
                     return v
 
@@ -3580,7 +3582,7 @@ class Container(Instance[T]):
             return s
 
 
-class List(Container[t.List[T]]):
+class List(Container[list[T]]):
     """An instance of a Python list."""
 
     klass = list  # type:ignore[assignment]
@@ -3588,8 +3590,8 @@ class List(Container[t.List[T]]):
 
     def __init__(
         self,
-        trait: t.List[T] | t.Tuple[T] | t.Set[T] | Sentinel | TraitType[T, t.Any] | None = None,
-        default_value: t.List[T] | t.Tuple[T] | t.Set[T] | Sentinel | None = Undefined,
+        trait: list[T] | tuple[T] | set[T] | Sentinel | TraitType[T, t.Any] | None = None,
+        default_value: list[T] | tuple[T] | set[T] | Sentinel | None = Undefined,
         minlen: int = 0,
         maxlen: int = sys.maxsize,
         **kwargs: t.Any,
@@ -3645,7 +3647,7 @@ class List(Container[t.List[T]]):
             return super().set(obj, value)
 
 
-class Set(Container[t.Set[t.Any]]):
+class Set(Container[set[t.Any]]):
     """An instance of a Python set."""
 
     klass = set
@@ -3720,7 +3722,7 @@ class Set(Container[t.Set[t.Any]]):
         return "{" + list_repr[1:-1] + "}"
 
 
-class Tuple(Container[t.Tuple[t.Any, ...]]):
+class Tuple(Container[tuple[t.Any, ...]]):
     """An instance of a Python tuple."""
 
     klass = tuple
@@ -3826,7 +3828,7 @@ class Tuple(Container[t.Tuple[t.Any, ...]]):
             raise TraitError(e)
 
         validated = []
-        for trait, v in zip(self._traits, value):
+        for trait, v in zip(self._traits, value, strict=True):
             try:
                 v = trait._validate(obj, v)
             except TraitError as error:
@@ -4188,7 +4190,7 @@ class TCPAddress(TraitType[G, S]):
         return (ip, port)  # type:ignore[return-value]
 
 
-class CRegExp(TraitType["re.Pattern[t.Any]", t.Union["re.Pattern[t.Any]", str]]):
+class CRegExp(TraitType[re.Pattern[t.Any], re.Pattern[t.Any] | str]):
     """A casting compiled regular expression trait.
 
     Accepts both strings and compiled regular expressions. The resulting

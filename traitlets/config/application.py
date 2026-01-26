@@ -98,9 +98,9 @@ IS_PYTHONW = sys.executable and sys.executable.endswith("pythonw.exe")
 
 T = t.TypeVar("T", bound=t.Callable[..., t.Any])
 AnyLogger = t.Union[logging.Logger, "logging.LoggerAdapter[t.Any]"]
-StrDict = t.Dict[str, t.Any]
-ArgvType = t.Optional[t.List[str]]
-ClassesType = t.List[t.Type[Configurable]]
+StrDict = dict[str, t.Any]
+ArgvType = list[str] | None
+ClassesType = list[type[Configurable]]
 
 
 def catch_config_error(method: T) -> T:
@@ -520,7 +520,7 @@ class Application(SingletonConfigurable):
         for cls in self.classes:
             # include all parents (up to, but excluding Configurable) in available names
             for c in cls.mro()[:-3]:
-                classdict[c.__name__] = t.cast(t.Type[Configurable], c)
+                classdict[c.__name__] = t.cast(type[Configurable], c)
 
         fhelp: str | None
         for alias, longname in self.aliases.items():
@@ -931,7 +931,7 @@ class Application(SingletonConfigurable):
                     if log:
                         log.debug("Loaded config file: %s", loader.full_filename)
                 if config:
-                    for filename, earlier_config in zip(filenames, loaded):
+                    for filename, earlier_config in zip(filenames, loaded, strict=True):
                         collisions = earlier_config.collisions(config)
                         if collisions and log:
                             log.warning(

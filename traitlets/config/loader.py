@@ -420,7 +420,7 @@ class DeferredConfigString(str, DeferredConfig):
         return f"{self.__class__.__name__}({self._super_repr()})"
 
 
-class DeferredConfigList(t.List[t.Any], DeferredConfig):
+class DeferredConfigList(list[t.Any], DeferredConfig):
     """Config value for loading config from a list of strings
 
     Interpretation is deferred until it is loaded into the trait.
@@ -791,7 +791,7 @@ class _KVArgParser(argparse.ArgumentParser):
 
 
 # type aliases
-SubcommandsDict = t.Dict[str, t.Any]
+SubcommandsDict = dict[str, t.Any]
 
 
 class ArgParseConfigLoader(CommandLineConfigLoader):
