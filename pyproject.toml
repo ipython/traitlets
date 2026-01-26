@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python",
     "Typing :: Typed",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dynamic = ["version"]
 
 [project.urls]
@@ -40,7 +40,7 @@ test = [
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
-    "pytest>=7.0,<8.2",
+    "pytest>=7.0,<10.0",
 ]
 docs = [
     "myst-parser",

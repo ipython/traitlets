@@ -340,7 +340,7 @@ def mypy_bool_typing() -> None:
     reveal_type(
         T.ob  # R: traitlets.traitlets.Bool[builtins.bool | None, builtins.bool | builtins.int | None]
     )
-    # we would expect this to be Optional[bool | int], but...
+    # we would expect this to be bool | int | None, but...
     t.b = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "bool | int")  [assignment]
     t.b = None  # E: Incompatible types in assignment (expression has type "None", variable has type "bool | int")  [assignment]
 
