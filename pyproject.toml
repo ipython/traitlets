@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python",
     "Typing :: Typed",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dynamic = ["version"]
 
 [project.urls]
@@ -33,11 +33,11 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 [project.optional-dependencies]
 test = [
     "argcomplete>=3.0.3",
-    "mypy>=1.7.0",
+    "mypy>=1.17.0",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
-    "pytest>=7.0,<8.2",
+    "pytest>=7.0,<10.0",
 ]
 docs = [
     "myst-parser",
@@ -86,7 +86,7 @@ build = [
 
 [tool.mypy]
 files = "traitlets"
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 pretty = true
