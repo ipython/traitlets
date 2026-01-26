@@ -31,7 +31,8 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 
 [project.optional-dependencies]
 test = [
-    "argcomplete>=3.0.3",
+    "argcomplete>=3.0.3; python_version < '3.12'",
+    "argcomplete>=3.5.2; python_version >= '3.12'",
     # See https://github.com/python/mypy/issues/20329 for PyPy support issue.
     # Also, test assertions will need to be updated for 1.20+ because
     # `reveal_type()` representations were simplified in
