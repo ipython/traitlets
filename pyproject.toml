@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python",
     "Typing :: Typed",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dynamic = ["version"]
 
 [project.urls]
@@ -32,12 +32,13 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 
 [project.optional-dependencies]
 test = [
-    "argcomplete>=3.0.3",
-    "mypy>=1.7.0",
+    "argcomplete>=3.0.3; python_version < '3.12'",
+    "argcomplete>=3.5.2; python_version >= '3.12'",
+    "mypy>=1.17.0",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
-    "pytest>=7.0,<8.2",
+    "pytest>=7.0,<10.0",
 ]
 docs = [
     "myst-parser",
@@ -86,7 +87,7 @@ build = [
 
 [tool.mypy]
 files = "traitlets"
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 pretty = true
@@ -186,8 +187,7 @@ ignore = [
   "S105", "S106",   # Possible hardcoded password
   "S110",   # S110 `try`-`except`-`pass` detected
   "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
-  "UP006",  # non-pep585-annotation
-  "UP007",  # non-pep604-annotation
+  "UP038",  # non-pep604-isinstance (removed in ruff 0.13.0)
   "ARG001", "ARG002",  # Unused function argument
   "RET503",  # Missing explicit `return` at the end of function
   "RET505",  # Unnecessary `else` after `return` statement
