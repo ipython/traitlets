@@ -505,6 +505,11 @@ if t.TYPE_CHECKING:
 
     K = TypeVar("K", default=str)
     V = TypeVar("V", default=t.Any)
+else:
+    # This is required to avoid warnings about unresolved references when generating
+    # the documentation of downstream projects.
+    K = TypeVar("K")
+    V = TypeVar("V")
 
 
 # We use a type for the getter (G) and setter (G) because we allow
