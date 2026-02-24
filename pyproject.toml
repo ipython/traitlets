@@ -34,6 +34,8 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 test = [
     "argcomplete>=3.0.3",
     "mypy>=1.7.0",
+    # see https://github.com/python/mypy/issues/20454
+    "mypy>=1.7.0,<1.19 ; platform_python_implementation == 'PyPy'",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
