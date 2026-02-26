@@ -38,6 +38,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Pin virtualenv to pre-breaking major version
+        run: pipx inject --force hatch "virtualenv<21"
       - name: Run Tests
         run: hatch run cov:test
       - uses: jupyterlab/maintainer-tools/.github/actions/upload-coverage@v1
@@ -60,6 +62,8 @@ jobs:
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           dependency_type: minimum
+      - name: Pin virtualenv to pre-breaking major version
+        run: pipx inject --force hatch "virtualenv<21"
       - name: Run the unit tests
         run: |
           hatch run test:nowarn || hatch -v run test:nowarn --lf
@@ -70,6 +74,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Pin virtualenv to pre-breaking major version
+        run: pipx inject --force hatch "virtualenv<21"
       - name: Run Linters
         run: |
           hatch run typing:test
@@ -83,6 +89,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Pin virtualenv to pre-breaking major version
+        run: pipx inject --force hatch "virtualenv<21"
       - name: Build the docs
         run: hatch run docs:build
 
@@ -97,6 +105,8 @@ jobs:
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           dependency_type: pre
+      - name: Pin virtualenv to pre-breaking major version
+        run: pipx inject --force hatch "virtualenv<21"
       - name: Run the tests
         run: |
           hatch run test:nowarn || hatch run test:nowarn --lf
@@ -133,6 +143,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Base Setup
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - name: Pin virtualenv to pre-breaking major version
+        run: pipx inject --force hatch "virtualenv<21"
       - name: Install Dependencies
         run: |
           pip install -e .
