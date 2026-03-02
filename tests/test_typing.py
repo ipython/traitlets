@@ -249,16 +249,15 @@ def mypy_enum_typing() -> None:
 @pytest.mark.mypy_testing
 def mypy_set_typing() -> None:
     class T(HasTraits):
-        remove_cell_tags = Set(
+        remove_cell_tags: Set[str] = Set(
             Unicode(),
             default_value=[],
             help=(
-                "Tags indicating which cells are to be removed,"
-                "matches tags in ``cell.metadata.tags``."
+                "Tags indicating which cells are to be removed,matches tags in ``cell.metadata.tags``."
             ),
         ).tag(config=True)
 
-        safe_output_keys = Set(
+        safe_output_keys: Set[t.Any] = Set(
             config=True,
             default_value={
                 "metadata",  # Not a mimetype per-se, but expected and safe.
@@ -272,13 +271,13 @@ def mypy_set_typing() -> None:
         )
 
     t = T()
-    reveal_type(Set("foo"))  # R: traitlets.traitlets.Set
-    reveal_type(Set("").tag(sync=True))  # R: traitlets.traitlets.Set
-    reveal_type(Set(None, allow_none=True))  # R: traitlets.traitlets.Set
-    reveal_type(Set(None, allow_none=True).tag(sync=True))  # R: traitlets.traitlets.Set
-    reveal_type(T.remove_cell_tags)  # R: traitlets.traitlets.Set
-    reveal_type(t.remove_cell_tags)  # R: builtins.set[Any]
-    reveal_type(T.safe_output_keys)  # R: traitlets.traitlets.Set
+    reveal_type(Set({"foo"}))  # R: traitlets.traitlets.Set[builtins.str]
+    reveal_type(Set({""}).tag(sync=True))  # R: traitlets.traitlets.Set[builtins.str]
+    reveal_type(Set(None, allow_none=True))  # R: traitlets.traitlets.Set[Never]
+    reveal_type(Set(None, allow_none=True).tag(sync=True))  # R: traitlets.traitlets.Set[Never]
+    reveal_type(T.remove_cell_tags)  # R: traitlets.traitlets.Set[builtins.str]
+    reveal_type(t.remove_cell_tags)  # R: builtins.set[builtins.str]
+    reveal_type(T.safe_output_keys)  # R: traitlets.traitlets.Set[Any]
     reveal_type(t.safe_output_keys)  # R: builtins.set[Any]
 
 

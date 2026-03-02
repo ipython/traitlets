@@ -524,7 +524,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
     default_value: t.Any = Undefined
 
     def __init__(
-        self: TraitType[G, S],
+        self,
         default_value: t.Any = Undefined,
         allow_none: bool = False,
         read_only: bool | None = None,
@@ -3585,7 +3585,7 @@ class Container(Instance[T]):
             return s
 
 
-class List(Container[t.List[T]]):
+class List(Container[t.List[T]], t.Generic[T]):
     """An instance of a Python list."""
 
     klass = list  # type:ignore[assignment]
@@ -3650,7 +3650,7 @@ class List(Container[t.List[T]]):
             return super().set(obj, value)
 
 
-class Set(Container[t.Set[t.Any]]):
+class Set(Container[t.Set[T]], t.Generic[T]):
     """An instance of a Python set."""
 
     klass = set
@@ -3661,8 +3661,8 @@ class Set(Container[t.Set[t.Any]]):
     # Redefine __init__ just to make the docstring more accurate.
     def __init__(
         self,
-        trait: t.Any = None,
-        default_value: t.Any = Undefined,
+        trait: TraitType[T, t.Any] | t.Iterable[T] | None = None,
+        default_value: set[T] | t.Any = Undefined,
         minlen: int = 0,
         maxlen: int = sys.maxsize,
         **kwargs: t.Any,
@@ -3725,13 +3725,13 @@ class Set(Container[t.Set[t.Any]]):
         return "{" + list_repr[1:-1] + "}"
 
 
-class Tuple(Container[t.Tuple[t.Any, ...]]):
+class Tuple(Container[t.Tuple[T]], t.Generic[T]):
     """An instance of a Python tuple."""
 
     klass = tuple
     _cast_types = (list,)
 
-    def __init__(self, *traits: t.Any, **kwargs: t.Any) -> None:
+    def __init__(self, *traits: T, **kwargs: t.Any) -> None:
         """Create a tuple from a list, set, or tuple.
 
         Create a fixed-type tuple with Traits:
@@ -3874,9 +3874,9 @@ class Dict(Instance["dict[K, V]"]):
 
     def __init__(
         self,
-        value_trait: TraitType[t.Any, t.Any] | dict[K, V] | Sentinel | None = None,
+        value_trait: TraitType[V, t.Any] | dict[K, V] | Sentinel | None = None,
         per_key_traits: t.Any = None,
-        key_trait: TraitType[t.Any, t.Any] | None = None,
+        key_trait: TraitType[K, t.Any] | None = None,
         default_value: dict[K, V] | Sentinel | None = Undefined,
         **kwargs: t.Any,
     ) -> None:
@@ -4208,7 +4208,7 @@ class CRegExp(TraitType["re.Pattern[t.Any]", t.Union["re.Pattern[t.Any]", str]])
             self.error(obj, value)
 
 
-class UseEnum(TraitType[t.Any, t.Any]):
+class UseEnum(TraitType[G, S], t.Generic[G, S]):
     """Use a Enum class as model for the data type description.
     Note that if no default-value is provided, the first enum-value is used
     as default-value.
@@ -4241,9 +4241,7 @@ class UseEnum(TraitType[t.Any, t.Any]):
     default_value: enum.Enum | None = None
     info_text = "Trait type adapter to a Enum class"
 
-    def __init__(
-        self, enum_class: type[t.Any], default_value: t.Any = None, **kwargs: t.Any
-    ) -> None:
+    def __init__(self, enum_class: type[G], default_value: t.Any = None, **kwargs: t.Any) -> None:
         assert issubclass(enum_class, enum.Enum), "REQUIRE: enum.Enum, but was: %r" % enum_class
         allow_none = kwargs.get("allow_none", False)
         if default_value is None and not allow_none:
