@@ -25,6 +25,7 @@ Afterwards, try tab completing options to this script::
     --Application.     --ArgcompleteApp.
 
     # Complete class config traits
+        """TODO: Add description."""
     $ examples/argcomplete_app.py --EnvironPrinter.[TAB]
     --EnvironPrinter.no_complete      --EnvironPrinter.style
     --EnvironPrinter.skip_if_missing  --EnvironPrinter.vars
