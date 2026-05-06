@@ -2,6 +2,51 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.15.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.3...8c2b92efa3238961b74cc1dc6497722e41da5472))
+
+### Enhancements made
+
+- Moved definitions of K and V outside of TYPE_CHECKING condition [#935](https://github.com/ipython/traitlets/pull/935) ([@JohanMabille](https://github.com/JohanMabille), [@Carreau](https://github.com/Carreau))
+- Accept integer-valued numbers for Integer [#919](https://github.com/ipython/traitlets/pull/919) ([@minrk](https://github.com/minrk), [@ivanov](https://github.com/ivanov))
+- Update `__new__` method to use Self type for improved type hinting [#918](https://github.com/ipython/traitlets/pull/918) ([@fleming79](https://github.com/fleming79), [@minrk](https://github.com/minrk))
+- Fix whitespace formatting in CLI help. [#917](https://github.com/ipython/traitlets/pull/917) ([@Carreau](https://github.com/Carreau), [@minrk](https://github.com/minrk))
+
+### Bugs fixed
+
+- Fix `traitlets.__all__` [#933](https://github.com/ipython/traitlets/pull/933) ([@kylebarron](https://github.com/kylebarron), [@minrk](https://github.com/minrk))
+- The --config option with absolute paths will be loaded only once. [#923](https://github.com/ipython/traitlets/pull/923) ([@ryumasai](https://github.com/ryumasai), [@minrk](https://github.com/minrk))
+- Avoid using `return t.cast` which can prevent attribute access during process teardown [#913](https://github.com/ipython/traitlets/pull/913) ([@minrk](https://github.com/minrk), [@Carreau](https://github.com/Carreau))
+- Suppress exceptions when closing handlers during `__del__` [#912](https://github.com/ipython/traitlets/pull/912) ([@minrk](https://github.com/minrk), [@Carreau](https://github.com/Carreau))
+
+### Maintenance and upkeep improvements
+
+- Removed pinning on virtualenv [#939](https://github.com/ipython/traitlets/pull/939) ([@JohanMabille](https://github.com/JohanMabille))
+- Pin virtualenv\<21 in tests because of breaking change incompatible wi… [#937](https://github.com/ipython/traitlets/pull/937) ([@JohanMabille](https://github.com/JohanMabille), [@SylvainCorlay](https://github.com/SylvainCorlay))
+- Added upper bound to mypy on pypy [#936](https://github.com/ipython/traitlets/pull/936) ([@JohanMabille](https://github.com/JohanMabille), [@Carreau](https://github.com/Carreau))
+- Start testing on 3.14 and 3.14t [#929](https://github.com/ipython/traitlets/pull/929) ([@Carreau](https://github.com/Carreau))
+- Require Python 3.9 (drop 3.8) [#924](https://github.com/ipython/traitlets/pull/924) ([@minrk](https://github.com/minrk))
+- Deprecate empty `isidentifier` utility [#915](https://github.com/ipython/traitlets/pull/915) ([@minrk](https://github.com/minrk), [@Carreau](https://github.com/Carreau))
+- Fix downstream test `package_spec` [#914](https://github.com/ipython/traitlets/pull/914) ([@minrk](https://github.com/minrk))
+- CI: Start testing on Python 3.13 [#910](https://github.com/ipython/traitlets/pull/910) ([@EwoutH](https://github.com/EwoutH), [@minrk](https://github.com/minrk))
+- Remove py2-compat hack from `bunch.__dir__` [#906](https://github.com/ipython/traitlets/pull/906) ([@sethtroisi](https://github.com/sethtroisi), [@minrk](https://github.com/minrk))
+
+### Documentation improvements
+
+- Use extension:filetype mapping in sphinx configuration [#928](https://github.com/ipython/traitlets/pull/928) ([@Carreau](https://github.com/Carreau))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2024-04-19&to=2026-05-06&type=c))
+
+@Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2024-04-19..2026-05-06&type=Issues)) | @EwoutH ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3AEwoutH+updated%3A2024-04-19..2026-05-06&type=Issues)) | @fleming79 ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Afleming79+updated%3A2024-04-19..2026-05-06&type=Issues)) | @ivanov ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aivanov+updated%3A2024-04-19..2026-05-06&type=Issues)) | @JohanMabille ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3AJohanMabille+updated%3A2024-04-19..2026-05-06&type=Issues)) | @kylebarron ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Akylebarron+updated%3A2024-04-19..2026-05-06&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aminrk+updated%3A2024-04-19..2026-05-06&type=Issues)) | @ryumasai ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aryumasai+updated%3A2024-04-19..2026-05-06&type=Issues)) | @sethtroisi ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Asethtroisi+updated%3A2024-04-19..2026-05-06&type=Issues)) | @SylvainCorlay ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ASylvainCorlay+updated%3A2024-04-19..2026-05-06&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.14.3
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.2...5cf34f6c42b6e39aa1e53394443efca3d7329e3b))
@@ -19,8 +64,6 @@
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2024-03-12&to=2024-04-19&type=c))
 
 [@azjps](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aazjps+updated%3A2024-03-12..2024-04-19&type=Issues) | [@dependabot](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Adependabot+updated%3A2024-03-12..2024-04-19&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.14.2
 
