@@ -22,13 +22,13 @@ import sys
 
 HERE = osp.abspath(osp.dirname(__file__))
 ROOT = osp.dirname(osp.dirname(HERE))
+sys.path.insert(0, ROOT)
 
 from traitlets import __version__, version_info  # noqa: E402
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
 
