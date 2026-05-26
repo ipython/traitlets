@@ -33,9 +33,8 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 [project.optional-dependencies]
 test = [
     "argcomplete>=3.0.3",
-    "mypy>=1.7.0",
-    # see https://github.com/python/mypy/issues/20454
-    "mypy>=1.7.0,<1.19 ; platform_python_implementation == 'PyPy'",
+    # mypy 1.19 dropped support for `python_version = "3.9"` targets.
+    "mypy>=1.7.0,<1.19",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
