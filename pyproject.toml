@@ -33,8 +33,11 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 [project.optional-dependencies]
 test = [
     "argcomplete>=3.0.3",
-    # mypy 1.19 dropped support for `python_version = "3.9"` targets.
-    "mypy>=1.7.0,<1.19",
+    # See https://github.com/python/mypy/issues/20329 for PyPy support issue.
+    # Also, test assertions will need to be updated for 1.20+ because
+    # `reveal_type()` representations were simplified in
+    # https://github.com/python/mypy/pull/20929
+    "mypy>=1.17.0,<1.19",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
@@ -87,7 +90,7 @@ build = [
 
 [tool.mypy]
 files = "traitlets"
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 pretty = true
