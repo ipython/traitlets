@@ -34,10 +34,10 @@ Tracker = "https://github.com/ipython/traitlets/issues"
 test = [
     "argcomplete>=3.0.3",
     # See https://github.com/python/mypy/issues/20329 for PyPy support issue.
-    # Also, test assertiosn will need to be updated for 1.20+ because
+    # Also, test assertions will need to be updated for 1.20+ because
     # `reveal_type()` representations were simplified in
     # https://github.com/python/mypy/pull/20929
-    "mypy>=1.7.0,<1.19",
+    "mypy>=1.18.0,<1.19",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
