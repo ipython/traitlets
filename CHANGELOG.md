@@ -2,6 +2,25 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.15.1
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.15.0...bc0b8b51f1adab7671b6e3932d91844c05731660))
+
+### Maintenance and upkeep improvements
+
+- Fix CI (docs build, mypy tests, downstream) [#943](https://github.com/ipython/traitlets/pull/943) ([@Carreau](https://github.com/Carreau), [@krassowski](https://github.com/krassowski))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2026-05-06&to=2026-06-03&type=c))
+
+@Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2026-05-06..2026-06-03&type=Issues)) | @krassowski ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Akrassowski+updated%3A2026-05-06..2026-06-03&type=Issues)) | @rmorshea ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2026-05-06..2026-06-03&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.15.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.14.3...8c2b92efa3238961b74cc1dc6497722e41da5472))
@@ -44,8 +63,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2024-04-19&to=2026-05-06&type=c))
 
 @Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2024-04-19..2026-05-06&type=Issues)) | @EwoutH ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3AEwoutH+updated%3A2024-04-19..2026-05-06&type=Issues)) | @fleming79 ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Afleming79+updated%3A2024-04-19..2026-05-06&type=Issues)) | @ivanov ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aivanov+updated%3A2024-04-19..2026-05-06&type=Issues)) | @JohanMabille ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3AJohanMabille+updated%3A2024-04-19..2026-05-06&type=Issues)) | @kylebarron ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Akylebarron+updated%3A2024-04-19..2026-05-06&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aminrk+updated%3A2024-04-19..2026-05-06&type=Issues)) | @ryumasai ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aryumasai+updated%3A2024-04-19..2026-05-06&type=Issues)) | @sethtroisi ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Asethtroisi+updated%3A2024-04-19..2026-05-06&type=Issues)) | @SylvainCorlay ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ASylvainCorlay+updated%3A2024-04-19..2026-05-06&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.14.3
 
