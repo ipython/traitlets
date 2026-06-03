@@ -27,7 +27,6 @@ dynamic = ["version"]
 Homepage = "https://github.com/ipython/traitlets"
 Documentation = "https://traitlets.readthedocs.io"
 Source = "https://github.com/ipython/traitlets"
-Funding = "https://numfocus.org"
 Tracker = "https://github.com/ipython/traitlets/issues"
 
 [project.optional-dependencies]
