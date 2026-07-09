@@ -3530,7 +3530,11 @@ class Container(Instance[T]):
         try:
             test = literal_eval(s)
         except Exception:
-            test = None
+            # Not a literal; validate the original string so it is rejected
+            # (a bare string is not a container) and callers can fall back to
+            # collating it into a single-item list. Substituting ``None`` here
+            # would be wrongly accepted by ``allow_none`` containers.
+            test = s
         return self.validate(None, test)
 
     def from_string_list(self, s_list: list[str]) -> T | None:
