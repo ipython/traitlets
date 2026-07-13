@@ -4235,7 +4235,6 @@ class UseEnum(TraitType[t.Any, t.Any]):
 
     .. sourcecode:: python
 
-        # -- SINCE: Python 3.4 (or install backport: pip install enum34)
         import enum
         from traitlets import HasTraits, UseEnum
 

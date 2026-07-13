@@ -16,14 +16,13 @@ Numbers
 
 .. autoclass:: Integer
 
-   An integer trait. On Python 2, this automatically uses the ``int`` or
-   ``long`` types as necessary.
+   An integer trait.
 
 .. class:: Int
 .. class:: Long
 
-   On Python 2, these are traitlets for values where the ``int`` and ``long``
-   types are not interchangeable. On Python 3, they are both aliases for
+   These were traitlets for values where the Python 2 ``int`` and ``long``
+   types were not interchangeable. Now they are both aliases for
    :class:`Integer`.
 
    In almost all situations, you should use :class:`Integer` instead of these.

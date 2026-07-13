@@ -21,8 +21,10 @@ def import_item(name: str) -> Any:
 
     Returns
     -------
-    mod : module object
-        The module that was imported.
+    mod : object
+        The imported object: for a dotted name ``foo.bar``, the ``bar``
+        attribute of module ``foo`` (which may be any object); for an
+        un-dotted name, the module itself.
     """
     if not isinstance(name, str):
         raise TypeError("import_item accepts strings, not '%s'." % type(name))

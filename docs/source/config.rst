@@ -125,7 +125,7 @@ subclass
 
     # Sample configurable:
     from traitlets.config.configurable import Configurable
-    from traitlets import Int, Float, Unicode, Bool
+    from traitlets import Integer, Float, Unicode, Bool
 
 
     class School(Configurable):

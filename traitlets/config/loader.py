@@ -823,11 +823,6 @@ class ArgParseConfigLoader(CommandLineConfigLoader):
             Dict of flags to full traitlets names for CLI parsing
         log
             Passed to `ConfigLoader`
-
-        Returns
-        -------
-        config : Config
-            The resulting Config object.
         """
         classes = classes or []
         super(CommandLineConfigLoader, self).__init__(log=log)
