@@ -71,7 +71,7 @@ from ._warnings import expected_warnings
 
 def change_dict(*ordered_values):
     change_names = ("name", "old", "new", "owner", "type")
-    return dict(zip(change_names, ordered_values))
+    return dict(zip(change_names, ordered_values, strict=True))
 
 
 # -----------------------------------------------------------------------------
@@ -1666,7 +1666,7 @@ class ListTrait(HasTraits):
 class TestList(TraitTestBase):
     obj = ListTrait()
 
-    _default_value: t.List[t.Any] = []
+    _default_value: list[t.Any] = []
     _good_values = [[], [1], list(range(10)), (1, 2)]
     _bad_values = [10, [1, "a"], "a"]
 
@@ -1683,7 +1683,7 @@ class SetTrait(HasTraits):
 class TestSet(TraitTestBase):
     obj = SetTrait()
 
-    _default_value: t.Set[str] = set()
+    _default_value: set[str] = set()
     _good_values = [{"a", "b"}, "ab"]
     _bad_values = [1]
 
@@ -1705,7 +1705,7 @@ class NoneInstanceListTrait(HasTraits):
 class TestNoneInstanceList(TraitTestBase):
     obj = NoneInstanceListTrait()
 
-    _default_value: t.List[t.Any] = []
+    _default_value: list[t.Any] = []
     _good_values = [[Foo(), Foo()], []]
     _bad_values = [[None], [Foo(), None]]
 
@@ -1721,7 +1721,7 @@ class TestInstanceList(TraitTestBase):
         """Test that the instance klass is properly assigned."""
         self.assertIs(self.obj.traits()["value"]._trait.klass, Foo)
 
-    _default_value: t.List[t.Any] = []
+    _default_value: list[t.Any] = []
     _good_values = [[Foo(), Foo()], []]
     _bad_values = [
         [
@@ -1741,7 +1741,7 @@ class UnionListTrait(HasTraits):
 class TestUnionListTrait(TraitTestBase):
     obj = UnionListTrait()
 
-    _default_value: t.List[t.Any] = []
+    _default_value: list[t.Any] = []
     _good_values = [[True, 1], [False, True]]
     _bad_values = [[1, "True"], False]
 
@@ -1897,7 +1897,7 @@ class DictTrait(HasTraits):
 
 
 def test_dict_assignment():
-    d: t.Dict[str, int] = {}
+    d: dict[str, int] = {}
     c = DictTrait()
     c.value = d
     d["a"] = 5
@@ -2520,7 +2520,7 @@ class TestForwardDeclaredInstanceList(TraitTestBase):
         """Test that the instance klass is properly assigned."""
         self.assertIs(self.obj.traits()["value"]._trait.klass, ForwardDeclaredBar)
 
-    _default_value: t.List[t.Any] = []
+    _default_value: list[t.Any] = []
     _good_values = [
         [ForwardDeclaredBar(), ForwardDeclaredBarSub()],
         [],
@@ -2543,7 +2543,7 @@ class TestForwardDeclaredTypeList(TraitTestBase):
         """Test that the instance klass is properly assigned."""
         self.assertIs(self.obj.traits()["value"]._trait.klass, ForwardDeclaredBar)
 
-    _default_value: t.List[t.Any] = []
+    _default_value: list[t.Any] = []
     _good_values = [
         [ForwardDeclaredBar, ForwardDeclaredBarSub],
         [],

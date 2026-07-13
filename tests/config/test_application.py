@@ -66,7 +66,7 @@ class MyApp(Application):
         help="Should print a warning if `MyApp.warn-typo=...` command is passed",
     )
 
-    aliases: t.Dict[t.Any, t.Any] = {}
+    aliases: dict[t.Any, t.Any] = {}
     aliases.update(Application.aliases)
     aliases.update(
         {
@@ -83,7 +83,7 @@ class MyApp(Application):
         }
     )
 
-    flags: t.Dict[t.Any, t.Any] = {}
+    flags: dict[t.Any, t.Any] = {}
     flags.update(Application.flags)
     flags.update(
         {
