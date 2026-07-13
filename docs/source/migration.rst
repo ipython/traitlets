@@ -270,4 +270,4 @@ which automatically shims the deprecated signature into the new signature:
         @observe("path")
         @observe_compat  # <- this allows super()._path_changed in subclasses to work with the old signature.
         def _path_changed(self, change):
-            self.prefix = os.path.dirname(change["value"])
+            self.prefix = os.path.dirname(change["new"])

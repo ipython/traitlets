@@ -94,7 +94,10 @@ You can also add callbacks to a trait dynamically:
 
     If a trait attribute with a dynamic default value has another value set
     before it is used, the default will not be calculated.
-    Any callbacks on that trait will will fire, and *old_value* will be ``None``.
+    Any callbacks on that trait will fire, and *old_value* will be the
+    trait type's static default (e.g. ``''`` for :class:`Unicode`), or
+    ``traitlets.Undefined`` for trait types whose default can only be
+    computed dynamically (e.g. containers and :class:`Instance`).
 
 Validating proposed changes
 ---------------------------

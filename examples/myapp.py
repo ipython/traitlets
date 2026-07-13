@@ -20,13 +20,14 @@ classes Foo and Bar below). To make the traits configurable, you will need
 to set the following options:
 
 * ``config``: set to ``True`` to make the attribute configurable.
-* ``shortname``: by default, configurable attributes are set using the syntax
-  "Classname.attributename". At the command line, this is a bit verbose, so
-  we allow "shortnames" to be declared. Setting a shortname is optional, but
-  when you do this, you can set the option at the command line using the
-  syntax: "shortname=value".
 * ``help``: set the help string to display a help message when the ``-h``
   option is given at the command line. The help string should be valid ReST.
+
+By default, configurable attributes are set at the command line using the
+syntax "--Classname.attributename=value". This is a bit verbose, so an
+Application can declare ``aliases``, mapping a short name to a
+"Classname.attributename" (see MyApp below); the option can then be set
+with "--alias value".
 
 When the config attribute of an Application is updated, it will fire all of
 the trait's events for all of the config=True attributes.
@@ -51,7 +52,7 @@ class Foo(Configurable):
 
     i = Int(0, help="The integer i.").tag(config=True)
     j = Int(1, help="The integer j.").tag(config=True)
-    name = Unicode("Brian", help="First name.").tag(config=True, shortname="B")
+    name = Unicode("Brian", help="First name.").tag(config=True)
     mode = Enum(values=["on", "off", "other"], default_value="on").tag(config=True)
 
     def __init__(self, **kwargs):
