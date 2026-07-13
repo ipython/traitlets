@@ -46,6 +46,7 @@ import enum
 import inspect
 import numbers
 import os
+import pathlib
 import re
 import sys
 import types
@@ -111,6 +112,7 @@ __all__ = [
     "MetaHasTraits",
     "ObjectName",
     "ObserveHandler",
+    "Path",
     "Set",
     "TCPAddress",
     "This",
@@ -4206,6 +4208,25 @@ class CRegExp(TraitType["re.Pattern[t.Any]", t.Union["re.Pattern[t.Any]", str]])
             return re.compile(value)
         except Exception:
             self.error(obj, value)
+
+
+class Path(TraitType["pathlib.Path", t.Union["pathlib.Path", str, "os.PathLike[str]"]]):
+    """A trait for filesystem paths.
+
+    Accepts strings and :class:`os.PathLike` objects. The resulting
+    attribute will be a :class:`pathlib.Path` instance."""
+
+    info_text = "a filesystem path"
+
+    def validate(self, obj: t.Any, value: t.Any) -> pathlib.Path | None:
+        if isinstance(value, (str, os.PathLike)):
+            return pathlib.Path(value)
+        self.error(obj, value)
+
+    def from_string(self, s: str) -> pathlib.Path | None:
+        if self.allow_none and s == "None":
+            return None
+        return pathlib.Path(s)
 
 
 class UseEnum(TraitType[t.Any, t.Any]):

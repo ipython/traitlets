@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import decimal
+import pathlib
 import pickle
 import re
 import typing as t
@@ -44,6 +45,7 @@ from traitlets import (
     Long,
     MetaHasTraits,
     ObjectName,
+    Path,
     Set,
     TCPAddress,
     This,
@@ -1641,6 +1643,20 @@ class TestTCPAddress(TraitTestBase):
     _default_value = ("127.0.0.1", 0)
     _good_values = [("localhost", 0), ("192.168.0.1", 1000), ("www.google.com", 80)]
     _bad_values = [(0, 0), ("localhost", 10.0), ("localhost", -1), None]
+
+
+class PathTrait(HasTraits):
+    value = Path()
+
+
+class TestPath(TraitTestBase):
+    obj = PathTrait()
+
+    _good_values = ["foo", "foo/bar", pathlib.Path("foo"), pathlib.PurePath("foo")]
+    _bad_values = [0, 10.0, None, ["foo"]]
+
+    def coerce(self, value):
+        return pathlib.Path(value)
 
 
 class ListTrait(HasTraits):

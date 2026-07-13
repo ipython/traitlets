@@ -109,6 +109,8 @@ Miscellaneous
 
 .. autoclass:: CRegExp
 
+.. autoclass:: Path
+
 .. autoclass:: Union
    :members: __init__
 
