@@ -77,11 +77,6 @@ class ArgumentParser(argparse.ArgumentParser):
 # -----------------------------------------------------------------------------
 
 
-def execfile(fname: str, glob: dict[str, Any]) -> None:
-    with open(fname, "rb") as f:
-        exec(compile(f.read(), fname, "exec"), glob, glob)  # noqa: S102
-
-
 class LazyConfigValue(HasTraits):
     """Proxy object for exposing methods on configurable containers
 
@@ -249,10 +244,6 @@ class Config(dict):  # type:ignore[type-arg]
             obj = self[key]
             if _is_section_key(key) and isinstance(obj, dict) and not isinstance(obj, Config):
                 setattr(self, key, Config(obj))
-
-    def _merge(self, other: t.Any) -> None:
-        """deprecated alias, use Config.merge()"""
-        self.merge(other)
 
     def merge(self, other: t.Any) -> None:
         """merge another config object into this one"""

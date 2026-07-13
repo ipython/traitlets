@@ -62,9 +62,6 @@ from .utils.warnings import deprecated_method, should_warn, warn
 
 SequenceTypes = (list, tuple, set, frozenset)
 
-# backward compatibility, use to differ between Python 2 and 3.
-ClassTypes = (type,)
-
 if t.TYPE_CHECKING:
     from typing_extensions import TypeVar
 else:
