@@ -67,7 +67,7 @@ For instance, to set `C.a=[0,1,2]`, you may type this:
 """.strip()  # trim newlines of front and back
 
 # sys.argv can be missing, for example when python is embedded. See the docs
-# for details: http://docs.python.org/2/c-api/intro.html#embedding-python
+# for details: https://docs.python.org/3/c-api/intro.html#embedding-python
 if not hasattr(sys, "argv"):
     sys.argv = [""]
 
