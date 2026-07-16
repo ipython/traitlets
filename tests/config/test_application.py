@@ -19,7 +19,18 @@ from unittest import TestCase, mock
 
 import pytest
 
-from traitlets import Bool, Bytes, Dict, HasTraits, Integer, List, Set, Tuple, Unicode
+from traitlets import (
+    Bool,
+    Bytes,
+    Dict,
+    HasTraits,
+    Int,
+    Integer,
+    List,
+    Set,
+    Tuple,
+    Unicode,
+)
 from traitlets.config.application import Application
 from traitlets.config.configurable import Configurable
 from traitlets.config.loader import Config, KVArgParseConfigLoader
@@ -778,7 +789,6 @@ def test_show_config_json(capsys):
 
 
 def test_deep_alias():
-    from traitlets import Int
     from traitlets.config import Application, Configurable
 
     class Foo(Configurable):

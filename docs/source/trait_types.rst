@@ -14,30 +14,42 @@ Trait Types
 Numbers
 -------
 
-.. autoclass:: Integer
+.. autoclass:: Int
 
    An integer trait.
 
-.. class:: Int
+
+.. class:: Integer
+
+   An alias for :class:`Int`
+
 .. class:: Long
 
-   These were traitlets for values where the Python 2 ``int`` and ``long``
-   types were not interchangeable. Now they are both aliases for
-   :class:`Integer`.
+   .. deprecated:: 5.16
+      Use :class:`Integer` instead.
 
-   In almost all situations, you should use :class:`Integer` instead of these.
+   This (with Int) were values where the Python 2 ``int`` and ``long``
+   types were not interchangeable. Now Long is a deprecated aliases for
+   :class:`Int` and emit a :exc:`DeprecationWarning` when used.
 
 .. autoclass:: Float
 
 .. autoclass:: Complex
 
 .. class:: CInt
-           CLong
            CFloat
            CComplex
 
    Casting variants of the above. When a value is assigned to the attribute,
    these will attempt to convert it by calling e.g. ``value = int(value)``.
+
+.. class:: CLong
+
+   .. deprecated:: 5.16
+      Use :class:`CInt` instead.
+
+   A deprecated alias for :class:`CInt`; emits a :exc:`DeprecationWarning`
+   when used.
 
 Strings
 -------

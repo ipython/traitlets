@@ -1057,7 +1057,7 @@ class MetaHasTraits(MetaHasDescriptors):
                     # for instance ipywidgets.
                     none_ok = trait.default_value is None and trait.allow_none
                     if (
-                        type(trait) in [CInt, Int]
+                        type(trait) in [CInt, Int, Long, CLong]
                         and trait.min is None  # type: ignore[attr-defined]
                         and trait.max is None  # type: ignore[attr-defined]
                         and (isinstance(trait.default_value, int) or none_ok)
@@ -2592,7 +2592,7 @@ def _validate_bounds(
 
 
 class Int(TraitType[G, S]):
-    """An int trait."""
+    """An integer trait."""
 
     default_value = 0
     info_text = "an int"
@@ -2712,8 +2712,41 @@ class CInt(Int[G, S]):
         return _validate_bounds(self, obj, value)  # type:ignore[no-any-return]
 
 
-Long, CLong = Int, CInt
 Integer = Int
+
+
+class Long(Int[G, S]):
+    """A deprecated alias for :class:`Integer`.
+
+    .. deprecated:: 5.16
+        Use :class:`Integer` instead. ``Int`` and ``Long`` used to be distinct
+        traits back when Python 2 had separate ``int`` and ``long`` types; they
+        are now both just integers.
+    """
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        warn(
+            "The `Long` trait is deprecated since traitlets 5.16, use `Integer` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)  # type:ignore[misc]
+
+
+class CLong(CInt[G, S]):
+    """A deprecated alias for :class:`CInt`.
+
+    .. deprecated:: 5.16
+        Use :class:`CInt` instead.
+    """
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        warn(
+            "The `CLong` trait is deprecated since traitlets 5.16, use `CInt` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)  # type:ignore[misc]
 
 
 class Float(TraitType[G, S]):
@@ -3910,11 +3943,11 @@ class Dict(Instance["dict[K, V]"]):
 
         d2['n'] must be an integer
         d2['s'] must be text
-        >>> d2 = Dict(per_key_traits={"n": Integer(), "s": Unicode()})
+        >>> d2 = Dict(per_key_traits={"n": Int(), "s": Unicode()})
 
         d3's keys must be text
         d3's values must be integers
-        >>> d3 = Dict(value_trait=Integer(), key_trait=Unicode())
+        >>> d3 = Dict(value_trait=Int(), key_trait=Unicode())
 
         """
 
