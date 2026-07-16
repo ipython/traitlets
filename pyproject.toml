@@ -34,10 +34,10 @@ test = [
     "argcomplete>=3.0.3; python_version < '3.12'",
     "argcomplete>=3.5.2; python_version >= '3.12'",
     # See https://github.com/python/mypy/issues/20329 for PyPy support issue.
-    # Also, test assertions will need to be updated for 1.20+ because
-    # `reveal_type()` representations were simplified in
-    # https://github.com/python/mypy/pull/20929
-    "mypy>=1.17.0,<1.19",
+    # `reveal_type()` representations were simplified (dropping the `builtins.`
+    # prefix) in https://github.com/python/mypy/pull/20929; test assertions in
+    # tests/test_typing.py target that newer output, so require >=1.20.
+    "mypy>=1.20",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing",
@@ -97,6 +97,14 @@ pretty = true
 show_error_context = true
 warn_unreachable = true
 exclude = ["examples/docs/configs", "traitlets/tests/test_typing.py"]
+
+[[tool.mypy.overrides]]
+# numpy is pulled in transitively via `import pytest` (pytest.approx). Its
+# recent stubs use the `type` statement, which mypy rejects under
+# python_version = "3.10", aborting the check. Skip following into it.
+module = "numpy.*"
+follow_imports = "skip"
+follow_imports_for_stubs = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
