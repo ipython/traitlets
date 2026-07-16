@@ -37,7 +37,7 @@ class MyConfigurable(Configurable):
 
 mc_help = """MyConfigurable(Configurable) options
 ------------------------------------
---MyConfigurable.a=<Integer>
+--MyConfigurable.a=<Int>
     The integer a.
     Default: 1
 --MyConfigurable.b=<Float>
@@ -46,16 +46,12 @@ mc_help = """MyConfigurable(Configurable) options
 
 mc_help_inst = """MyConfigurable(Configurable) options
 ------------------------------------
---MyConfigurable.a=<Integer>
+--MyConfigurable.a=<Int>
     The integer a.
     Current: 5
 --MyConfigurable.b=<Float>
     The integer b.
     Current: 4.0"""
-
-# On Python 3, the Integer trait is a synonym for Int
-mc_help = mc_help.replace("<Integer>", "<Int>")
-mc_help_inst = mc_help_inst.replace("<Integer>", "<Int>")
 
 
 class Foo(Configurable):

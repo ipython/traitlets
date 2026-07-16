@@ -366,6 +366,18 @@ class TestTraitType(TestCase):
             class C(HasTraits):
                 t = Dict(Int)
 
+    def test_long_deprecated_aliases(self):
+        for cls, replacement in [(Long, "Integer"), (CLong, "CInt")]:
+            with expected_warnings([f"`{cls.__name__}` trait is deprecated"]):
+                trait = cls(3)
+            # deprecated aliases still behave like their replacement
+            assert isinstance(trait, Integer)
+
+            class C(HasTraits):
+                x = trait
+
+            assert C().x == 3
+
 
 class TestHasDescriptorsMeta(TestCase):
     def test_metaclass(self):
