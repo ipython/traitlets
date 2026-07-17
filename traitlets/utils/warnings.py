@@ -45,7 +45,7 @@ def deprecated_method(method: t.Any, cls: t.Any, method_name: str, msg: str) -> 
         warnings.warn_explicit(warn_msg, DeprecationWarning, fname, lineno)
 
 
-_deprecations_shown = set()
+_deprecations_shown: set[tuple[str, str, int]] = set()
 
 
 def should_warn(key: t.Any) -> bool:
