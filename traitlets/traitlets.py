@@ -1964,14 +1964,10 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     def class_own_trait_events(cls: type[HasTraits], name: str) -> dict[str, EventHandler]:
         """Get a dict of all event handlers defined on this class, not a parent.
 
-        Works like ``event_handlers``, except for excluding traits from parents.
+        Works like ``trait_events``, except for excluding traits from parents.
         """
         sup = super(cls, cls)
-        return {
-            n: e
-            for (n, e) in cls.events(name).items()  # type:ignore[attr-defined]
-            if getattr(sup, n, None) is not e
-        }
+        return {n: e for (n, e) in cls.trait_events(name).items() if getattr(sup, n, None) is not e}
 
     @classmethod
     def trait_events(cls: type[HasTraits], name: str | None = None) -> dict[str, EventHandler]:
@@ -1994,9 +1990,6 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     events[k] = v
                 elif name in v.trait_names:  # type:ignore[attr-defined]
                     events[k] = v
-                elif hasattr(v, "tags"):
-                    if cls.trait_names(**v.tags):
-                        events[k] = v
         return events
 
 

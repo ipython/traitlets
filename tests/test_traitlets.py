@@ -836,6 +836,44 @@ class TestHasTraits(TestCase):
         self.assertTrue(a.has_trait("f"))
         self.assertFalse(a.has_trait("g"))
 
+    def test_trait_events(self):
+        class A(HasTraits):
+            i = Int()
+
+            @observe("i")
+            def _on_i(self, change):
+                pass
+
+        class B(A):
+            f = Float()
+
+            @observe("f")
+            def _on_f(self, change):
+                pass
+
+        self.assertEqual(sorted(B.trait_events()), ["_on_f", "_on_i"])
+        self.assertEqual(list(B.trait_events("f")), ["_on_f"])
+        self.assertEqual(list(B.trait_events("i")), ["_on_i"])
+
+    def test_class_own_trait_events(self):
+        class A(HasTraits):
+            i = Int()
+
+            @observe("i")
+            def _on_i(self, change):
+                pass
+
+        class B(A):
+            f = Float()
+
+            @observe("f")
+            def _on_f(self, change):
+                pass
+
+        self.assertEqual(list(A.class_own_trait_events("i")), ["_on_i"])
+        self.assertEqual(list(B.class_own_trait_events("f")), ["_on_f"])
+        self.assertEqual(list(B.class_own_trait_events("i")), [])
+
     def test_trait_has_value(self):
         class A(HasTraits):
             i = Int()
