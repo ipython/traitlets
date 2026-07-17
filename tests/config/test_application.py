@@ -969,6 +969,23 @@ def test_logging_teardown_on_error(capsys, caplogconfig):
     assert len(caplogconfig) == 1  # logging was configured
 
 
+def test_get_logger_after_application():
+    # get_logger must pick up the Application's logger even if it was
+    # first called (returning the fallback) before the Application existed,
+    # and fall back again once the Application is torn down
+    import traitlets.log
+
+    Application.clear_instance()
+    try:
+        fallback = traitlets.log.get_logger()
+        assert fallback.name == "traitlets"
+        app = Application.instance()
+        assert traitlets.log.get_logger() is app.log
+    finally:
+        Application.clear_instance()
+    assert traitlets.log.get_logger() is fallback
+
+
 if __name__ == "__main__":
     # for test_help_output:
     MyApp.launch_instance()
