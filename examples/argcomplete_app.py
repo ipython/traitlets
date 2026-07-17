@@ -63,6 +63,7 @@ Afterwards, try tab completing options to this script::
 If completions are not showing, you can set the environment variable ``_ARC_DEBUG=1``
 to assist in debugging argcomplete. This was last checked with ``argcomplete==1.12.3``.
 """
+
 from __future__ import annotations
 
 import json

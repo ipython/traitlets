@@ -32,6 +32,7 @@ with "--alias value".
 When the config attribute of an Application is updated, it will fire all of
 the trait's events for all of the config=True attributes.
 """
+
 from __future__ import annotations
 
 from traitlets import Bool, Dict, Enum, Int, List, Unicode

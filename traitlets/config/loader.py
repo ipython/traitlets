@@ -690,7 +690,7 @@ class CommandLineConfigLoader(ConfigLoader):
             for sec, c in cfg.items():
                 self.config[sec].update(c)
         else:
-            raise TypeError("Invalid flag: %r" % cfg)
+            raise TypeError(f"Invalid flag: {cfg!r}")
 
 
 # match --Class.trait keys for argparse
