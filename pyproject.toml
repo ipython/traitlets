@@ -55,6 +55,11 @@ path = "traitlets/_version.py"
 [tool.hatch.metadata]
 allow-direct-references = true
 
+[tool.hatch.envs.default]
+# uv is already a dependency of hatch, so this costs nothing to enable and
+# cuts environment creation from ~16s to ~4s (more on Windows).
+installer = "uv"
+
 [tool.hatch.envs.docs]
 features = ["docs"]
 [tool.hatch.envs.docs.scripts]
