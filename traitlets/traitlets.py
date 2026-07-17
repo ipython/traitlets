@@ -910,6 +910,9 @@ class _CallbackWrapper:
 
     The comparison operator __eq__ is implemented to enable removal of wrapped
     callbacks.
+
+    __hash__ is deliberately left unset: instances compare equal to the callback
+    they wrap, so no hash could stay consistent with __eq__.
     """
 
     def __init__(self, cb: t.Any) -> None:
@@ -2624,7 +2627,7 @@ class Int(TraitType[G, S]):
             # allow casting integer-valued numbers to int
             # allows for more concise assignment like `4e9` which is a float
             try:
-                int_value = int(value)
+                int_value = int(value)  # type:ignore[call-overload]
                 if int_value == value:
                     value = int_value
             except Exception:

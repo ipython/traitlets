@@ -123,7 +123,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ### Enhancements made
 
-- Add option to load  traitlets values from environment. [#856](https://github.com/ipython/traitlets/pull/856) ([@Carreau](https://github.com/Carreau))
+- Add option to load traitlets values from environment. [#856](https://github.com/ipython/traitlets/pull/856) ([@Carreau](https://github.com/Carreau))
 
 ### Maintenance and upkeep improvements
 
@@ -265,7 +265,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ### Other merged PRs
 
-- Clean up license (#832)Co-authored-by: pre-commit-ci\[bot\] \<66853113+pre-commit-ci\[bot\]@users.noreply.github.com> [#832](https://github.com/ipython/traitlets/pull/832) ([@dcsaba89](https://github.com/dcsaba89))
+- Clean up license (#832)Co-authored-by: pre-commit-ci[bot] \<66853113+pre-commit-ci[bot]@users.noreply.github.com> [#832](https://github.com/ipython/traitlets/pull/832) ([@dcsaba89](https://github.com/dcsaba89))
 
 ### Contributors to this release
 
@@ -328,7 +328,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ### Documentation improvements
 
-- Additional `Application` examples and docs  [#811](https://github.com/ipython/traitlets/pull/811) ([@azjps](https://github.com/azjps))
+- Additional `Application` examples and docs [#811](https://github.com/ipython/traitlets/pull/811) ([@azjps](https://github.com/azjps))
 
 ### Contributors to this release
 

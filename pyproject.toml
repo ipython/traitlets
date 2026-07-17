@@ -37,7 +37,9 @@ test = [
     # `reveal_type()` representations were simplified (dropping the `builtins.`
     # prefix) in https://github.com/python/mypy/pull/20929; test assertions in
     # tests/test_typing.py target that newer output, so require >=1.20.
-    "mypy>=1.20; implementation_name != 'pypy'",
+    # mypy 2.0 narrowed the `int()` overloads, so traitlets.Int carries a
+    # `call-overload` ignore that older versions flag as unused: require >=2.0.
+    "mypy>=2.0; implementation_name != 'pypy'",
     "pre-commit",
     "pytest-mock",
     "pytest-mypy-testing; implementation_name != 'pypy'",
@@ -118,6 +120,7 @@ follow_imports_for_stubs = true
 minversion = "6.0"
 xfail_strict = true
 log_cli_level = "info"
+log_level = "info"
 addopts = [
   "-ra", "--durations=10", "--color=yes", "--doctest-modules",
    "--showlocals", "--strict-markers", "--strict-config",
@@ -171,6 +174,12 @@ exclude_lines = [
 relative_files = true
 source = ["traitlets"]
 
+[tool.repo-review]
+# traitlets publishes `traitlets[test]` / `traitlets[docs]` as documented
+# extras (see README and .github/workflows/downstream.yml), so the extras
+# stay the source of truth rather than [dependency-groups].
+ignore = ["PP006"]
+
 [tool.ruff]
 line-length = 100
 
@@ -213,7 +222,10 @@ ignore = [
   "SIM105", # Use `contextlib.suppress(ValueError)`
   "SIM108", # Use ternary operator
   "SIM114", # Combine `if` branches using logical `or` operator"
-  "PLC0415", # `import` should be at the top-level of a file (traitlets uses lazy/optional imports)
+  # Imports are deliberately deferred to break circular imports between
+  # traitlets.log and traitlets.config, and to keep optional dependencies
+  # (argcomplete) and slow stdlib imports out of the import path.
+  "PLC0415", # `import` should be at the top-level of a file
   "PLW2901", # `for` loop variable `path` overwritten by assignment target
   # https://github.com/astral-sh/ruff/issues/8796#issuecomment-1825907715
   "PT001", "PT02", "PT009"
@@ -237,8 +249,8 @@ isort.required-imports = ["from __future__ import annotations"]
 # S301 `pickle` and modules that wrap..."
 # PGH003 Use specific rule codes when ignoring type issues
 # RUF059 Unpacked variable is never used (e.g. `out, err = capsys.readouterr()`)
-# PLW0108 Lambda may be unnecessary
-# B024 Abstract base class without abstract methods (test fixtures)
+# PLW0108 Lambda may be unnecessary (tests use lambdas as Callable trait values)
+# B024 Abstract base class without abstract methods (mimics downstream code)
 "tests/*" = ["B011", "F841", "C408", "E402", "T201", "B007", "N802",
                        "B018", "S301", "ARG", "PGH003", "RUF059", "PLW0108", "B024"]
 "traitlets/config/application.py" = ["T201"]
