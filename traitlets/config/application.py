@@ -751,7 +751,7 @@ class Application(SingletonConfigurable):
             if len(children) == 1:
                 # exactly one descendent, promote alias
                 cls = children[0]  # type:ignore[assignment]
-            if not isinstance(aliases, tuple):  # type:ignore[unreachable]
+            if not isinstance(alias, tuple):  # type:ignore[unreachable]
                 alias = (alias,)  # type:ignore[assignment]
             for al in alias:
                 aliases[al] = ".".join([cls, trait])

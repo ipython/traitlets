@@ -510,6 +510,33 @@ class TestApplication(TestCase):
         # this would be app.config.Application.log_level if it failed:
         self.assertEqual(app.config.MyApp.log_level, "CRITICAL")
 
+    def test_flatten_aliases_tuple_keys(self):
+        # tuple alias keys must be exploded into one entry per name, so
+        # that the loader can detect collisions between flags and aliases
+        app = MyApp()
+        flags, aliases = app.flatten_flags()
+        self.assertEqual(aliases["fooi"], "Foo.i")
+        self.assertEqual(aliases["i"], "Foo.i")
+        self.assertNotIn(("fooi", "i"), aliases)
+
+    def test_flag_tuple_alias_collision(self):
+        # a flag sharing a name with one member of a tuple alias used to
+        # crash argparse with 'conflicting option strings'
+        class CollisionApp(Application):
+            classes = List([Bar])  # type:ignore[assignment]
+            aliases = {("b", "bee"): "Bar.b"}
+            flags = {"b": ({"Bar": {"enabled": False}}, "Disable Bar")}
+
+        # with an argument it acts as the alias
+        app = CollisionApp()
+        app.parse_command_line(["-b", "5"])
+        self.assertEqual(app.config.Bar.b, 5)
+
+        # without an argument it acts as the flag
+        app = CollisionApp()
+        app.parse_command_line(["-b"])
+        self.assertEqual(app.config.Bar.enabled, False)
+
     def test_extra_args(self):
         app = MyApp()
         app.parse_command_line(["--Bar.b=5", "extra", "args", "--disable"])
