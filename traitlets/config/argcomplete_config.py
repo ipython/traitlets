@@ -40,11 +40,11 @@ def get_argcomplete_cwords() -> list[str] | None:
     comp_words: list[str]
     try:
         (
-            cword_prequote,
-            cword_prefix,
-            cword_suffix,
+            _cword_prequote,
+            _cword_prefix,
+            _cword_suffix,
             comp_words,
-            last_wordbreak_pos,
+            _last_wordbreak_pos,
         ) = argcomplete.split_line(comp_line, comp_point)  # type:ignore[attr-defined,no-untyped-call]
     except ModuleNotFoundError:
         return None
@@ -57,8 +57,8 @@ def get_argcomplete_cwords() -> list[str] | None:
     start = int(os.environ["_ARGCOMPLETE"]) - 1
     comp_words = comp_words[start:]
 
-    # argcomplete.debug("prequote=", cword_prequote, "prefix=", cword_prefix, "suffix=", cword_suffix, "words=", comp_words, "last=", last_wordbreak_pos)
-    return comp_words  # noqa: RET504
+    # argcomplete.debug("prequote=", _cword_prequote, "prefix=", _cword_prefix, "suffix=", _cword_suffix, "words=", comp_words, "last=", _last_wordbreak_pos)
+    return comp_words
 
 
 def increment_argcomplete_index() -> None:

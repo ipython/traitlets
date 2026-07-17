@@ -433,7 +433,7 @@ class TestHasDescriptors(TestCase):
             fd = FooDescriptor()
 
             def setup_instance(self, *args, **kwargs):
-                self.foo = kwargs.get("foo", None)
+                self.foo = kwargs.get("foo")
                 super().setup_instance(*args, **kwargs)
 
         hfd = HasFooDescriptors(foo="bar")
@@ -2464,7 +2464,7 @@ def test_notification_order():
     obj = OrderTraits()
     assert obj.notified == {}
     obj = OrderTraits(**d)
-    notifications = {c: d for c in "abcdefghijkl"}
+    notifications = dict.fromkeys("abcdefghijkl", d)
     assert obj.notified == notifications
 
 

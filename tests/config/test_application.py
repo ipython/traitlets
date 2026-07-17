@@ -205,7 +205,24 @@ class TestApplication(TestCase):
     def test_config_seq_args(self):
         app = MyApp()
         app.parse_command_line(
-            "--li 1 --li 3 --la 1 --tb AB 2 --Foo.la=ab --Bar.aset S1 --Bar.aset S2 --Bar.aset S1".split()
+            [
+                "--li",
+                "1",
+                "--li",
+                "3",
+                "--la",
+                "1",
+                "--tb",
+                "AB",
+                "2",
+                "--Foo.la=ab",
+                "--Bar.aset",
+                "S1",
+                "--Bar.aset",
+                "S2",
+                "--Bar.aset",
+                "S1",
+            ]
         )
         assert app.extra_args == ["2"]
         config = app.config
@@ -223,9 +240,25 @@ class TestApplication(TestCase):
     def test_config_dict_args(self):
         app = MyApp()
         app.parse_command_line(
-            "--Foo.fdict a=1 --Foo.fdict b=b --Foo.fdict c=3 "
-            "--Bar.bdict k=1 -D=a=b -D 22=33 "
-            "--Bar.idict k=1 --Bar.idict b=2 --Bar.idict c=3 ".split()
+            [
+                "--Foo.fdict",
+                "a=1",
+                "--Foo.fdict",
+                "b=b",
+                "--Foo.fdict",
+                "c=3",
+                "--Bar.bdict",
+                "k=1",
+                "-D=a=b",
+                "-D",
+                "22=33",
+                "--Bar.idict",
+                "k=1",
+                "--Bar.idict",
+                "b=2",
+                "--Bar.idict",
+                "c=3",
+            ]
         )
         fdict = {"a": "1", "b": "b", "c": "3"}
         bdict = {"k": "1", "a": "b", "22": "33"}
@@ -410,7 +443,7 @@ class TestApplication(TestCase):
 
         class StrictLoader(KVArgParseConfigLoader):
             def _handle_unrecognized_alias(self, arg):
-                self.parser.error("Unrecognized alias: %s" % arg)
+                self.parser.error(f"Unrecognized alias: {arg}")
 
         class StrictApplication(Application):
             def _create_loader(self, argv, aliases, flags, classes):
