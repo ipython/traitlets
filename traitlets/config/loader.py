@@ -7,7 +7,6 @@ from __future__ import annotations
 import argparse
 import copy
 import functools
-import json
 import os
 import re
 import sys
@@ -565,6 +564,8 @@ class JSONFileConfigLoader(FileConfigLoader):
         return self.config
 
     def _read_file_as_dict(self) -> dict[str, t.Any]:
+        import json
+
         with open(self.full_filename) as f:
             return t.cast("dict[str, t.Any]", json.load(f))
 
@@ -591,6 +592,8 @@ class JSONFileConfigLoader(FileConfigLoader):
         configuration to disk.
         """
         self.config.version = 1
+        import json
+
         json_config = json.dumps(self.config, indent=2)
         with open(self.full_filename, "w") as f:
             f.write(json_config)
