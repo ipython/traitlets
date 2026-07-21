@@ -4,8 +4,10 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import contextlib
 import logging
 import typing as t
+from contextvars import ContextVar
 from copy import deepcopy
 from textwrap import dedent
 
@@ -514,6 +516,52 @@ class LoggingConfigurable(Configurable):
         return logger.handlers[0]
 
 
+CT = t.TypeVar("CT", bound="SingletonConfigurable")
+
+
+_active_scopes: ContextVar[tuple[SingletonScope, ...]] = ContextVar("singleton_scopes", default=())
+
+
+class SingletonScope:
+    """An isolated singleton registry, activated for a dynamic extent.
+
+    While active (``with scope():``), :meth:`SingletonConfigurable.instance`
+    on any subclass of ``base`` resolves within this registry — creating
+    fresh instances on first use — in the current thread/async task only.
+    Re-enterable: the registry persists across activations.
+    """
+
+    def __init__(self, base: type[SingletonConfigurable]) -> None:
+        self.base = base
+        self._instances: dict[type, SingletonConfigurable] = {}
+
+    def covers(self, cls: type) -> bool:
+        """Whether ``cls`` resolves within this scope."""
+        return issubclass(cls, self.base)
+
+    def get(self, cls: type[CT]) -> CT | None:
+        """Registered instance for ``cls``, emulating class-attribute
+        inheritance: walk ``cls.__mro__`` and return the first hit."""
+        for klass in cls.__mro__:
+            if klass in self._instances:
+                return t.cast("CT", self._instances[klass])
+        return None
+
+    def add(self, inst: SingletonConfigurable) -> None:
+        """Pre-seed the registry with an existing instance (same
+        write-through to singleton parents as the classic path)."""
+        for subclass in type(inst)._walk_mro():
+            self._instances[subclass] = inst
+
+    @contextlib.contextmanager
+    def __call__(self) -> t.Generator[SingletonScope, None, None]:
+        token = _active_scopes.set((*_active_scopes.get(), self))
+        try:
+            yield self
+        finally:
+            _active_scopes.reset(token)
+
+
 class SingletonConfigurable(LoggingConfigurable):
     """A configurable that only allows one instance.
 
@@ -540,8 +588,27 @@ class SingletonConfigurable(LoggingConfigurable):
                 yield subclass
 
     @classmethod
+    def scope(cls) -> SingletonScope:
+        """Create a scope covering this class and its subclasses."""
+        return SingletonScope(cls)
+
+    @classmethod
+    def _current_scope(cls) -> SingletonScope | None:
+        """The innermost active scope covering ``cls``, or None."""
+        for scope in reversed(_active_scopes.get()):
+            if scope.covers(cls):
+                return scope
+        return None
+
+    @classmethod
     def clear_instance(cls) -> None:
         """unset _instance for this class and singleton parents."""
+        scope = cls._current_scope()
+        if scope is not None:
+            for klass in list(scope._instances):
+                if isinstance(scope._instances[klass], cls):
+                    del scope._instances[klass]
+            return
         if not cls.initialized():
             return
         for subclass in cls._walk_mro():
@@ -578,6 +645,20 @@ class SingletonConfigurable(LoggingConfigurable):
             >>> bam == Bar.instance()
             True
         """
+        scope = cls._current_scope()
+        if scope is not None:
+            if scope.get(cls) is None:
+                inst = cls(*args, **kwargs)
+                for subclass in cls._walk_mro():
+                    scope._instances[subclass] = inst
+            existing = scope.get(cls)
+            if isinstance(existing, cls):
+                return existing
+            raise MultipleInstanceError(
+                f"An incompatible sibling of '{cls.__name__}' is already instantiated"
+                f" as singleton: {type(existing).__name__}"
+            )
+
         # Create and save the instance
         if cls._instance is None:
             inst = cls(*args, **kwargs)
@@ -597,4 +678,7 @@ class SingletonConfigurable(LoggingConfigurable):
     @classmethod
     def initialized(cls) -> bool:
         """Has an instance been created?"""
+        scope = cls._current_scope()
+        if scope is not None:
+            return scope.get(cls) is not None
         return hasattr(cls, "_instance") and cls._instance is not None

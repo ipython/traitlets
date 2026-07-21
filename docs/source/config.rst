@@ -73,6 +73,97 @@ Singletons: :class:`~traitlets.config.SingletonConfigurable`
     of a given singleton class, but the :meth:`instance` method will always
     return the same one.
 
+Singleton scopes
+----------------
+
+By default :meth:`~traitlets.config.SingletonConfigurable.instance` resolves
+against a single, process-global registry. A :class:`~traitlets.config.SingletonScope`
+provides an isolated registry that is active only for a dynamic extent (the
+current thread or :mod:`asyncio` task), leaving the global one untouched. This is
+useful when you need to run code that internally calls ``.instance()`` — code you
+do not control — against a fresh set of singletons, for example in a test or when
+serving concurrent requests.
+
+Create a scope from the base class whose subtree it should cover with
+:meth:`~traitlets.config.SingletonConfigurable.scope`, then activate it as a
+context manager:
+
+.. sourcecode:: python
+
+    a = MyApp.instance()  # process-global instance
+
+    scope = MyApp.scope()  # covers MyApp and its subclasses
+    with scope():
+        third_party_function()  # its internal MyApp.instance() calls...
+        b = MyApp.instance()  # ...resolve to this fresh instance
+        assert b is not a
+    assert MyApp.instance() is a  # global untouched, exception-safe
+
+    scope.get(MyApp)  # -> b, retrieve what was created in-scope
+    with scope():  # re-entering resumes the same registry
+        assert MyApp.instance() is b
+
+Key semantics:
+
+- **Coverage is defined by the base class.** ``Foo.scope()`` only intercepts
+  ``.instance()`` for ``Foo`` and its subclasses; unrelated singletons keep
+  resolving against the global registry. Use ``SingletonConfigurable.scope()`` to
+  cover every singleton, or a narrower base to limit the blast radius.
+- **No fallback to the global.** Inside a scope, the first ``.instance()`` call
+  creates a fresh instance registered in the scope; :meth:`instance` never reads,
+  creates, or mutates the process-global ``_instance``, and
+  :meth:`~traitlets.config.SingletonConfigurable.initialized` is ``False`` until
+  that first in-scope creation.
+- **Pre-seeding.** :meth:`~traitlets.config.SingletonScope.add` registers an
+  existing instance so it is returned inside the scope (including via ancestor
+  singleton classes), letting you reuse an object across scope entries.
+- **Nesting and propagation.** Scopes nest; the innermost active scope covering a
+  class wins, and blocks restore in LIFO order (even on exceptions). Because the
+  active scope lives in a :class:`~contextvars.ContextVar`, an :mod:`asyncio` task
+  created inside a scope inherits it, but a new :class:`threading.Thread` started
+  inside does not — it falls through to the global registry.
+- **Direct construction is never intercepted.** ``MyApp()`` always builds a new,
+  unregistered object, in or out of a scope.
+
+Because a scope is bound to the thread (or task) that activates it, a freshly
+started :class:`threading.Thread` does *not* inherit its parent's scope. This
+makes it easy to give each worker thread its own isolated singleton: have every
+thread activate its own scope. Any ``.instance()`` calls made by that thread —
+directly or deep inside code it calls — then resolve to a per-thread instance,
+while the process-global singleton is left untouched:
+
+.. sourcecode:: python
+
+    import threading
+    from traitlets.config import SingletonConfigurable
+
+
+    class MyApp(SingletonConfigurable):
+        pass
+
+
+    seen = {}
+
+
+    def worker(name):
+        scope = MyApp.scope()  # a fresh registry, private to this thread
+        with scope():  # activate it for this thread's extent
+            app = MyApp.instance()  # created once, here...
+            assert MyApp.instance() is app  # ...and reused within the thread
+            seen[name] = app
+
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # each thread got its own distinct instance
+    assert len({id(app) for app in seen.values()}) == 3
+    # and none of them is the process-global singleton
+    assert all(app is not MyApp.instance() for app in seen.values())
+
 Having described these main concepts, we can now state the main idea in our
 configuration system: *"configuration" allows the default values of class
 attributes to be controlled on a class by class basis*. Thus all instances of
