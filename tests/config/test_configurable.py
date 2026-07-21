@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 import threading
 from unittest import TestCase
 
@@ -491,6 +492,13 @@ class TestSingletonScope(TestCase):
             c = MyApp.instance()
             self.assertIsNot(c, b)
 
+    @pytest.mark.skipif(
+        bool(getattr(sys.flags, "thread_inherit_context", 0)),
+        reason="When thread_inherit_context is enabled (the default on the "
+        "free-threaded build, e.g. 3.14t), a new threading.Thread starts with a "
+        "copy of the parent's contextvars.Context, so an active scope propagates "
+        "to child threads instead of falling through to the global registry.",
+    )
     def test_thread_isolation(self):
         class MyApp(SingletonConfigurable):
             pass
