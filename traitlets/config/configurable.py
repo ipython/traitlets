@@ -523,6 +523,17 @@ CT = t.TypeVar("CT", bound="SingletonConfigurable")
 _active_scopes: ContextVar[tuple[SingletonScope, ...]] = ContextVar("singleton_scopes", default=())
 
 
+def _threads_inherit_context() -> bool:
+    """Whether a new :class:`threading.Thread` inherits the caller's context.
+
+    Governed by :data:`sys.flags.thread_inherit_context`: false by default on the
+    GIL build, true by default on the free-threaded build (e.g. ``3.14t``) and on
+    any build launched with ``-X thread_inherit_context=1``. When true, an active
+    :class:`SingletonScope` propagates into threads started while it is active.
+    """
+    return bool(getattr(sys.flags, "thread_inherit_context", 0))
+
+
 class SingletonScope:
     """An isolated singleton registry, activated for a dynamic extent.
 
@@ -567,7 +578,7 @@ class SingletonScope:
 
     @contextlib.contextmanager
     def __call__(self) -> t.Generator[SingletonScope, None, None]:
-        if getattr(sys.flags, "thread_inherit_context", 0):
+        if _threads_inherit_context():
             warnings.warn(
                 "A SingletonScope is being activated while thread_inherit_context "
                 "is enabled (the default on the free-threaded build, e.g. 3.14t). "

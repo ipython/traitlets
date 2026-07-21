@@ -542,6 +542,8 @@ class TestSingletonScope(TestCase):
     def test_free_threading_warning(self):
         from unittest import mock
 
+        from traitlets.config import configurable
+
         class MyApp(SingletonConfigurable):
             pass
 
@@ -549,17 +551,18 @@ class TestSingletonScope(TestCase):
 
         # When thread_inherit_context is enabled (the default on free-threaded
         # builds) child threads inherit the scope, so activating one warns.
-        enabled = mock.Mock(thread_inherit_context=1)
         with (
-            mock.patch.object(sys, "flags", enabled),
+            mock.patch.object(configurable, "_threads_inherit_context", return_value=True),
             pytest.warns(RuntimeWarning, match="thread_inherit_context"),
             scope(),
         ):
             pass
 
         # When it is disabled, activating a scope is silent.
-        disabled = mock.Mock(thread_inherit_context=0)
-        with mock.patch.object(sys, "flags", disabled), warnings.catch_warnings():
+        with (
+            mock.patch.object(configurable, "_threads_inherit_context", return_value=False),
+            warnings.catch_warnings(),
+        ):
             warnings.simplefilter("error")
             with scope():
                 pass
