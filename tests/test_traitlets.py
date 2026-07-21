@@ -937,6 +937,32 @@ class TestHasTraits(TestCase):
         traits = a.traits(config_key=lambda v: True)
         self.assertEqual(traits, dict(i=A.i, f=A.f, j=A.j))
 
+    def test_traits_metadata_filter_caching(self):
+        # metadata-filtered class_traits()/traits() results are memoized per
+        # class; make sure the cache preserves the "fresh dict" contract and is
+        # invalidated when metadata is mutated after class creation.
+        class A(HasTraits):
+            i = Int().tag(config=True)
+            j = Int()
+
+        # returned dict is a fresh copy the caller may mutate freely
+        first = A.class_traits(config=True)
+        self.assertEqual(first, dict(i=A.i))
+        first["injected"] = "oops"
+        self.assertEqual(A.class_traits(config=True), dict(i=A.i))
+
+        # tagging a trait after the result was cached must be reflected
+        A.j.tag(config=True)
+        self.assertEqual(A.class_traits(config=True), dict(i=A.i, j=A.j))
+        self.assertEqual(A().traits(config=True), dict(i=A.i, j=A.j))
+
+        # a subclass has its own cache and does not pollute the parent's
+        class B(A):
+            k = Int().tag(config=True)
+
+        self.assertEqual(B.class_traits(config=True), dict(i=A.i, j=A.j, k=B.k))
+        self.assertEqual(A.class_traits(config=True), dict(i=A.i, j=A.j))
+
     def test_traits_metadata_deprecated(self):
         with expected_warnings([r"metadata should be set using the \.tag\(\) method"] * 2):
 

@@ -171,12 +171,15 @@ class Configurable(HasTraits):
     ) -> None:
         """load traits from a Config object"""
 
+        my_config = self._find_my_config(cfg)
+        if not my_config:
+            # Nothing in the config applies to this instance; avoid the cost of
+            # computing traits() and entering hold_trait_notifications() for the
+            # many leaf Configurables that carry no matching config.
+            return
+
         if traits is None:
             traits = self.traits(config=True)
-        if section_names is None:
-            section_names = self.section_names()
-
-        my_config = self._find_my_config(cfg)
 
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():

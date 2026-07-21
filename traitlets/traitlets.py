@@ -59,6 +59,12 @@ from .utils.warnings import deprecated_method, should_warn, warn
 
 SequenceTypes = (list, tuple, set, frozenset)
 
+# Bumped whenever trait metadata is mutated after class creation (via
+# TraitType.tag()/set_metadata()). Used to invalidate the per-class cache of
+# metadata-filtered traits kept by HasTraits._traits_matching_metadata. Kept in
+# a one-element list so it can be mutated without a module-level `global`.
+_trait_metadata_generation = [0]
+
 if t.TYPE_CHECKING:
     import pathlib
 
@@ -871,6 +877,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         else:
             msg = "use the instance .metadata dictionary directly, like x.metadata[key] = value"
         warn("Deprecated in traitlets 4.1, " + msg, DeprecationWarning, stacklevel=2)
+        _trait_metadata_generation[0] += 1
         self.metadata[key] = value
 
     def tag(self, **metadata: t.Any) -> Self:
@@ -894,6 +901,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                 stacklevel=2,
             )
 
+        _trait_metadata_generation[0] += 1
         self.metadata.update(metadata)
         return self
 
@@ -1032,6 +1040,8 @@ class MetaHasTraits(MetaHasDescriptors):
         # also looking at base classes
         cls._all_trait_default_generators = {}
         cls._traits = {}
+        # per-class cache for metadata-filtered class_traits()/traits() results
+        cls._traits_metadata_cache: dict[t.Any, tuple[int, dict[str, t.Any]]] = {}
         cls._static_immutable_initial_values = {}
 
         # Reuse the members collected by the parent metaclass rather than
@@ -1341,6 +1351,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     _trait_validators: dict[str | Sentinel, t.Any]
     _cross_validation_lock: bool
     _traits: dict[str, t.Any]
+    _traits_metadata_cache: dict[t.Any, tuple[int, dict[str, TraitType[t.Any, t.Any]]]]
     _all_trait_default_generators: dict[str, t.Any]
 
     def setup_instance(self, /, *args: t.Any, **kwargs: t.Any) -> None:
@@ -1385,9 +1396,17 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             # notify and cross validate all trait changes that were set in kwargs
             changed = set(kwargs) & set(self._traits)
             for key in changed:
-                value = self._traits[key]._cross_validate(self, getattr(self, key))
-                self.set_trait(key, value)
-                changes[key]["new"] = value
+                # Only re-run the (relatively expensive) cross-validation +
+                # set_trait pass for traits that actually have a cross-validator.
+                # For the common case with none, the value stored by the fast
+                # loop above is already fully validated; we just need to record
+                # the (possibly coerced) stored value for the notification.
+                if key in self._trait_validators or hasattr(self, f"_{key}_validate"):
+                    value = self._traits[key]._cross_validate(self, getattr(self, key))
+                    self.set_trait(key, value)
+                    changes[key]["new"] = value
+                else:
+                    changes[key]["new"] = getattr(self, key)
             self._cross_validation_lock = False
             # Restore method retrieval from class
             del self.notify_change
@@ -1804,10 +1823,47 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = cls._traits.copy()
-
         if len(metadata) == 0:
-            return traits
+            return cls._traits.copy()
+
+        # Return a copy so callers can freely mutate the result; the underlying
+        # (cached) dict must not escape by reference.
+        return cls._traits_matching_metadata(metadata).copy()
+
+    @classmethod
+    def _traits_matching_metadata(
+        cls: type[HasTraits], metadata: dict[str, t.Any]
+    ) -> dict[str, TraitType[t.Any, t.Any]]:
+        """Return the subset of ``cls._traits`` matching a metadata filter.
+
+        The result is shared, not copied — callers (``class_traits``/``traits``)
+        are responsible for copying before returning it to user code.
+
+        For filters whose values are all non-callable and hashable (the hot
+        path, e.g. ``config=True``), the result is memoized per class. Because
+        ``cls._traits`` is frozen after class creation, the only way the answer
+        can change is a post-hoc metadata mutation via ``tag()``/``set_metadata()``,
+        which bump ``_trait_metadata_generation``; cache entries older than the
+        current generation are recomputed.
+        """
+        # Build a cache key only for constant (non-callable) filters; callable
+        # predicates are the cold path and are never cached.
+        key: t.Any = None
+        if not any(callable(v) for v in metadata.values()):
+            try:
+                key = tuple(sorted(metadata.items()))
+                hash(key)  # ensure the values are hashable before use as a key
+            except TypeError:
+                key = None
+
+        generation = _trait_metadata_generation[0]
+        cache: dict[t.Any, tuple[int, dict[str, TraitType[t.Any, t.Any]]]] | None = (
+            cls.__dict__.get("_traits_metadata_cache")
+        )
+        if key is not None and cache is not None:
+            entry = cache.get(key)
+            if entry is not None and entry[0] == generation:
+                return entry[1]
 
         # Normalize the metadata filters once, rather than rebuilding a
         # _SimpleTest for every trait on every call.
@@ -1815,14 +1871,16 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             (meta_name, meta_eval if callable(meta_eval) else _SimpleTest(meta_eval))
             for meta_name, meta_eval in metadata.items()
         ]
-        result = {}
-        for name, trait in traits.items():
+        result: dict[str, TraitType[t.Any, t.Any]] = {}
+        for name, trait in cls._traits.items():
             for meta_name, meta_eval in checks:
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
                 result[name] = trait
 
+        if key is not None and cache is not None:
+            cache[key] = (generation, result)
         return result
 
     @classmethod
@@ -1941,26 +1999,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = self._traits.copy()
-
         if len(metadata) == 0:
-            return traits
+            return self._traits.copy()
 
-        # Normalize the metadata filters once, rather than rebuilding a
-        # _SimpleTest for every trait on every call.
-        checks = [
-            (meta_name, meta_eval if callable(meta_eval) else _SimpleTest(meta_eval))
-            for meta_name, meta_eval in metadata.items()
-        ]
-        result = {}
-        for name, trait in traits.items():
-            for meta_name, meta_eval in checks:
-                if not meta_eval(trait.metadata.get(meta_name, None)):
-                    break
-            else:
-                result[name] = trait
-
-        return result
+        # Delegates to the (cached) class-level implementation; self._traits is
+        # always type(self)._traits. Return a copy so callers can mutate freely.
+        return type(self)._traits_matching_metadata(metadata).copy()
 
     def trait_metadata(self, traitname: str, key: str, default: t.Any = None) -> t.Any:
         """Get metadata values for trait by key."""
