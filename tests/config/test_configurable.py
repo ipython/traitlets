@@ -8,6 +8,7 @@ import asyncio
 import logging
 import sys
 import threading
+import warnings
 from unittest import TestCase
 
 import pytest
@@ -537,6 +538,31 @@ class TestSingletonScope(TestCase):
                 self.assertIs(result, b)
 
         asyncio.run(main())
+
+    def test_free_threading_warning(self):
+        from unittest import mock
+
+        class MyApp(SingletonConfigurable):
+            pass
+
+        scope = MyApp.scope()
+
+        # When thread_inherit_context is enabled (the default on free-threaded
+        # builds) child threads inherit the scope, so activating one warns.
+        enabled = mock.Mock(thread_inherit_context=1)
+        with (
+            mock.patch.object(sys, "flags", enabled),
+            pytest.warns(RuntimeWarning, match="thread_inherit_context"),
+            scope(),
+        ):
+            pass
+
+        # When it is disabled, activating a scope is silent.
+        disabled = mock.Mock(thread_inherit_context=0)
+        with mock.patch.object(sys, "flags", disabled), warnings.catch_warnings():
+            warnings.simplefilter("error")
+            with scope():
+                pass
 
 
 class TestLoggingConfigurable(TestCase):

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import sys
 import typing as t
 from contextvars import ContextVar
 from copy import deepcopy
@@ -527,8 +528,19 @@ class SingletonScope:
 
     While active (``with scope():``), :meth:`SingletonConfigurable.instance`
     on any subclass of ``base`` resolves within this registry — creating
-    fresh instances on first use — in the current thread/async task only.
+    fresh instances on first use — in the current thread/async task.
     Re-enterable: the registry persists across activations.
+
+    .. warning::
+
+        The scope lives in a :class:`~contextvars.ContextVar`. On builds where
+        :data:`sys.flags.thread_inherit_context` is enabled — the default on the
+        free-threaded build (e.g. ``3.14t``) — a :class:`threading.Thread`
+        started while the scope is active inherits a copy of the parent context
+        and resolves ``.instance()`` within the scope instead of the
+        process-global registry. Activating a scope under that flag emits a
+        :class:`RuntimeWarning`. For per-thread isolation, activate a fresh scope
+        inside each thread rather than relying on non-inheritance.
     """
 
     def __init__(self, base: type[SingletonConfigurable]) -> None:
@@ -555,6 +567,18 @@ class SingletonScope:
 
     @contextlib.contextmanager
     def __call__(self) -> t.Generator[SingletonScope, None, None]:
+        if getattr(sys.flags, "thread_inherit_context", 0):
+            warnings.warn(
+                "A SingletonScope is being activated while thread_inherit_context "
+                "is enabled (the default on the free-threaded build, e.g. 3.14t). "
+                "A threading.Thread started while this scope is active inherits a "
+                "copy of the parent context, so its .instance() calls resolve "
+                "within this scope instead of falling through to the process-global "
+                "registry. Activate a fresh scope inside each thread if you need "
+                "per-thread isolation.",
+                RuntimeWarning,
+                stacklevel=3,
+            )
         token = _active_scopes.set((*_active_scopes.get(), self))
         try:
             yield self

@@ -120,17 +120,34 @@ Key semantics:
 - **Nesting and propagation.** Scopes nest; the innermost active scope covering a
   class wins, and blocks restore in LIFO order (even on exceptions). Because the
   active scope lives in a :class:`~contextvars.ContextVar`, an :mod:`asyncio` task
-  created inside a scope inherits it, but a new :class:`threading.Thread` started
-  inside does not — it falls through to the global registry.
+  created inside a scope inherits it. A new :class:`threading.Thread` started
+  inside a scope inherits it only when :data:`sys.flags.thread_inherit_context`
+  is set (see the caveat below); otherwise the thread falls through to the global
+  registry.
 - **Direct construction is never intercepted.** ``MyApp()`` always builds a new,
   unregistered object, in or out of a scope.
 
-Because a scope is bound to the thread (or task) that activates it, a freshly
-started :class:`threading.Thread` does *not* inherit its parent's scope. This
-makes it easy to give each worker thread its own isolated singleton: have every
-thread activate its own scope. Any ``.instance()`` calls made by that thread —
-directly or deep inside code it calls — then resolve to a per-thread instance,
-while the process-global singleton is left untouched:
+.. warning::
+
+   **Free-threaded builds inherit the scope in child threads.** Whether a newly
+   started :class:`threading.Thread` inherits the parent's active scope is
+   governed by :data:`sys.flags.thread_inherit_context`. On the default
+   GIL-enabled build this flag is *false*, so a child thread starts with an empty
+   :class:`~contextvars.Context` and its ``.instance()`` calls fall through to the
+   process-global registry. On the free-threaded build (e.g. ``3.14t``) the flag
+   defaults to *true*, so a child thread starts with a copy of the parent's
+   context and therefore resolves ``.instance()`` **within** the parent's scope.
+   (The same is true on any build launched with ``-X thread_inherit_context=1``.)
+
+   Do not rely on child threads escaping a scope. Activating a scope while this
+   flag is enabled emits a :class:`RuntimeWarning`. If you need per-thread
+   isolation, have each thread activate its *own* scope rather than depending on
+   non-inheritance — that pattern (below) works identically on both builds.
+
+Giving each worker thread its own isolated singleton works on every build: have
+every thread activate its own scope. Any ``.instance()`` calls made by that
+thread — directly or deep inside code it calls — then resolve to a per-thread
+instance, while the process-global singleton is left untouched:
 
 .. sourcecode:: python
 
