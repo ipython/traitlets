@@ -23,6 +23,7 @@ the configuration machinery.
     trait_types
     defining_traits
     api
+    tips
     config
     config-api
     utils
