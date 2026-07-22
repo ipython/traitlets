@@ -3054,6 +3054,41 @@ def test_list_items_from_string(s, expected, value_trait):
     _from_string_test(List(value_trait), s, expected)
 
 
+@pytest.mark.parametrize("container", [List, Set, Tuple])
+def test_container_from_string_single_value_allow_none(container):
+    """Regression test for https://github.com/ipython/traitlets/issues/908.
+
+    ``from_string`` receives a single, non-literal string. It must not
+    silently coerce it to ``None`` on ``allow_none`` containers: a bare
+    string is not a container, so validation must reject it. This lets the
+    config loader fall back to collating the value into a single-item list
+    (e.g. ``--Class.trait=value`` -> ``['value']``) instead of ``None``.
+    """
+    trait = container(allow_none=True)
+    trait.name = "a_trait"
+    with pytest.raises(TraitError):
+        trait.from_string("a_value")
+
+
+def test_list_allow_none_single_cli_value_is_collated():
+    """End-to-end regression for issue #908.
+
+    ``--MyApp.a_list=a_value`` with ``a_list = List(allow_none=True)`` must
+    yield ``['a_value']``, not ``None`` (regression introduced in #885).
+    """
+    from traitlets.config import Application, Config
+    from traitlets.config.loader import DeferredConfigString
+
+    class MyApp(Application):
+        a_list = List(allow_none=True).tag(config=True)
+
+    config = Config()
+    config.MyApp.a_list = DeferredConfigString("a_value")
+    app = MyApp()
+    app.update_config(config)
+    assert app.a_list == ["a_value"]
+
+
 @pytest.mark.parametrize(
     "s, expected",
     [
