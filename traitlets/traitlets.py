@@ -1032,9 +1032,7 @@ class MetaHasDescriptors(type):
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def setup_class(
-        cls: MetaHasTraits, classdict: dict[str, t.Any]
-    ) -> list[tuple[str, t.Any]]:
+    def setup_class(cls: MetaHasTraits, classdict: dict[str, t.Any]) -> list[tuple[str, t.Any]]:
         # for only the current class
         cls._trait_default_generators: dict[str, t.Any] = {}
         # also looking at base classes
