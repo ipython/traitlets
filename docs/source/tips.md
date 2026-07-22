@@ -14,36 +14,24 @@ So instead of:
 
 ```python
 class SpawnerConfig(LoggingConfigurable):
-    some_config = Unicode(
-        "",
-        config=True
-    )
+    some_config = Unicode("", config=True)
 
-    some_other_config = Unicode(
-        "default",
-        config=True
-    )
+    some_other_config = Unicode("default", config=True)
+
 
 class Spawner:
     def spawn(self, config: SpawnerConfig):
         print(config.some_config)
         # Do things with config
-
 ```
 
 Prefer:
 
 ```python
 class Spawner(LoggingConfigurable):
-    some_config = Unicode(
-        "",
-        config=True
-    )
+    some_config = Unicode("", config=True)
 
-    some_other_config = Unicode(
-        "default",
-        config=True
-    )
+    some_other_config = Unicode("default", config=True)
 
     def spawn(self):
         print(self.some_config)
