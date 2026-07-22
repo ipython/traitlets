@@ -10,15 +10,19 @@ Helpers for inspecting Python modules.
 
 from __future__ import annotations
 
-import inspect
-from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import inspect
 
 # Unmodified from sphinx below this line
 
 
 def getargspec(func: Any) -> inspect.FullArgSpec:
     """Like inspect.getargspec but supports functools.partial as well."""
+    import inspect
+    from functools import partial
+
     if inspect.ismethod(func):
         func = func.__func__
     if type(func) is partial:

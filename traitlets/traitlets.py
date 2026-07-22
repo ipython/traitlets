@@ -43,15 +43,12 @@ from __future__ import annotations
 
 import contextlib
 import enum
-import inspect
 import numbers
 import os
-import pathlib
 import re
 import sys
 import types
 import typing as t
-from ast import literal_eval
 
 from .utils.bunch import Bunch
 from .utils.descriptions import add_article, class_of, describe, repr_type
@@ -62,7 +59,15 @@ from .utils.warnings import deprecated_method, should_warn, warn
 
 SequenceTypes = (list, tuple, set, frozenset)
 
+# Bumped whenever trait metadata is mutated after class creation (via
+# TraitType.tag()/set_metadata()). Used to invalidate the per-class cache of
+# metadata-filtered traits kept by HasTraits._traits_matching_metadata. Kept in
+# a one-element list so it can be mutated without a module-level `global`.
+_trait_metadata_generation = [0]
+
 if t.TYPE_CHECKING:
+    import pathlib
+
     from typing_extensions import TypeVar
 else:
     from typing import TypeVar
@@ -185,6 +190,8 @@ def _safe_literal_eval(s: str) -> t.Any:
 
     Use only where types are ambiguous.
     """
+    from ast import literal_eval
+
     try:
         return literal_eval(s)
     except (NameError, SyntaxError, ValueError):
@@ -559,7 +566,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
 
         if len(kwargs) > 0:
             stacklevel = 1
-            f = inspect.currentframe()
+            f: types.FrameType | None = sys._getframe()
             # count supers to determine stacklevel for warning
             assert f is not None
             while f.f_code.co_name == "__init__":
@@ -870,6 +877,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
         else:
             msg = "use the instance .metadata dictionary directly, like x.metadata[key] = value"
         warn("Deprecated in traitlets 4.1, " + msg, DeprecationWarning, stacklevel=2)
+        _trait_metadata_generation[0] += 1
         self.metadata[key] = value
 
     def tag(self, **metadata: t.Any) -> Self:
@@ -893,6 +901,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
                 stacklevel=2,
             )
 
+        _trait_metadata_generation[0] += 1
         self.metadata.update(metadata)
         return self
 
@@ -974,7 +983,7 @@ class MetaHasDescriptors(type):
             # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
-            if inspect.isclass(v) and issubclass(v, TraitType):
+            if isinstance(v, type) and issubclass(v, TraitType):
                 warn(
                     "Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
                     " Passing types is deprecated in traitlets 4.1.",
@@ -993,12 +1002,18 @@ class MetaHasDescriptors(type):
         super().__init__(name, bases, classdict, **kwds)
         cls.setup_class(classdict)
 
-    def setup_class(cls: MetaHasDescriptors, classdict: dict[str, t.Any]) -> None:
+    def setup_class(
+        cls: MetaHasDescriptors, classdict: dict[str, t.Any]
+    ) -> list[tuple[str, t.Any]]:
         """Setup descriptor instance on the class
 
         This sets the :attr:`this_class` and :attr:`name` attributes of each
         BaseDescriptor in the class dict of the newly created ``cls`` before
         calling their :attr:`class_init` method.
+
+        Returns the ``getmembers(cls)`` result so that subclass metaclasses
+        (e.g. :class:`MetaHasTraits`) can reuse it instead of walking the
+        class namespace a second time.
         """
         cls._descriptors = []
         cls._instance_inits: list[t.Any] = []
@@ -1006,35 +1021,34 @@ class MetaHasDescriptors(type):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)  # type:ignore[arg-type]
 
-        for _, v in getmembers(cls):
+        members = getmembers(cls)
+        for _, v in members:
             if isinstance(v, BaseDescriptor):
                 v.subclass_init(cls)  # type:ignore[arg-type]
                 cls._descriptors.append(v)
+        return members
 
 
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def setup_class(cls: MetaHasTraits, classdict: dict[str, t.Any]) -> None:
+    def setup_class(cls: MetaHasTraits, classdict: dict[str, t.Any]) -> list[tuple[str, t.Any]]:
         # for only the current class
         cls._trait_default_generators: dict[str, t.Any] = {}
         # also looking at base classes
         cls._all_trait_default_generators = {}
         cls._traits = {}
+        # per-class cache for metadata-filtered class_traits()/traits() results
+        cls._traits_metadata_cache: dict[t.Any, tuple[int, dict[str, t.Any]]] = {}
         cls._static_immutable_initial_values = {}
 
-        super().setup_class(classdict)
+        # Reuse the members collected by the parent metaclass rather than
+        # walking the whole class namespace (dir(cls) + getattr) a second time.
+        members = super().setup_class(classdict)
 
         mro = cls.mro()
 
-        for name in dir(cls):
-            # Some descriptors raise AttributeError like zope.interface's
-            # __provides__ attributes even though they exist.  This causes
-            # AttributeErrors even though they are listed in dir(cls).
-            try:
-                value = getattr(cls, name)
-            except AttributeError:
-                continue
+        for name, value in members:
             if isinstance(value, TraitType):
                 cls._traits[name] = value
                 trait = value
@@ -1099,6 +1113,8 @@ class MetaHasTraits(MetaHasDescriptors):
                     # we always add it, because a class may change when we call add_trait
                     # and then the instance may not have all the _static_immutable_initial_values
                     cls._all_trait_default_generators[name] = trait.default
+
+        return members
 
 
 def observe(*names: Sentinel | str, type: str = "change") -> ObserveHandler:
@@ -1333,6 +1349,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
     _trait_validators: dict[str | Sentinel, t.Any]
     _cross_validation_lock: bool
     _traits: dict[str, t.Any]
+    _traits_metadata_cache: dict[t.Any, tuple[int, dict[str, TraitType[t.Any, t.Any]]]]
     _all_trait_default_generators: dict[str, t.Any]
 
     def setup_instance(self, /, *args: t.Any, **kwargs: t.Any) -> None:
@@ -1377,9 +1394,17 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             # notify and cross validate all trait changes that were set in kwargs
             changed = set(kwargs) & set(self._traits)
             for key in changed:
-                value = self._traits[key]._cross_validate(self, getattr(self, key))
-                self.set_trait(key, value)
-                changes[key]["new"] = value
+                # Only re-run the (relatively expensive) cross-validation +
+                # set_trait pass for traits that actually have a cross-validator.
+                # For the common case with none, the value stored by the fast
+                # loop above is already fully validated; we just need to record
+                # the (possibly coerced) stored value for the notification.
+                if key in self._trait_validators or hasattr(self, f"_{key}_validate"):
+                    value = self._traits[key]._cross_validate(self, getattr(self, key))
+                    self.set_trait(key, value)
+                    changes[key]["new"] = value
+                else:
+                    changes[key]["new"] = getattr(self, key)
             self._cross_validation_lock = False
             # Restore method retrieval from class
             del self.notify_change
@@ -1796,21 +1821,64 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = cls._traits.copy()
-
         if len(metadata) == 0:
-            return traits
+            return cls._traits.copy()
 
-        result = {}
-        for name, trait in traits.items():
-            for meta_name, meta_eval in metadata.items():
-                if not callable(meta_eval):
-                    meta_eval = _SimpleTest(meta_eval)
+        # Return a copy so callers can freely mutate the result; the underlying
+        # (cached) dict must not escape by reference.
+        return cls._traits_matching_metadata(metadata).copy()
+
+    @classmethod
+    def _traits_matching_metadata(
+        cls: type[HasTraits], metadata: dict[str, t.Any]
+    ) -> dict[str, TraitType[t.Any, t.Any]]:
+        """Return the subset of ``cls._traits`` matching a metadata filter.
+
+        The result is shared, not copied — callers (``class_traits``/``traits``)
+        are responsible for copying before returning it to user code.
+
+        For filters whose values are all non-callable and hashable (the hot
+        path, e.g. ``config=True``), the result is memoized per class. Because
+        ``cls._traits`` is frozen after class creation, the only way the answer
+        can change is a post-hoc metadata mutation via ``tag()``/``set_metadata()``,
+        which bump ``_trait_metadata_generation``; cache entries older than the
+        current generation are recomputed.
+        """
+        # Build a cache key only for constant (non-callable) filters; callable
+        # predicates are the cold path and are never cached.
+        key: t.Any = None
+        if not any(callable(v) for v in metadata.values()):
+            try:
+                key = tuple(sorted(metadata.items()))
+                hash(key)  # ensure the values are hashable before use as a key
+            except TypeError:
+                key = None
+
+        generation = _trait_metadata_generation[0]
+        cache: dict[t.Any, tuple[int, dict[str, TraitType[t.Any, t.Any]]]] | None = (
+            cls.__dict__.get("_traits_metadata_cache")
+        )
+        if key is not None and cache is not None:
+            entry = cache.get(key)
+            if entry is not None and entry[0] == generation:
+                return entry[1]
+
+        # Normalize the metadata filters once, rather than rebuilding a
+        # _SimpleTest for every trait on every call.
+        checks = [
+            (meta_name, meta_eval if callable(meta_eval) else _SimpleTest(meta_eval))
+            for meta_name, meta_eval in metadata.items()
+        ]
+        result: dict[str, TraitType[t.Any, t.Any]] = {}
+        for name, trait in cls._traits.items():
+            for meta_name, meta_eval in checks:
                 if not meta_eval(trait.metadata.get(meta_name, None)):
                     break
             else:
                 result[name] = trait
 
+        if key is not None and cache is not None:
+            cache[key] = (generation, result)
         return result
 
     @classmethod
@@ -1929,22 +1997,12 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
         the output.  If a metadata key doesn't exist, None will be passed
         to the function.
         """
-        traits = self._traits.copy()
-
         if len(metadata) == 0:
-            return traits
+            return self._traits.copy()
 
-        result = {}
-        for name, trait in traits.items():
-            for meta_name, meta_eval in metadata.items():
-                if not callable(meta_eval):
-                    meta_eval = _SimpleTest(meta_eval)
-                if not meta_eval(trait.metadata.get(meta_name, None)):
-                    break
-            else:
-                result[name] = trait
-
-        return result
+        # Delegates to the (cached) class-level implementation; self._traits is
+        # always type(self)._traits. Return a copy so callers can mutate freely.
+        return type(self)._traits_matching_metadata(metadata).copy()
 
     def trait_metadata(self, traitname: str, key: str, default: t.Any = None) -> t.Any:
         """Get metadata values for trait by key."""
@@ -2114,7 +2172,7 @@ class Type(ClassBasedTraitType[G, S]):
             else:
                 klass = default_value
 
-        if not (inspect.isclass(klass) or isinstance(klass, str)):
+        if not isinstance(klass, (type, str)):
             raise TraitError("A Type trait must specify a class.")
 
         self.klass = klass
@@ -2278,7 +2336,7 @@ class Instance(ClassBasedTraitType[T, T]):
         if klass is None:
             klass = self.klass
 
-        if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, str)):
+        if (klass is not None) and isinstance(klass, (type, str)):
             self.klass = klass
         else:
             raise TraitError(f"The klass attribute must be a class not: {klass!r}")
@@ -3510,6 +3568,8 @@ class Container(Instance[T]):
         """Load value from a single string"""
         if not isinstance(s, str):
             raise TraitError(f"Expected string, got {s!r}")
+        from ast import literal_eval
+
         try:
             test = literal_eval(s)
         except Exception:
@@ -3542,7 +3602,11 @@ class Container(Instance[T]):
                     DeprecationWarning,
                     stacklevel=2,
                 )
+                from ast import literal_eval
+
                 return self.klass(literal_eval(r))  # type:ignore[call-arg]
+        import inspect
+
         sig = inspect.signature(self.item_from_string)
         if "index" in sig.parameters:
             item_from_string = self.item_from_string
@@ -4069,6 +4133,7 @@ class Dict(Instance["dict[K, V]"]):
                 DeprecationWarning,
                 stacklevel=2,
             )
+            from ast import literal_eval
 
             return literal_eval(s_list[0])
 
@@ -4192,11 +4257,15 @@ class Path(TraitType["pathlib.Path", t.Union["pathlib.Path", str, "os.PathLike[s
     info_text = "a filesystem path"
 
     def validate(self, obj: t.Any, value: t.Any) -> pathlib.Path | None:
+        import pathlib
+
         if isinstance(value, (str, os.PathLike)):
             return pathlib.Path(value)
         self.error(obj, value)
 
     def from_string(self, s: str) -> pathlib.Path | None:
+        import pathlib
+
         if self.allow_none and s == "None":
             return None
         return pathlib.Path(s)
