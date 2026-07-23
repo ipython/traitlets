@@ -1,6 +1,6 @@
-# Tips for using Traitlets
+# Best Practices
 
-A collection of useful design tips for using traitlets in your
+A collection of useful design tips & best practices for using traitlets in your
 application or library.
 
 ## Avoid using "pure config" objects
