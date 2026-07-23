@@ -23,6 +23,7 @@ the configuration machinery.
     trait_types
     defining_traits
     api
+    best-practices
     config
     config-api
     utils
