@@ -59,8 +59,7 @@ jobs:
         with:
           dependency_type: minimum
       - name: Run the unit tests
-        run: |
-          hatch run test:nowarn || hatch -v run test:nowarn --lf
+        run: hatch run test:nowarn
 
   test_lint:
     name: Test Lint
@@ -96,8 +95,7 @@ jobs:
         with:
           dependency_type: pre
       - name: Run the tests
-        run: |
-          hatch run test:nowarn || hatch run test:nowarn --lf
+        run: hatch run test:nowarn
 
   make_sdist:
     name: Make SDist
