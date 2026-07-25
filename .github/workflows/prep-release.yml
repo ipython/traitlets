@@ -32,6 +32,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
 
       - name: Prep Release
         id: prep-release
