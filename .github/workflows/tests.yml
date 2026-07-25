@@ -24,12 +24,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.13", "3.14", "3.14t"]
+        python-version: ["3.10", "3.13", "3.14"]
         include:
           - os: ubuntu-latest
             python-version: "3.11"
           - os: ubuntu-latest
             python-version: "3.12"
+          # Free-threaded builds aren't in the runner tool cache and are
+          # expensive to provision on Windows/macOS (~73s vs ~23s on Linux),
+          # so exercise 3.14t on Linux only.
+          - os: ubuntu-latest
+            python-version: "3.14t"
           - os: ubuntu-latest
             python-version: "pypy-3.11"
 
@@ -38,6 +43,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - name: Run Tests
         run: hatch run cov:test
       - uses: jupyterlab/maintainer-tools/.github/actions/upload-coverage@v1
@@ -61,6 +67,7 @@ jobs:
         with:
           dependency_type: minimum
           node_version: "none"
+          python_package_manager: "uv pip"
       - name: Run the unit tests
         run: |
           hatch run test:nowarn || hatch -v run test:nowarn --lf
@@ -73,6 +80,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - name: Run Linters
         run: |
           hatch run typing:test
@@ -88,6 +96,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - name: Build the docs
         run: hatch run docs:build
 
@@ -103,6 +112,7 @@ jobs:
         with:
           dependency_type: pre
           node_version: "none"
+          python_package_manager: "uv pip"
       - name: Run the tests
         run: |
           hatch run test:nowarn || hatch run test:nowarn --lf
@@ -116,6 +126,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - uses: jupyterlab/maintainer-tools/.github/actions/make-sdist@v1
 
   test_sdist:
@@ -127,6 +138,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@v1
 
   check_links:
@@ -136,6 +148,7 @@ jobs:
       - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - uses: jupyterlab/maintainer-tools/.github/actions/check-links@v1
 
   check_release:
@@ -147,6 +160,7 @@ jobs:
         uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
         with:
           node_version: "none"
+          python_package_manager: "uv pip"
       - name: Install Dependencies
         run: |
           pip install -e .
