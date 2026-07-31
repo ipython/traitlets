@@ -2,6 +2,49 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.16.0
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.15.1...6317a449b3dcc91bf93f2b0b187cd21d5736620b))
+
+### Enhancements made
+
+- Add `Path` trait for `pathlib.Path` values [#941](https://github.com/ipython/traitlets/pull/941) ([@SAY-5](https://github.com/SAY-5), [@Carreau](https://github.com/Carreau))
+
+### Bugs fixed
+
+- Remove hatch --lf fallback that could mask test failures [#958](https://github.com/ipython/traitlets/pull/958) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Fix three correctness bugs found in code review by claude Fable [#946](https://github.com/ipython/traitlets/pull/946) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+
+### Maintenance and upkeep improvements
+
+- Add a document of 'best practices' on designing with traitlets [#957](https://github.com/ipython/traitlets/pull/957) ([@yuvipanda](https://github.com/yuvipanda), [@Carreau](https://github.com/Carreau))
+- install hatch via uv to speedup ci [#954](https://github.com/ipython/traitlets/pull/954) ([@Carreau](https://github.com/Carreau))
+- Update pre-commit hooks and fix the resulting fallout [#952](https://github.com/ipython/traitlets/pull/952) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Harden mypy/ruff tooling and improve typing [#951](https://github.com/ipython/traitlets/pull/951) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Remove tests_check job from CI workflow [#950](https://github.com/ipython/traitlets/pull/950) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Require mypy>=1.20 and fix reveal_type assertions [#949](https://github.com/ipython/traitlets/pull/949) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Fix broken examples and wrong docstrings in documentation, deprecate old aliases CLong/Long. [#948](https://github.com/ipython/traitlets/pull/948) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Remove dead code and stale Python 2 leftovers (with the help of Claude Fable) [#947](https://github.com/ipython/traitlets/pull/947) ([@Carreau](https://github.com/Carreau))
+- Require Python 3.10 and support pytest 9 [#931](https://github.com/ipython/traitlets/pull/931) ([@cjwatson](https://github.com/cjwatson), [@Carreau](https://github.com/Carreau))
+
+### Other merged PRs
+
+- Remove enforce-label workflow [#960](https://github.com/ipython/traitlets/pull/960) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Disable Node.js setup in CI workflows [#959](https://github.com/ipython/traitlets/pull/959) ([@Carreau](https://github.com/Carreau), [@claude](https://github.com/claude))
+- Bump the actions group with 2 updates [#955](https://github.com/ipython/traitlets/pull/955) ([@Carreau](https://github.com/Carreau))
+- not funded by numfocus anymore [#944](https://github.com/ipython/traitlets/pull/944) ([@Carreau](https://github.com/Carreau), [@minrk](https://github.com/minrk))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2026-06-03&to=2026-07-31&type=c))
+
+@Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2026-06-03..2026-07-31&type=Issues)) | @cjwatson ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Acjwatson+updated%3A2026-06-03..2026-07-31&type=Issues)) | @claude ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aclaude+updated%3A2026-06-03..2026-07-31&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aminrk+updated%3A2026-06-03..2026-07-31&type=Issues)) | @SAY-5 ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ASAY-5+updated%3A2026-06-03..2026-07-31&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ayuvipanda+updated%3A2026-06-03..2026-07-31&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.15.1
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.15.0...bc0b8b51f1adab7671b6e3932d91844c05731660))
@@ -18,8 +61,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2026-05-06&to=2026-06-03&type=c))
 
 @Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2026-05-06..2026-06-03&type=Issues)) | @krassowski ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Akrassowski+updated%3A2026-05-06..2026-06-03&type=Issues)) | @rmorshea ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Armorshea+updated%3A2026-05-06..2026-06-03&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.15.0
 
