@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           dependency_type: minimum
           node_version: "none"
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -107,7 +107,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           dependency_type: pre
           node_version: "none"
@@ -121,7 +121,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -133,7 +133,7 @@ jobs:
     name: Install from SDist and Test
     timeout-minutes: 20
     steps:
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+      - uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -155,7 +155,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
+        uses: Carreau/maintainer-tools/.github/actions/base-setup@6a67ae951dee64e6430324f72531299e5cd9709f
         with:
           node_version: "none"
           python_package_manager: "uv pip"
