@@ -70,6 +70,9 @@ features = ["test"]
 [tool.hatch.envs.test.scripts]
 test = "python -m pytest -vv {args}"
 nowarn = "test -W default {args}"
+# Not part of `test`; run once from the lint job rather than in every matrix
+# entry. Skipped on PyPy, where mypy and pytest-mypy-testing aren't installed.
+typing = "python -m pytest -vv tests/test_typing.py {args}"
 
 [tool.hatch.envs.cov]
 features = ["test"]
@@ -127,7 +130,13 @@ log_level = "info"
 addopts = [
   "-ra", "--durations=10", "--color=yes", "--doctest-modules",
    "--showlocals", "--strict-markers", "--strict-config",
-   "--ignore=examples/docs/configs"
+   "--ignore=examples/docs/configs",
+   # test_typing.py is a pytest-mypy-testing file: every test shells out to
+   # mypy and asserts on its exact `reveal_type` output, so it is slow, tied
+   # to a specific mypy version, and unavailable on PyPy. Keep it out of the
+   # regular matrix and run it once via `hatch run test:typing` (an explicit
+   # path on the command line still overrides this ignore).
+   "--ignore=tests/test_typing.py"
 ]
 testpaths = [
     "tests",

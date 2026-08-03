@@ -83,6 +83,7 @@ jobs:
       - name: Run Linters
         run: |
           hatch run typing:test
+          hatch run test:typing
           hatch run lint:build
           pipx run 'validate-pyproject[all]' pyproject.toml
           pipx run doc8 --max-line-length=200
