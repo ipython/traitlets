@@ -17,7 +17,6 @@ __pycache__
 \#*#
 .#*
 .coverage
-.coverage.*
 coverage.xml
 .cache
 htmlcov

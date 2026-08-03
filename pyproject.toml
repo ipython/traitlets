@@ -75,7 +75,7 @@ nowarn = "test -W default {args}"
 features = ["test"]
 dependencies = ["coverage[toml]", "pytest-cov"]
 [tool.hatch.envs.cov.scripts]
-test = "python -m pytest -vv --cov traitlets --cov-report term-missing:skip-covered {args}"
+test = "python -m pytest -vv --cov traitlets --cov-report term-missing:skip-covered --cov-report xml {args}"
 nowarn = "test -W default {args}"
 
 [tool.hatch.envs.typing]
@@ -175,8 +175,8 @@ exclude_lines = [
 
 [tool.coverage.run]
 branch = true
-# Required to combine the data files produced by the Windows, macOS and Linux
-# jobs of the test matrix into a single report.
+# Keeps the paths in coverage.xml relative to the repository root, so that the
+# uploads from every matrix job line up with each other on Codecov.
 relative_files = true
 source = ["traitlets"]
 
