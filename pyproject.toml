@@ -184,7 +184,13 @@ relative_files = true
 # keeps the paths in coverage.xml distinct -- with `source = ["traitlets",
 # "tests"]` both config/__init__.py files are written out under the same name.
 source = ["."]
-omit = ["docs/*", "examples/*"]
+omit = [
+  "docs/*",
+  "examples/*",
+  # mypy type-checks this file, pytest-mypy-testing never executes its bodies,
+  # so every line in it reads as uncovered. It is a fixture, not dead code.
+  "tests/test_typing.py",
+]
 
 [tool.repo-review]
 # traitlets publishes `traitlets[test]` / `traitlets[docs]` as documented
