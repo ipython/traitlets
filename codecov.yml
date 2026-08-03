@@ -1,10 +1,9 @@
 # https://docs.codecov.com/docs/codecov-yaml
 codecov:
+  # Every job of the test matrix uploads its own report. Waiting for CI to
+  # finish keeps the comment and the statuses off a partial set of uploads,
+  # without pinning a build count that the matrix would drift away from.
   require_ci_to_pass: true
-  notify:
-    # Coverage is combined and uploaded exactly once, by the `coverage` job,
-    # after the whole test matrix has finished. There is nothing to wait for.
-    after_n_builds: 1
 
 coverage:
   precision: 2
