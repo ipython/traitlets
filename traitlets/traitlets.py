@@ -994,12 +994,18 @@ class MetaHasDescriptors(type):
         super().__init__(name, bases, classdict, **kwds)
         cls.setup_class(classdict)
 
-    def setup_class(cls: MetaHasDescriptors, classdict: dict[str, t.Any]) -> None:
+    def setup_class(
+        cls: MetaHasDescriptors, classdict: dict[str, t.Any]
+    ) -> list[tuple[str, t.Any]]:
         """Setup descriptor instance on the class
 
         This sets the :attr:`this_class` and :attr:`name` attributes of each
         BaseDescriptor in the class dict of the newly created ``cls`` before
         calling their :attr:`class_init` method.
+
+        Returns the ``getmembers(cls)`` result so that subclass metaclasses
+        (e.g. :class:`MetaHasTraits`) can reuse it instead of walking the
+        class namespace a second time.
         """
         cls._descriptors = []
         cls._instance_inits: list[t.Any] = []
@@ -1007,16 +1013,18 @@ class MetaHasDescriptors(type):
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)  # type:ignore[arg-type]
 
-        for _, v in getmembers(cls):
+        members = getmembers(cls)
+        for _, v in members:
             if isinstance(v, BaseDescriptor):
                 v.subclass_init(cls)  # type:ignore[arg-type]
                 cls._descriptors.append(v)
+        return members
 
 
 class MetaHasTraits(MetaHasDescriptors):
     """A metaclass for HasTraits."""
 
-    def setup_class(cls: MetaHasTraits, classdict: dict[str, t.Any]) -> None:
+    def setup_class(cls: MetaHasTraits, classdict: dict[str, t.Any]) -> list[tuple[str, t.Any]]:
         # for only the current class
         cls._trait_default_generators: dict[str, t.Any] = {}
         # also looking at base classes
@@ -1024,18 +1032,13 @@ class MetaHasTraits(MetaHasDescriptors):
         cls._traits = {}
         cls._static_immutable_initial_values = {}
 
-        super().setup_class(classdict)
+        # Reuse the members collected by the parent metaclass rather than
+        # walking the whole class namespace (dir(cls) + getattr) a second time.
+        members = super().setup_class(classdict)
 
         mro = cls.mro()
 
-        for name in dir(cls):
-            # Some descriptors raise AttributeError like zope.interface's
-            # __provides__ attributes even though they exist.  This causes
-            # AttributeErrors even though they are listed in dir(cls).
-            try:
-                value = getattr(cls, name)
-            except AttributeError:
-                continue
+        for name, value in members:
             if isinstance(value, TraitType):
                 cls._traits[name] = value
                 trait = value
@@ -1100,6 +1103,8 @@ class MetaHasTraits(MetaHasDescriptors):
                     # we always add it, because a class may change when we call add_trait
                     # and then the instance may not have all the _static_immutable_initial_values
                     cls._all_trait_default_generators[name] = trait.default
+
+        return members
 
 
 def observe(*names: Sentinel | str, type: str = "change") -> ObserveHandler:
