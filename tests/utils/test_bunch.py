@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from traitlets.utils.bunch import Bunch
 
 
@@ -10,6 +12,12 @@ def test_bunch():
     assert b.x == 5
     b["a"] = "hi"
     assert b.a == "hi"
+
+
+def test_bunch_missing_attribute():
+    b = Bunch(x=5)
+    with pytest.raises(AttributeError, match="nope"):
+        b.nope
 
 
 def test_bunch_dir():
