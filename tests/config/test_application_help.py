@@ -10,6 +10,7 @@ in process, one method at a time.
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -66,6 +67,22 @@ class BareApp(Application):
 @pytest.fixture
 def app():
     return HelpApp()
+
+
+# Windows upper-cases every key in os.environ, so HELPAPP__Foo__name arrives as
+# HELPAPP__FOO__NAME. load_config_environ splits the trait name off the end and
+# assigns it as-is, and Config refuses a key starting with an uppercase letter
+# unless the value is another Config:
+#
+#     ValueError: values whose keys begin with an uppercase char must be
+#     Config instances: 'NAME', DeferredConfigString('...')
+#
+# Every trait name is upper-cased the same way, so this is not specific to the
+# names used here. See the "Warning, case sensitive!" note in the method.
+needs_case_sensitive_environ = pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows upper-cases environment variable names",
+)
 
 
 def test_emit_alias_help(app):
@@ -263,12 +280,14 @@ def test_start_show_config_hides_its_own_flags(app, capsys):
     assert "show_config" not in out
 
 
+@needs_case_sensitive_environ
 def test_load_config_environ(app, monkeypatch):
     monkeypatch.setenv("HELPAPP__Foo__name", "from-the-environment")
     app.load_config_environ()
     assert Foo(config=app.config).name == "from-the-environment"
 
 
+@needs_case_sensitive_environ
 def test_load_config_environ_nested_sections(app, monkeypatch):
     # Sections are separated by __, so a deeper path nests further in.
     monkeypatch.setenv("HELPAPP__Deep__Foo__name", "nested")
@@ -282,6 +301,7 @@ def test_load_config_environ_ignores_other_variables(app, monkeypatch):
     assert Foo(config=app.config).name == "bob"
 
 
+@needs_case_sensitive_environ
 def test_load_config_environ_keeps_the_command_line_winning(app, monkeypatch):
     app.cli_config.Foo.name = "from-the-command-line"
     monkeypatch.setenv("HELPAPP__Foo__name", "from-the-environment")
