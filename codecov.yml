@@ -21,11 +21,25 @@ coverage:
         target: 80%
         threshold: 5%
 
-comment:
-  layout: "condensed_header, condensed_files, condensed_footer"
-  require_changes: true
+# The test suite is measured alongside the library, so the overall number
+# blends the two. These components report on each separately: `traitlets` is
+# the one to watch, while `tests` mostly surfaces test code that never runs.
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 0.5%
+  individual_components:
+    - component_id: library
+      name: traitlets
+      paths:
+        - traitlets/**
+    - component_id: tests
+      name: tests
+      paths:
+        - tests/**
 
-ignore:
-  - "docs"
-  - "examples"
-  - "tests"
+comment:
+  layout: "condensed_header, components, condensed_files, condensed_footer"
+  require_changes: true
