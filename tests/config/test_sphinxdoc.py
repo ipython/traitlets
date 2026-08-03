@@ -14,9 +14,13 @@ from traitlets.config.sphinxdoc import (
     format_aliases,
     interesting_default_value,
     reverse_aliases,
-    setup,
     write_doc,
 )
+
+# Imported under another name on purpose: pytest before 8.0 treats a
+# module-level `setup` as an xunit setup hook and calls it with the test
+# module as its argument, which fails every test in the file.
+from traitlets.config.sphinxdoc import setup as setup_extension
 
 
 class ExplodingInt(Int):
@@ -63,7 +67,7 @@ class StubSphinxApp:
 
 def test_setup_registers_the_configtrait_object_type():
     app = StubSphinxApp()
-    metadata = setup(app)
+    metadata = setup_extension(app)
     assert app.object_types == [
         (("configtrait", "configtrait"), {"objname": "Config option"}),
     ]
