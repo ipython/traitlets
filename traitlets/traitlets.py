@@ -1394,9 +1394,19 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
             # notify and cross validate all trait changes that were set in kwargs
             changed = set(kwargs) & set(self._traits)
             for key in changed:
-                value = self._traits[key]._cross_validate(self, getattr(self, key))
-                self.set_trait(key, value)
-                changes[key]["new"] = value
+                # The fast loop above already ran validate() and stored each
+                # kwarg. The second pass is only needed for traits with a
+                # cross-validator: _cross_validate may change the value, which
+                # set_trait then persists and notifies. Without one,
+                # _cross_validate is a passthrough and set_trait would just run
+                # validate() a second time on the unchanged value for nothing,
+                # so record the already-stored value and skip that work.
+                if key in self._trait_validators or hasattr(self, f"_{key}_validate"):
+                    value = self._traits[key]._cross_validate(self, getattr(self, key))
+                    self.set_trait(key, value)
+                    changes[key]["new"] = value
+                else:
+                    changes[key]["new"] = getattr(self, key)
             self._cross_validation_lock = False
             # Restore method retrieval from class
             del self.notify_change
