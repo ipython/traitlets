@@ -139,6 +139,18 @@ jobs:
           python_package_manager: "uv pip"
       - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@v1
 
+  # Downstream projects are slow and only meaningful if traitlets itself is
+  # healthy, so hold them until every fast job has finished and passed.
+  downstream:
+    needs:
+      - tests
+      - test_minimum_versions
+      - test_lint
+      - test_docs
+      - test_prereleases
+      - test_sdist
+    uses: ./.github/workflows/downstream.yml
+
   check_links:
     runs-on: ubuntu-latest
     timeout-minutes: 10
