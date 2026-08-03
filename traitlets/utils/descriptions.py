@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import re
 import types
 from typing import Any
@@ -71,14 +70,14 @@ def describe(
     if isinstance(article, str):
         article = article.lower()
 
-    if not inspect.isclass(value):
+    if not isinstance(value, type):
         typename = type(value).__name__
     else:
         typename = value.__name__
     if verbose:
         typename = _prefix(value) + typename
 
-    if article == "the" or (article is None and not inspect.isclass(value)):
+    if article == "the" or (article is None and not isinstance(value, type)):
         if name is not None:
             result = f"{typename} {name}"
             if article is not None:
@@ -87,7 +86,7 @@ def describe(
                 return result
         else:
             tick_wrap = False
-            if inspect.isclass(value):
+            if isinstance(value, type):
                 name = value.__name__
             elif isinstance(value, types.FunctionType):
                 name = value.__name__
@@ -123,6 +122,8 @@ def _prefix(value: Any) -> str:
     if isinstance(value, types.MethodType):
         name = describe(None, value.__self__, verbose=True) + "."
     else:
+        import inspect
+
         module = inspect.getmodule(value)
         if module is not None and module.__name__ != "builtins":
             name = module.__name__ + "."
@@ -136,7 +137,7 @@ def class_of(value: Any) -> Any:
 
     For example 'an Image' or 'a PlotValue'.
     """
-    if inspect.isclass(value):
+    if isinstance(value, type):
         return add_article(value.__name__)
     else:
         return class_of(type(value))
