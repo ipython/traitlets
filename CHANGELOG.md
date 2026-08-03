@@ -2,6 +2,25 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 5.16.1
+
+([Full Changelog](https://github.com/ipython/traitlets/compare/v5.16.0...0f8dba11b705ea4401d93330b01bc3b2c74d87f9))
+
+### Merged PRs
+
+- Re-add \_merge to un-break spyder temporarily. [#963](https://github.com/ipython/traitlets/pull/963) ([@Carreau](https://github.com/Carreau), [@ccordoba12](https://github.com/ccordoba12))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2026-07-31&to=2026-08-03&type=c))
+
+@Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2026-07-31..2026-08-03&type=Issues)) | @ccordoba12 ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Accordoba12+updated%3A2026-07-31..2026-08-03&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 5.16.0
 
 ([Full Changelog](https://github.com/ipython/traitlets/compare/v5.15.1...6317a449b3dcc91bf93f2b0b187cd21d5736620b))
@@ -42,8 +61,6 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 ([GitHub contributors page for this release](https://github.com/ipython/traitlets/graphs/contributors?from=2026-06-03&to=2026-07-31&type=c))
 
 @Carreau ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ACarreau+updated%3A2026-06-03..2026-07-31&type=Issues)) | @cjwatson ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Acjwatson+updated%3A2026-06-03..2026-07-31&type=Issues)) | @claude ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aclaude+updated%3A2026-06-03..2026-07-31&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Aminrk+updated%3A2026-06-03..2026-07-31&type=Issues)) | @SAY-5 ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3ASAY-5+updated%3A2026-06-03..2026-07-31&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Aipython%2Ftraitlets+involves%3Ayuvipanda+updated%3A2026-06-03..2026-07-31&type=Issues))
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 5.15.1
 
