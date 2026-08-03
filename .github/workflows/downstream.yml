@@ -1,13 +1,9 @@
 name: Test downstream projects
 
+# Called from tests.yml once the fast test jobs have passed, so we don't spend
+# runner time on downstream projects when traitlets itself is broken.
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-
-concurrency:
-  group: downstream-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   ipython:
