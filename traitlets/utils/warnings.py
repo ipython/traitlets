@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import os
 import typing as t
 import warnings
@@ -20,6 +19,8 @@ def deprecated_method(method: t.Any, cls: t.Any, method_name: str, msg: str) -> 
     Uses warn_explicit to bind warning to method definition instead of triggering code,
     which isn't relevant.
     """
+    import inspect
+
     warn_msg = f"{cls.__name__}.{method_name} is deprecated in traitlets 4.1: {msg}"
 
     for parent in inspect.getmro(cls):

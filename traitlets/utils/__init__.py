@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import pathlib
 from collections.abc import Sequence
 
 
@@ -50,6 +49,8 @@ def filefind(filename: str, path_dirs: Sequence[str] | None = None) -> str:
     # If the input is an absolute path, just check it exists
     if os.path.isabs(filename) and os.path.isfile(filename):
         return filename
+
+    import pathlib
 
     if path_dirs is None:
         path_dirs = ("",)

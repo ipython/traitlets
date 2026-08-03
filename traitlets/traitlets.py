@@ -43,15 +43,12 @@ from __future__ import annotations
 
 import contextlib
 import enum
-import inspect
 import numbers
 import os
-import pathlib
 import re
 import sys
 import types
 import typing as t
-from ast import literal_eval
 
 from .utils.bunch import Bunch
 from .utils.descriptions import add_article, class_of, describe, repr_type
@@ -63,6 +60,8 @@ from .utils.warnings import deprecated_method, should_warn, warn
 SequenceTypes = (list, tuple, set, frozenset)
 
 if t.TYPE_CHECKING:
+    import pathlib
+
     from typing_extensions import TypeVar
 else:
     from typing import TypeVar
@@ -185,6 +184,8 @@ def _safe_literal_eval(s: str) -> t.Any:
 
     Use only where types are ambiguous.
     """
+    from ast import literal_eval
+
     try:
         return literal_eval(s)
     except (NameError, SyntaxError, ValueError):
@@ -559,7 +560,7 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
 
         if len(kwargs) > 0:
             stacklevel = 1
-            f = inspect.currentframe()
+            f: types.FrameType | None = sys._getframe()
             # count supers to determine stacklevel for warning
             assert f is not None
             while f.f_code.co_name == "__init__":
@@ -974,7 +975,7 @@ class MetaHasDescriptors(type):
             # ----------------------------------------------------------------
             # Support of deprecated behavior allowing for TraitType types
             # to be used instead of TraitType instances.
-            if inspect.isclass(v) and issubclass(v, TraitType):
+            if isinstance(v, type) and issubclass(v, TraitType):
                 warn(
                     "Traits should be given as instances, not types (for example, `Int()`, not `Int`)."
                     " Passing types is deprecated in traitlets 4.1.",
@@ -2114,7 +2115,7 @@ class Type(ClassBasedTraitType[G, S]):
             else:
                 klass = default_value
 
-        if not (inspect.isclass(klass) or isinstance(klass, str)):
+        if not isinstance(klass, (type, str)):
             raise TraitError("A Type trait must specify a class.")
 
         self.klass = klass
@@ -2278,7 +2279,7 @@ class Instance(ClassBasedTraitType[T, T]):
         if klass is None:
             klass = self.klass
 
-        if (klass is not None) and (inspect.isclass(klass) or isinstance(klass, str)):
+        if (klass is not None) and isinstance(klass, (type, str)):
             self.klass = klass
         else:
             raise TraitError(f"The klass attribute must be a class not: {klass!r}")
@@ -3510,6 +3511,8 @@ class Container(Instance[T]):
         """Load value from a single string"""
         if not isinstance(s, str):
             raise TraitError(f"Expected string, got {s!r}")
+        from ast import literal_eval
+
         try:
             test = literal_eval(s)
         except Exception:
@@ -3542,7 +3545,11 @@ class Container(Instance[T]):
                     DeprecationWarning,
                     stacklevel=2,
                 )
+                from ast import literal_eval
+
                 return self.klass(literal_eval(r))  # type:ignore[call-arg]
+        import inspect
+
         sig = inspect.signature(self.item_from_string)
         if "index" in sig.parameters:
             item_from_string = self.item_from_string
@@ -4069,6 +4076,7 @@ class Dict(Instance["dict[K, V]"]):
                 DeprecationWarning,
                 stacklevel=2,
             )
+            from ast import literal_eval
 
             return literal_eval(s_list[0])
 
@@ -4192,11 +4200,15 @@ class Path(TraitType["pathlib.Path", t.Union["pathlib.Path", str, "os.PathLike[s
     info_text = "a filesystem path"
 
     def validate(self, obj: t.Any, value: t.Any) -> pathlib.Path | None:
+        import pathlib
+
         if isinstance(value, (str, os.PathLike)):
             return pathlib.Path(value)
         self.error(obj, value)
 
     def from_string(self, s: str) -> pathlib.Path | None:
+        import pathlib
+
         if self.allow_none and s == "None":
             return None
         return pathlib.Path(s)

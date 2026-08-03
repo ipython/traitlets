@@ -5,17 +5,14 @@
 from __future__ import annotations
 
 import functools
-import json
 import logging
 import os
-import pprint
 import re
 import sys
 import typing as t
 from collections import OrderedDict, defaultdict
 from contextlib import suppress
 from copy import deepcopy
-from logging.config import dictConfig
 from textwrap import dedent
 
 from traitlets.config.configurable import Configurable, SingletonConfigurable
@@ -286,6 +283,8 @@ class Application(SingletonConfigurable):
         self._configure_logging()
 
     def _configure_logging(self) -> None:
+        from logging.config import dictConfig
+
         config = self.get_default_logging_config()
         nested_update(config, self.logging_config or {})
         dictConfig(config)
@@ -483,6 +482,8 @@ class Application(SingletonConfigurable):
                 cls_config.pop("show_config_json", None)
 
         if self.show_config_json:
+            import json
+
             json.dump(config, sys.stdout, indent=1, sort_keys=True, default=repr)
             # add trailing newline
             sys.stdout.write("\n")
@@ -498,6 +499,8 @@ class Application(SingletonConfigurable):
             class_config = config[classname]
             if not class_config:
                 continue
+            import pprint
+
             print(classname)
             pformat_kwargs: StrDict = dict(indent=4, compact=True)  # noqa: C408
 
@@ -929,6 +932,8 @@ class Application(SingletonConfigurable):
                     if log:
                         log.debug("Loaded config file: %s", loader.full_filename)
                 if config:
+                    import json
+
                     for filename, earlier_config in zip(filenames, loaded, strict=True):
                         collisions = earlier_config.collisions(config)
                         if collisions and log:

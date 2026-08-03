@@ -1657,6 +1657,11 @@ class TestPath(TraitTestBase):
         return pathlib.Path(value)
 
 
+def test_path_from_string():
+    assert Path().from_string("foo/bar") == pathlib.Path("foo/bar")
+    assert Path(allow_none=True).from_string("None") is None
+
+
 class ListTrait(HasTraits):
     value = List(Int())
 
@@ -3038,6 +3043,15 @@ def test_dict_from_string(s, expected):
 )
 def test_list_from_string(s, expected):
     _from_string_test(List, s, expected)
+
+
+def test_container_from_string_list_deprecated_literal():
+    # Passing a whole container literal as a single --opt="[...]" element is
+    # deprecated (traitlets 5.0) but still supported.
+    trait = List(Integer())
+    trait.name = "x"
+    with pytest.warns(DeprecationWarning, match="is deprecated in traitlets 5.0"):
+        assert trait.from_string_list(["[1, 2, 3]"]) == [1, 2, 3]
 
 
 @pytest.mark.parametrize(
