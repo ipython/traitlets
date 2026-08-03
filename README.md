@@ -1,6 +1,7 @@
 # Traitlets
 
 [![Tests](https://github.com/ipython/traitlets/actions/workflows/tests.yml/badge.svg)](https://github.com/ipython/traitlets/actions/workflows/tests.yml)
+[![Coverage](https://codecov.io/gh/ipython/traitlets/branch/main/graph/badge.svg)](https://codecov.io/gh/ipython/traitlets)
 [![Documentation Status](https://readthedocs.org/projects/traitlets/badge/?version=latest)](https://traitlets.readthedocs.io/en/latest/?badge=latest)
 [![Tidelift](https://tidelift.com/subscription/pkg/pypi-traitlets)](https://tidelift.com/badges/package/pypi/traitlets)
 

@@ -1,0 +1,32 @@
+# https://docs.codecov.com/docs/codecov-yaml
+codecov:
+  require_ci_to_pass: true
+  notify:
+    # Coverage is combined and uploaded exactly once, by the `coverage` job,
+    # after the whole test matrix has finished. There is nothing to wait for.
+    after_n_builds: 1
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...90"
+  status:
+    project:
+      default:
+        target: auto
+        # Don't fail a pull request over the rounding noise of a refactor
+        # that only moves code around.
+        threshold: 0.5%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer"
+  require_changes: true
+
+ignore:
+  - "docs"
+  - "examples"
+  - "tests"

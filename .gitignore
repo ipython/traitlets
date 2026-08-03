@@ -17,6 +17,8 @@ __pycache__
 \#*#
 .#*
 .coverage
+.coverage.*
+coverage.xml
 .cache
 htmlcov
 docs/source/CHANGELOG.md
