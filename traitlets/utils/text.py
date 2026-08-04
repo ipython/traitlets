@@ -29,7 +29,7 @@ def _dedent(text: str) -> str:
     first, rest = splits
     # dedent everything but the first line
     rest = textwrap.dedent(rest)
-    return "\n".join([first, rest])
+    return f"{first}\n{rest}"
 
 
 def wrap_paragraphs(text: str, ncols: int = 80) -> list[str]:

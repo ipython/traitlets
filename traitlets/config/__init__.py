@@ -6,7 +6,7 @@ from .application import *
 from .configurable import *
 from .loader import Config
 
-__all__ = [  # noqa: F405
+__all__ = [
     "Application",
     "ApplicationError",
     "Config",

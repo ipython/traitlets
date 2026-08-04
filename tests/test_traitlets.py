@@ -2190,7 +2190,7 @@ class TestLink(TestCase):
                 self.i = change.new * 2
 
         mc = MyClass()
-        l = link((mc, "i"), (mc, "j"))  # noqa: E741
+        l = link((mc, "i"), (mc, "j"))
         self.assertRaises(TraitError, setattr, mc, "i", 2)
 
     def test_link_broken_at_target(self):
@@ -2203,7 +2203,7 @@ class TestLink(TestCase):
                 self.j = change.new * 2
 
         mc = MyClass()
-        l = link((mc, "i"), (mc, "j"))  # noqa: E741
+        l = link((mc, "i"), (mc, "j"))
         self.assertRaises(TraitError, setattr, mc, "j", 2)
 
 
@@ -2433,7 +2433,7 @@ class OrderTraits(HasTraits):
     i = Unicode()
     j = Unicode()
     k = Unicode()
-    l = Unicode()  # noqa: E741
+    l = Unicode()
 
     def _notify(self, name, old, new):
         """check the value of all traits when each trait change is triggered
