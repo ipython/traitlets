@@ -4,14 +4,23 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import asyncio
 import logging
+import sys
+import threading
+import warnings
 from unittest import TestCase
 
 import pytest
 
 from tests._warnings import expected_warnings
 from traitlets.config.application import Application
-from traitlets.config.configurable import Configurable, LoggingConfigurable, SingletonConfigurable
+from traitlets.config.configurable import (
+    Configurable,
+    LoggingConfigurable,
+    MultipleInstanceError,
+    SingletonConfigurable,
+)
 from traitlets.config.loader import Config
 from traitlets.log import get_logger
 from traitlets.traitlets import (
@@ -333,6 +342,260 @@ class TestSingletonConfigurable(TestCase):
         self.assertEqual(bam, Bam._instance)
         self.assertEqual(bam, Bar._instance)
         self.assertEqual(SingletonConfigurable._instance, None)
+
+
+class TestSingletonScope(TestCase):
+    def test_isolation(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        a = MyApp.instance()
+        scope = MyApp.scope()
+        with scope():
+            b = MyApp.instance()
+            self.assertIsNot(b, a)
+            self.assertIs(MyApp.instance(), b)
+
+        self.assertIs(MyApp.instance(), a)
+        self.assertIs(MyApp._instance, a)
+
+    def test_lazy_creation_uncontrolled_code(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        def third_party():
+            return MyApp.instance()
+
+        scope = MyApp.scope()
+        with scope():
+            b = third_party()
+            self.assertIs(scope.get(MyApp), b)
+
+    def test_no_global_side_effects(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        scope = MyApp.scope()
+        with scope():
+            MyApp.instance()
+
+        self.assertIsNone(MyApp._instance)
+        self.assertIs(MyApp.initialized(), False)
+
+    def test_initialized_false_before_creation_in_scope(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        MyApp.instance()
+        self.assertIs(MyApp.initialized(), True)
+
+        scope = MyApp.scope()
+        with scope():
+            self.assertIs(MyApp.initialized(), False)
+            MyApp.instance()
+            self.assertIs(MyApp.initialized(), True)
+
+    def test_reentry(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        scope = MyApp.scope()
+        with scope():
+            b = MyApp.instance()
+
+        with scope():
+            self.assertIs(MyApp.instance(), b)
+
+    def test_preseeding(self):
+        class Bar(SingletonConfigurable):
+            pass
+
+        class Bam(Bar):
+            pass
+
+        existing = Bam()
+        scope = Bar.scope()
+        scope.add(existing)
+        with scope():
+            self.assertIs(Bam.instance(), existing)
+            self.assertIs(Bar.instance(), existing)
+
+    def test_blank_slate_scope_covers_every_singleton(self):
+        """SingletonConfigurable.scope() isolates every singleton at once."""
+
+        class Alpha(SingletonConfigurable):
+            pass
+
+        class Beta(SingletonConfigurable):
+            pass
+
+        alpha, beta = Alpha.instance(), Beta.instance()
+
+        scope = SingletonConfigurable.scope()
+        self.assertTrue(scope.covers(Alpha))
+        self.assertTrue(scope.covers(Beta))
+
+        with scope():
+            # a clean room: nothing has been created in here yet
+            self.assertFalse(Alpha.initialized())
+            self.assertFalse(Beta.initialized())
+
+            in_alpha, in_beta = Alpha.instance(), Beta.instance()
+            self.assertIsNot(in_alpha, alpha)
+            self.assertIsNot(in_beta, beta)
+            self.assertIsInstance(in_alpha, Alpha)
+            self.assertIsInstance(in_beta, Beta)
+
+        # the process-global registry is untouched
+        self.assertIs(Alpha.instance(), alpha)
+        self.assertIs(Beta.instance(), beta)
+
+    def test_blast_radius(self):
+        class Foo(SingletonConfigurable):
+            pass
+
+        class Baz(SingletonConfigurable):
+            pass
+
+        scope = Foo.scope()
+        with scope():
+            Foo.instance()
+            self.assertIsNone(Foo._instance)
+
+            baz = Baz.instance()
+            self.assertIs(Baz._instance, baz)
+            self.assertIsNone(scope.get(Baz))
+
+    def test_nesting(self):
+        class Outer(SingletonConfigurable):
+            pass
+
+        outer_scope = Outer.scope()
+        inner_scope = Outer.scope()
+
+        with outer_scope():
+            o = Outer.instance()
+
+            with inner_scope():
+                i = Outer.instance()
+                self.assertIsNot(i, o)
+
+            self.assertIs(Outer.instance(), o)
+
+            try:
+                with inner_scope():
+                    raise RuntimeError("boom")
+            except RuntimeError:
+                pass
+
+            self.assertIs(Outer.instance(), o)
+
+    def test_mro_parity_in_scope(self):
+        class Bar(SingletonConfigurable):
+            pass
+
+        class Bam(Bar):
+            pass
+
+        scope1 = Bar.scope()
+        with scope1():
+            bam = Bam.instance()
+            self.assertIs(Bar.instance(), bam)
+
+        scope2 = Bar.scope()
+        with scope2():
+            Bar.instance()
+            with self.assertRaises(MultipleInstanceError):
+                Bam.instance()
+
+    def test_clear_instance_in_scope(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        a = MyApp.instance()
+        scope = MyApp.scope()
+        with scope():
+            b = MyApp.instance()
+            MyApp.clear_instance()
+            self.assertIsNone(scope.get(MyApp))
+            self.assertIs(MyApp._instance, a)
+
+            c = MyApp.instance()
+            self.assertIsNot(c, b)
+
+    @pytest.mark.skipif(
+        bool(getattr(sys.flags, "thread_inherit_context", 0)),
+        reason="When thread_inherit_context is enabled (the default on the "
+        "free-threaded build, e.g. 3.14t), a new threading.Thread starts with a "
+        "copy of the parent's contextvars.Context, so an active scope propagates "
+        "to child threads instead of falling through to the global registry.",
+    )
+    def test_thread_isolation(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        a = MyApp.instance()
+        scope = MyApp.scope()
+        results = {}
+        with scope():
+            b = MyApp.instance()
+
+            def target():
+                results["thread"] = MyApp.instance()
+
+            thread = threading.Thread(target=target)
+            thread.start()
+            thread.join()
+
+            self.assertIsNot(results["thread"], b)
+            self.assertIs(results["thread"], a)
+            self.assertIs(MyApp._instance, a)
+
+    def test_async_propagation(self):
+        class MyApp(SingletonConfigurable):
+            pass
+
+        scope = MyApp.scope()
+
+        async def coro():
+            return MyApp.instance()
+
+        async def main():
+            with scope():
+                b = MyApp.instance()
+                task = asyncio.create_task(coro())
+                result = await task
+                self.assertIs(result, b)
+
+        asyncio.run(main())
+
+    def test_free_threading_warning(self):
+        from unittest import mock
+
+        from traitlets.config import configurable
+
+        class MyApp(SingletonConfigurable):
+            pass
+
+        scope = MyApp.scope()
+
+        # When thread_inherit_context is enabled (the default on free-threaded
+        # builds) child threads inherit the scope, so activating one warns.
+        with (
+            mock.patch.object(configurable, "_threads_inherit_context", return_value=True),
+            pytest.warns(RuntimeWarning, match="thread_inherit_context"),
+            scope(),
+        ):
+            pass
+
+        # When it is disabled, activating a scope is silent.
+        with (
+            mock.patch.object(configurable, "_threads_inherit_context", return_value=False),
+            warnings.catch_warnings(),
+        ):
+            warnings.simplefilter("error")
+            with scope():
+                pass
 
 
 class TestLoggingConfigurable(TestCase):
