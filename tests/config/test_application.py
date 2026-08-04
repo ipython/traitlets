@@ -488,11 +488,11 @@ class TestApplication(TestCase):
 
     def test_flatten_flags(self):
         cfg = Config()
-        cfg.MyApp.log_level = logging.WARN
+        cfg.MyApp.log_level = logging.WARNING
         app = MyApp()
         app.update_config(cfg)
-        self.assertEqual(app.log_level, logging.WARN)
-        self.assertEqual(app.config.MyApp.log_level, logging.WARN)
+        self.assertEqual(app.log_level, logging.WARNING)
+        self.assertEqual(app.config.MyApp.log_level, logging.WARNING)
         app.initialize(["--crit"])
         self.assertEqual(app.log_level, logging.CRITICAL)
         # this would be app.config.Application.log_level if it failed:
@@ -500,11 +500,11 @@ class TestApplication(TestCase):
 
     def test_flatten_aliases(self):
         cfg = Config()
-        cfg.MyApp.log_level = logging.WARN
+        cfg.MyApp.log_level = logging.WARNING
         app = MyApp()
         app.update_config(cfg)
-        self.assertEqual(app.log_level, logging.WARN)
-        self.assertEqual(app.config.MyApp.log_level, logging.WARN)
+        self.assertEqual(app.log_level, logging.WARNING)
+        self.assertEqual(app.config.MyApp.log_level, logging.WARNING)
         app.initialize(["--log-level", "CRITICAL"])
         self.assertEqual(app.log_level, logging.CRITICAL)
         # this would be app.config.Application.log_level if it failed:

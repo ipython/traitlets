@@ -536,7 +536,7 @@ class TestConfig(TestCase):
         c1.Foo.bam = 30
         c1.a = "asdf"
         c1.b = range(10)
-        c1.Test.logger = logging.Logger("test")
+        c1.Test.logger = logging.Logger("test")  # noqa: LOG001
         c1.Test.get_logger = logging.getLogger("test")
         c2 = copy.deepcopy(c1)
         self.assertEqual(c1, c2)

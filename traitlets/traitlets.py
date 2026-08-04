@@ -1494,7 +1494,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                     trait = getattr(self.__class__, name)
                     value = trait._cross_validate(self, getattr(self, name))
                     self.set_trait(name, value)
-            except TraitError as e:
+            except TraitError:
                 # Roll back in case of TraitError during final cross validation.
                 self.notify_change = lambda x: None  # type:ignore[method-assign, assignment]  # noqa: ARG005
                 for name, changes in cache.items():
@@ -1506,7 +1506,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                             else:
                                 self._trait_values.pop(name)
                 cache = {}
-                raise e
+                raise
             finally:
                 self._cross_validation_lock = False
                 # Restore method retrieval from class
@@ -2024,8 +2024,8 @@ class Type(ClassBasedTraitType[G, S]):
         @t.overload
         def __init__(
             self: Type[type, type],
-            default_value: Sentinel | None | str = ...,
-            klass: None | str = ...,
+            default_value: Sentinel | str | None = ...,
+            klass: str | None = ...,
             allow_none: Literal[False] = ...,
             read_only: bool | None = ...,
             help: str | None = ...,
@@ -2036,8 +2036,8 @@ class Type(ClassBasedTraitType[G, S]):
         @t.overload
         def __init__(
             self: Type[type | None, type | None],
-            default_value: Sentinel | None | str = ...,
-            klass: None | str = ...,
+            default_value: Sentinel | str | None = ...,
+            klass: str | None = ...,
             allow_none: Literal[True] = ...,
             read_only: bool | None = ...,
             help: str | None = ...,
@@ -2345,7 +2345,7 @@ class ForwardDeclaredMixin:
         our this_class attribute was defined.
         """
         modname = self.this_class.__module__  # type:ignore[attr-defined]
-        return import_item(".".join([modname, string]))
+        return import_item(f"{modname}.{string}")
 
 
 class ForwardDeclaredType(ForwardDeclaredMixin, Type[G, S]):
@@ -4138,7 +4138,7 @@ class TCPAddress(TraitType[G, S]):
         @t.overload
         def __init__(
             self: TCPAddress[tuple[str, int] | None, tuple[str, int] | None],
-            default_value: bool | None | Sentinel = ...,
+            default_value: bool | Sentinel | None = ...,
             allow_none: Literal[True] = ...,
             read_only: bool | None = ...,
             help: str | None = ...,
@@ -4149,7 +4149,7 @@ class TCPAddress(TraitType[G, S]):
         def __init__(
             self: TCPAddress[tuple[str, int] | None, tuple[str, int] | None]
             | TCPAddress[tuple[str, int], tuple[str, int]],
-            default_value: bool | None | Sentinel = Undefined,
+            default_value: bool | Sentinel | None = Undefined,
             allow_none: Literal[True, False] = False,
             read_only: bool | None = None,
             help: str | None = None,

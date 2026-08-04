@@ -134,7 +134,7 @@ class LevelFormatter(logging.Formatter):
     without adding 'INFO' to info, etc.
     """
 
-    highlevel_limit = logging.WARN
+    highlevel_limit = logging.WARNING
     highlevel_format = " %(levelname)s |"
 
     def format(self, record: logging.LogRecord) -> str:
@@ -204,7 +204,7 @@ class Application(SingletonConfigurable):
     # The log level for the application
     log_level = Enum(
         (0, 10, 20, 30, 40, 50, "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"),
-        default_value=logging.WARN,
+        default_value=logging.WARNING,
         help="Set the log level by value or name.",
     ).tag(config=True)
 
@@ -717,7 +717,7 @@ class Application(SingletonConfigurable):
             # or ask factory to create it...
             self.subapp = subapp(self)
         else:
-            raise AssertionError(f"Invalid mappings for subcommand '{subc}'!")
+            raise TypeError(f"Invalid mappings for subcommand '{subc}'!")
 
         # ... and finally initialize subapp.
         self.subapp.initialize(argv)
@@ -757,7 +757,7 @@ class Application(SingletonConfigurable):
             if not isinstance(alias, tuple):  # type:ignore[unreachable]
                 alias = (alias,)  # type:ignore[assignment]
             for al in alias:
-                aliases[al] = ".".join([cls, trait])
+                aliases[al] = f"{cls}.{trait}"
 
         # flatten flags, which are of the form:
         # { 'key' : ({'Cls' : {'trait' : value}}, 'help')}
@@ -881,7 +881,7 @@ class Application(SingletonConfigurable):
         loader = self._create_loader(argv, aliases, flags, classes=classes)
         try:
             self.cli_config = deepcopy(loader.load_config())
-        except SystemExit:
+        except SystemExit:  # noqa: TRY203
             # traitlets 5: no longer print help output on error
             # help output is huge, and comes after the error
             raise

@@ -233,6 +233,7 @@ ignore = [
   "E501",   # Line too long
   "S105", "S106",   # Possible hardcoded password
   "S110",   # S110 `try`-`except`-`pass` detected
+  "BLE001", # Do not catch blind exception: `Exception` (used deliberately for defensive fallbacks)
   "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
   "ARG001", "ARG002",  # Unused function argument
   "RET503",  # Missing explicit `return` at the end of function

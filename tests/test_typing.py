@@ -215,7 +215,7 @@ def mypy_enum_typing() -> None:
     class T(HasTraits):
         log_level = Enum(
             (0, 10, 20, 30, 40, 50),
-            default_value=logging.WARN,
+            default_value=logging.WARNING,
             help="Set the log level by value or name.",
         ).tag(config=True)
 
