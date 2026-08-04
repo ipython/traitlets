@@ -43,9 +43,11 @@ extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.napoleon",
+    "numpydoc",
 ]
 github_project_url = "https://github.com/ipython/traitlets"
+
+numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']
