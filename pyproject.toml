@@ -45,6 +45,7 @@ test = [
 ]
 docs = [
     "myst-parser",
+    "numpydoc",
     "pydata-sphinx-theme",
     "sphinx"
 ]

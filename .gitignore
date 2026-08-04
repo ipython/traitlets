@@ -21,3 +21,4 @@ coverage.xml
 .cache
 htmlcov
 docs/source/CHANGELOG.md
+docs/source/changelog.md
