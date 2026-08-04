@@ -9,6 +9,9 @@ Traitlets config API reference
 .. autoclass:: SingletonConfigurable
     :members:
 
+.. autoclass:: SingletonScope
+    :members:
+
 .. autoclass:: LoggingConfigurable
     :members:
 

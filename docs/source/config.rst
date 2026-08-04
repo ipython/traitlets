@@ -73,6 +73,203 @@ Singletons: :class:`~traitlets.config.SingletonConfigurable`
     of a given singleton class, but the :meth:`instance` method will always
     return the same one.
 
+Singleton scopes
+----------------
+
+.. versionadded:: 5.17
+
+By default :meth:`~traitlets.config.SingletonConfigurable.instance` resolves
+against a single, process-global registry. A :class:`~traitlets.config.SingletonScope`
+provides an isolated registry that is active only for a dynamic extent (the
+current thread or :mod:`asyncio` task), leaving the global one untouched. This is
+useful when you need to run code that internally calls ``.instance()`` — code you
+do not control — against a fresh set of singletons, for example in a test or when
+serving concurrent requests.
+
+Create a scope from the base class whose subtree it should cover with
+:meth:`~traitlets.config.SingletonConfigurable.scope`, then activate it as a
+context manager:
+
+.. sourcecode:: python
+
+    a = MyApp.instance()  # process-global instance
+
+    scope = MyApp.scope()  # covers MyApp and its subclasses
+    with scope():
+        third_party_function()  # its internal MyApp.instance() calls...
+        b = MyApp.instance()  # ...resolve to this fresh instance
+        assert b is not a
+    assert MyApp.instance() is a  # global untouched, exception-safe
+
+    scope.get(MyApp)  # -> b, retrieve what was created in-scope
+    with scope():  # re-entering resumes the same registry
+        assert MyApp.instance() is b
+
+Key semantics:
+
+- **Coverage is defined by the base class.** ``Foo.scope()`` only intercepts
+  ``.instance()`` for ``Foo`` and its subclasses; unrelated singletons keep
+  resolving against the global registry. Pick a narrower base to limit the blast
+  radius, or ``SingletonConfigurable`` itself for a complete blank slate (see
+  below).
+- **No fallback to the global.** Inside a scope, the first ``.instance()`` call
+  creates a fresh instance registered in the scope; :meth:`instance` never reads,
+  creates, or mutates the process-global ``_instance``, and
+  :meth:`~traitlets.config.SingletonConfigurable.initialized` is ``False`` until
+  that first in-scope creation.
+- **Pre-seeding.** :meth:`~traitlets.config.SingletonScope.add` registers an
+  instance you built yourself, so that ``.instance()`` returns *that* object
+  inside the scope (see :ref:`singleton-scope-injection`).
+- **Nesting and propagation.** Scopes nest; the innermost active scope covering a
+  class wins, and blocks restore in LIFO order (even on exceptions). Because the
+  active scope lives in a :class:`~contextvars.ContextVar`, an :mod:`asyncio` task
+  created inside a scope inherits it. A new :class:`threading.Thread` started
+  inside a scope inherits it only when :data:`sys.flags.thread_inherit_context`
+  is set (see the caveat below); otherwise the thread falls through to the global
+  registry.
+- **Direct construction is never intercepted.** ``MyApp()`` always builds a new,
+  unregistered object, in or out of a scope.
+
+.. warning::
+
+   **Free-threaded builds inherit the scope in child threads.** Whether a newly
+   started :class:`threading.Thread` inherits the parent's active scope is
+   governed by :data:`sys.flags.thread_inherit_context`. On the default
+   GIL-enabled build this flag is *false*, so a child thread starts with an empty
+   :class:`~contextvars.Context` and its ``.instance()`` calls fall through to the
+   process-global registry. On the free-threaded build (e.g. ``3.14t``) the flag
+   defaults to *true*, so a child thread starts with a copy of the parent's
+   context and therefore resolves ``.instance()`` **within** the parent's scope.
+   (The same is true on any build launched with ``-X thread_inherit_context=1``.)
+
+   Do not rely on child threads escaping a scope. Activating a scope while this
+   flag is enabled emits a :class:`RuntimeWarning`. If you need per-thread
+   isolation, have each thread activate its *own* scope rather than depending on
+   non-inheritance — that pattern (below) works identically on both builds.
+
+Giving each worker thread its own isolated singleton works on every build: have
+every thread activate its own scope. Any ``.instance()`` calls made by that
+thread — directly or deep inside code it calls — then resolve to a per-thread
+instance, while the process-global singleton is left untouched:
+
+.. sourcecode:: python
+
+    import threading
+    from traitlets.config import SingletonConfigurable
+
+
+    class MyApp(SingletonConfigurable):
+        pass
+
+
+    seen = {}
+
+
+    def worker(name):
+        scope = MyApp.scope()  # a fresh registry, private to this thread
+        with scope():  # activate it for this thread's extent
+            app = MyApp.instance()  # created once, here...
+            assert MyApp.instance() is app  # ...and reused within the thread
+            seen[name] = app
+
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(3)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    # each thread got its own distinct instance
+    assert len({id(app) for app in seen.values()}) == 3
+    # and none of them is the process-global singleton
+    assert all(app is not MyApp.instance() for app in seen.values())
+
+A complete blank slate
+**********************
+
+.. versionadded:: 5.17
+
+Because coverage is just ``issubclass(cls, base)``, scoping the root class —
+:class:`~traitlets.config.SingletonConfigurable` itself — covers *every*
+singleton in the process at once. This gives you a clean-room registry in which
+no singleton has been created yet, which is what you usually want when running a
+test, or any self-contained piece of work, in full isolation:
+
+.. sourcecode:: python
+
+    from traitlets.config import SingletonConfigurable
+
+
+    class Foo(SingletonConfigurable):
+        pass
+
+
+    class Bar(SingletonConfigurable):
+        pass
+
+
+    foo, bar = Foo.instance(), Bar.instance()  # process-global instances
+
+    with SingletonConfigurable.scope()():  # covers every singleton
+        # nothing has been created in here yet
+        assert not Foo.initialized()
+        assert not Bar.initialized()
+
+        assert Foo.instance() is not foo  # every subtree resolves fresh
+        assert Bar.instance() is not bar
+
+    # the process-global registry was never read, created, or mutated
+    assert Foo.instance() is foo
+    assert Bar.instance() is bar
+
+Note the double call: ``SingletonConfigurable.scope()`` *builds* the scope and
+``()`` *activates* it. Bind it to a name if you want to inspect the registry
+afterwards or re-enter it later::
+
+    blank = SingletonConfigurable.scope()
+    with blank():
+        ...
+    blank.get(Foo)  # what was created inside
+
+Since this covers everything, it is the widest possible blast radius: prefer a
+narrower base when you only need to isolate one subtree.
+
+.. _singleton-scope-injection:
+
+Injecting a specific instance
+*****************************
+
+.. versionadded:: 5.17
+
+Inside a scope, the first ``.instance()`` call constructs a fresh object of the
+class it was called on. When you need ``.instance()`` to hand back a *particular*
+object instead — a test double, a subclass, or something built by a factory —
+pre-seed the registry with :meth:`~traitlets.config.SingletonScope.add`. This is
+the only way to control *which* object uncontrolled code receives:
+
+.. sourcecode:: python
+
+    class App(SingletonConfigurable):
+        pass
+
+
+    class FakeApp(App):  # a stand-in used only by the test
+        pass
+
+
+    fake = FakeApp()
+
+    scope = App.scope()
+    scope.add(fake)  # register before anything resolves
+    with scope():
+        third_party_function()  # its internal App.instance() returns `fake`
+        assert App.instance() is fake
+
+``add`` writes through to the singleton ancestors of the instance's class, the
+same way the classic global path does, so the object is also returned when
+resolving via a parent class (``App.instance()`` above, not just
+``FakeApp.instance()``).
+
 Having described these main concepts, we can now state the main idea in our
 configuration system: *"configuration" allows the default values of class
 attributes to be controlled on a class by class basis*. Thus all instances of

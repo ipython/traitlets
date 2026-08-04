@@ -4,8 +4,11 @@
 # Distributed under the terms of the Modified BSD License.
 from __future__ import annotations
 
+import contextlib
 import logging
+import sys
 import typing as t
+from contextvars import ContextVar
 from copy import deepcopy
 from textwrap import dedent
 
@@ -514,6 +517,106 @@ class LoggingConfigurable(Configurable):
         return logger.handlers[0]
 
 
+CT = t.TypeVar("CT", bound="SingletonConfigurable")
+
+
+_active_scopes: ContextVar[tuple[SingletonScope, ...]] = ContextVar("singleton_scopes", default=())
+
+
+def _threads_inherit_context() -> bool:
+    """Whether a new :class:`threading.Thread` inherits the caller's context.
+
+    Governed by :data:`sys.flags.thread_inherit_context`: false by default on the
+    GIL build, true by default on the free-threaded build (e.g. ``3.14t``) and on
+    any build launched with ``-X thread_inherit_context=1``. When true, an active
+    :class:`SingletonScope` propagates into threads started while it is active.
+    """
+    return bool(getattr(sys.flags, "thread_inherit_context", 0))
+
+
+class SingletonScope:
+    """An isolated singleton registry, activated for a dynamic extent.
+
+    While active (``with scope():``), :meth:`SingletonConfigurable.instance`
+    on any subclass of ``base`` resolves within this registry — creating
+    fresh instances on first use — in the current thread/async task.
+    Re-enterable: the registry persists across activations.
+
+    .. warning::
+
+        The scope lives in a :class:`~contextvars.ContextVar`. On builds where
+        :data:`sys.flags.thread_inherit_context` is enabled — the default on the
+        free-threaded build (e.g. ``3.14t``) — a :class:`threading.Thread`
+        started while the scope is active inherits a copy of the parent context
+        and resolves ``.instance()`` within the scope instead of the
+        process-global registry. Activating a scope under that flag emits a
+        :class:`RuntimeWarning`. For per-thread isolation, activate a fresh scope
+        inside each thread rather than relying on non-inheritance.
+
+    Scope ``SingletonConfigurable`` itself for a complete blank slate covering
+    every singleton in the process.
+
+    .. versionadded:: 5.17
+    """
+
+    def __init__(self, base: type[SingletonConfigurable]) -> None:
+        self.base = base
+        self._instances: dict[type, SingletonConfigurable] = {}
+
+    def covers(self, cls: type) -> bool:
+        """Whether ``cls`` resolves within this scope.
+
+        .. versionadded:: 5.17
+        """
+        return issubclass(cls, self.base)
+
+    def get(self, cls: type[CT]) -> CT | None:
+        """Registered instance for ``cls``, emulating class-attribute
+        inheritance: walk ``cls.__mro__`` and return the first hit.
+
+        .. versionadded:: 5.17
+        """
+        for klass in cls.__mro__:
+            if klass in self._instances:
+                return t.cast("CT", self._instances[klass])
+        return None
+
+    def add(self, inst: SingletonConfigurable) -> None:
+        """Pre-seed the registry with an instance you built yourself, so that
+        ``.instance()`` returns *that* object inside the scope.
+
+        Writes through to the singleton parents of ``type(inst)``, the same way
+        the classic global path does, so a subclass instance is also returned
+        when resolving via an ancestor class. This is the only way to control
+        *which* object in-scope ``.instance()`` calls receive, since they
+        otherwise construct a fresh one.
+
+        .. versionadded:: 5.17
+        """
+        for subclass in type(inst)._walk_mro():
+            self._instances[subclass] = inst
+
+    @contextlib.contextmanager
+    def __call__(self) -> t.Generator[SingletonScope, None, None]:
+        if _threads_inherit_context():
+            warnings.warn(
+                "A SingletonScope is being activated while thread_inherit_context "
+                "is enabled (the default on the free-threaded build, e.g. 3.14t). "
+                "A threading.Thread started while this scope is active inherits a "
+                "copy of the parent context, so its .instance() calls resolve "
+                "within this scope instead of falling through to the process-global "
+                "registry. Activate a fresh scope inside each thread if you need "
+                "per-thread isolation.",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+        token = _active_scopes.set((*_active_scopes.get(), self))
+        try:
+            yield self
+        finally:
+            _active_scopes.reset(token)
+
+
 class SingletonConfigurable(LoggingConfigurable):
     """A configurable that only allows one instance.
 
@@ -540,8 +643,41 @@ class SingletonConfigurable(LoggingConfigurable):
                 yield subclass
 
     @classmethod
+    def scope(cls) -> SingletonScope:
+        """Create a scope covering this class and its subclasses.
+
+        The returned :class:`SingletonScope` is not active yet; call it to
+        activate it for a dynamic extent (``with MyApp.scope()() as scope:``, or
+        bind it first to inspect or re-enter it later). Called on
+        ``SingletonConfigurable`` itself, it covers every singleton in the
+        process.
+
+        .. versionadded:: 5.17
+        """
+        return SingletonScope(cls)
+
+    @classmethod
+    def _current_scope(cls) -> SingletonScope | None:
+        """The innermost active scope covering ``cls``, or None."""
+        for scope in reversed(_active_scopes.get()):
+            if scope.covers(cls):
+                return scope
+        return None
+
+    @classmethod
     def clear_instance(cls) -> None:
-        """unset _instance for this class and singleton parents."""
+        """unset _instance for this class and singleton parents.
+
+        .. versionchanged:: 5.17
+            Inside an active :class:`SingletonScope`, clears the scope's
+            registry instead, leaving the process-global ``_instance`` alone.
+        """
+        scope = cls._current_scope()
+        if scope is not None:
+            for klass in list(scope._instances):
+                if isinstance(scope._instances[klass], cls):
+                    del scope._instances[klass]
+            return
         if not cls.initialized():
             return
         for subclass in cls._walk_mro():
@@ -577,7 +713,26 @@ class SingletonConfigurable(LoggingConfigurable):
             >>> bam = Bam.instance()
             >>> bam == Bar.instance()
             True
+
+        .. versionchanged:: 5.17
+            Inside an active :class:`SingletonScope`, resolves against that
+            scope's registry — creating a fresh instance on first use — without
+            reading, creating, or mutating the process-global ``_instance``.
         """
+        scope = cls._current_scope()
+        if scope is not None:
+            if scope.get(cls) is None:
+                inst = cls(*args, **kwargs)
+                for subclass in cls._walk_mro():
+                    scope._instances[subclass] = inst
+            existing = scope.get(cls)
+            if isinstance(existing, cls):
+                return existing
+            raise MultipleInstanceError(
+                f"An incompatible sibling of '{cls.__name__}' is already instantiated"
+                f" as singleton: {type(existing).__name__}"
+            )
+
         # Create and save the instance
         if cls._instance is None:
             inst = cls(*args, **kwargs)
@@ -596,5 +751,13 @@ class SingletonConfigurable(LoggingConfigurable):
 
     @classmethod
     def initialized(cls) -> bool:
-        """Has an instance been created?"""
+        """Has an instance been created?
+
+        .. versionchanged:: 5.17
+            Inside an active :class:`SingletonScope`, reports whether an
+            instance exists *in that scope*, ignoring the process-global one.
+        """
+        scope = cls._current_scope()
+        if scope is not None:
+            return scope.get(cls) is not None
         return hasattr(cls, "_instance") and cls._instance is not None

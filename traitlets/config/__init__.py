@@ -16,5 +16,6 @@ __all__ = [  # noqa: F405
     "LoggingConfigurable",
     "MultipleInstanceError",
     "SingletonConfigurable",
+    "SingletonScope",
     "configurable",
 ]
