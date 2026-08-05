@@ -1133,7 +1133,7 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
 
         from . import argcomplete_config
 
-        finder = argcomplete_config.ExtendedCompletionFinder()  # type:ignore[no-untyped-call]
+        finder = argcomplete_config.ExtendedCompletionFinder()
         finder.config_classes = classes
         finder.subcommands = list(subcommands or [])
         # for ease of testing, pass through self._argcomplete_kwargs if set
