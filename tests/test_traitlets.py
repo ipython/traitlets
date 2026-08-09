@@ -11,7 +11,9 @@ import decimal
 import pathlib
 import pickle
 import re
+import sys
 import typing as t
+from contextlib import contextmanager
 from unittest import TestCase
 
 import pytest
@@ -41,6 +43,7 @@ from traitlets import (
     Instance,
     Int,
     Integer,
+    LazyType,
     List,
     Long,
     MetaHasTraits,
@@ -1113,6 +1116,197 @@ class TestType(TestCase):
         from traitlets.config import Config
 
         self.assertEqual(a.klass, Config)
+
+
+@contextmanager
+def _importable_probe_module(tmp_path, name):
+    """Make a throwaway module importable, and make sure it is not imported yet."""
+    (tmp_path / f"{name}.py").write_text(
+        "class Klass:\n    pass\n\n\nclass Sub(Klass):\n    pass\n"
+    )
+    sys.path.insert(0, str(tmp_path))
+    try:
+        assert name not in sys.modules
+        yield
+    finally:
+        sys.path.remove(str(tmp_path))
+        sys.modules.pop(name, None)
+
+
+class TestLazyType:
+    def test_klass_is_not_imported_until_accessed(self, tmp_path):
+        name = "lazy_type_probe_klass"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(f"{name}.Klass")
+
+            a = A()
+            # neither declaring the class nor instantiating it triggers the import
+            assert name not in sys.modules
+
+            # but reading the value does
+            value = a.klass
+            assert name in sys.modules
+            assert value is sys.modules[name].Klass
+
+    def test_klass_is_not_imported_by_eager_traits_on_the_same_class(self, tmp_path):
+        name = "lazy_type_probe_mixed"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                lazy = LazyType(f"{name}.Klass")
+                eager = Int(0)
+
+            A()
+            assert name not in sys.modules
+
+    def test_resolution_is_cached(self, tmp_path):
+        name = "lazy_type_probe_cache"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(f"{name}.Klass")
+
+            # unresolved while nothing has needed the class
+            A()
+            assert A.klass._klass == f"{name}.Klass"
+            assert name not in sys.modules
+
+            # reading .klass off the trait resolves it, and caches the result
+            resolved = A.klass.klass
+            assert resolved is sys.modules[name].Klass
+            assert A.klass.klass is resolved
+            assert A.klass.default_value is resolved
+            # the name is replaced in place by the class it resolved to
+            assert A.klass._klass is resolved
+
+    def test_observer_sees_a_resolved_old_value(self, tmp_path):
+        name = "lazy_type_probe_observe"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(f"{name}.Klass", allow_none=True)
+
+            a = A()
+            seen = []
+            a.observe(lambda change: seen.append(change.old), "klass")
+            a.klass = None
+            assert seen == [sys.modules[name].Klass]
+
+    def test_reassigning_klass(self, tmp_path):
+        name = "lazy_type_probe_rename"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(f"{name}.Klass")
+
+            assert A.klass.klass is sys.modules[name].Klass
+
+            # a new name is honoured, and resolved on the next read
+            A.klass.klass = f"{name}.Sub"
+            assert A.klass.klass is sys.modules[name].Sub
+
+            # a class object is stored as is -- it is already imported
+            A.klass.klass = dict
+            assert A.klass.klass is dict
+
+    def test_resolve_classes_forces_the_import(self, tmp_path):
+        name = "lazy_type_probe_force"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(f"{name}.Klass")
+
+            A()
+            assert name not in sys.modules
+
+            A.klass._resolve_classes()
+            assert name in sys.modules
+            assert A.klass._klass is sys.modules[name].Klass
+            assert A.klass._default_value is sys.modules[name].Klass
+
+    def test_an_already_imported_class_is_accepted(self):
+        # nothing left to defer, so it just behaves like Type
+        class Base:
+            pass
+
+        class Sub(Base):
+            pass
+
+        class A(HasTraits):
+            klass = LazyType(klass=Base)
+
+        a = A()
+        assert a.klass is Base
+        a.klass = Sub
+        assert a.klass is Sub
+        with pytest.raises(TraitError):
+            a.klass = int
+
+        # and with no arguments at all, Type's own default applies
+        assert LazyType().klass is object
+
+    def test_allow_none(self, tmp_path):
+        name = "lazy_type_probe_none"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(None, f"{name}.Klass", allow_none=True)
+
+            a = A()
+            assert a.klass is None
+            assert name not in sys.modules
+
+            a.klass = f"{name}.Sub"
+            assert a.klass is sys.modules[name].Sub
+
+    def test_bad_string_raises_on_use_not_on_init(self, tmp_path):
+        class A(HasTraits):
+            klass = LazyType("no_such_module_xyz.Klass")
+
+        a = A()  # constructing the owner is fine
+        with pytest.raises(ImportError):
+            a.klass
+
+    def test_validation(self, tmp_path):
+        name = "lazy_type_probe_validate"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(klass=f"{name}.Klass")
+
+            a = A()
+            assert name not in sys.modules
+            import lazy_type_probe_validate as probe  # type:ignore[import-not-found]
+
+            a.klass = probe.Sub
+            assert a.klass is probe.Sub
+            with pytest.raises(TraitError):
+                a.klass = int
+
+    def test_separate_default_value(self, tmp_path):
+        name = "lazy_type_probe_default"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = LazyType(f"{name}.Sub", f"{name}.Klass")
+
+            a = A()
+            assert name not in sys.modules
+            assert a.klass is sys.modules[name].Sub
+
+    def test_type_still_resolves_eagerly(self, tmp_path):
+        name = "lazy_type_probe_eager"
+        with _importable_probe_module(tmp_path, name):
+
+            class A(HasTraits):
+                klass = Type(f"{name}.Klass")
+
+            assert name not in sys.modules
+            A()
+            # Type resolves at instance_init, without the value being read
+            assert name in sys.modules
 
 
 class TestInstance(TestCase):
