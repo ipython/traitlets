@@ -503,6 +503,14 @@ class TestConfig(TestCase):
         del c.A
         self.assertEqual(c.A, Config())
 
+    def test_has_key_deprecated(self):
+        c = Config()
+        c.a = 10
+        with pytest.deprecated_call(match="Config.has_key has been deprecated"):
+            assert c.has_key("a")
+        with pytest.deprecated_call(match="Config.has_key has been deprecated"):
+            assert not c.has_key("b")
+
     def test_merge_doesnt_exist(self):
         c1 = Config()
         c2 = Config()

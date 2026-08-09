@@ -506,9 +506,17 @@ class LoggingConfigurable(Configurable):
 
         Returns None if none can be found
 
-        Deprecated, this now returns the first log handler which may or may
-        not be the default one.
+        .. deprecated:: 5.2
+
+            This now returns the first log handler, which may or may not be
+            the default one. Use ``self.log.handlers`` directly instead.
         """
+        warnings.warn(
+            "Configurable._get_log_handler has been deprecated since traitlets 5.2 - 2022,"
+            " use the `.handlers` attribute of the logger directly.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if not self.log:
             return None
         logger: logging.Logger = (
