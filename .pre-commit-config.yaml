@@ -59,7 +59,7 @@ repos:
         files: "^traitlets"
         stages: [manual]
         args: ["--install-types", "--non-interactive"]
-        additional_dependencies: ["argcomplete>=3.1"]
+        additional_dependencies: ["argcomplete>=3.7"]
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: "v1.10.0"
