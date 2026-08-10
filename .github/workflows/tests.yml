@@ -51,7 +51,7 @@ jobs:
       # Codecov merges the uploads of every matrix job into one report for
       # the commit, so each job uploads its own and nothing combines them here.
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage.xml
           disable_search: true
