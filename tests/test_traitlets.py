@@ -2841,9 +2841,11 @@ def test_configurable_unrecognized_args_user_warning():
     user = [w for w in caught if issubclass(w.category, UserWarning)]
     assert user
     assert "Passing unrecognized arguments" in str(user[0].message)
-    assert not any(issubclass(w.category, DeprecationWarning) and
-                   "Passing unrecognized arguments" in str(w.message)
-                   for w in caught)
+    assert not any(
+        issubclass(w.category, DeprecationWarning)
+        and "Passing unrecognized arguments" in str(w.message)
+        for w in caught
+    )
 
 
 def test_default_mro():
