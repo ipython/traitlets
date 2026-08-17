@@ -4275,6 +4275,15 @@ class UseEnum(TraitType[t.Any, t.Any]):
             value = value.replace(self.name_prefix, "", 1)
         return self.enum_class.__members__.get(value, default)
 
+    def select_by_value(self, value: t.Any, default: t.Any = Undefined) -> t.Any:
+        """Selects enum-value by using its value-constant."""
+        enum_members = self.enum_class.__members__
+        for enum_item in enum_members.values():
+            if enum_item.value == value:
+                return enum_item
+        # -- NOT FOUND:
+        return default
+
     def validate(self, obj: t.Any, value: t.Any) -> t.Any:
         if isinstance(value, self.enum_class):
             return value
@@ -4286,6 +4295,11 @@ class UseEnum(TraitType[t.Any, t.Any]):
         elif isinstance(value, str):
             # -- CONVERT: name or scoped_name (as string) => enum_value (item)
             value2 = self.select_by_name(value)
+            if value2 is not Undefined:
+                return value2
+            # -- CONVERT: value (as string) => enum_value (item), for str-based enums
+            # whose member names differ from their values
+            value2 = self.select_by_value(value)
             if value2 is not Undefined:
                 return value2
         elif value is None:
