@@ -3995,6 +3995,16 @@ class Dict(Instance["dict[K, V]"]):
         )
         raise TraitError(e)
 
+    def per_key_element_error(
+        self, obj: t.Any, key: t.Any, element: t.Any, validator: t.Any
+    ) -> None:
+        """Raise a TraitError naming the key whose `per_key_traits` entry rejected a value."""
+        e = (
+            f"Value at key {key!r} of the '{self.name}' trait of {class_of(obj)} instance"
+            f" must be {validator.info()}, but a value of {repr_type(element)} was specified."
+        )
+        raise TraitError(e)
+
     def validate(self, obj: t.Any, value: t.Any) -> dict[K, V] | None:
         value = super().validate(obj, value)
         if value is None:
@@ -4020,6 +4030,8 @@ class Dict(Instance["dict[K, V]"]):
                 try:
                     v = active_value_trait._validate(obj, v)
                 except TraitError:
+                    if key in per_key_override:
+                        self.per_key_element_error(obj, key, v, active_value_trait)
                     self.element_error(obj, v, active_value_trait, "Values")
             validated[key] = v
 
