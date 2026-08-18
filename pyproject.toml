@@ -1,12 +1,13 @@
 [build-system]
-requires = ["hatchling >=1.5"]
+requires = ["hatchling >=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "traitlets"
 authors = [{name = "IPython Development Team", email = "ipython-dev@python.org"}]
 description = "Traitlets Python configuration system"
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 readme = "README.md"
 keywords = ["Interactive", "Interpreter", "Shell", "Web"]
 classifiers = [
@@ -15,7 +16,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python",
     "Typing :: Typed",
