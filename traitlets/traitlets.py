@@ -1399,7 +1399,7 @@ class HasTraits(HasDescriptors, metaclass=MetaHasTraits):
                 f"{e}\n"
                 "This is deprecated in traitlets 4.2."
                 "This error will be raised in a future release of traitlets.",
-                DeprecationWarning,
+                UserWarning,
                 stacklevel=2,
             )
 
