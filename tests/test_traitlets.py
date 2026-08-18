@@ -1961,6 +1961,35 @@ class TestInstanceFullyValidatedDict(TraitTestBase):
     _bad_values = [{"foo": 0, "bar": 1}, {"foo": "0", "bar": "1"}, {"foo": 0, 0: "1"}]
 
 
+def test_dict_per_key_traits_error_names_key():
+    """A `per_key_traits` failure should say which key was rejected."""
+
+    class Foo(HasTraits):
+        bar = Dict(per_key_traits={"this": Unicode(), "that": Int()})
+
+    with pytest.raises(TraitError) as excinfo:
+        Foo().bar = {"this": "ok", "that": "not an int"}
+
+    message = str(excinfo.value)
+    assert "at key 'that'" in message
+    assert "'bar' trait" in message
+    assert "an int" in message
+
+
+def test_dict_value_trait_error_does_not_name_a_key():
+    """A uniform `value_trait` failure still reports against the trait as a whole."""
+
+    class Foo(HasTraits):
+        bar = Dict(value_trait=Int())
+
+    with pytest.raises(TraitError) as excinfo:
+        Foo().bar = {"this": "not an int"}
+
+    message = str(excinfo.value)
+    assert message.startswith("Values of the 'bar' trait")
+    assert "at key" not in message
+
+
 def test_dict_default_value():
     """Check that the `{}` default value of the Dict traitlet constructor is
     actually copied."""
