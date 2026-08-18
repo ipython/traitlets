@@ -969,3 +969,9 @@ def test_logger_adapter(caplog, capsys):
     app.log.info("test message")
 
     assert "adapted test message" in capsys.readouterr().err
+
+
+def test_get_log_handler_deprecated():
+    app = Application(log=logging.getLogger("test_get_log_handler_deprecated"))
+    with pytest.deprecated_call(match="_get_log_handler has been deprecated"):
+        app._get_log_handler()

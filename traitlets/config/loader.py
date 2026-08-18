@@ -304,8 +304,15 @@ class Config(dict):  # type:ignore[type-arg]
 
         return super().__contains__(key)
 
-    # .has_key is deprecated for dictionaries.
-    has_key = __contains__
+    def has_key(self, key: t.Any) -> bool:
+        """Deprecated since traitlets 4.0 - 2015, use ``key in config`` instead."""
+        warnings.warn(
+            "Config.has_key has been deprecated since traitlets 4.0 - 2015,"
+            " use `key in config` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.__contains__(key)
 
     def _has_section(self, key: str) -> bool:
         return _is_section_key(key) and key in self

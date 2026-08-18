@@ -367,6 +367,17 @@ class TestTraitType(TestCase):
             class C(HasTraits):
                 t = Dict(Int)
 
+    def test_no_default_specified_deprecated(self):
+        import traitlets.traitlets as tt
+
+        with expected_warnings(["NoDefaultSpecified is deprecated"]):
+            value = tt.NoDefaultSpecified
+        assert value is tt.Undefined
+        # still discoverable
+        assert "NoDefaultSpecified" in dir(tt)
+        with pytest.raises(AttributeError):
+            tt.this_does_not_exist
+
     def test_long_deprecated_aliases(self):
         for cls, replacement in [(Long, "Integer"), (CLong, "CInt")]:
             with expected_warnings([f"`{cls.__name__}` trait is deprecated"]):

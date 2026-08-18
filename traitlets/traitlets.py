@@ -155,8 +155,31 @@ from all trait attributes.
 """,
 )
 
-# Deprecated alias
-NoDefaultSpecified = Undefined
+# Deprecated aliases, kept accessible through the module-level ``__getattr__``
+# below so that reaching for them emits a DeprecationWarning (PEP 562).
+_deprecated_module_attrs = {
+    # name: (current name, message)
+    "NoDefaultSpecified": (
+        "Undefined",
+        (
+            "traitlets.traitlets.NoDefaultSpecified is deprecated since traitlets 4.0 - 2015,"
+            " use traitlets.Undefined instead."
+        ),
+    ),
+}
+
+
+def __getattr__(name: str) -> t.Any:
+    try:
+        target, msg = _deprecated_module_attrs[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+    warn(msg, DeprecationWarning, stacklevel=2)
+    return globals()[target]
+
+
+def __dir__() -> list[str]:
+    return sorted([*globals(), *_deprecated_module_attrs])
 
 
 class TraitError(Exception):
