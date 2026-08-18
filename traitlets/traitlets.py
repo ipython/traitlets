@@ -102,6 +102,7 @@ __all__ = [
     "Instance",
     "Int",
     "Integer",
+    "LazyType",
     "List",
     "Long",
     "MetaHasDescriptors",
@@ -524,6 +525,9 @@ class TraitType(BaseDescriptor, t.Generic[G, S]):
     read_only: bool = False
     info_text: str = "any value"
     default_value: t.Any = Undefined
+    #: Set by trait types whose ``default_value`` is only computed on access
+    #: (see :class:`LazyType`), so that class setup does not force it.
+    _resolve_lazily: bool = False
 
     def __init__(
         self: TraitType[G, S],
@@ -1060,42 +1064,46 @@ class MetaHasTraits(MetaHasDescriptors):
                     # of initial values to speed up instance creation.
                     # This is a very specific optimization, but a very common scenario in
                     # for instance ipywidgets.
-                    none_ok = trait.default_value is None and trait.allow_none
-                    if (
-                        type(trait) in [CInt, Int, Long, CLong]
-                        and trait.min is None  # type: ignore[attr-defined]
-                        and trait.max is None  # type: ignore[attr-defined]
-                        and (isinstance(trait.default_value, int) or none_ok)
-                    ):
-                        cls._static_immutable_initial_values[name] = trait.default_value
-                    elif (
-                        type(trait) in [CFloat, Float]
-                        and trait.min is None  # type: ignore[attr-defined]
-                        and trait.max is None  # type: ignore[attr-defined]
-                        and (isinstance(trait.default_value, float) or none_ok)
-                    ):
-                        cls._static_immutable_initial_values[name] = trait.default_value
-                    elif type(trait) in [CBool, Bool] and (
-                        isinstance(trait.default_value, bool) or none_ok
-                    ):
-                        cls._static_immutable_initial_values[name] = trait.default_value
-                    elif type(trait) in [CUnicode, Unicode] and (
-                        isinstance(trait.default_value, str) or none_ok
-                    ):
-                        cls._static_immutable_initial_values[name] = trait.default_value
-                    elif type(trait) is Any and (
-                        isinstance(trait.default_value, (str, int, float, bool)) or none_ok
-                    ):
-                        cls._static_immutable_initial_values[name] = trait.default_value
-                    elif type(trait) is Union and trait.default_value is None:
-                        cls._static_immutable_initial_values[name] = None
-                    elif (
-                        isinstance(trait, Instance)
-                        and trait.default_args is None
-                        and trait.default_kwargs is None
-                        and trait.allow_none
-                    ):
-                        cls._static_immutable_initial_values[name] = None
+                    # Traits that resolve their default lazily (see LazyType) are
+                    # skipped: reading ``default_value`` would trigger the import
+                    # they defer, and none of the cases below ever match them.
+                    if not trait._resolve_lazily:
+                        none_ok = trait.default_value is None and trait.allow_none
+                        if (
+                            type(trait) in [CInt, Int, Long, CLong]
+                            and trait.min is None  # type: ignore[attr-defined]
+                            and trait.max is None  # type: ignore[attr-defined]
+                            and (isinstance(trait.default_value, int) or none_ok)
+                        ):
+                            cls._static_immutable_initial_values[name] = trait.default_value
+                        elif (
+                            type(trait) in [CFloat, Float]
+                            and trait.min is None  # type: ignore[attr-defined]
+                            and trait.max is None  # type: ignore[attr-defined]
+                            and (isinstance(trait.default_value, float) or none_ok)
+                        ):
+                            cls._static_immutable_initial_values[name] = trait.default_value
+                        elif type(trait) in [CBool, Bool] and (
+                            isinstance(trait.default_value, bool) or none_ok
+                        ):
+                            cls._static_immutable_initial_values[name] = trait.default_value
+                        elif type(trait) in [CUnicode, Unicode] and (
+                            isinstance(trait.default_value, str) or none_ok
+                        ):
+                            cls._static_immutable_initial_values[name] = trait.default_value
+                        elif type(trait) is Any and (
+                            isinstance(trait.default_value, (str, int, float, bool)) or none_ok
+                        ):
+                            cls._static_immutable_initial_values[name] = trait.default_value
+                        elif type(trait) is Union and trait.default_value is None:
+                            cls._static_immutable_initial_values[name] = None
+                        elif (
+                            isinstance(trait, Instance)
+                            and trait.default_args is None
+                            and trait.default_kwargs is None
+                            and trait.allow_none
+                        ):
+                            cls._static_immutable_initial_values[name] = None
 
                     # we always add it, because a class may change when we call add_trait
                     # and then the instance may not have all the _static_immutable_initial_values
@@ -2176,6 +2184,87 @@ class Type(ClassBasedTraitType[G, S]):
             return repr(value)
         else:
             return repr(f"{value.__module__}.{value.__name__}")
+
+
+class LazyType(Type[G, S]):
+    """A :class:`Type` trait that does not import its class until it is used.
+
+    :class:`Type` resolves a string ``klass`` -- that is, imports it -- as soon
+    as the owning :class:`HasTraits` object is created. For a default like
+    ``"ipykernel.debugger.Debugger"`` that means paying for the ``debugpy``
+    import on every kernel startup, even though most sessions never debug.
+
+    ``LazyType`` waits until the class is actually needed: reading or writing
+    the trait, or reading ``klass`` / ``default_value`` / ``info()`` off the
+    trait itself. Generating help therefore does resolve it, like :class:`Type`.
+
+    Give ``klass`` and ``default_value`` as strings, like 'foo.bar.Bah' --
+    that is the whole point. A class object is accepted and simply stored as
+    is, since importing it is what the caller already did; there is nothing
+    left to defer, so such a trait behaves exactly like :class:`Type`.
+
+    A bad class name is reported at first use rather than when the owning
+    object is constructed.
+    """
+
+    #: Tells :class:`MetaHasTraits` not to read ``default_value`` while setting
+    #: up a class, as that would trigger the import this trait defers.
+    _resolve_lazily = True
+
+    #: The dotted name, replaced by the imported class once one is needed.
+    _klass: t.Any = None
+    _default_value: t.Any = Undefined
+
+    if t.TYPE_CHECKING:
+        # Type's overloads bind G/S from a class argument; strings carry no
+        # such information, so these two pin them and let **kwargs absorb the
+        # arguments that do not affect inference.
+
+        @t.overload
+        def __init__(
+            self: LazyType[type, type],
+            default_value: str | Sentinel = ...,
+            klass: str | None = ...,
+            allow_none: Literal[False] = ...,
+            **kwargs: t.Any,
+        ) -> None: ...
+
+        @t.overload
+        def __init__(
+            self: LazyType[type | None, type | None],
+            default_value: str | Sentinel | None = ...,
+            klass: str | None = ...,
+            allow_none: Literal[True] = ...,
+            **kwargs: t.Any,
+        ) -> None: ...
+
+        def __init__(self, *args: t.Any, **kwargs: t.Any) -> None: ...
+
+    def instance_init(self, obj: t.Any) -> None:
+        """Deliberately does not resolve the class; see the class docstring."""
+        pass  # noqa: PIE790  -- explicit: this override exists to do nothing
+
+    @property
+    def klass(self) -> t.Any:
+        """The class values must be a subclass of; imported on first read."""
+        if isinstance(self._klass, str):
+            self._klass = self._resolve_string(self._klass)
+        return self._klass
+
+    @klass.setter
+    def klass(self, value: t.Any) -> None:
+        self._klass = value
+
+    @property
+    def default_value(self) -> t.Any:
+        """The default value of this trait; imported on first read."""
+        if isinstance(self._default_value, str):
+            self._default_value = self._resolve_string(self._default_value)
+        return self._default_value
+
+    @default_value.setter
+    def default_value(self, value: t.Any) -> None:
+        self._default_value = value
 
 
 class Instance(ClassBasedTraitType[T, T]):
