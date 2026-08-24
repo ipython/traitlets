@@ -18,6 +18,10 @@ Numbers
 
    An integer trait.
 
+   ``Int`` accepts ``min`` and ``max`` keyword arguments to constrain values
+   to inclusive lower and upper bounds. Both default to ``None``. The
+   effective constructor options are ``Int(..., *, min=None, max=None)``.
+
 
 .. class:: Integer
 
@@ -33,6 +37,11 @@ Numbers
    :class:`Int` and emit a :exc:`DeprecationWarning` when used.
 
 .. autoclass:: Float
+
+   A float trait. ``Float`` accepts ``min`` and ``max`` keyword arguments to
+   constrain values to inclusive lower and upper bounds. They default to
+   ``-inf`` and ``inf``, respectively. The effective constructor options are
+   ``Float(..., *, min=-inf, max=inf)``.
 
 .. autoclass:: Complex
 
