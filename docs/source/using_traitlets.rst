@@ -82,6 +82,27 @@ When observers are methods of the class, a decorator syntax can be used.
             print(change["old"])
             print(change["new"])
 
+The special value ``All`` can be used to register a handler for every trait.
+When unregistering a handler, pass the same ``names`` and ``type`` values that
+were used when registering it. ``All`` refers to the registration for all
+traits; it does not match a handler that was registered for one particular
+trait.
+
+.. code:: python
+
+    from traitlets import All
+
+
+    def handle_any_change(change):
+        print(change["name"])
+
+
+    foo.observe(handle_any_change, names=All)
+    foo.unobserve(handle_any_change, names=All)
+
+    foo.observe(handle_any_change, names="bar")
+    foo.unobserve(handle_any_change, names="bar")
+
 Validation and Coercion
 -----------------------
 
