@@ -93,6 +93,9 @@ Classes and instances
 .. autoclass:: Type
    :members: __init__
 
+.. autoclass:: LazyType
+   :members: __init__
+
 .. autoclass:: This
 
 .. autoclass:: ForwardDeclaredInstance
