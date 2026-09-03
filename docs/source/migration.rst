@@ -26,6 +26,27 @@ populate the metadata for a trait type instance is to use the new
 We also deprecated the ``get_metadata`` method. The metadata of a trait
 type instance can directly be accessed via the ``metadata`` attribute.
 
+Deprecation of trait declarations via classes
+----------------------------------------------
+
+Traits should be declared with instances of their trait types. Declaring a
+trait with the trait type itself is deprecated:
+
+.. code:: python
+
+    from traitlets import HasTraits, Int
+
+
+    class OldStyle(HasTraits):
+        value = Int  # deprecated
+
+
+    class NewStyle(HasTraits):
+        value = Int()  # preferred
+
+This applies to container traits as well. For example, use ``List(Int())``
+instead of ``List(Int)``.
+
 Deprecation of ``on_trait_change``
 ----------------------------------
 
