@@ -3676,7 +3676,7 @@ class List(Container[list[T]]):
             return super().set(obj, value)
 
 
-class Set(Container[set[t.Any]]):
+class Set(Container[set[T]]):
     """An instance of a Python set."""
 
     klass = set
