@@ -3679,7 +3679,7 @@ class List(Container[list[T]]):
 class Set(Container[set[T]]):
     """An instance of a Python set."""
 
-    klass = set
+    klass = set  # type: ignore[assignment]
     _cast_types = (tuple, list)
 
     _literal_from_string_pairs = ("[]", "()", "{}")
@@ -3739,13 +3739,14 @@ class Set(Container[set[T]]):
 
     def set(self, obj: t.Any, value: t.Any) -> None:
         if isinstance(value, str):
-            return super().set(obj, {value})
+            return super().set(obj, {t.cast(T, value)})
         else:
             return super().set(obj, value)
 
     def default_value_repr(self) -> str:
         # Ensure default value is sorted for a reproducible build
-        list_repr = repr(sorted(self.make_dynamic_default() or []))
+        default = t.cast(set[t.Any] | None, self.make_dynamic_default()) or set()
+        list_repr = repr(sorted(default))
         if list_repr == "[]":
             return "set()"
         return "{" + list_repr[1:-1] + "}"
