@@ -34,6 +34,18 @@ class CSColor(enum.Enum):
     YeLLoW = 4
 
 
+class StrColor(str, enum.Enum):
+    RED = "red"
+    GREEN = "green"
+    BLUE = "blue"
+
+
+class ShadowedColor(str, enum.Enum):
+    # A member name that collides with a different member's value
+    red = "green"
+    green = "blue"
+
+
 color_choices = ["red", "Green", "BLUE", "YeLLoW"]
 
 
@@ -128,6 +140,33 @@ class TestUseEnum(unittest.TestCase):
             example = self.Example()
             with self.assertRaises(TraitError):
                 example.color = value
+
+    def test_assign_str_enum_value(self):
+        # -- CONVERT: value (as string) => Enum value (item)
+        class Example(HasTraits):
+            color = UseEnum(StrColor)
+
+        for enum_item in StrColor.__members__.values():
+            example = Example()
+            example.color = enum_item.value
+            self.assertIs(example.color, enum_item)
+
+    def test_assign_str_enum_name_wins_over_value(self):
+        # -- A name lookup must keep taking precedence over a value lookup
+        class Example(HasTraits):
+            color = UseEnum(ShadowedColor)
+
+        example = Example()
+        example.color = "green"
+        self.assertIs(example.color, ShadowedColor.green)
+
+    def test_assign_bad_str_enum_value__raises_error(self):
+        class Example(HasTraits):
+            color = UseEnum(StrColor)
+
+        example = Example()
+        with self.assertRaises(TraitError):
+            example.color = "purple"
 
     def test_ctor_without_default_value(self):
         # -- IMPLICIT: default_value = Color.red (first enum-value)
