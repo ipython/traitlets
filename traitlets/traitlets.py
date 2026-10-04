@@ -357,12 +357,22 @@ class link:
         finally:
             self.updating = False
 
+    def _should_update(self, old: t.Any, new: t.Any) -> bool:
+        """Return whether two values should be considered different.
+
+        Subclasses can override this method when a trait value has comparison
+        semantics that cannot be reduced to a boolean with ``!=``.
+        """
+        if old is new:
+            return False
+        return bool(old != new)
+
     def _update_target(self, change: t.Any) -> None:
         if self.updating:
             return
         with self._busy_updating():
             setattr(self.target[0], self.target[1], self._transform(change.new))
-            if getattr(self.source[0], self.source[1]) != change.new:
+            if self._should_update(getattr(self.source[0], self.source[1]), change.new):
                 raise TraitError(
                     f"Broken link {self}: the source value changed while updating the target."
                 )
@@ -372,7 +382,7 @@ class link:
             return
         with self._busy_updating():
             setattr(self.source[0], self.source[1], self._transform_inv(change.new))
-            if getattr(self.target[0], self.target[1]) != change.new:
+            if self._should_update(getattr(self.target[0], self.target[1]), change.new):
                 raise TraitError(
                     f"Broken link {self}: the target value changed while updating the source."
                 )
