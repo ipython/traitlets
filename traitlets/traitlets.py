@@ -3880,7 +3880,7 @@ class Tuple(Container[tuple[t.Any, ...]]):
         # to opt out of instance_init
 
 
-class Dict(Instance["dict[K, V]"]):
+class Dict(Instance["dict[K, V]"], t.Generic[K, V]):
     """An instance of a Python dict.
 
     One or more traits can be passed to the constructor
