@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
         with:
           package_name: ipython
           package_spec: -e .[test]
@@ -21,9 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
         with:
           package_name: nbconvert
           package_spec: -e .[test]
@@ -32,9 +36,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
         with:
           package_name: jupyter_server
 
@@ -42,9 +48,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
         with:
           package_name: ipywidgets
 
@@ -52,9 +60,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
-      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/downstream-test@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
         with:
           package_name: notebook
           test_command: pytest -vv --ignore-glob=notebook/tests/selenium/* --ignore-glob=notebook/nbconvert/tests/* --ignore-glob=notebook/services/nbconvert/tests/*
