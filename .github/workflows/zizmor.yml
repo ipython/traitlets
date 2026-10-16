@@ -6,15 +6,19 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions: {}
 
 jobs:
   zizmor:
+    name: zizmor
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      # Upload SARIF results to code scanning (the action's default mode).
-      security-events: write
+      security-events: write # upload SARIF results to code scanning
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,3 +30,4 @@ jobs:
           advanced-security: true
           online-audits: true
           persona: regular
+          version: 1.31.1
