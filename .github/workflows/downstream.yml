@@ -5,6 +5,9 @@ name: Test downstream projects
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
   ipython:
     runs-on: ubuntu-latest
