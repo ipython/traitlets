@@ -986,6 +986,14 @@ def test_get_logger_after_application():
     assert traitlets.log.get_logger() is fallback
 
 
+def test_application_get_type_hints():
+    import typing
+
+    hints = typing.get_type_hints(Application)
+    assert "subcommands" in hints
+    assert "argv" in hints
+
+
 if __name__ == "__main__":
     # for test_help_output:
     MyApp.launch_instance()
