@@ -158,6 +158,7 @@ filterwarnings = [
 markers = [
     "network: marks tests which require network connection (nbconvert)",
     "integration_tests: notebook mark (notebook)",
+    "mypy_testing: marks typing tests checked by pytest-mypy-testing",
 ]
 
 [tool.coverage.report]
