@@ -2054,6 +2054,83 @@ class TestValidationHook(TestCase):
 
 
 class TestLink(TestCase):
+    def test_non_scalar_identity_comparison_preserves_observer_chain(self):
+        class AmbiguousComparison:
+            def __bool__(self):
+                raise ValueError("ambiguous comparison")
+
+        class Value:
+            __hash__ = None
+
+            def __eq__(self, other):
+                return AmbiguousComparison()
+
+            __ne__ = __eq__
+
+        class A(HasTraits):
+            value = Instance(Value)
+
+        a = A(value=Value())
+        b = A(value=Value())
+        c = link((a, "value"), (b, "value"))
+        observed = []
+        a.observe(lambda change: observed.append("a"), names="value")
+        b.observe(lambda change: observed.append("b"), names="value")
+
+        a.value = Value()
+        b.value = Value()
+
+        self.assertEqual(observed, ["b", "a", "a", "b"])
+        self.assertIs(a.value, b.value)
+        self.assertFalse(c.updating)
+
+    def test_should_update_can_be_overridden(self):
+        class Value:
+            __hash__ = None
+
+            def __init__(self, value):
+                self.value = value
+
+            def __eq__(self, other):
+                return isinstance(other, Value) and self.value == other.value
+
+            def __ne__(self, other):
+                return not self == other
+
+        class A(HasTraits):
+            value = Instance(Value)
+
+        class IdentityLink(link):
+            def _should_update(self, old, new):
+                return old is not new
+
+        def replace_with_equal_distinct(owner, change):
+            if not replaced:
+                replaced.append(True)
+                owner.value = Value(change.new.value)
+
+        for link_type, raises in ((link, False), (IdentityLink, True)):
+            for owner_name in ("source", "target"):
+                source = A(value=Value(1))
+                target = A(value=Value(1))
+                replaced = []
+                owner = source if owner_name == "source" else target
+                original = source if owner_name == "source" else target
+                opposite = target if owner_name == "source" else source
+                opposite.observe(
+                    lambda change, original=original: replace_with_equal_distinct(original, change),
+                    names="value",
+                )
+                connection = link_type((source, "value"), (target, "value"))
+                replaced.clear()
+
+                if raises:
+                    with self.assertRaises(TraitError):
+                        owner.value = Value(2)
+                else:
+                    owner.value = Value(2)
+                self.assertFalse(connection.updating)
+
     def test_connect_same(self):
         """Verify two traitlets of the same type can be linked together using link."""
 
@@ -2203,6 +2280,7 @@ class TestLink(TestCase):
         mc = MyClass()
         l = link((mc, "i"), (mc, "j"))
         self.assertRaises(TraitError, setattr, mc, "i", 2)
+        self.assertFalse(l.updating)
 
     def test_link_broken_at_target(self):
         class MyClass(HasTraits):
@@ -2216,6 +2294,7 @@ class TestLink(TestCase):
         mc = MyClass()
         l = link((mc, "i"), (mc, "j"))
         self.assertRaises(TraitError, setattr, mc, "j", 2)
+        self.assertFalse(l.updating)
 
 
 class TestDirectionalLink(TestCase):

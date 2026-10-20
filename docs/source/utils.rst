@@ -40,6 +40,13 @@ Example:
 Links
 -----
 
+After a link writes the other trait, ``link`` uses the protected
+``_should_update`` method to check that the original trait still has the value
+from the change event. The default accepts identical objects and otherwise
+uses inequality. Subclasses can override this post-propagation consistency
+check for values with custom comparison behavior; it does not suppress the
+write to the other trait.
+
 .. autoclass:: link
 
 .. autoclass:: directional_link
