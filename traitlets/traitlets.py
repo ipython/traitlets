@@ -2607,7 +2607,15 @@ def _validate_bounds(
 
 
 class Int(TraitType[G, S]):
-    """An integer trait."""
+    """An integer trait.
+
+    Parameters
+    ----------
+    min : int or None, optional
+        Inclusive lower bound. If ``None``, no lower bound is enforced.
+    max : int or None, optional
+        Inclusive upper bound. If ``None``, no upper bound is enforced.
+    """
 
     default_value = 0
     info_text = "an int"
@@ -2760,7 +2768,15 @@ class CLong(CInt[G, S]):
 
 
 class Float(TraitType[G, S]):
-    """A float trait."""
+    """A float trait.
+
+    Parameters
+    ----------
+    min : float, optional
+        Inclusive lower bound. Defaults to negative infinity.
+    max : float, optional
+        Inclusive upper bound. Defaults to positive infinity.
+    """
 
     default_value = 0.0
     info_text = "a float"
