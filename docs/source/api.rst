@@ -99,6 +99,12 @@ You can also add callbacks to a trait dynamically:
     ``traitlets.Undefined`` for trait types whose default can only be
     computed dynamically (e.g. containers and :class:`Instance`).
 
+To remove callbacks, use the corresponding instance methods:
+
+.. automethod:: HasTraits.unobserve
+
+.. automethod:: HasTraits.unobserve_all
+
 Validating proposed changes
 ---------------------------
 
