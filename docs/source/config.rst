@@ -291,14 +291,13 @@ Configuration files currently can be a plain Python script or a JSON file.
 The former has the benefit that it can perform extensive logic to populate
 the config object, while the latter is just a direct JSON serialization of
 the config dictionary and can be easily processed by external software.
-When both Python and JSON configuration file are present, both will be loaded,
-with JSON configuration having higher priority.
-
-The configuration files can be loaded by calling :meth:`Application.load_config_file()`,
-which takes the relative path to the config file (with or without file extension)
-and the directories in which to search for the config file. All found configuration
-files will be loaded in reverse order, so that configs in earlier directories will
-have higher priority.
+Configuration files can be loaded by calling :meth:`Application.load_config_file()`,
+which accepts a relative or absolute filename and directories in which to search.
+When no extension is specified, both Python and JSON configuration files are loaded
+if present, with JSON having higher priority. When a ``.py`` or ``.json`` extension
+is explicitly specified, only files with that extension are loaded.
+Configuration files are loaded in reverse directory order, so configurations in
+earlier directories have higher priority.
 
 
 Python configuration Files

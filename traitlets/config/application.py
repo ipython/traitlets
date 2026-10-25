@@ -901,19 +901,29 @@ class Application(SingletonConfigurable):
 
         yield each config object in turn.
         """
+        # Only select a single loader when an explicit supported suffix is given.
+        extension = os.path.splitext(basefilename)[1]
+        if extension in (".py", ".json"):
+            basefilename = basefilename[: -len(extension)]
+        else:
+            extension = ""
         if os.path.isabs(basefilename):
             path = [None]
         if isinstance(path, str) or path is None:
             path = [path]
         for current in reversed(path):
             # path list is in descending priority order, so load files backwards:
-            pyloader = cls.python_config_loader_class(basefilename + ".py", path=current, log=log)
             if log:
                 log.debug("Looking for %s in %s", basefilename, current or os.getcwd())
-            jsonloader = cls.json_config_loader_class(basefilename + ".json", path=current, log=log)
             loaded: list[t.Any] = []
             filenames: list[str] = []
-            for loader in [pyloader, jsonloader]:
+            for suffix, loader_class in (
+                (".py", cls.python_config_loader_class),
+                (".json", cls.json_config_loader_class),
+            ):
+                if extension and extension != suffix:
+                    continue
+                loader = loader_class(basefilename + suffix, path=current, log=log)
                 config = None
                 try:
                     config = loader.load_config()
@@ -959,7 +969,11 @@ class Application(SingletonConfigurable):
         self, filename: str, path: str | t.Sequence[str | None] | None = None
     ) -> None:
         """Load config files by filename and path."""
-        filename, _ext = os.path.splitext(filename)
+        # Keep .py/.json extensions to avoid loading the other file type.
+        # Other extensions retain the previous basename-only behavior.
+        filename, ext = os.path.splitext(filename)
+        if ext in (".py", ".json"):
+            filename += ext
         new_config = Config()
         for config, fname in self._load_config_files(
             filename,
