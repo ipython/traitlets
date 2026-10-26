@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -75,7 +75,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           dependency_type: minimum
           node_version: "none"
@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
@@ -125,7 +125,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           dependency_type: pre
           node_version: "none"
@@ -141,11 +141,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
-      - uses: jupyterlab/maintainer-tools/.github/actions/make-sdist@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/make-sdist@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
 
   test_sdist:
     runs-on: ubuntu-latest
@@ -153,11 +153,11 @@ jobs:
     name: Install from SDist and Test
     timeout-minutes: 20
     steps:
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
-      - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/test-sdist@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
 
   # Downstream projects are slow and only meaningful if traitlets itself is
   # healthy, so hold them until every fast job has finished and passed.
@@ -175,11 +175,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
-      - uses: jupyterlab/maintainer-tools/.github/actions/check-links@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+      - uses: jupyterlab/maintainer-tools/.github/actions/check-links@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
 
   check_release:
     runs-on: ubuntu-latest
@@ -189,7 +189,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Base Setup
-        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@21b1cac622018fd37ec13a1c8081da814e10d94e # v1.0.0
+        uses: jupyterlab/maintainer-tools/.github/actions/base-setup@925e40fa6066f4533e0c40803bd4b6d0d2f4a781 # v1.1.0
         with:
           node_version: "none"
           python_package_manager: "uv pip"
