@@ -249,7 +249,7 @@ def mypy_enum_typing() -> None:
 @pytest.mark.mypy_testing
 def mypy_set_typing() -> None:
     class T(HasTraits):
-        remove_cell_tags = Set(
+        remove_cell_tags: Set[t.Any] = Set(
             Unicode(),
             default_value=[],
             help=(
@@ -258,7 +258,7 @@ def mypy_set_typing() -> None:
             ),
         ).tag(config=True)
 
-        safe_output_keys = Set(
+        safe_output_keys: Set[str] = Set(
             config=True,
             default_value={
                 "metadata",  # Not a mimetype per-se, but expected and safe.
@@ -272,14 +272,14 @@ def mypy_set_typing() -> None:
         )
 
     t = T()
-    reveal_type(Set("foo"))  # R: traitlets.traitlets.Set
-    reveal_type(Set("").tag(sync=True))  # R: traitlets.traitlets.Set
-    reveal_type(Set(None, allow_none=True))  # R: traitlets.traitlets.Set
-    reveal_type(Set(None, allow_none=True).tag(sync=True))  # R: traitlets.traitlets.Set
-    reveal_type(T.remove_cell_tags)  # R: traitlets.traitlets.Set
+    reveal_type(Set("foo"))  # R: traitlets.traitlets.Set[Never]
+    reveal_type(Set("").tag(sync=True))  # R: traitlets.traitlets.Set[Never]
+    reveal_type(Set(None, allow_none=True))  # R: traitlets.traitlets.Set[Never]
+    reveal_type(Set(None, allow_none=True).tag(sync=True))  # R: traitlets.traitlets.Set[Never]
+    reveal_type(T.remove_cell_tags)  # R: traitlets.traitlets.Set[Any]
     reveal_type(t.remove_cell_tags)  # R: set[Any]
-    reveal_type(T.safe_output_keys)  # R: traitlets.traitlets.Set
-    reveal_type(t.safe_output_keys)  # R: set[Any]
+    reveal_type(T.safe_output_keys)  # R: traitlets.traitlets.Set[str]
+    reveal_type(t.safe_output_keys)  # R: set[str]
 
 
 @pytest.mark.mypy_testing
@@ -452,3 +452,13 @@ def mypy_instance_typing() -> None:
     t.inst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Foo")  [assignment]
     t.oinst = "foo"  # E: Incompatible types in assignment (expression has type "str", variable has type "Foo | None")  [assignment]
     t.inst = None  # E: Incompatible types in assignment (expression has type "None", variable has type "Foo")  [assignment]
+
+
+@pytest.mark.mypy_testing
+def mypy_generic_set_typing() -> None:
+    class T(HasTraits):
+        values: Set[str] = Set()
+
+    t = T()
+    reveal_type(T.values)  # R: traitlets.traitlets.Set[str]
+    reveal_type(t.values)  # R: set[str]
