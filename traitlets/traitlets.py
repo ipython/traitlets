@@ -4225,6 +4225,8 @@ class CRegExp(TraitType[re.Pattern[t.Any], re.Pattern[t.Any] | str]):
     def validate(self, obj: t.Any, value: t.Any) -> re.Pattern[t.Any] | None:
         try:
             return re.compile(value)
+        except re.error as e:
+            self.error(obj, value, info=f"{self.info()}: {e}")
         except Exception:
             self.error(obj, value)
 

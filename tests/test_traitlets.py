@@ -1902,8 +1902,31 @@ class TestCRegExp(TraitTestBase):
     obj = CRegExpTrait()
 
     _default_value = re.compile(r"")
-    _good_values = [r"\d+", re.compile(r"\d+")]
+    _good_values = [r"\d+", re.compile(r"\d+"), rb"\d+"]
     _bad_values = ["(", None, ()]
+
+    def test_invalid_pattern_error_message(self):
+        pattern = "["
+        with pytest.raises(re.error) as regex_error:
+            re.compile(pattern)
+
+        with pytest.raises(TraitError) as trait_error:
+            self.assign(pattern)
+
+        assert str(regex_error.value) in str(trait_error.value)
+
+    def test_invalid_pattern_error_message_in_list(self):
+        pattern = "["
+        with pytest.raises(re.error) as regex_error:
+            re.compile(pattern)
+
+        class CRegExpListTrait(HasTraits):
+            values = List(CRegExp())
+
+        with pytest.raises(TraitError) as trait_error:
+            CRegExpListTrait(values=[pattern])
+
+        assert str(regex_error.value) in str(trait_error.value)
 
 
 class DictTrait(HasTraits):
