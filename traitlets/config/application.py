@@ -203,7 +203,7 @@ class Application(SingletonConfigurable):
 
     # The log level for the application
     log_level = Enum(
-        (0, 10, 20, 30, 40, 50, "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"),
+        (0, 10, 20, 30, 40, 50, "DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL"),
         default_value=logging.WARNING,
         help="Set the log level by value or name.",
     ).tag(config=True)
