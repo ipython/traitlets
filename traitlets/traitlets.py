@@ -4057,7 +4057,13 @@ class Dict(Instance["dict[K, V]"]):
             if active_value_trait:
                 try:
                     v = active_value_trait._validate(obj, v)
-                except TraitError:
+                except TraitError as error:
+                    if key in per_key_override:
+                        info = error.args[1] if len(error.args) > 1 else active_value_trait.info()
+                        # Nested traits append their containers to the error chain.
+                        for container in error.args[3:]:
+                            info = f"{container.info()} containing {info}"
+                        self.error(obj, value, info=f"a dict whose value at key {key!r} is {info}")
                     self.element_error(obj, v, active_value_trait, "Values")
             validated[key] = v
 

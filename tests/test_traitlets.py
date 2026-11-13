@@ -1943,6 +1943,80 @@ class TestInstanceNonuniformlyValueValidatedDict(TraitTestBase):
     _bad_values = [{"foo": "0", "bar": "1"}]
 
 
+@pytest.mark.parametrize(
+    "invalid_value, expected_info",
+    [
+        (False, "a dict whose value at key 'that' is a dict"),
+        (
+            {"that": 3},
+            "a dict whose value at key 'that' is a dict whose value at key 'that' is a unicode string",
+        ),
+    ],
+)
+def test_dict_per_key_error(invalid_value, expected_info):
+    class Foo(HasTraits):
+        bar = Dict(
+            per_key_traits={"this": Unicode(), "that": Dict(per_key_traits={"that": Unicode()})}
+        )
+
+    foo = Foo()
+    with pytest.raises(TraitError) as exc:
+        foo.bar = {"this": "valid", "that": invalid_value}
+
+    message = str(exc.value)
+    assert "'bar' trait of a Foo instance" in message
+    assert expected_info in message
+
+
+def test_dict_per_key_custom_error():
+    class CustomTrait(TraitType):
+        info_text = "a custom value"
+
+        def validate(self, obj, value):
+            raise TraitError("Invalid custom value")
+
+    class Foo(HasTraits):
+        bar = Dict(per_key_traits={"custom": CustomTrait()})
+
+    with pytest.raises(TraitError, match="a dict whose value at key 'custom' is a custom value"):
+        Foo().bar = {"custom": 3}
+
+
+@pytest.mark.parametrize(
+    "value_trait, invalid_value, expected_info",
+    [
+        (List(Unicode()), [3], "a list containing a unicode string"),
+        (List(List(Unicode())), [[3]], "a list containing a list containing a unicode string"),
+        (
+            List(Dict(per_key_traits={"leaf": Unicode()})),
+            [{"leaf": 3}],
+            "a list containing a dict whose value at key 'leaf' is a unicode string",
+        ),
+    ],
+)
+def test_dict_per_key_container_error(value_trait, invalid_value, expected_info):
+    class Foo(HasTraits):
+        bar = Dict(per_key_traits={"items": value_trait})
+
+    with pytest.raises(TraitError) as exc:
+        Foo().bar = {"items": invalid_value}
+
+    assert f"a dict whose value at key 'items' is {expected_info}" in str(exc.value)
+
+
+def test_dict_value_trait_error_unchanged():
+    class Foo(HasTraits):
+        bar = Dict(value_trait=Unicode(), per_key_traits={"number": Int()})
+
+    with pytest.raises(TraitError) as exc:
+        Foo().bar = {"number": 1, "string": 3}
+
+    assert str(exc.value) == (
+        "Values of the 'bar' trait of a Foo instance must be a unicode string, "
+        "but a value of 3 <class 'int'> was specified."
+    )
+
+
 class KeyValidatedDictTrait(HasTraits):
     value = Dict(key_trait=Unicode(), default_value={"foo": "1"})
 
